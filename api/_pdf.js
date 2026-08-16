@@ -45,6 +45,36 @@ async function embedLogo(pdf, bytes, contentType) {
   return null;
 }
 
+function drawEmployerFirma(page, { font, empresa, firma, x, y, width }) {
+  let top = y;
+  if (firma) {
+    const maxH = 36;
+    const maxW = Math.min(140, width);
+    const scale = Math.min(maxW / firma.width, maxH / firma.height);
+    const w = firma.width * scale;
+    const h = firma.height * scale;
+    page.drawImage(firma, { x, y: y + 8, width: w, height: h });
+    top = y + 8 + h;
+  }
+  page.drawLine({
+    start: { x, y },
+    end: { x: x + width, y },
+    thickness: 0.8,
+    color: INK,
+  });
+  page.drawText(latin1("Empleador / representante legal"), {
+    x,
+    y: y - 14,
+    size: 9,
+    font,
+    color: MUTED,
+  });
+  if (empresa?.razonSocial) {
+    page.drawText(latin1(empresa.razonSocial), { x, y: y - 26, size: 9, font, color: TEXT });
+  }
+  return top;
+}
+
 async function letterhead(page, { font, fontBold, empresa, logo }, y) {
   const margin = 48;
   const width = page.getWidth();
@@ -153,12 +183,22 @@ function drawDisclaimer(page, font, y, extra = "") {
   });
 }
 
-export async function buildLiquidacionPdf({ empresa, trabajador, periodo, calc, logoBytes, logoType }) {
+export async function buildLiquidacionPdf({
+  empresa,
+  trabajador,
+  periodo,
+  calc,
+  logoBytes,
+  logoType,
+  firmaBytes,
+  firmaType,
+}) {
   const pdf = await PDFDocument.create();
   const font = await pdf.embedFont(StandardFonts.Helvetica);
   const fontBold = await pdf.embedFont(StandardFonts.HelveticaBold);
   const page0 = pdf.addPage([595.28, 841.89]);
   const logo = await embedLogo(pdf, logoBytes, logoType);
+  const firma = await embedLogo(pdf, firmaBytes, firmaType);
   let page = page0;
   let y = await letterhead(page, { font, fontBold, empresa, logo }, page.getHeight() - 40);
   const margin = 48;
@@ -229,6 +269,28 @@ export async function buildLiquidacionPdf({ empresa, trabajador, periodo, calc, 
     color: rgb(1, 1, 1),
   });
   y -= 36;
+  ({ page, y } = ensureSpace(pdf, page, font, y, 90));
+  const colW = (page.getWidth() - 48 * 2 - 24) / 2;
+  page.drawLine({
+    start: { x: 48, y },
+    end: { x: 48 + colW, y },
+    thickness: 0.8,
+    color: INK,
+  });
+  page.drawText(latin1("Trabajador"), { x: 48, y: y - 14, size: 9, font, color: MUTED });
+  if (trabajador?.nombre) {
+    page.drawText(latin1(trabajador.nombre), { x: 48, y: y - 26, size: 9, font, color: TEXT });
+  }
+  drawEmployerFirma(page, {
+    font,
+    empresa,
+    firma,
+    x: 48 + colW + 24,
+    y,
+    width: colW,
+  });
+  y -= 48;
+  ({ page, y } = ensureSpace(pdf, page, font, y, 48));
   drawDisclaimer(page, font, y);
   return Buffer.from(await pdf.save());
 }
@@ -240,12 +302,15 @@ export async function buildFiniquitoPdf({
   ciudad = "Santiago",
   logoBytes,
   logoType,
+  firmaBytes,
+  firmaType,
 }) {
   const pdf = await PDFDocument.create();
   const font = await pdf.embedFont(StandardFonts.Helvetica);
   const fontBold = await pdf.embedFont(StandardFonts.HelveticaBold);
   const page0 = pdf.addPage([595.28, 841.89]);
   const logo = await embedLogo(pdf, logoBytes, logoType);
+  const firma = await embedLogo(pdf, firmaBytes, firmaType);
   let page = page0;
   let y = await letterhead(page, { font, fontBold, empresa, logo }, page.getHeight() - 40);
   const margin = 48;
@@ -334,32 +399,57 @@ export async function buildFiniquitoPdf({
   y -= 36;
 
   const col = (page.getWidth() - margin * 2 - 24) / 2;
-  const names = [
-    ["Empleador", empresa?.razonSocial || ""],
-    ["Trabajador", trabajador?.nombre || ""],
-    ["Testigo", ""],
-    ["Testigo", ""],
-  ];
-  for (let i = 0; i < 4; i += 1) {
-    if (i === 2) {
-      y -= 36;
-      ({ page, y } = ensureSpace(pdf, page, font, y, 70));
-    }
-    const x = margin + (i % 2) * (col + 24);
-    const fy = i < 2 ? y : y;
+  ({ page, y } = ensureSpace(pdf, page, font, y, 90));
+  drawEmployerFirma(page, { font, empresa, firma, x: margin, y, width: col });
+  page.drawLine({
+    start: { x: margin + col + 24, y },
+    end: { x: margin + col + 24 + col, y },
+    thickness: 0.8,
+    color: INK,
+  });
+  page.drawText(latin1("Trabajador"), {
+    x: margin + col + 24,
+    y: y - 14,
+    size: 9,
+    font,
+    color: MUTED,
+  });
+  if (trabajador?.nombre) {
+    page.drawText(latin1(trabajador.nombre), {
+      x: margin + col + 24,
+      y: y - 26,
+      size: 9,
+      font,
+      color: TEXT,
+    });
+  }
+  y -= 56;
+  ({ page, y } = ensureSpace(pdf, page, font, y, 70));
+  for (let i = 0; i < 2; i += 1) {
+    const x = margin + i * (col + 24);
     page.drawLine({
-      start: { x, y: fy },
-      end: { x: x + col, y: fy },
+      start: { x, y },
+      end: { x: x + col, y },
       thickness: 0.8,
       color: INK,
     });
-    page.drawText(latin1(names[i][0]), { x, y: fy - 14, size: 9, font, color: MUTED });
-    if (names[i][1]) {
-      page.drawText(latin1(names[i][1]), { x, y: fy - 26, size: 9, font, color: TEXT });
-    }
+    page.drawText("Testigo", { x, y: y - 14, size: 9, font, color: MUTED });
   }
-  y -= 80;
+  y -= 48;
   ({ page, y } = ensureSpace(pdf, page, font, y, 60));
   drawDisclaimer(page, font, y, DISCLAIMER_FINIQUITO);
   return Buffer.from(await pdf.save());
+}
+
+export async function mergePdfs(buffers) {
+  const list = (buffers || []).filter(Boolean);
+  if (!list.length) throw new Error("empty");
+  if (list.length === 1) return Buffer.from(list[0]);
+  const out = await PDFDocument.create();
+  for (const buf of list) {
+    const src = await PDFDocument.load(buf);
+    const pages = await out.copyPages(src, src.getPageIndices());
+    for (const p of pages) out.addPage(p);
+  }
+  return Buffer.from(await out.save());
 }

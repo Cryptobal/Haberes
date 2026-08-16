@@ -10,6 +10,17 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 <!-- End Google Tag Manager -->
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script>
+  (function () {
+    try {
+      var t = localStorage.getItem("haberes:theme");
+      if (t !== "day" && t !== "night") {
+        t = window.matchMedia("(prefers-color-scheme: dark)").matches ? "night" : "day";
+      }
+      document.documentElement.setAttribute("data-theme", t);
+    } catch (e) {}
+  })();
+  </script>
   <title>Para mi empresa — Haberes</title>
   <meta name="description" content="Liquidaciones y carta de finiquito para pymes. Cuenta de empresa. No es Dirección del Trabajo ni Previred." />
   <link rel="canonical" href="https://www.haberes.cl/empresa" />
@@ -42,6 +53,11 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <a href="/sueldo" data-nav>Sueldo líquido</a>
         <a href="/finiquito" data-nav>Finiquito</a>
         <a href="/empresa" data-nav>Para mi empresa</a>
+        <a href="/como" data-nav>Cómo funciona</a>
+        <a href="/precios" data-nav>Precios</a>
+        <button type="button" class="theme-toggle" data-theme-toggle aria-label="Cambiar a modo noche" aria-pressed="false">
+          <span data-theme-label>Día</span>
+        </button>
       </div>
     </nav>
   </header>
@@ -50,7 +66,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <div class="wrap">
       <p class="kicker">Empresa</p>
       <h1>Para mi empresa</h1>
-      <p class="lede">Cuenta de empresa: perfil y logo, trabajadores, liquidación y carta de finiquito con membrete. Vista previa en esta página; no depende de ventanas emergentes.</p>
+      <p class="lede">Cuenta de empresa: perfil, logo y firma, trabajadores del mes, liquidación y carta de finiquito. Vista previa en esta página; no depende de ventanas emergentes.</p>
       <p class="notice">
         Estimación generada por inteligencia artificial. No es un cálculo de la Dirección del Trabajo ni de Previred.
         No constituye asesoría legal. La carta de finiquito no reemplaza la ratificación ante la Inspección del Trabajo.
@@ -137,9 +153,15 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           <button class="btn btn-ghost" type="button" id="btnSalir">Cerrar sesión</button>
         </div>
 
-        <div class="panel">
-          <h3>Perfil de la empresa</h3>
-          <p class="hint">RUT, razón social, giro, dirección y logo. El logo se guarda en almacenamiento privado (no es una URL pública) y se usa en el membrete.</p>
+        <div class="ws-tabs" role="tablist" aria-label="Áreas de trabajo">
+          <button type="button" class="ws-tab" data-tab="empresa" aria-selected="true">Mi empresa</button>
+          <button type="button" class="ws-tab" data-tab="trabajadores" aria-selected="false">Trabajadores</button>
+          <button type="button" class="ws-tab" data-tab="documentos" aria-selected="false">Documentos</button>
+        </div>
+
+        <section id="tab-empresa" class="panel" data-tab-panel="empresa">
+          <h3>Mi empresa</h3>
+          <p class="hint">Razón social, giro, dirección, logo y firma del representante legal. El RUT no se cambia. Logo y firma se guardan en almacenamiento privado (no hay URL pública) y se usan en el membrete y las firmas del PDF.</p>
           <form id="formPerfil">
             <div class="row">
               <div class="field">
@@ -170,18 +192,33 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             <img id="logoPreview" class="logo-preview" alt="Logo de la empresa" hidden />
             <p class="hint" id="logoVacio">Aún no hay logo.</p>
           </div>
-          <div class="actions" style="margin-top: 12px">
+          <div class="btn-row" style="margin-top: 12px">
             <label class="btn btn-ghost" for="logoFile">Subir logo</label>
             <input id="logoFile" type="file" accept="image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp" hidden />
             <button class="btn btn-ghost" type="button" id="btnQuitarLogo">Quitar logo</button>
           </div>
           <p class="error" id="errLogo" hidden></p>
-        </div>
+          <hr class="sep" />
+          <h3>Firma del representante legal</h3>
+          <p class="hint">Imagen de la firma (PNG, JPG o WebP). Máximo 1,5 MB. Ruta privada <code>firmas/{empresa}/{uuid}</code>. Si está, las cartas y PDF la incluyen.</p>
+          <div class="logo-box">
+            <img id="firmaPreview" class="firma-preview" alt="Firma del representante legal" hidden />
+            <p class="hint" id="firmaVacia">Aún no hay firma.</p>
+          </div>
+          <div class="btn-row" style="margin-top: 12px">
+            <label class="btn btn-ghost" for="firmaFile">Subir firma</label>
+            <input id="firmaFile" type="file" accept="image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp" hidden />
+            <button class="btn btn-ghost" type="button" id="btnQuitarFirma">Quitar firma</button>
+          </div>
+          <p class="error" id="errFirma" hidden></p>
+        </section>
 
-        <div class="panel" style="margin-top: 16px">
-          <h3>Trabajadores</h3>
-          <p class="hint">CSV: nombre, rut, cargo, sueldo_base, afp, salud, plan_isapre, contrato, horas_extras, bonos, colacion, movilizacion, gratificacion. Los trabajadores de esta lista viven en este navegador.</p>
-          <div class="actions" style="margin: 12px 0 16px">
+        <section id="tab-trabajadores" class="panel" data-tab-panel="trabajadores" hidden>
+          <h3>Trabajadores de este mes</h3>
+          <p class="hint">
+            Cargue o edite la nómina del mes. Un CSV nuevo actualiza por RUT (no duplica). Columnas: nombre, rut, cargo, sueldo_base, afp, salud, plan_isapre, contrato, horas_extras, colacion, movilizacion, gratificacion, y bonos nombrados <code>bono_1_nombre</code>, <code>bono_1_monto</code>, <code>bono_1_imponible</code> (si/no), y así hasta N. Los trabajadores de esta lista viven en este navegador.
+          </p>
+          <div class="btn-row" style="margin: 12px 0 16px">
             <label class="btn btn-ghost" for="csvFile">Cargar CSV</label>
             <input id="csvFile" type="file" accept=".csv,text/csv" hidden />
             <a class="btn btn-ghost" href="ejemplos/trabajadores.csv" download>Descargar ejemplo</a>
@@ -190,7 +227,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           <div class="table-wrap" id="tablaTrabajadores"></div>
           <hr class="sep" />
           <form id="formAlta">
-            <h3>Alta</h3>
+            <h3 id="altaTitulo">Agregar trabajador</h3>
+            <input type="hidden" id="altaId" value="" />
             <div class="row">
               <div class="field">
                 <label for="altaNombre">Nombre</label>
@@ -208,114 +246,103 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
               </div>
               <div class="field">
                 <label for="altaSueldo">Sueldo base</label>
-                <input id="altaSueldo" type="number" min="0" step="1" value="1000000" />
+                <input id="altaSueldo" inputmode="numeric" min="0" value="1000000" />
               </div>
             </div>
             <div class="row">
               <div class="field">
-                <label for="altaAfp">AFP</label>
-                <select id="altaAfp">
-                  <option value="modelo" selected>Modelo</option>
-                  <option value="uno">Uno</option>
-                  <option value="planvital">PlanVital</option>
-                  <option value="habitat">Habitat</option>
-                  <option value="capital">Capital</option>
-                  <option value="cuprum">Cuprum</option>
-                  <option value="provida">Provida</option>
-                </select>
+                <span class="lbl">AFP</span>
+                <div id="altaAfpPick"></div>
               </div>
               <div class="field">
-                <label for="altaSalud">Salud</label>
-                <select id="altaSalud">
-                  <option value="fonasa" selected>Fonasa</option>
-                  <option value="isapre">Isapre</option>
-                </select>
+                <span class="lbl">Salud</span>
+                <div id="altaSaludPick"></div>
               </div>
             </div>
             <div class="row">
               <div class="field">
                 <label for="altaIsapre">Isapre pactado (pesos)</label>
-                <input id="altaIsapre" type="number" min="0" step="1" value="0" />
+                <input id="altaIsapre" inputmode="numeric" min="0" value="0" />
               </div>
               <div class="field">
-                <label for="altaContrato">Contrato</label>
-                <select id="altaContrato">
-                  <option value="indefinido" selected>Indefinido</option>
-                  <option value="plazo_fijo">Plazo fijo</option>
-                </select>
+                <span class="lbl">Contrato</span>
+                <div id="altaContratoPick"></div>
               </div>
             </div>
             <div class="row">
               <div class="field">
                 <label for="altaHoras">Horas extras (cantidad)</label>
-                <input id="altaHoras" type="number" min="0" step="0.5" value="0" />
+                <input id="altaHoras" inputmode="decimal" min="0" value="0" />
               </div>
               <div class="field">
                 <label for="altaJornada">Jornada semanal</label>
-                <input id="altaJornada" type="number" min="1" step="1" value="42" />
+                <input id="altaJornada" inputmode="numeric" min="1" value="42" />
               </div>
             </div>
             <div class="row">
               <div class="field">
                 <label for="altaColacion">Colación</label>
-                <input id="altaColacion" type="number" min="0" step="1" value="0" />
+                <input id="altaColacion" inputmode="numeric" min="0" value="0" />
               </div>
               <div class="field">
                 <label for="altaMov">Movilización</label>
-                <input id="altaMov" type="number" min="0" step="1" value="0" />
+                <input id="altaMov" inputmode="numeric" min="0" value="0" />
               </div>
             </div>
             <label class="check">
               <input id="altaGrat" type="checkbox" />
               Gratificación art. 50
             </label>
-            <p class="hint" style="margin-top: 12px">Haberes con nombre (bonos, asignación, etc.). Puede añadir o quitar líneas.</p>
+            <p class="hint" style="margin-top: 12px">Bonos con nombre. Imponible entra a la base (art. 41); no imponible no.</p>
             <div id="altaHaberes"></div>
             <button class="btn btn-ghost" type="button" id="btnAltaHaber">Añadir haber</button>
             <p class="error" id="errAlta" hidden></p>
-            <div class="actions" style="margin-top: 12px">
-              <button class="btn" type="submit">Agregar</button>
+            <div class="btn-row" style="margin-top: 12px">
+              <button class="btn" type="submit" id="btnAltaGuardar">Agregar</button>
+              <button class="btn btn-ghost" type="button" id="btnAltaCancelar" hidden>Cancelar edición</button>
             </div>
           </form>
-        </div>
+        </section>
 
-        <div class="panel" style="margin-top: 16px">
-          <h3>Emitir liquidación o finiquito</h3>
-          <p class="hint">Elija un trabajador, revise haberes y genere la vista previa en esta página. Imprimir usa esa vista (el navegador puede guardar como PDF). Descargar PDF pide al servidor un archivo con membrete.</p>
+        <section id="tab-documentos" class="panel" data-tab-panel="documentos" hidden>
+          <h3>Liquidación o finiquito</h3>
+          <p class="hint">Elija uno o varios trabajadores que compartan la misma causal y carta. La vista previa muestra al primero y lista al resto. Un PDF por persona; si hay varios, un solo archivo con todas las páginas.</p>
           <div class="field">
-            <label for="selTrabajador">Trabajador</label>
-            <select id="selTrabajador"></select>
+            <span class="lbl">Trabajadores</span>
+            <div id="pickTrabajadores"></div>
           </div>
+          <p class="hint" id="selResumen"></p>
           <div id="panelHaberesTrabajador" hidden>
-            <h3>Haberes de este trabajador</h3>
+            <h3>Haberes del primer seleccionado</h3>
+            <p class="hint">Puede ajustar números de este mes antes de emitir. Guardar actualiza la nómina de este navegador.</p>
             <div class="row">
               <div class="field">
                 <label for="emSueldo">Sueldo base</label>
-                <input id="emSueldo" type="number" min="0" step="1" />
+                <input id="emSueldo" inputmode="numeric" min="0" />
               </div>
               <div class="field">
                 <label for="emHoras">Horas extras (cantidad)</label>
-                <input id="emHoras" type="number" min="0" step="0.5" />
+                <input id="emHoras" inputmode="decimal" min="0" />
               </div>
             </div>
             <div class="row">
               <div class="field">
                 <label for="emColacion">Colación</label>
-                <input id="emColacion" type="number" min="0" step="1" />
+                <input id="emColacion" inputmode="numeric" min="0" />
               </div>
               <div class="field">
                 <label for="emMov">Movilización</label>
-                <input id="emMov" type="number" min="0" step="1" />
+                <input id="emMov" inputmode="numeric" min="0" />
               </div>
             </div>
             <div class="row">
               <div class="field">
                 <label for="emIsapre">Isapre pactado (pesos)</label>
-                <input id="emIsapre" type="number" min="0" step="1" />
+                <input id="emIsapre" inputmode="numeric" min="0" />
               </div>
               <div class="field">
                 <label for="emJornada">Jornada semanal</label>
-                <input id="emJornada" type="number" min="1" step="1" />
+                <input id="emJornada" inputmode="numeric" min="1" />
               </div>
             </div>
             <label class="check">
@@ -333,11 +360,11 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             <div>
               <h3>Liquidación</h3>
               <div class="field">
-                <label for="periodo">Periodo de remuneración</label>
-                <select id="periodo"></select>
+                <span class="lbl">Periodo de remuneración</span>
+                <div id="pickPeriodo"></div>
               </div>
               <p class="error" id="errPrint" hidden></p>
-              <div class="actions">
+              <div class="btn-row">
                 <button class="btn" type="button" id="btnLiquidacion">Ver liquidación</button>
                 <button class="btn btn-ghost" type="button" id="btnPdfLiquidacion">Descargar PDF</button>
               </div>
@@ -345,30 +372,22 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             <div>
               <h3>Carta de finiquito</h3>
               <div class="field">
-                <label for="finArt">Causal</label>
-                <select id="finArt"></select>
+                <span class="lbl">Causal</span>
+                <div id="pickCausal"></div>
               </div>
               <p class="hint" id="finCausalNota"></p>
               <div class="field">
-                <label>Fecha de ingreso</label>
-                <div class="date-selects">
-                  <select id="finIngresoD" aria-label="Día de ingreso"></select>
-                  <select id="finIngresoM" aria-label="Mes de ingreso"></select>
-                  <select id="finIngresoY" aria-label="Año de ingreso"></select>
-                </div>
+                <span class="lbl">Fecha de ingreso</span>
+                <div id="finIngreso"></div>
               </div>
               <div class="field">
-                <label>Fecha de término</label>
-                <div class="date-selects">
-                  <select id="finTerminoD" aria-label="Día de término"></select>
-                  <select id="finTerminoM" aria-label="Mes de término"></select>
-                  <select id="finTerminoY" aria-label="Año de término"></select>
-                </div>
+                <span class="lbl">Fecha de término</span>
+                <div id="finTermino"></div>
               </div>
               <div class="row">
                 <div class="field">
                   <label for="finDiasMes">Días del mes a pagar</label>
-                  <input id="finDiasMes" type="number" min="0" max="30" step="1" value="30" />
+                  <input id="finDiasMes" inputmode="numeric" min="0" max="30" value="30" />
                 </div>
                 <div class="field">
                   <label for="finCiudad">Ciudad</label>
@@ -378,16 +397,16 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
               <div class="row">
                 <div class="field">
                   <label for="finFeriadoPend">Feriado pendiente (días vencidos no tomados)</label>
-                  <input id="finFeriadoPend" type="number" min="0" step="0.5" value="0" />
+                  <input id="finFeriadoPend" inputmode="decimal" min="0" value="0" />
                 </div>
                 <div class="field">
                   <label for="finFeriadoProp">Feriado proporcional (días)</label>
-                  <input id="finFeriadoProp" type="number" min="0" step="0.5" value="0" />
+                  <input id="finFeriadoProp" inputmode="decimal" min="0" value="0" />
                 </div>
               </div>
               <div class="field">
                 <label for="finOtros">Otros haberes</label>
-                <input id="finOtros" type="number" min="0" step="1" value="0" />
+                <input id="finOtros" inputmode="numeric" min="0" value="0" />
               </div>
               <label class="check" id="wrapAviso">
                 <input id="finAviso" type="checkbox" />
@@ -395,13 +414,13 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
               </label>
               <p class="hint">La carta incluye membrete, causal con su texto legal y firmas de empleador, trabajador y dos testigos. No reemplaza la Inspección del Trabajo ni al ministro de fe.</p>
               <p class="error" id="errCarta" hidden></p>
-              <div class="actions">
+              <div class="btn-row">
                 <button class="btn" type="button" id="btnCarta">Ver carta de finiquito</button>
                 <button class="btn btn-ghost" type="button" id="btnPdfCarta">Descargar PDF</button>
               </div>
             </div>
           </div>
-        </div>
+        </section>
 
         <section id="panelPreview" class="panel doc-preview" hidden style="margin-top: 16px">
           <div class="toolbar">
@@ -412,6 +431,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             </div>
           </div>
           <p class="hint">Si una ventana emergente está bloqueada, el documento sigue aquí. Imprimir abre el diálogo del navegador sobre esta vista.</p>
+          <p class="preview-others" id="previewOtros" hidden></p>
           <iframe id="docPreviewFrame" class="doc-frame" title="Vista previa del documento"></iframe>
         </section>
       </section>
@@ -422,6 +442,10 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <div class="wrap">
       <div><strong>Haberes</strong> · empresa</div>
       <div class="footer-legal">
+        <a href="/como">Cómo funciona</a>
+        <span aria-hidden="true">·</span>
+        <a href="/precios">Precios</a>
+        <span aria-hidden="true">·</span>
         <a href="/privacidad">Privacidad</a>
         <span aria-hidden="true">·</span>
         <a href="/terminos">Términos</a>

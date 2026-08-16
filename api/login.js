@@ -32,7 +32,8 @@ export default async function handler(req, res) {
   try {
     const result = await withDb(async (client) => {
       const found = await client.query(
-        `SELECT id, rut, email, razon_social, password_hash, giro, direccion, logo_key, logo_content_type
+        `SELECT id, rut, email, razon_social, password_hash, giro, direccion, logo_key, logo_content_type,
+                firma_key, firma_content_type, disabled_at
          FROM companies
          WHERE rut = $1
          LIMIT 1`,
@@ -42,6 +43,9 @@ export default async function handler(req, res) {
       const ok = await verifyCompanyPassword(password, row?.password_hash);
       if (!ok || !row) {
         return { status: 401, payload: { ok: false, reason: "invalid_credentials" } };
+      }
+      if (row.disabled_at) {
+        return { status: 403, payload: { ok: false, reason: "disabled" } };
       }
       const session = await insertSession(client, row.id);
       return {

@@ -102,8 +102,15 @@ export function authErrorMessage(data, status) {
   }
   if (reason === "unauthorized" || status === 401) return "Entre con su cuenta de empresa.";
   if (reason === "too_large" || status === 413) return "El archivo supera el límite de 1,5 MB.";
-  if (reason === "invalid_type") return "El logo debe ser PNG, JPG o WebP.";
+  if (reason === "invalid_type") return "La imagen debe ser PNG, JPG o WebP.";
   if (reason === "no_logo" || status === 404) return "Esta cuenta aún no tiene logo.";
+  if (reason === "no_firma") return "Esta cuenta aún no tiene firma.";
+  if (reason === "disabled") {
+    return "Esta cuenta está deshabilitada.";
+  }
+  if (reason === "admin_unavailable") {
+    return "El acceso de administración no está configurado.";
+  }
   if (reason === "conflict") return "Ya existe una cuenta con ese RUT o correo.";
   if (reason === "invalid_payload") {
     return "Revise RUT, correo y clave (mínimo 10 caracteres).";

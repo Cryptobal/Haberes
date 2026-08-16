@@ -57,7 +57,7 @@ ${inner}
 </html>`;
 }
 
-export function liquidacionHtml({ empresa, trabajador, periodo, calc, logoSrc = "" }) {
+export function liquidacionHtml({ empresa, trabajador, periodo, calc, logoSrc = "", firmaSrc = "" }) {
   const haberesRows = calc.haberes
     .map(
       (l) =>
@@ -98,6 +98,13 @@ export function liquidacionHtml({ empresa, trabajador, periodo, calc, logoSrc = 
     </table>
   </div>
   <div class="liq"><span>Líquido a pago</span><strong>${clp(calc.liquido)}</strong></div>
+  <div class="firmas">
+    <div class="firma">
+      ${firmaSrc ? `<img class="firma-img" src="${esc(firmaSrc)}" alt="Firma del representante legal" />` : ""}
+      Empleador<br />${esc(empresa?.razonSocial || "")}
+    </div>
+    <div class="firma">Trabajador<br />${esc(trabajador?.nombre || "")}</div>
+  </div>
   <p class="disc">${esc(DISCLAIMER)}</p>`;
 
   return docShell("Liquidación de sueldo", inner, {
@@ -105,11 +112,14 @@ export function liquidacionHtml({ empresa, trabajador, periodo, calc, logoSrc = 
     .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
     .meta { margin: 0 0 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 6px 24px; }
     .liq { margin-top: 18px; background: #12382c; color: #f6f4ef; padding: 12px 14px; display: flex; justify-content: space-between; }
+    .firmas { display: grid; grid-template-columns: 1fr 1fr; gap: 48px 32px; margin-top: 36px; }
+    .firma { border-top: 1px solid #12382c; padding-top: 8px; text-align: center; font-size: 12px; }
+    .firma-img { display: block; max-height: 48px; max-width: 160px; margin: 0 auto 8px; object-fit: contain; }
     `,
   });
 }
 
-export function cartaFiniquitoHtml({ empresa, trabajador, fin, ciudad = "Santiago", logoSrc = "" }) {
+export function cartaFiniquitoHtml({ empresa, trabajador, fin, ciudad = "Santiago", logoSrc = "", firmaSrc = "" }) {
   const partidas = Array.isArray(fin.partidas) && fin.partidas.length
     ? fin.partidas
     : [
@@ -154,7 +164,10 @@ export function cartaFiniquitoHtml({ empresa, trabajador, fin, ciudad = "Santiag
     cotizaciones previsionales.
   </p>
   <div class="firmas">
-    <div class="firma">Empleador<br />${esc(empresa?.razonSocial || "")}</div>
+    <div class="firma">
+      ${firmaSrc ? `<img class="firma-img" src="${esc(firmaSrc)}" alt="Firma del representante legal" />` : ""}
+      Empleador<br />${esc(empresa?.razonSocial || "")}
+    </div>
     <div class="firma">Trabajador<br />${esc(trabajador?.nombre || "")}</div>
     <div class="firma">Testigo</div>
     <div class="firma">Testigo</div>
@@ -166,6 +179,7 @@ export function cartaFiniquitoHtml({ empresa, trabajador, fin, ciudad = "Santiag
     body { font-size: 13px; line-height: 1.55; }
     .firmas { display: grid; grid-template-columns: 1fr 1fr; gap: 48px 32px; margin-top: 48px; }
     .firma { border-top: 1px solid #12382c; padding-top: 8px; text-align: center; font-size: 12px; }
+    .firma-img { display: block; max-height: 48px; max-width: 160px; margin: 0 auto 8px; object-fit: contain; }
     .disc { border-top: 1px solid #d8d4cc; padding-top: 12px; }
     `,
   });

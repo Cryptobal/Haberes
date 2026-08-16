@@ -61,6 +61,19 @@ CREATE TABLE IF NOT EXISTS documentos (
 CREATE INDEX IF NOT EXISTS documentos_company_id_idx ON documentos (company_id);
 `;
 
+const INLINE_SCHEMA_003 = `
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS disabled_at TIMESTAMPTZ;
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS firma_key TEXT;
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS firma_content_type TEXT;
+CREATE TABLE IF NOT EXISTS admin_sessions (
+  id TEXT PRIMARY KEY,
+  email TEXT NOT NULL,
+  token_hash TEXT NOT NULL UNIQUE,
+  expires_at TIMESTAMPTZ NOT NULL
+);
+CREATE INDEX IF NOT EXISTS admin_sessions_token_hash_idx ON admin_sessions (token_hash);
+`;
+
 let schemaReady = false;
 let dummyHashPromise = null;
 const rateHits = new Map();
@@ -80,6 +93,9 @@ export function migrateDatabaseUrl() {
 export function json(res, status, payload) {
   res.setHeader?.("Content-Type", "application/json; charset=utf-8");
   res.setHeader?.("Cache-Control", "no-store");
+  res.setHeader?.("X-Content-Type-Options", "nosniff");
+  res.setHeader?.("Referrer-Policy", "no-referrer");
+  res.setHeader?.("X-Frame-Options", "DENY");
   return res.status(status).json(payload);
 }
 
@@ -94,6 +110,9 @@ export function noStorage(res) {
 export function sendBytes(res, status, body, contentType, filename) {
   res.setHeader?.("Content-Type", contentType || "application/octet-stream");
   res.setHeader?.("Cache-Control", "private, no-store");
+  res.setHeader?.("X-Content-Type-Options", "nosniff");
+  res.setHeader?.("X-Frame-Options", "DENY");
+  res.setHeader?.("Referrer-Policy", "no-referrer");
   if (filename) {
     res.setHeader?.(
       "Content-Disposition",
@@ -275,6 +294,7 @@ async function ensureSchema() {
   try {
     await client.query(loadSchemaFile("001.sql", INLINE_SCHEMA));
     await client.query(loadSchemaFile("002.sql", INLINE_SCHEMA_002));
+    await client.query(loadSchemaFile("003.sql", INLINE_SCHEMA_003));
     schemaReady = true;
     return true;
   } finally {
@@ -306,6 +326,7 @@ export function companyPublic(row) {
     giro: row.giro || "",
     direccion: row.direccion || "",
     hasLogo: Boolean(row.logo_key),
+    hasFirma: Boolean(row.firma_key),
   };
 }
 
@@ -339,13 +360,19 @@ export function clearSessionCookie(res) {
   );
 }
 
-export function readSessionToken(req) {
+export function readSessionTokenNamed(req, cookieName) {
   const raw = String(req?.headers?.cookie || "");
+  const name = String(cookieName || "");
+  if (!name) return "";
   for (const part of raw.split(";")) {
     const [k, ...rest] = part.trim().split("=");
-    if (k === SESSION_COOKIE) return rest.join("=").trim();
+    if (k === name) return rest.join("=").trim();
   }
   return "";
+}
+
+export function readSessionToken(req) {
+  return readSessionTokenNamed(req, SESSION_COOKIE);
 }
 
 export async function loadSessionCompany(client, token) {
@@ -353,7 +380,7 @@ export async function loadSessionCompany(client, token) {
   const tokenHash = hashToken(token);
   const found = await client.query(
     `SELECT c.id, c.rut, c.email, c.razon_social, c.giro, c.direccion, c.logo_key, c.logo_content_type,
-            s.id AS session_id
+            c.firma_key, c.firma_content_type, c.disabled_at, s.id AS session_id
      FROM sessions s
      JOIN companies c ON c.id = s.company_id
      WHERE s.token_hash = $1 AND s.expires_at > NOW()
@@ -385,6 +412,10 @@ export async function requireCompany(req, res) {
     }
     if (!row) {
       json(res, 401, { ok: false, reason: "unauthorized" });
+      return null;
+    }
+    if (row.disabled_at) {
+      json(res, 403, { ok: false, reason: "disabled" });
       return null;
     }
     return row;

@@ -3,7 +3,7 @@ import { FALLBACK_UF, UF_MAX, UF_MIN } from "../js/constants.js";
 import { calcularFiniquitoCompleto } from "../js/finiquito.js";
 import { calcularSueldo } from "../js/sueldo.js";
 import { json, newId, noStorage, requireCompany, sendBytes, withDb } from "./_lib.js";
-import { buildFiniquitoPdf, buildLiquidacionPdf } from "./_pdf.js";
+import { buildFiniquitoPdf, buildLiquidacionPdf, mergePdfs } from "./_pdf.js";
 import { hasR2, r2Get, r2Put } from "./_r2.js";
 
 function parseUf(raw) {
@@ -35,12 +35,12 @@ function queryId(req) {
   }
 }
 
-async function logoBytes(company) {
-  if (!company.logo_key || !hasR2()) return { bytes: null, type: "" };
+async function assetBytes(company, keyField, typeField) {
+  if (!company[keyField] || !hasR2()) return { bytes: null, type: "" };
   try {
-    const got = await r2Get(company.logo_key);
+    const got = await r2Get(company[keyField]);
     if (!got.ok) return { bytes: null, type: "" };
-    return { bytes: got.body, type: company.logo_content_type || got.contentType || "" };
+    return { bytes: got.body, type: company[typeField] || got.contentType || "" };
   } catch {
     return { bytes: null, type: "" };
   }
@@ -118,54 +118,72 @@ export default async function handler(req, res) {
   if (tipo !== "liquidacion" && tipo !== "finiquito") {
     return json(res, 400, { ok: false, reason: "invalid_payload" });
   }
-  const trabajador = workerFromBody(body.trabajador);
-  if (!trabajador.nombre) return json(res, 400, { ok: false, reason: "invalid_payload" });
+  const rawList = Array.isArray(body.trabajadores) && body.trabajadores.length
+    ? body.trabajadores
+    : body.trabajador
+      ? [body.trabajador]
+      : [];
+  const trabajadores = rawList.map(workerFromBody).filter((t) => t.nombre);
+  if (!trabajadores.length) return json(res, 400, { ok: false, reason: "invalid_payload" });
   const uf = parseUf(body.uf);
   const empresa = companyFromRow(companyRow);
-  const logo = await logoBytes(companyRow);
+  const logo = await assetBytes(companyRow, "logo_key", "logo_content_type");
+  const firma = await assetBytes(companyRow, "firma_key", "firma_content_type");
 
   let pdf;
   try {
-    if (tipo === "liquidacion") {
-      const calc = calcularSueldo(trabajador, { uf });
-      const periodo = periodoLabel(body.periodo) || String(body.periodo || "");
-      pdf = await buildLiquidacionPdf({
-        empresa,
-        trabajador,
-        periodo,
-        calc,
-        logoBytes: logo.bytes,
-        logoType: logo.type,
-      });
-    } else {
-      const fin = calcularFiniquitoCompleto(
-        {
-          ...trabajador,
-          remuneracion: trabajador.sueldoBase,
-          causal: body.causal,
-          ingreso: trabajador.ingreso || body.ingreso,
-          termino: trabajador.termino || body.termino,
-          diasMes: body.diasMes,
-          diasFeriadoPendiente: body.diasFeriadoPendiente,
-          diasFeriadoProporcional: body.diasFeriadoProporcional,
-          avisoPrevio: body.avisoPrevio,
-          otros: body.otros,
-        },
-        { uf },
-      );
-      pdf = await buildFiniquitoPdf({
-        empresa,
-        trabajador: {
-          ...trabajador,
-          ingreso: trabajador.ingreso || body.ingreso,
-          termino: trabajador.termino || body.termino,
-        },
-        fin,
-        ciudad: String(body.ciudad || "Santiago").slice(0, 80),
-        logoBytes: logo.bytes,
-        logoType: logo.type,
-      });
+    const buffers = [];
+    for (const trabajador of trabajadores) {
+      if (tipo === "liquidacion") {
+        const calc = calcularSueldo(trabajador, { uf });
+        const periodo = periodoLabel(body.periodo) || String(body.periodo || "");
+        buffers.push(
+          await buildLiquidacionPdf({
+            empresa,
+            trabajador,
+            periodo,
+            calc,
+            logoBytes: logo.bytes,
+            logoType: logo.type,
+            firmaBytes: firma.bytes,
+            firmaType: firma.type,
+          }),
+        );
+      } else {
+        const fin = calcularFiniquitoCompleto(
+          {
+            ...trabajador,
+            remuneracion: trabajador.sueldoBase,
+            causal: body.causal,
+            ingreso: trabajador.ingreso || body.ingreso,
+            termino: trabajador.termino || body.termino,
+            diasMes: body.diasMes,
+            diasFeriadoPendiente: body.diasFeriadoPendiente,
+            diasFeriadoProporcional: body.diasFeriadoProporcional,
+            avisoPrevio: body.avisoPrevio,
+            otros: body.otros,
+          },
+          { uf },
+        );
+        buffers.push(
+          await buildFiniquitoPdf({
+            empresa,
+            trabajador: {
+              ...trabajador,
+              ingreso: trabajador.ingreso || body.ingreso,
+              termino: trabajador.termino || body.termino,
+            },
+            fin,
+            ciudad: String(body.ciudad || "Santiago").slice(0, 80),
+            logoBytes: logo.bytes,
+            logoType: logo.type,
+            firmaBytes: firma.bytes,
+            firmaType: firma.type,
+          }),
+        );
+      }
     }
+    pdf = await mergePdfs(buffers);
   } catch {
     return json(res, 400, { ok: false, reason: "invalid_payload" });
   }
@@ -186,6 +204,13 @@ export default async function handler(req, res) {
     return json(res, 502, { ok: false, reason: "storage_error" });
   }
 
-  const filename = tipo === "liquidacion" ? "liquidacion.pdf" : "finiquito.pdf";
+  const filename =
+    trabajadores.length > 1
+      ? tipo === "liquidacion"
+        ? "liquidaciones.pdf"
+        : "finiquitos.pdf"
+      : tipo === "liquidacion"
+        ? "liquidacion.pdf"
+        : "finiquito.pdf";
   return sendBytes(res, 200, pdf, "application/pdf", filename);
 }

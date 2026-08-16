@@ -101,7 +101,7 @@ export async function entrarEmpresa({ rut, clave }) {
   return emp;
 }
 
-export function ensureLocalEmpresa({ rut, email, razonSocial, giro, direccion, hasLogo }) {
+export function ensureLocalEmpresa({ rut, email, razonSocial, giro, direccion, hasLogo, hasFirma }) {
   const id = normalizeRut(rut);
   if (!id) throw new Error("RUT inválido");
   const db = loadDb();
@@ -114,6 +114,7 @@ export function ensureLocalEmpresa({ rut, email, razonSocial, giro, direccion, h
     giro: String(giro ?? prev.giro ?? "").trim(),
     direccion: String(direccion ?? prev.direccion ?? "").trim(),
     hasLogo: hasLogo == null ? Boolean(prev.hasLogo) : Boolean(hasLogo),
+    hasFirma: hasFirma == null ? Boolean(prev.hasFirma) : Boolean(hasFirma),
     claveHash: prev.claveHash || "",
     trabajadores: prev.trabajadores || [],
     createdAt: prev.createdAt || new Date().toISOString(),
@@ -178,6 +179,12 @@ export function updateTrabajador(emp, id, patch) {
   if (idx < 0) return emp;
   list[idx] = { ...list[idx], ...patch, id: list[idx].id };
   emp.trabajadores = list;
+  guardarEmpresa(emp);
+  return emp;
+}
+
+export function deleteTrabajador(emp, id) {
+  emp.trabajadores = (emp.trabajadores || []).filter((t) => t.id !== id);
   guardarEmpresa(emp);
   return emp;
 }

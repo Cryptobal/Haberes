@@ -67,9 +67,35 @@ function truthy(v) {
   return k === "1" || k === "si" || k === "sí" || k === "true" || k === "yes";
 }
 
+function parseNamedBonos(rec) {
+  const byN = new Map();
+  for (const [key, val] of Object.entries(rec)) {
+    const m = String(key).match(/^bono_(\d+)_(nombre|monto|imponible)$/);
+    if (!m) continue;
+    const n = Number(m[1]);
+    const field = m[2];
+    if (!byN.has(n)) byN.set(n, { nombre: "", monto: 0, imponible: true });
+    const row = byN.get(n);
+    if (field === "nombre") row.nombre = String(val || "").trim();
+    if (field === "monto") row.monto = parseNumber(val);
+    if (field === "imponible") {
+      row.imponible = val == null || String(val).trim() === "" ? true : truthy(val);
+    }
+  }
+  const named = [...byN.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .map(([, row]) => row)
+    .filter((row) => row.nombre || row.monto);
+  if (named.length) return named;
+  const legacy = parseNumber(rec.bonos || rec.bono || 0);
+  if (legacy) return [{ nombre: "Bonos", monto: legacy, imponible: true }];
+  return [];
+}
+
 /**
- * CSV esperado:
- * nombre,rut,cargo,sueldo_base,afp,salud,plan_isapre,contrato,horas_extras,bonos,colacion,movilizacion,gratificacion
+ * CSV: nombre, rut, cargo, sueldo_base, afp, salud, plan_isapre, contrato,
+ * horas_extras, colacion, movilizacion, gratificacion,
+ * bono_N_nombre, bono_N_monto, bono_N_imponible (N = 1, 2, …)
  */
 export function parseTrabajadoresCsv(text) {
   const lines = String(text || "")
@@ -89,6 +115,7 @@ export function parseTrabajadoresCsv(text) {
     });
     const nombre = rec.nombre || rec.nombre_completo || rec.trabajador || "";
     if (!nombre && !rec.rut) continue;
+    const haberesExtra = parseNamedBonos(rec);
     rows.push({
       id: `t_${Date.now()}_${i}_${Math.random().toString(16).slice(2, 8)}`,
       nombre: String(nombre).trim(),
@@ -100,19 +127,19 @@ export function parseTrabajadoresCsv(text) {
       isaprePactado: parseNumber(rec.plan_isapre || rec.isapre || rec.pactado || 0),
       contrato: mapContrato(rec.contrato || rec.tipo_contrato),
       horasExtras: parseNumber(rec.horas_extras || rec.he || 0),
-      bonos: parseNumber(rec.bonos || rec.bono || 0),
+      bonos: 0,
+      haberesExtra,
       colacion: parseNumber(rec.colacion || 0),
       movilizacion: parseNumber(rec.movilizacion || 0),
-      gratificacionArt50: rec.gratificacion == null || rec.gratificacion === ""
-        ? false
-        : truthy(rec.gratificacion),
+      gratificacionArt50:
+        rec.gratificacion == null || rec.gratificacion === "" ? false : truthy(rec.gratificacion),
       jornada: parseNumber(rec.jornada) || 42,
     });
   }
   return rows;
 }
 
-export const CSV_EJEMPLO = `nombre,rut,cargo,sueldo_base,afp,salud,plan_isapre,contrato,horas_extras,bonos,colacion,movilizacion,gratificacion
-Ana Pérez,12.345.678-5,Administradora,1000000,modelo,fonasa,0,indefinido,0,0,50000,40000,no
-Luis Soto,9.876.543-3,Operario,800000,habitat,fonasa,0,plazo_fijo,8,30000,40000,35000,si
+export const CSV_EJEMPLO = `nombre,rut,cargo,sueldo_base,afp,salud,plan_isapre,contrato,horas_extras,colacion,movilizacion,gratificacion,bono_1_nombre,bono_1_monto,bono_1_imponible,bono_2_nombre,bono_2_monto,bono_2_imponible
+Ana Pérez,12.345.678-5,Administradora,1000000,modelo,fonasa,0,indefinido,0,50000,40000,no,Bono producción,80000,si,Colación extra,15000,no
+Luis Soto,9.876.543-3,Operario,800000,habitat,fonasa,0,plazo_fijo,8,40000,35000,si,Bono asistencia,30000,si,Movilización extra,12000,no
 `;

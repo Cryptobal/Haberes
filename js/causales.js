@@ -252,6 +252,14 @@ export function articuloDeCausal(id) {
   return causalPorId(id)?.articulo || "161";
 }
 
+export function opcionesCausalPicker() {
+  return CAUSALES.map((c) => ({
+    value: c.id,
+    label: c.label,
+    group: `Artículo ${c.articulo}`,
+  }));
+}
+
 export function opcionesCausalHtml(selected = "161-necesidades") {
   const groups = [
     { art: "159", label: "Artículo 159" },

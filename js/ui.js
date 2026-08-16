@@ -1,6 +1,8 @@
 import { DISCLAIMER } from "./constants.js";
 import { clp, fechaLarga, ufFmt } from "./format.js";
 import { getIndicadores } from "./indicadores.js";
+import { createPicker } from "./picker.js";
+import { wireThemeToggle } from "./theme.js";
 
 export function wireNav() {
   const path = (location.pathname.replace(/\.html$/, "") || "/").replace(/\/$/, "") || "/";
@@ -11,6 +13,7 @@ export function wireNav() {
       a.setAttribute("aria-current", "page");
     }
   });
+  wireThemeToggle();
 }
 
 export async function mountIndicadores() {
@@ -165,4 +168,122 @@ export function diasDelMesHasta(iso) {
   const m = String(iso || "").match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (!m) return 30;
   return Math.min(30, Math.max(1, Number(m[3])));
+}
+
+export function periodoItems(months = 36) {
+  const now = new Date();
+  const items = [];
+  for (let i = 0; i < months; i += 1) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const value = `${d.getFullYear()}-${pad2(d.getMonth() + 1)}`;
+    items.push({
+      value,
+      label: `${MESES_ES[d.getMonth()]} ${d.getFullYear()}`,
+    });
+  }
+  return items;
+}
+
+export function createDateFields(root, { value, onChange } = {}) {
+  if (!root) return null;
+  root.classList.add("date-selects");
+  root.innerHTML = `<div data-pick-d></div><div data-pick-m></div><div data-pick-y></div>`;
+  const now = new Date();
+  const m = String(value || "").match(/^(\d{4})-(\d{2})-(\d{2})/);
+  let y = m ? m[1] : String(now.getFullYear());
+  let mo = m ? m[2] : pad2(now.getMonth() + 1);
+  let d = m ? m[3] : pad2(now.getDate());
+
+  const days = Array.from({ length: 31 }, (_, i) => ({ value: pad2(i + 1), label: String(i + 1) }));
+  const months = MESES_ES.map((nombre, i) => ({ value: pad2(i + 1), label: nombre }));
+  const years = [];
+  const end = now.getFullYear() + 1;
+  for (let yr = end; yr >= 1980; yr -= 1) years.push({ value: String(yr), label: String(yr) });
+
+  function iso() {
+    const dt = new Date(`${y}-${mo}-${d}T12:00:00`);
+    if (Number.isNaN(dt.getTime())) return "";
+    if (dt.getMonth() + 1 !== Number(mo)) return "";
+    return `${y}-${mo}-${d}`;
+  }
+
+  function emit() {
+    onChange?.(iso());
+  }
+
+  const pd = createPicker(root.querySelector("[data-pick-d]"), {
+    options: days,
+    value: d,
+    searchable: false,
+    placeholder: "Día",
+    onChange: (v) => {
+      d = v;
+      emit();
+    },
+  });
+  const pm = createPicker(root.querySelector("[data-pick-m]"), {
+    options: months,
+    value: mo,
+    searchable: true,
+    placeholder: "Mes",
+    onChange: (v) => {
+      mo = v;
+      emit();
+    },
+  });
+  const py = createPicker(root.querySelector("[data-pick-y]"), {
+    options: years,
+    value: y,
+    searchable: true,
+    placeholder: "Año",
+    onChange: (v) => {
+      y = v;
+      emit();
+    },
+  });
+
+  return {
+    getValue: iso,
+    setValue(next) {
+      const mm = String(next || "").match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (!mm) return;
+      y = mm[1];
+      mo = mm[2];
+      d = mm[3];
+      pd.setValue(d);
+      pm.setValue(mo);
+      py.setValue(y);
+    },
+  };
+}
+
+export function confirmDialog({ text, okLabel = "Confirmar", cancelLabel = "Cancelar" }) {
+  return new Promise((resolve) => {
+    const overlay = document.createElement("div");
+    overlay.className = "modal";
+    overlay.setAttribute("role", "dialog");
+    overlay.setAttribute("aria-modal", "true");
+    overlay.innerHTML = `
+      <div class="modal-card">
+        <p class="modal-text">${String(text || "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")}</p>
+        <div class="actions">
+          <button type="button" class="btn btn-danger" data-ok>${okLabel}</button>
+          <button type="button" class="btn btn-ghost" data-cancel>${cancelLabel}</button>
+        </div>
+      </div>`;
+    function close(val) {
+      overlay.remove();
+      resolve(val);
+    }
+    overlay.querySelector("[data-ok]").addEventListener("click", () => close(true));
+    overlay.querySelector("[data-cancel]").addEventListener("click", () => close(false));
+    overlay.addEventListener("click", (ev) => {
+      if (ev.target === overlay) close(false);
+    });
+    document.body.appendChild(overlay);
+    overlay.querySelector("[data-cancel]").focus();
+  });
 }

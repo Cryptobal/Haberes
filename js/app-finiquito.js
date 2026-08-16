@@ -1,20 +1,20 @@
-import { articuloDeCausal, causalPorId, opcionesCausalHtml } from "./causales.js";
+import { causalPorId, opcionesCausalPicker } from "./causales.js";
 import { clp } from "./format.js";
 import { calcularFiniquito } from "./finiquito.js";
-import { el, mountIndicadores, numVal, val, wireNav } from "./ui.js";
+import { createPicker } from "./picker.js";
+import { createDateFields, el, mountIndicadores, numVal, wireNav } from "./ui.js";
 
 let indicadores = { uf: 40854.01 };
-
-if (el("articulo")) {
-  el("articulo").innerHTML = opcionesCausalHtml("161-necesidades");
-}
+let causalPick = null;
+let ingresoPick = null;
+let terminoPick = null;
 
 function leer() {
   return {
-    articulo: articuloDeCausal(val("articulo")),
-    causal: val("articulo"),
-    ingreso: val("ingreso"),
-    termino: val("termino"),
+    articulo: causalPorId(causalPick?.getValue())?.articulo || "161",
+    causal: causalPick?.getValue(),
+    ingreso: ingresoPick?.getValue() || "",
+    termino: terminoPick?.getValue() || "",
     remuneracion: numVal("remuneracion"),
     avisoPrevio: el("avisoPrevio")?.checked,
     diasFeriado: numVal("diasFeriado"),
@@ -29,7 +29,7 @@ function render(fin) {
   el("outFeriado").textContent = clp(fin.feriado);
   el("outAnios").textContent = String(fin.anios);
   const nota = el("notaArticulo");
-  const causal = causalPorId(val("articulo"));
+  const causal = causalPorId(causalPick?.getValue());
   if (causal?.aplicaIas) {
     nota.textContent =
       `${causal.label}. Incluye indemnización por años de servicio (tope 11) e indemnización sustitutiva de aviso si no hubo aviso previo. Esta calculadora pública no desglosa remuneración del mes ni feriado pendiente: eso está en Para mi empresa.`;
@@ -44,6 +44,16 @@ function recalc() {
 }
 
 wireNav();
+causalPick = createPicker(el("pickCausal"), {
+  options: opcionesCausalPicker(),
+  value: "161-necesidades",
+  searchable: true,
+  placeholder: "Causal",
+  onChange: recalc,
+});
+ingresoPick = createDateFields(el("pickIngreso"), { value: "2020-01-15", onChange: recalc });
+terminoPick = createDateFields(el("pickTermino"), { value: "2023-08-20", onChange: recalc });
+
 document.getElementById("formFiniquito")?.addEventListener("input", recalc);
 document.getElementById("formFiniquito")?.addEventListener("change", recalc);
 recalc();
