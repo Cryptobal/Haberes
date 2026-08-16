@@ -62,7 +62,18 @@ export function calcularSueldo(input = {}, indicadores = {}) {
   const sueldoBase = Number(input.sueldoBase) || 0;
   const jornada = Number(input.jornada) || JORNADA_DEFAULT;
   const horasExtras = Number(input.horasExtras) || 0;
-  const bonos = Number(input.bonos) || 0;
+  const named = Array.isArray(input.haberesExtra)
+    ? input.haberesExtra
+        .map((h) => ({
+          nombre: String(h.nombre || h.label || "Haber").trim() || "Haber",
+          monto: roundPeso(h.monto),
+          imponible: h.imponible !== false,
+        }))
+        .filter((h) => h.monto !== 0)
+    : [];
+  const bonos = named.length ? 0 : roundPeso(input.bonos || 0);
+  const extraImp = named.filter((h) => h.imponible).reduce((s, h) => s + h.monto, 0) + bonos;
+  const extraNoImpNamed = named.filter((h) => !h.imponible).reduce((s, h) => s + h.monto, 0);
   const otrosImponibles = Number(input.otrosImponibles) || 0;
   const colacion = Number(input.colacion) || 0;
   const movilizacion = Number(input.movilizacion) || 0;
@@ -78,13 +89,13 @@ export function calcularSueldo(input = {}, indicadores = {}) {
   const vHora = valorHoraExtra(sueldoBase, jornada);
   const montoHorasExtras = roundPeso(vHora * horasExtras);
   const gratificacion = usaGratificacion
-    ? roundPeso(gratificacionArt50(sueldoBase, montoHorasExtras, bonos))
+    ? roundPeso(gratificacionArt50(sueldoBase, montoHorasExtras, extraImp))
     : 0;
 
   const imponible = roundPeso(
-    sueldoBase + montoHorasExtras + bonos + gratificacion + otrosImponibles,
+    sueldoBase + montoHorasExtras + extraImp + gratificacion + otrosImponibles,
   );
-  const noImponible = roundPeso(colacion + movilizacion + otrosNoImponibles);
+  const noImponible = roundPeso(colacion + movilizacion + otrosNoImponibles + extraNoImpNamed);
 
   const topeAfpSalud = TOPE_AFP_SALUD_UF * uf;
   const topeCesantia = TOPE_CESANTIA_UF * uf;
@@ -104,10 +115,17 @@ export function calcularSueldo(input = {}, indicadores = {}) {
   const baseTributable = Math.max(0, imponible - afpMonto - saludMonto - cesantiaMonto);
   const iusc = calcularIusc(baseTributable);
 
+  const namedLines = named.map((h, i) => ({
+    key: `haber-${i}`,
+    label: h.nombre,
+    monto: h.monto,
+    imponible: h.imponible,
+  }));
   const haberes = [
     { key: "sueldoBase", label: "Sueldo base", monto: roundPeso(sueldoBase), imponible: true },
     { key: "horasExtras", label: "Horas extras", monto: montoHorasExtras, imponible: true },
     { key: "bonos", label: "Bonos", monto: roundPeso(bonos), imponible: true },
+    ...namedLines,
     { key: "gratificacion", label: "Gratificación art. 50", monto: gratificacion, imponible: true },
     { key: "otrosImponibles", label: "Otros imponibles", monto: roundPeso(otrosImponibles), imponible: true },
     { key: "colacion", label: "Colación (art. 41)", monto: roundPeso(colacion), imponible: false },
@@ -137,7 +155,7 @@ export function calcularSueldo(input = {}, indicadores = {}) {
     horasExtras,
     valorHoraExtra: vHora,
     montoHorasExtras,
-    bonos: roundPeso(bonos),
+    bonos: extraImp,
     gratificacion,
     imponible,
     noImponible,

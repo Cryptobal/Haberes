@@ -19,8 +19,15 @@ import {
   TOPE_AFP_SALUD_UF,
   TOPE_CESANTIA_UF,
 } from "../js/constants.js";
+import { CAUSALES, causalPorId } from "../js/causales.js";
 import { parseTrabajadoresCsv } from "../js/csv.js";
-import { aniosServicio, calcularFiniquito, feriadoProporcional } from "../js/finiquito.js";
+import {
+  aniosServicio,
+  calcularFiniquito,
+  calcularFiniquitoCompleto,
+  feriadoProporcional,
+  vigenciaUnAnioOMas,
+} from "../js/finiquito.js";
 import {
   calcularIusc,
   calcularSueldo,
@@ -233,6 +240,123 @@ assert(
   String(alto.baseIas),
 );
 
+console.log("\nCausales del Código del Trabajo");
+const ids159 = CAUSALES.filter((c) => c.articulo === "159").map((c) => c.letra);
+assert("Art. 159 letras a–f", ids159.join(",") === "a,b,c,d,e,f", ids159.join(","));
+assert(
+  "Art. 160 numerales y letras",
+  CAUSALES.filter((c) => c.articulo === "160").length === 13 &&
+    CAUSALES.some((c) => c.id === "160-1-a") &&
+    CAUSALES.some((c) => c.id === "160-1-f") &&
+    CAUSALES.some((c) => c.id === "160-4-b") &&
+    CAUSALES.some((c) => c.id === "160-7"),
+);
+assert(
+  "Art. 161 necesidades y desahucio",
+  Boolean(causalPorId("161-necesidades")?.aplicaIas) &&
+    Boolean(causalPorId("161-desahucio")?.aplicaAviso) &&
+    causalPorId("159-a")?.aplicaIas === false &&
+    causalPorId("160-7")?.aplicaAviso === false,
+);
+assert(
+  "No hay causales inventadas fuera de 159/160/161",
+  CAUSALES.every((c) => c.articulo === "159" || c.articulo === "160" || c.articulo === "161"),
+);
+assert("21 causales oficiales", CAUSALES.length === 21, String(CAUSALES.length));
+
+console.log("\nFiniquito completo (empresa)");
+assert("Un año o más: 12 meses", vigenciaUnAnioOMas("2020-01-15", "2021-01-15") === true);
+assert("Menos de un año: 8 meses", vigenciaUnAnioOMas("2020-01-15", "2020-09-15") === false);
+
+const full161 = calcularFiniquitoCompleto(
+  {
+    causal: "161-necesidades",
+    ingreso: "2020-01-15",
+    termino: "2023-08-20",
+    remuneracion: 1_000_000,
+    diasMes: 20,
+    gratificacionArt50: true,
+    diasFeriadoPendiente: 5,
+    diasFeriadoProporcional: 10,
+    avisoPrevio: false,
+  },
+  { uf: FALLBACK_UF },
+);
+assert(
+  "Remuneración del mes 20/30",
+  full161.remuneracionMes === Math.round((1_000_000 * 20) / 30),
+  String(full161.remuneracionMes),
+);
+assert(
+  "Gratificación proporcional usa tope art. 50",
+  full161.gratMensual === GRATIFICACION_TOPE &&
+    full161.gratificacionMes === Math.round((GRATIFICACION_TOPE * 20) / 30),
+  String(full161.gratificacionMes),
+);
+assert(
+  "Partidas obligatorias presentes",
+  ["remuneracionMes", "gratificacion", "feriadoPendiente", "feriadoProporcional", "ias", "aviso"].every((k) =>
+    full161.partidas.some((p) => p.key === k),
+  ),
+);
+assert("Art. 161 completo incluye IAS y aviso", full161.ias > 0 && full161.aviso > 0);
+assert("Feriado pendiente distinto del proporcional", full161.feriadoPendiente > 0 && full161.feriadoProporcional > 0);
+
+const full159 = calcularFiniquitoCompleto(
+  {
+    causal: "159-b",
+    ingreso: "2020-01-15",
+    termino: "2023-08-20",
+    remuneracion: 1_000_000,
+    diasMes: 30,
+    diasFeriadoPendiente: 2,
+    diasFeriadoProporcional: 3,
+    avisoPrevio: false,
+  },
+  { uf: FALLBACK_UF },
+);
+assert("Renuncia 159-b sin IAS ni aviso", full159.ias === 0 && full159.aviso === 0 && full159.feriadoPendiente > 0);
+
+const fullCorto = calcularFiniquitoCompleto(
+  {
+    causal: "161-desahucio",
+    ingreso: "2020-01-15",
+    termino: "2020-09-15",
+    remuneracion: 1_000_000,
+    diasMes: 15,
+    avisoPrevio: false,
+  },
+  { uf: FALLBACK_UF },
+);
+assert("Art. 161 con menos de un año: sin IAS, con aviso", fullCorto.ias === 0 && fullCorto.aviso > 0);
+
+const namedSueldo = calcularSueldo(
+  {
+    sueldoBase: 1_000_000,
+    afp: "modelo",
+    salud: "fonasa",
+    contrato: "indefinido",
+    haberesExtra: [
+      { nombre: "Bono producción", monto: 50000, imponible: true },
+      { nombre: "Asignación de movilización extra", monto: 10000, imponible: false },
+    ],
+  },
+  { uf: FALLBACK_UF },
+);
+assert(
+  "Haber nombrado imponible entra a AFP",
+  namedSueldo.imponible === 1_050_000,
+  String(namedSueldo.imponible),
+);
+assert(
+  "Haber nombrado no imponible no entra a AFP y sí al líquido",
+  namedSueldo.imponible === 1_050_000 && namedSueldo.liquido === namedSueldo.totalHaberes - namedSueldo.totalDescuentos,
+);
+assert(
+  "Líneas de haberes incluyen el nombre",
+  namedSueldo.haberes.some((h) => h.label === "Bono producción" && h.monto === 50000),
+);
+
 console.log("\nCSV y RUT");
 const csv = parseTrabajadoresCsv(
   "nombre,rut,cargo,sueldo_base,afp,salud,contrato,colacion\nAna,12345678-5,Admin,1000000,modelo,fonasa,indefinido,50000\n",
@@ -258,6 +382,7 @@ const required = [
   "css/app.css",
   "js/constants.js",
   "js/sueldo.js",
+  "js/causales.js",
   "js/finiquito.js",
   "js/indicadores.js",
   "js/csv.js",
@@ -271,7 +396,13 @@ const required = [
   "api/logout.js",
   "api/me.js",
   "api/_lib.js",
+  "api/profile.js",
+  "api/logo.js",
+  "api/documento.js",
+  "api/_r2.js",
+  "api/_pdf.js",
   "sql/001.sql",
+  "sql/002.sql",
   "reset.html",
   "vercel.json",
   "scripts/verify.mjs",
@@ -410,6 +541,9 @@ const login = (await import("../api/login.js")).default;
 const resetRequest = (await import("../api/reset-request.js")).default;
 const resetConfirm = (await import("../api/reset-confirm.js")).default;
 const me = (await import("../api/me.js")).default;
+const profile = (await import("../api/profile.js")).default;
+const logoApi = (await import("../api/logo.js")).default;
+const documento = (await import("../api/documento.js")).default;
 
 const regRes = mockRes();
 await register(mockReq("POST", { rut: "12.345.678-5", email: "a@b.cl", razonSocial: "SpA", password: "tenchars!!" }, "203.0.113.21"), regRes);
@@ -460,6 +594,31 @@ assert(
   JSON.stringify(meRes._out.body),
 );
 
+const profileRes = mockRes();
+await profile({ method: "GET", headers: {} }, profileRes);
+assert(
+  "profile 501 sin DATABASE_URL",
+  profileRes._out.statusCode === 501 && profileRes._out.body?.reason === "no_backend",
+  JSON.stringify(profileRes._out.body),
+);
+const logoRes = mockRes();
+await logoApi({ method: "GET", headers: {} }, logoRes);
+assert(
+  "logo 501 sin DATABASE_URL",
+  logoRes._out.statusCode === 501 && logoRes._out.body?.reason === "no_backend",
+  JSON.stringify(logoRes._out.body),
+);
+const docRes = mockRes();
+await documento(mockReq("POST", { tipo: "finiquito" }, "203.0.113.26"), docRes);
+assert(
+  "documento 501 sin DATABASE_URL",
+  docRes._out.statusCode === 501 && docRes._out.body?.reason === "no_backend",
+  JSON.stringify(docRes._out.body),
+);
+
+const { hasR2 } = await import("../api/_r2.js");
+assert("hasR2 false sin env", hasR2() === false);
+
 const resetIp = "203.0.113.25";
 for (let i = 0; i < 5; i += 1) {
   await resetRequest(mockReq("POST", { rut: "12.345.678-5", email: "a@b.cl" }, resetIp), mockRes());
@@ -481,10 +640,15 @@ else delete process.env.RESEND_API_KEY;
 
 const apiFiles = [
   "api/_lib.js",
+  "api/_r2.js",
+  "api/_pdf.js",
   "api/register.js",
   "api/login.js",
   "api/logout.js",
   "api/me.js",
+  "api/profile.js",
+  "api/logo.js",
+  "api/documento.js",
   "api/reset-request.js",
   "api/reset-confirm.js",
 ];
@@ -510,6 +674,20 @@ assert(
     /password_hash/.test(sql),
 );
 assert("sql/001.sql sin secretos", !/postgres(ql)?:\/\//i.test(sql) && !/DATABASE_URL\s*=/.test(sql));
+const sql2 = readFileSync(join(root, "sql/002.sql"), "utf8");
+assert(
+  "sql/002.sql perfil y clave de objeto",
+  /giro/.test(sql2) &&
+    /direccion/.test(sql2) &&
+    /logo_key/.test(sql2) &&
+    /logo_content_type/.test(sql2) &&
+    /documentos/.test(sql2) &&
+    /object_key/.test(sql2) &&
+    !/BYTEA/i.test(sql2) &&
+    !/bytea/i.test(sql2),
+);
+assert("sql/002.sql sin secretos", !/postgres(ql)?:\/\//i.test(sql2) && !/DATABASE_URL\s*=/.test(sql2));
+assert("sql/002.sql no rompe cuentas", /ADD COLUMN IF NOT EXISTS/i.test(sql2));
 assert("sin schema prisma inventado", !existsSync(join(root, "prisma")));
 assert(
   "empresa.html olvido honesto",
@@ -521,6 +699,21 @@ assert(
   /\/api\/register/.test(readFileSync(join(root, "js/app-empresa.js"), "utf8")) &&
     /\/api\/login/.test(readFileSync(join(root, "js/app-empresa.js"), "utf8")),
 );
+const empHtml = readFileSync(join(root, "empresa.html"), "utf8");
+const empJs = readFileSync(join(root, "js/app-empresa.js"), "utf8");
+assert("empresa.html sin input type=date", !/<input[^>]*type="date"/i.test(empHtml));
+assert("empresa.html periodo es select", /<select id="periodo"/.test(empHtml));
+assert("empresa.html vista previa iframe", /id="docPreviewFrame"/.test(empHtml) && /id="panelPreview"/.test(empHtml));
+assert("empresa.html giro y dirección", /id="perfilGiro"/.test(empHtml) && /id="perfilDireccion"/.test(empHtml));
+assert("empresa.html logo file", /id="logoFile"/.test(empHtml));
+assert("empresa.html haberes nombrados", /id="emHaberes"/.test(empHtml) && /Añadir haber/.test(empHtml));
+assert("empresa.html feriado pendiente y proporcional", /finFeriadoPend/.test(empHtml) && /finFeriadoProp/.test(empHtml));
+assert("app-empresa no usa window.open", !/window\.open/.test(empJs));
+assert("app-empresa vista previa srcdoc", /mostrarVistaPrevia/.test(empJs) && /srcdoc/.test(readFileSync(join(root, "js/print.js"), "utf8")));
+assert("app-empresa perfil y documento", /\/api\/profile/.test(empJs) && /\/api\/documento/.test(empJs) && /\/api\/logo/.test(empJs));
+const r2src = readFileSync(join(root, "api/_r2.js"), "utf8");
+assert("R2 sin CORS público", !/Access-Control-Allow-Origin/i.test(r2src) && !/r2\.dev/.test(r2src));
+assert("R2 lee solo process.env", /R2_ACCOUNT_ID/.test(r2src) && /process\.env/.test(r2src));
 assert(
   "reset.html pide newPassword",
   /newPassword/.test(readFileSync(join(root, "js/app-reset.js"), "utf8")) &&

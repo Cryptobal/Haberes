@@ -65,10 +65,12 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           recuperárselos por correo.
         </p>
         <p>
-          Si el operador configuró Postgres, la cuenta de empresa (RUT, correo en minúsculas, razón social y un hash
+          Si el operador configuró Postgres, la cuenta de empresa (RUT, correo en minúsculas, razón social, giro, dirección y un hash
           Argon2id de la clave) se guarda en esa base. La sesión va en una cookie httpOnly. Los trabajadores de la
           liquidación siguen en este navegador. El enlace de recuperación, si existe, se guarda solo como hash y caduca
-          a los 30 minutos.
+          a los 30 minutos. El logo y los PDF generados se guardan en un depósito privado (Cloudflare R2): en Postgres
+          queda solo la clave del objeto, nunca los bytes. Esos archivos se sirven únicamente a la empresa autenticada;
+          no hay URL pública del depósito.
         </p>
         <p>
           No enviamos un correo de recuperación salvo que esté configurado el envío. No le diremos que «le enviamos un

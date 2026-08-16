@@ -45,6 +45,22 @@ CREATE TABLE IF NOT EXISTS sessions (
 CREATE INDEX IF NOT EXISTS sessions_company_id_idx ON sessions (company_id);
 `;
 
+const INLINE_SCHEMA_002 = `
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS giro TEXT;
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS direccion TEXT;
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS logo_key TEXT;
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS logo_content_type TEXT;
+CREATE TABLE IF NOT EXISTS documentos (
+  id TEXT PRIMARY KEY,
+  company_id TEXT NOT NULL REFERENCES companies (id) ON DELETE CASCADE,
+  tipo TEXT NOT NULL,
+  object_key TEXT NOT NULL,
+  content_type TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS documentos_company_id_idx ON documentos (company_id);
+`;
+
 let schemaReady = false;
 let dummyHashPromise = null;
 const rateHits = new Map();
@@ -69,6 +85,26 @@ export function json(res, status, payload) {
 
 export function noBackend(res) {
   return json(res, 501, { ok: false, reason: "no_backend" });
+}
+
+export function noStorage(res) {
+  return json(res, 501, { ok: false, reason: "no_storage" });
+}
+
+export function sendBytes(res, status, body, contentType, filename) {
+  res.setHeader?.("Content-Type", contentType || "application/octet-stream");
+  res.setHeader?.("Cache-Control", "private, no-store");
+  if (filename) {
+    res.setHeader?.(
+      "Content-Disposition",
+      `attachment; filename="${String(filename).replace(/"/g, "")}"`,
+    );
+  }
+  if (typeof res.status === "function" && typeof res.send === "function") {
+    return res.status(status).send(body);
+  }
+  res.statusCode = status;
+  res.end(body);
 }
 
 export function readJson(req) {
@@ -156,6 +192,18 @@ export function parseRazonSocial(raw) {
   return name;
 }
 
+export function parseGiro(raw) {
+  const giro = String(raw ?? "").trim();
+  if (giro.length > 200) return null;
+  return giro;
+}
+
+export function parseDireccion(raw) {
+  const dir = String(raw ?? "").trim();
+  if (dir.length > 300) return null;
+  return dir;
+}
+
 export function clientIp(req) {
   const xf = String(req?.headers?.["x-forwarded-for"] || "")
     .split(",")[0]
@@ -198,11 +246,11 @@ function sslFor(url) {
   return { rejectUnauthorized: false };
 }
 
-function loadSchemaSql() {
+function loadSchemaFile(name, fallback) {
   try {
-    return readFileSync(fileURLToPath(new URL("../sql/001.sql", import.meta.url)), "utf8");
+    return readFileSync(fileURLToPath(new URL(`../sql/${name}`, import.meta.url)), "utf8");
   } catch {
-    return INLINE_SCHEMA;
+    return fallback;
   }
 }
 
@@ -225,7 +273,8 @@ async function ensureSchema() {
   const client = await pgClient(url);
   if (!client) return false;
   try {
-    await client.query(loadSchemaSql());
+    await client.query(loadSchemaFile("001.sql", INLINE_SCHEMA));
+    await client.query(loadSchemaFile("002.sql", INLINE_SCHEMA_002));
     schemaReady = true;
     return true;
   } finally {
@@ -254,6 +303,9 @@ export function companyPublic(row) {
     rut: row.rut,
     email: row.email,
     razonSocial: row.razon_social,
+    giro: row.giro || "",
+    direccion: row.direccion || "",
+    hasLogo: Boolean(row.logo_key),
   };
 }
 
@@ -300,7 +352,8 @@ export async function loadSessionCompany(client, token) {
   if (!token) return null;
   const tokenHash = hashToken(token);
   const found = await client.query(
-    `SELECT c.id, c.rut, c.email, c.razon_social, s.id AS session_id
+    `SELECT c.id, c.rut, c.email, c.razon_social, c.giro, c.direccion, c.logo_key, c.logo_content_type,
+            s.id AS session_id
      FROM sessions s
      JOIN companies c ON c.id = s.company_id
      WHERE s.token_hash = $1 AND s.expires_at > NOW()
@@ -308,6 +361,37 @@ export async function loadSessionCompany(client, token) {
     [tokenHash],
   );
   return found.rows[0] || null;
+}
+
+export async function requireCompany(req, res) {
+  if (!hasDatabaseUrl()) {
+    noBackend(res);
+    return null;
+  }
+  const token = readSessionToken(req);
+  if (!token) {
+    json(res, 401, { ok: false, reason: "unauthorized" });
+    return null;
+  }
+  try {
+    let connected = false;
+    const row = await withDb(async (client) => {
+      connected = true;
+      return loadSessionCompany(client, token);
+    });
+    if (!connected) {
+      noBackend(res);
+      return null;
+    }
+    if (!row) {
+      json(res, 401, { ok: false, reason: "unauthorized" });
+      return null;
+    }
+    return row;
+  } catch {
+    json(res, 503, { ok: false, reason: "db_unavailable" });
+    return null;
+  }
 }
 
 export function publicOrigin() {

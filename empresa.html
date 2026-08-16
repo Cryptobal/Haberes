@@ -50,7 +50,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <div class="wrap">
       <p class="kicker">Empresa</p>
       <h1>Para mi empresa</h1>
-      <p class="lede">Cuenta de empresa con RUT, correo y clave. Carga masiva CSV, liquidación imprimible en dos columnas y carta de finiquito con firmas.</p>
+      <p class="lede">Cuenta de empresa: perfil y logo, trabajadores, liquidación y carta de finiquito con membrete. Vista previa en esta página; no depende de ventanas emergentes.</p>
       <p class="notice">
         Estimación generada por inteligencia artificial. No es un cálculo de la Dirección del Trabajo ni de Previred.
         No constituye asesoría legal. La carta de finiquito no reemplaza la ratificación ante la Inspección del Trabajo.
@@ -138,8 +138,49 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         </div>
 
         <div class="panel">
+          <h3>Perfil de la empresa</h3>
+          <p class="hint">RUT, razón social, giro, dirección y logo. El logo se guarda en almacenamiento privado (no es una URL pública) y se usa en el membrete.</p>
+          <form id="formPerfil">
+            <div class="row">
+              <div class="field">
+                <label for="perfilRazon">Razón social</label>
+                <input id="perfilRazon" required maxlength="200" />
+              </div>
+              <div class="field">
+                <label for="perfilRut">RUT</label>
+                <input id="perfilRut" disabled />
+              </div>
+            </div>
+            <div class="field">
+              <label for="perfilGiro">Giro</label>
+              <input id="perfilGiro" maxlength="200" placeholder="Ej. Servicios de seguridad privada" />
+            </div>
+            <div class="field">
+              <label for="perfilDireccion">Dirección</label>
+              <input id="perfilDireccion" maxlength="300" placeholder="Calle, número, comuna" />
+            </div>
+            <p class="error" id="errPerfil" hidden></p>
+            <p class="ok" id="okPerfil" hidden></p>
+            <button class="btn" type="submit">Guardar perfil</button>
+          </form>
+          <hr class="sep" />
+          <h3>Logo</h3>
+          <p class="hint">PNG, JPG o WebP. Máximo 1,5 MB. Si el almacenamiento no está configurado, no se finge la subida.</p>
+          <div class="logo-box">
+            <img id="logoPreview" class="logo-preview" alt="Logo de la empresa" hidden />
+            <p class="hint" id="logoVacio">Aún no hay logo.</p>
+          </div>
+          <div class="actions" style="margin-top: 12px">
+            <label class="btn btn-ghost" for="logoFile">Subir logo</label>
+            <input id="logoFile" type="file" accept="image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp" hidden />
+            <button class="btn btn-ghost" type="button" id="btnQuitarLogo">Quitar logo</button>
+          </div>
+          <p class="error" id="errLogo" hidden></p>
+        </div>
+
+        <div class="panel" style="margin-top: 16px">
           <h3>Trabajadores</h3>
-          <p class="hint">CSV: nombre, rut, cargo, sueldo_base, afp, salud, plan_isapre, contrato, horas_extras, bonos, colacion, movilizacion, gratificacion</p>
+          <p class="hint">CSV: nombre, rut, cargo, sueldo_base, afp, salud, plan_isapre, contrato, horas_extras, bonos, colacion, movilizacion, gratificacion. Los trabajadores de esta lista viven en este navegador.</p>
           <div class="actions" style="margin: 12px 0 16px">
             <label class="btn btn-ghost" for="csvFile">Cargar CSV</label>
             <input id="csvFile" type="file" accept=".csv,text/csv" hidden />
@@ -149,7 +190,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           <div class="table-wrap" id="tablaTrabajadores"></div>
           <hr class="sep" />
           <form id="formAlta">
-            <h3>Alta rápida</h3>
+            <h3>Alta</h3>
             <div class="row">
               <div class="field">
                 <label for="altaNombre">Nombre</label>
@@ -193,101 +234,186 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             </div>
             <div class="row">
               <div class="field">
+                <label for="altaIsapre">Isapre pactado (pesos)</label>
+                <input id="altaIsapre" type="number" min="0" step="1" value="0" />
+              </div>
+              <div class="field">
                 <label for="altaContrato">Contrato</label>
                 <select id="altaContrato">
                   <option value="indefinido" selected>Indefinido</option>
                   <option value="plazo_fijo">Plazo fijo</option>
                 </select>
               </div>
+            </div>
+            <div class="row">
+              <div class="field">
+                <label for="altaHoras">Horas extras (cantidad)</label>
+                <input id="altaHoras" type="number" min="0" step="0.5" value="0" />
+              </div>
+              <div class="field">
+                <label for="altaJornada">Jornada semanal</label>
+                <input id="altaJornada" type="number" min="1" step="1" value="42" />
+              </div>
+            </div>
+            <div class="row">
               <div class="field">
                 <label for="altaColacion">Colación</label>
                 <input id="altaColacion" type="number" min="0" step="1" value="0" />
               </div>
-            </div>
-            <div class="row">
               <div class="field">
                 <label for="altaMov">Movilización</label>
                 <input id="altaMov" type="number" min="0" step="1" value="0" />
               </div>
-              <div class="field">
-                <label class="check" style="margin-top: 28px">
-                  <input id="altaGrat" type="checkbox" />
-                  Gratificación art. 50
-                </label>
-              </div>
             </div>
+            <label class="check">
+              <input id="altaGrat" type="checkbox" />
+              Gratificación art. 50
+            </label>
+            <p class="hint" style="margin-top: 12px">Haberes con nombre (bonos, asignación, etc.). Puede añadir o quitar líneas.</p>
+            <div id="altaHaberes"></div>
+            <button class="btn btn-ghost" type="button" id="btnAltaHaber">Añadir haber</button>
             <p class="error" id="errAlta" hidden></p>
-            <button class="btn" type="submit">Agregar</button>
+            <div class="actions" style="margin-top: 12px">
+              <button class="btn" type="submit">Agregar</button>
+            </div>
           </form>
         </div>
 
-        <div class="layout" style="margin-top: 16px">
-          <div class="panel">
-            <h3>Liquidación (impresión 2 columnas)</h3>
-            <div class="field">
-              <label for="selTrabajador">Trabajador</label>
-              <select id="selTrabajador"></select>
-            </div>
-            <div class="field">
-              <label for="periodo">Periodo</label>
-              <input id="periodo" placeholder="agosto 2026" />
-            </div>
-            <p class="error" id="errPrint" hidden></p>
-            <button class="btn" type="button" id="btnLiquidacion">Imprimir liquidación</button>
+        <div class="panel" style="margin-top: 16px">
+          <h3>Emitir liquidación o finiquito</h3>
+          <p class="hint">Elija un trabajador, revise haberes y genere la vista previa en esta página. Imprimir usa esa vista (el navegador puede guardar como PDF). Descargar PDF pide al servidor un archivo con membrete.</p>
+          <div class="field">
+            <label for="selTrabajador">Trabajador</label>
+            <select id="selTrabajador"></select>
           </div>
-          <div class="panel">
-            <h3>Carta de finiquito</h3>
-            <div class="field">
-              <label for="selFiniquito">Trabajador</label>
-              <select id="selFiniquito"></select>
-            </div>
-            <div class="field">
-              <label for="finArt">Causal</label>
-              <select id="finArt">
-                <option value="161" selected>Art. 161</option>
-                <option value="159">Art. 159</option>
-                <option value="160">Art. 160</option>
-              </select>
-            </div>
+          <div id="panelHaberesTrabajador" hidden>
+            <h3>Haberes de este trabajador</h3>
             <div class="row">
               <div class="field">
-                <label for="finIngreso">Ingreso</label>
-                <input id="finIngreso" type="date" />
+                <label for="emSueldo">Sueldo base</label>
+                <input id="emSueldo" type="number" min="0" step="1" />
               </div>
               <div class="field">
-                <label for="finTermino">Término</label>
-                <input id="finTermino" type="date" />
+                <label for="emHoras">Horas extras (cantidad)</label>
+                <input id="emHoras" type="number" min="0" step="0.5" />
               </div>
             </div>
             <div class="row">
               <div class="field">
-                <label for="finRem">Remuneración</label>
-                <input id="finRem" type="number" min="0" step="1" placeholder="Usa el sueldo base si queda vacío" />
+                <label for="emColacion">Colación</label>
+                <input id="emColacion" type="number" min="0" step="1" />
               </div>
               <div class="field">
-                <label for="finFeriado">Días feriado</label>
-                <input id="finFeriado" type="number" min="0" step="0.5" value="0" />
+                <label for="emMov">Movilización</label>
+                <input id="emMov" type="number" min="0" step="1" />
               </div>
             </div>
             <div class="row">
               <div class="field">
-                <label for="finOtros">Otros</label>
-                <input id="finOtros" type="number" min="0" step="1" value="0" />
+                <label for="emIsapre">Isapre pactado (pesos)</label>
+                <input id="emIsapre" type="number" min="0" step="1" />
               </div>
               <div class="field">
-                <label for="finCiudad">Ciudad</label>
-                <input id="finCiudad" value="Santiago" />
+                <label for="emJornada">Jornada semanal</label>
+                <input id="emJornada" type="number" min="1" step="1" />
               </div>
             </div>
             <label class="check">
-              <input id="finAviso" type="checkbox" />
-              Hubo aviso previo
+              <input id="emGrat" type="checkbox" />
+              Gratificación art. 50
             </label>
-            <p class="hint">La carta incluye firmas de empleador, trabajador y dos testigos. No reemplaza la Inspección del Trabajo.</p>
-            <p class="error" id="errCarta" hidden></p>
-            <button class="btn" type="button" id="btnCarta">Imprimir carta de finiquito</button>
+            <p class="hint" style="margin-top: 12px">Haberes con nombre</p>
+            <div id="emHaberes"></div>
+            <button class="btn btn-ghost" type="button" id="btnEmHaber">Añadir haber</button>
+            <p class="ok" id="okHaberes" hidden></p>
+            <button class="btn btn-ghost" type="button" id="btnGuardarHaberes" style="margin-top: 12px">Guardar haberes en este navegador</button>
+          </div>
+          <hr class="sep" />
+          <div class="layout">
+            <div>
+              <h3>Liquidación</h3>
+              <div class="field">
+                <label for="periodo">Periodo de remuneración</label>
+                <select id="periodo"></select>
+              </div>
+              <p class="error" id="errPrint" hidden></p>
+              <div class="actions">
+                <button class="btn" type="button" id="btnLiquidacion">Ver liquidación</button>
+                <button class="btn btn-ghost" type="button" id="btnPdfLiquidacion">Descargar PDF</button>
+              </div>
+            </div>
+            <div>
+              <h3>Carta de finiquito</h3>
+              <div class="field">
+                <label for="finArt">Causal</label>
+                <select id="finArt"></select>
+              </div>
+              <p class="hint" id="finCausalNota"></p>
+              <div class="field">
+                <label>Fecha de ingreso</label>
+                <div class="date-selects">
+                  <select id="finIngresoD" aria-label="Día de ingreso"></select>
+                  <select id="finIngresoM" aria-label="Mes de ingreso"></select>
+                  <select id="finIngresoY" aria-label="Año de ingreso"></select>
+                </div>
+              </div>
+              <div class="field">
+                <label>Fecha de término</label>
+                <div class="date-selects">
+                  <select id="finTerminoD" aria-label="Día de término"></select>
+                  <select id="finTerminoM" aria-label="Mes de término"></select>
+                  <select id="finTerminoY" aria-label="Año de término"></select>
+                </div>
+              </div>
+              <div class="row">
+                <div class="field">
+                  <label for="finDiasMes">Días del mes a pagar</label>
+                  <input id="finDiasMes" type="number" min="0" max="30" step="1" value="30" />
+                </div>
+                <div class="field">
+                  <label for="finCiudad">Ciudad</label>
+                  <input id="finCiudad" value="Santiago" />
+                </div>
+              </div>
+              <div class="row">
+                <div class="field">
+                  <label for="finFeriadoPend">Feriado pendiente (días vencidos no tomados)</label>
+                  <input id="finFeriadoPend" type="number" min="0" step="0.5" value="0" />
+                </div>
+                <div class="field">
+                  <label for="finFeriadoProp">Feriado proporcional (días)</label>
+                  <input id="finFeriadoProp" type="number" min="0" step="0.5" value="0" />
+                </div>
+              </div>
+              <div class="field">
+                <label for="finOtros">Otros haberes</label>
+                <input id="finOtros" type="number" min="0" step="1" value="0" />
+              </div>
+              <label class="check" id="wrapAviso">
+                <input id="finAviso" type="checkbox" />
+                Hubo aviso previo de 30 días (art. 161)
+              </label>
+              <p class="hint">La carta incluye membrete, causal con su texto legal y firmas de empleador, trabajador y dos testigos. No reemplaza la Inspección del Trabajo ni al ministro de fe.</p>
+              <p class="error" id="errCarta" hidden></p>
+              <div class="actions">
+                <button class="btn" type="button" id="btnCarta">Ver carta de finiquito</button>
+                <button class="btn btn-ghost" type="button" id="btnPdfCarta">Descargar PDF</button>
+              </div>
+            </div>
           </div>
         </div>
+
+        <section id="panelPreview" class="panel doc-preview" hidden style="margin-top: 16px">
+          <div class="toolbar">
+            <h3 id="docPreviewTitulo" style="margin:0">Vista previa</h3>
+            <div class="actions">
+              <button class="btn" type="button" id="btnImprimirPreview">Imprimir vista previa</button>
+              <button class="btn btn-ghost" type="button" id="btnCerrarPreview">Cerrar</button>
+            </div>
+          </div>
+          <p class="hint">Si una ventana emergente está bloqueada, el documento sigue aquí. Imprimir abre el diálogo del navegador sobre esta vista.</p>
+          <iframe id="docPreviewFrame" class="doc-frame" title="Vista previa del documento"></iframe>
+        </section>
       </section>
     </div>
   </main>
