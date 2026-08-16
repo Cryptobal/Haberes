@@ -12,7 +12,11 @@
   --danger: #8a3b32;
   --warn-bg: #f3ead4;
   --warn-text: #3e3418;
+  --warn-line: color-mix(in srgb, #8a6a1a 25%, var(--line));
   --control-bg: #fff;
+  --surface-2: #fffcf7;
+  --option-on-bg: color-mix(in srgb, var(--ink) 10%, transparent);
+  --option-on-fg: var(--ink);
   --shadow: 0 1px 2px rgba(18, 56, 44, 0.06), 0 12px 32px rgba(18, 56, 44, 0.06);
   --radius: 14px;
   --font: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -28,12 +32,16 @@ html[data-theme="night"] {
   --surface: #171c1a;
   --text: #e8eeeb;
   --muted: #9aa8a3;
-  --line: #2a3330;
-  --line-strong: #3d4a45;
+  --line: #5a6b66;
+  --line-strong: #6e827c;
   --danger: #e08a7e;
   --warn-bg: #2a2416;
   --warn-text: #ead9b0;
+  --warn-line: #c4a35a;
   --control-bg: #121816;
+  --surface-2: #222b28;
+  --option-on-bg: var(--ink);
+  --option-on-fg: var(--on-ink);
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 16px 36px rgba(0, 0, 0, 0.28);
 }
 
@@ -260,7 +268,7 @@ h2 {
 
 .notice {
   background: var(--warn-bg);
-  border: 1px solid color-mix(in srgb, #8a6a1a 25%, var(--line));
+  border: 1px solid var(--warn-line);
   color: var(--warn-text);
   border-radius: 12px;
   padding: 14px 16px;
@@ -825,7 +833,7 @@ hr.sep {
   left: 0;
   right: 0;
   top: calc(100% + 4px);
-  background: var(--surface);
+  background: var(--surface-2);
   border: 1px solid var(--line-strong);
   border-radius: 12px;
   box-shadow: var(--shadow);
@@ -885,10 +893,15 @@ hr.sep {
   cursor: pointer;
 }
 
-.picker-option:hover,
-.picker-option.is-on {
+.picker-option:hover {
   background: color-mix(in srgb, var(--ink) 10%, transparent);
   color: var(--ink);
+}
+
+.picker-option.is-on,
+.picker-option[aria-selected="true"] {
+  background: var(--option-on-bg);
+  color: var(--option-on-fg);
 }
 
 .picker-group {
