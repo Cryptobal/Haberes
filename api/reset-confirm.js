@@ -1,10 +1,11 @@
 import {
   hasDatabaseUrl,
+  hashPassword,
   hashToken,
   json,
   noBackend,
+  parseNewPassword,
   readJson,
-  saltPassword,
   withDb,
 } from "./_lib.js";
 
@@ -17,8 +18,8 @@ export default async function handler(req, res) {
 
   const body = readJson(req);
   const token = typeof body.token === "string" ? body.token.trim() : "";
-  const clave = typeof body.clave === "string" ? body.clave : typeof body.password === "string" ? body.password : "";
-  if (!token || clave.length < 4) {
+  const password = parseNewPassword(body);
+  if (!token || !password) {
     return json(res, 400, { ok: false, reason: "invalid_payload" });
   }
 
@@ -29,8 +30,8 @@ export default async function handler(req, res) {
       await client.query("BEGIN");
       try {
         const found = await client.query(
-          `SELECT token_hash, rut, expires_at, used_at
-           FROM haberes_password_resets
+          `SELECT id, company_id, expires_at, used_at
+           FROM password_reset_tokens
            WHERE token_hash = $1
            LIMIT 1
            FOR UPDATE`,
@@ -43,20 +44,20 @@ export default async function handler(req, res) {
           return { status: 400, payload: { ok: false, reason: "invalid_token" } };
         }
 
-        const { salt, hash } = saltPassword(clave);
+        const passwordHash = await hashPassword(password);
         await client.query(
-          `INSERT INTO haberes_credentials (rut, password_salt, password_hash, updated_at)
-           VALUES ($1, $2, $3, NOW())
-           ON CONFLICT (rut) DO UPDATE
-           SET password_salt = EXCLUDED.password_salt,
-               password_hash = EXCLUDED.password_hash,
-               updated_at = NOW()`,
-          [row.rut, salt, hash],
+          `UPDATE companies
+           SET password_hash = $1, updated_at = NOW()
+           WHERE id = $2`,
+          [passwordHash, row.company_id],
         );
         await client.query(
-          "UPDATE haberes_password_resets SET used_at = NOW() WHERE token_hash = $1",
-          [tokenHash],
+          `UPDATE password_reset_tokens
+           SET used_at = NOW()
+           WHERE company_id = $1 AND used_at IS NULL`,
+          [row.company_id],
         );
+        await client.query("DELETE FROM sessions WHERE company_id = $1", [row.company_id]);
         await client.query("COMMIT");
         return { status: 200, payload: { ok: true } };
       } catch (err) {

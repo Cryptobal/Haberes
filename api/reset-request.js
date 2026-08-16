@@ -1,9 +1,14 @@
 import {
+  allowRate,
   hasDatabaseUrl,
   json,
+  mailConfigured,
+  newId,
   newResetToken,
   noBackend,
+  parseEmail,
   parseRut,
+  rateLimited,
   readJson,
   sendResetEmail,
   withDb,
@@ -14,37 +19,51 @@ export default async function handler(req, res) {
     res.setHeader?.("Allow", "POST");
     return json(res, 405, { ok: false, reason: "method_not_allowed" });
   }
+  if (!allowRate(req, "reset")) return rateLimited(res);
   if (!hasDatabaseUrl()) return noBackend(res);
 
   const body = readJson(req);
   const rut = parseRut(body.rut);
-  if (!rut) return json(res, 400, { ok: false, reason: "invalid_payload" });
+  const email = parseEmail(body.email);
+  if (!rut || !email) {
+    return json(res, 400, { ok: false, reason: "invalid_payload" });
+  }
+
+  const generic = { ok: true, emailed: mailConfigured() };
 
   try {
     const result = await withDb(async (client) => {
       const found = await client.query(
-        "SELECT rut, email FROM haberes_credentials WHERE rut = $1 LIMIT 1",
-        [rut],
+        `SELECT id, email FROM companies WHERE rut = $1 AND email = $2 LIMIT 1`,
+        [rut, email],
       );
       const account = found.rows[0];
-      if (!account) return { ok: true, emailed: false };
+      if (!account) {
+        newResetToken();
+        return generic;
+      }
 
       const { token, tokenHash, expiresAt } = newResetToken();
       await client.query(
-        `INSERT INTO haberes_password_resets (token_hash, rut, expires_at)
-         VALUES ($1, $2, $3)`,
-        [tokenHash, rut, expiresAt.toISOString()],
+        `UPDATE password_reset_tokens
+         SET used_at = NOW()
+         WHERE company_id = $1 AND used_at IS NULL`,
+        [account.id],
+      );
+      await client.query(
+        `INSERT INTO password_reset_tokens (id, company_id, token_hash, expires_at)
+         VALUES ($1, $2, $3, $4)`,
+        [newId(), account.id, tokenHash, expiresAt.toISOString()],
       );
 
-      let emailed = false;
-      if (String(process.env.RESEND_API_KEY || "").trim() && account.email) {
+      if (mailConfigured()) {
         try {
-          emailed = await sendResetEmail({ to: account.email, token });
+          await sendResetEmail({ to: account.email, token });
         } catch {
-          emailed = false;
+          // Same generic body whether send worked.
         }
       }
-      return { ok: true, emailed };
+      return generic;
     });
 
     if (!result) return noBackend(res);

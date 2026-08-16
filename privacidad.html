@@ -50,7 +50,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <div class="wrap">
       <p class="kicker">Chile</p>
       <h1>Privacidad</h1>
-      <p class="lede">Haberes es una herramienta gratuita. Esta versión no tiene cuentas en un servidor nuestro.</p>
+      <p class="lede">Haberes es una herramienta gratuita. Las cuentas de empresa usan Postgres si el operador configuró la base; si no, quedan en su navegador.</p>
       <p class="notice">
         Estimación generada por inteligencia artificial. No es un cálculo de la Dirección del Trabajo ni de Previred.
         No constituye asesoría legal ni previsional.
@@ -59,10 +59,20 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <div class="prose">
         <h2>Qué se guarda y dónde</h2>
         <p>
-          Si usa «Para mi empresa», el RUT, el correo, la clave (como hash SHA-256) y los trabajadores quedan en
-          <strong>localStorage de este navegador</strong>. No hay aún una base de datos ni sesiones en nuestros servidores.
+          Si usa «Para mi empresa» <strong>sin</strong> base de datos configurada, el RUT, el correo, un hash de la clave
+          y los trabajadores quedan en <strong>localStorage de este navegador</strong>. No hay sesión en un servidor.
           Si limpia el sitio, cambia de computador o usa una ventana privada, esos datos no están en otro lado: no podemos
           recuperárselos por correo.
+        </p>
+        <p>
+          Si el operador configuró Postgres, la cuenta de empresa (RUT, correo en minúsculas, razón social y un hash
+          Argon2id de la clave) se guarda en esa base. La sesión va en una cookie httpOnly. Los trabajadores de la
+          liquidación siguen en este navegador. El enlace de recuperación, si existe, se guarda solo como hash y caduca
+          a los 30 minutos.
+        </p>
+        <p>
+          No enviamos un correo de recuperación salvo que esté configurado el envío. No le diremos que «le enviamos un
+          email» si no es así. La respuesta de «olvidé mi clave» es la misma exista o no la cuenta.
         </p>
 
         <h2>UF y UTM</h2>

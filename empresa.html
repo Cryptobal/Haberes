@@ -11,13 +11,13 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Para mi empresa — Haberes</title>
-  <meta name="description" content="Liquidaciones y carta de finiquito para pymes. Datos locales. No es Dirección del Trabajo ni Previred." />
+  <meta name="description" content="Liquidaciones y carta de finiquito para pymes. Cuenta de empresa. No es Dirección del Trabajo ni Previred." />
   <link rel="canonical" href="https://www.haberes.cl/empresa" />
   <meta property="og:type" content="website" />
   <meta property="og:locale" content="es_CL" />
   <meta property="og:site_name" content="Haberes" />
   <meta property="og:title" content="Para mi empresa — Haberes" />
-  <meta property="og:description" content="Liquidaciones y carta de finiquito para pymes. Datos locales. No es Dirección del Trabajo ni Previred." />
+  <meta property="og:description" content="Liquidaciones y carta de finiquito para pymes. Cuenta de empresa. No es Dirección del Trabajo ni Previred." />
   <meta property="og:url" content="https://www.haberes.cl/empresa" />
   <meta name="twitter:card" content="summary" />
   <link rel="icon" href="favicon.svg" type="image/svg+xml" />
@@ -50,18 +50,18 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <div class="wrap">
       <p class="kicker">Empresa</p>
       <h1>Para mi empresa</h1>
-      <p class="lede">Cuenta local con RUT, correo y clave. Carga masiva CSV, liquidación imprimible en dos columnas y carta de finiquito con firmas.</p>
+      <p class="lede">Cuenta de empresa con RUT, correo y clave. Carga masiva CSV, liquidación imprimible en dos columnas y carta de finiquito con firmas.</p>
       <p class="notice">
         Estimación generada por inteligencia artificial. No es un cálculo de la Dirección del Trabajo ni de Previred.
         No constituye asesoría legal. La carta de finiquito no reemplaza la ratificación ante la Inspección del Trabajo.
-        Los datos se guardan solo en este navegador.
+        Si no hay servidor de cuentas, los datos se guardan solo en este navegador.
       </p>
 
       <section id="auth" style="margin-top: 24px">
         <p class="error" id="errAuth" hidden></p>
         <div class="auth-grid">
           <form id="formRegistro" class="panel">
-            <h2>Crear cuenta local</h2>
+            <h2>Crear cuenta</h2>
             <div class="field">
               <label for="regRazon">Razón social</label>
               <input id="regRazon" required placeholder="Comercial Ejemplo SpA" />
@@ -72,13 +72,14 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             </div>
             <div class="field">
               <label for="regEmail">Correo</label>
-              <input id="regEmail" type="email" required placeholder="admin@empresa.cl" />
+              <input id="regEmail" type="email" required placeholder="admin@empresa.cl" autocomplete="email" />
             </div>
             <div class="field">
               <label for="regClave">Clave</label>
-              <input id="regClave" type="password" required minlength="4" autocomplete="new-password" />
+              <input id="regClave" type="password" required minlength="10" autocomplete="new-password" />
             </div>
-            <button class="btn" type="submit">Guardar en este navegador</button>
+            <p class="hint">Mínimo 10 caracteres. No hay pistas de clave.</p>
+            <button class="btn" type="submit">Crear cuenta</button>
           </form>
           <form id="formEntrar" class="panel">
             <h2>Entrar</h2>
@@ -97,19 +98,24 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <section id="panelOlvide" class="panel" hidden style="margin-top: 16px">
           <h2>Olvidé mi clave</h2>
           <p class="notice">
-            La clave no se puede enviar por correo. La cuenta vive solo en <strong>este navegador</strong>
-            (localStorage, hash SHA-256). No hay servidor que recuerde su clave ni bandeja de salida.
-            No le vamos a decir que «le enviamos un email».
+            Si hay servidor de cuentas, puede pedir un enlace. La respuesta es la misma exista o no la cuenta.
+            Solo se envía correo si el envío está configurado; no le vamos a decir que «le enviamos un email» si no lo está.
+            Si no hay servidor, la cuenta vive solo en <strong>este navegador</strong> y la clave no se puede enviar por correo:
+            puede borrar la cuenta local.
           </p>
           <form id="formOlvide">
             <div class="field">
               <label for="olvideRut">RUT empresa</label>
               <input id="olvideRut" required autocomplete="username" placeholder="76.123.456-0" />
             </div>
+            <div class="field">
+              <label for="olvideEmail">Correo</label>
+              <input id="olvideEmail" type="email" required autocomplete="email" placeholder="admin@empresa.cl" />
+            </div>
             <p class="error" id="errOlvide" hidden></p>
             <p class="ok" id="okOlvide" hidden></p>
             <div class="actions" style="margin-top: 12px">
-              <button class="btn" type="submit">Revisar este navegador</button>
+              <button class="btn" type="submit">Pedir recuperación</button>
               <button class="btn btn-ghost" type="button" id="btnCerrarOlvide">Cerrar</button>
             </div>
           </form>
@@ -288,7 +294,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
   <footer class="site-footer">
     <div class="wrap">
-      <div><strong>Haberes</strong> · empresa local</div>
+      <div><strong>Haberes</strong> · empresa</div>
       <div class="footer-legal">
         <a href="/privacidad">Privacidad</a>
         <span aria-hidden="true">·</span>

@@ -2,6 +2,7 @@ import { normalizeRut } from "./format.js";
 
 const DB_KEY = "haberes:empresas";
 const SESSION_KEY = "haberes:sesion";
+export const MIN_CLAVE = 10;
 
 function ls() {
   try {
@@ -68,6 +69,9 @@ export function clearSession() {
 export async function registrarEmpresa({ rut, email, razonSocial, clave }) {
   const id = normalizeRut(rut);
   if (!id) throw new Error("RUT inválido");
+  if (String(clave || "").length < MIN_CLAVE) {
+    throw new Error("La clave debe tener al menos 10 caracteres");
+  }
   const db = loadDb();
   if (db[id]) throw new Error("Ya existe una cuenta con ese RUT en este navegador");
   db[id] = {
@@ -88,10 +92,33 @@ export async function entrarEmpresa({ rut, clave }) {
   const db = loadDb();
   const emp = db[id];
   if (!emp) throw new Error("No hay una cuenta con ese RUT en este navegador");
+  if (emp.remote && !emp.claveHash) {
+    throw new Error("Esta cuenta está en el servidor. No se puede entrar solo en este navegador.");
+  }
   const hash = await hashClave(clave);
   if (hash !== emp.claveHash) throw new Error("Clave incorrecta");
   setSession(id);
   return emp;
+}
+
+export function ensureLocalEmpresa({ rut, email, razonSocial }) {
+  const id = normalizeRut(rut);
+  if (!id) throw new Error("RUT inválido");
+  const db = loadDb();
+  const prev = db[id] || {};
+  db[id] = {
+    ...prev,
+    rut: id,
+    email: String(email || prev.email || "").trim().toLowerCase(),
+    razonSocial: String(razonSocial || prev.razonSocial || "").trim(),
+    claveHash: prev.claveHash || "",
+    trabajadores: prev.trabajadores || [],
+    createdAt: prev.createdAt || new Date().toISOString(),
+    remote: true,
+  };
+  saveDb(db);
+  setSession(id);
+  return db[id];
 }
 
 export function empresaActual() {

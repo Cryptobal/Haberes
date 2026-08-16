@@ -266,6 +266,13 @@ const required = [
   "js/analytics.js",
   "api/reset-request.js",
   "api/reset-confirm.js",
+  "api/register.js",
+  "api/login.js",
+  "api/logout.js",
+  "api/me.js",
+  "api/_lib.js",
+  "sql/001.sql",
+  "reset.html",
   "vercel.json",
   "scripts/verify.mjs",
 ];
@@ -283,6 +290,7 @@ const htmlFiles = [
   "empresa.html",
   "privacidad.html",
   "terminos.html",
+  "reset.html",
 ];
 for (const f of htmlFiles) {
   const html = readFileSync(join(root, f), "utf8");
@@ -295,6 +303,7 @@ for (const f of htmlFiles) {
   );
   assert(`${f} canonical haberes.cl`, /rel="canonical" href="https:\/\/www\.haberes\.cl/.test(html));
   assert(`${f} og:url`, /property="og:url" content="https:\/\/www\.haberes\.cl/.test(html));
+  assert(`${f} GTM-PCR596Z2`, /GTM-PCR596Z2/.test(html));
   assert(`${f} carga analytics.js`, /src="js\/analytics\.js"/.test(html));
   assert(`${f} no define GA4 falso`, !/HABERES_GA4\s*=\s*["']G-/.test(html));
   assert(`${f} enlace privacidad`, /href="\/privacidad"/.test(html));
@@ -327,10 +336,12 @@ assert(
 );
 assert("analytics.js no trae property de ejemplo", !/gtag\/js\?id=G-[A-Z0-9]+/.test(analytics));
 
-console.log("\nAPI recuperación (fail closed)");
+console.log("\nAPI cuentas (fail closed, Argon2id)");
 const prevDb = process.env.DATABASE_URL;
+const prevDbUnpooled = process.env.DATABASE_URL_UNPOOLED;
 const prevResend = process.env.RESEND_API_KEY;
 delete process.env.DATABASE_URL;
+delete process.env.DATABASE_URL_UNPOOLED;
 delete process.env.RESEND_API_KEY;
 
 function mockRes() {
@@ -353,37 +364,160 @@ function mockRes() {
   return res;
 }
 
+function mockReq(method, body, ip = "203.0.113.10") {
+  return { method, body, headers: { "x-forwarded-for": ip } };
+}
+
+const {
+  hashPassword,
+  verifyPassword,
+  MIN_PASSWORD_LENGTH,
+  RATE_LIMIT,
+  rateLimit,
+  SESSION_COOKIE,
+  TOKEN_TTL_MS,
+} = await import("../api/_lib.js");
+
+assert("clave mínima 10", MIN_PASSWORD_LENGTH === 10, String(MIN_PASSWORD_LENGTH));
+assert("rate limit 5 / 15 min", RATE_LIMIT.max === 5 && RATE_LIMIT.windowMs === 15 * 60 * 1000);
+assert("reset TTL 30 min", TOKEN_TTL_MS === 30 * 60 * 1000);
+assert("cookie de sesión", SESSION_COOKIE === "haberes_session");
+
+const pwd = "tenchars!!";
+const h1 = await hashPassword(pwd);
+const h2 = await hashPassword(pwd);
+assert("hash Argon2id", typeof h1 === "string" && h1.startsWith("$argon2id$"));
+assert("parámetros Argon2id", /\$argon2id\$v=19\$m=19456,t=2,p=1\$/.test(h1));
+assert("salt único por hash", h1 !== h2);
+assert("verify Argon2id ok", (await verifyPassword(pwd, h1)) === true);
+assert("verify Argon2id fail", (await verifyPassword("wrong-pass!", h1)) === false);
+
+const rlKey = `verify:${Date.now()}`;
+for (let i = 0; i < 5; i += 1) {
+  assert(`rateLimit intento ${i + 1}`, rateLimit(rlKey) === true);
+}
+assert("rateLimit bloquea el 6º", rateLimit(rlKey) === false);
+
+const register = (await import("../api/register.js")).default;
+const login = (await import("../api/login.js")).default;
 const resetRequest = (await import("../api/reset-request.js")).default;
 const resetConfirm = (await import("../api/reset-confirm.js")).default;
+const me = (await import("../api/me.js")).default;
+
+const regRes = mockRes();
+await register(mockReq("POST", { rut: "12.345.678-5", email: "a@b.cl", razonSocial: "SpA", password: "tenchars!!" }, "203.0.113.21"), regRes);
+assert(
+  "register 501 sin DATABASE_URL",
+  regRes._out.statusCode === 501 && regRes._out.body?.reason === "no_backend",
+  JSON.stringify(regRes._out.body),
+);
+
+const loginIp = "203.0.113.22";
+const loginRes = mockRes();
+await login(mockReq("POST", { rut: "12.345.678-5", password: "tenchars!!" }, loginIp), loginRes);
+assert(
+  "login 501 sin DATABASE_URL",
+  loginRes._out.statusCode === 501 && loginRes._out.body?.reason === "no_backend",
+  JSON.stringify(loginRes._out.body),
+);
+for (let i = 0; i < 4; i += 1) {
+  await login(mockReq("POST", { rut: "12.345.678-5", password: "tenchars!!" }, loginIp), mockRes());
+}
+const login429 = mockRes();
+await login(mockReq("POST", { rut: "12.345.678-5", password: "tenchars!!" }, loginIp), login429);
+assert(
+  "login 429 al 6º intento",
+  login429._out.statusCode === 429 && login429._out.body?.reason === "rate_limited",
+  JSON.stringify(login429._out.body),
+);
+
 const reqRes = mockRes();
-await resetRequest({ method: "POST", body: { rut: "76.123.456-0" } }, reqRes);
+await resetRequest(mockReq("POST", { rut: "76.123.456-0", email: "a@b.cl" }, "203.0.113.23"), reqRes);
 assert(
   "reset-request 501 sin DATABASE_URL",
   reqRes._out.statusCode === 501 && reqRes._out.body?.ok === false && reqRes._out.body?.reason === "no_backend",
   JSON.stringify(reqRes._out.body),
 );
 const confRes = mockRes();
-await resetConfirm({ method: "POST", body: { token: "x", clave: "secreto" } }, confRes);
+await resetConfirm(mockReq("POST", { token: "x", newPassword: "tenchars!!" }, "203.0.113.24"), confRes);
 assert(
   "reset-confirm 501 sin DATABASE_URL",
   confRes._out.statusCode === 501 && confRes._out.body?.reason === "no_backend",
   JSON.stringify(confRes._out.body),
 );
-if (prevDb !== undefined) process.env.DATABASE_URL = prevDb;
-if (prevResend !== undefined) process.env.RESEND_API_KEY = prevResend;
+const meRes = mockRes();
+await me({ method: "GET", headers: {} }, meRes);
+assert(
+  "me 501 sin DATABASE_URL",
+  meRes._out.statusCode === 501 && meRes._out.body?.reason === "no_backend",
+  JSON.stringify(meRes._out.body),
+);
 
-for (const f of ["api/reset-request.js", "api/reset-confirm.js", "api/_lib.js"]) {
+const resetIp = "203.0.113.25";
+for (let i = 0; i < 5; i += 1) {
+  await resetRequest(mockReq("POST", { rut: "12.345.678-5", email: "a@b.cl" }, resetIp), mockRes());
+}
+const reset429 = mockRes();
+await resetRequest(mockReq("POST", { rut: "12.345.678-5", email: "a@b.cl" }, resetIp), reset429);
+assert(
+  "reset-request 429 al 6º intento",
+  reset429._out.statusCode === 429 && reset429._out.body?.reason === "rate_limited",
+  JSON.stringify(reset429._out.body),
+);
+
+if (prevDb !== undefined) process.env.DATABASE_URL = prevDb;
+else delete process.env.DATABASE_URL;
+if (prevDbUnpooled !== undefined) process.env.DATABASE_URL_UNPOOLED = prevDbUnpooled;
+else delete process.env.DATABASE_URL_UNPOOLED;
+if (prevResend !== undefined) process.env.RESEND_API_KEY = prevResend;
+else delete process.env.RESEND_API_KEY;
+
+const apiFiles = [
+  "api/_lib.js",
+  "api/register.js",
+  "api/login.js",
+  "api/logout.js",
+  "api/me.js",
+  "api/reset-request.js",
+  "api/reset-confirm.js",
+];
+for (const f of apiFiles) {
   const src = readFileSync(join(root, f), "utf8");
   assert(
     `${f} no loguea secretos`,
-    !/console\.(log|info|debug|warn|error)\([^)]*(token|clave|password)/i.test(src),
+    !/console\.(log|info|debug|warn|error)\([^)]*(token|clave|password|email|rut|hash)/i.test(src),
   );
 }
+
+const libSrc = readFileSync(join(root, "api/_lib.js"), "utf8");
+assert("sesión HttpOnly Secure SameSite=Lax", /HttpOnly/.test(libSrc) && /Secure/.test(libSrc) && /SameSite=Lax/.test(libSrc));
+assert("sin scrypt para claves", !/scrypt/i.test(libSrc));
+assert("hashPassword usa argon2", /argon2/i.test(libSrc) && /Argon2id/.test(libSrc));
+
+const sql = readFileSync(join(root, "sql/001.sql"), "utf8");
+assert(
+  "sql/001.sql tablas",
+  /CREATE TABLE IF NOT EXISTS companies/i.test(sql) &&
+    /password_reset_tokens/i.test(sql) &&
+    /CREATE TABLE IF NOT EXISTS sessions/i.test(sql) &&
+    /password_hash/.test(sql),
+);
+assert("sql/001.sql sin secretos", !/postgres(ql)?:\/\//i.test(sql) && !/DATABASE_URL\s*=/.test(sql));
 assert("sin schema prisma inventado", !existsSync(join(root, "prisma")));
 assert(
   "empresa.html olvido honesto",
   /Olvidé mi clave/.test(readFileSync(join(root, "empresa.html"), "utf8")) &&
     /no se puede enviar por correo/i.test(readFileSync(join(root, "empresa.html"), "utf8")),
+);
+assert(
+  "empresa.html POST register/login",
+  /\/api\/register/.test(readFileSync(join(root, "js/app-empresa.js"), "utf8")) &&
+    /\/api\/login/.test(readFileSync(join(root, "js/app-empresa.js"), "utf8")),
+);
+assert(
+  "reset.html pide newPassword",
+  /newPassword/.test(readFileSync(join(root, "js/app-reset.js"), "utf8")) &&
+    /\/api\/reset-confirm/.test(readFileSync(join(root, "js/app-reset.js"), "utf8")),
 );
 assert(
   "privacidad: local + mindicador + no venta",
@@ -422,6 +556,10 @@ for (const p of files) {
   const text = readFileSync(p, "utf8");
   if (/APP_USR-|TEST-[0-9a-f-]{8,}|access_token|mercadopago|MercadoPago/i.test(text)) {
     fail("sin tokens Mercado Pago", p);
+    leaked = true;
+  }
+  if (/postgres(ql)?:\/\/[^\s"'`]+/i.test(text) || /DATABASE_URL\s*=\s*\S+/.test(text)) {
+    fail("sin cadenas de conexión", p);
     leaked = true;
   }
   if (/from ['\"]@opai|opai\/app\/|apps\/web\/src/i.test(text)) {
