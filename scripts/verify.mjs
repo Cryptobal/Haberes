@@ -898,7 +898,12 @@ assert(
   "app-empresa perfil, documento, logo y firma",
   /\/api\/profile/.test(empJs) && /\/api\/documento/.test(empJs) && /\/api\/logo/.test(empJs) && /\/api\/firma/.test(empJs),
 );
-assert("app-empresa movimientos y xlsx de pago", /\/api\/movimiento/.test(empJs) && /xlsxPagoMasivo/.test(empJs));
+assert(
+  "app-empresa movimientos y xlsx de pago",
+  /registrarMovimientosRemoto/.test(empJs) &&
+    /xlsxPagoMasivo/.test(empJs) &&
+    /\/api\/movimiento/.test(readFileSync(join(root, "js/plan.js"), "utf8")),
+);
 assert("app-empresa editar y eliminar trabajador", /deleteTrabajador/.test(empJs) && /updateTrabajador/.test(empJs));
 assert("app-empresa CSV upsert por RUT", /upsertTrabajadores/.test(empJs));
 assert(
