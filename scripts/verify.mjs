@@ -514,6 +514,13 @@ assert(
   JSON.stringify(vercel.headers || []).includes("/admin") &&
     JSON.stringify(vercel.headers || []).includes("noindex"),
 );
+assert(
+  "vercel.json 301 /como-funciona → /como",
+  Array.isArray(vercel.redirects) &&
+    vercel.redirects.some(
+      (r) => r.source === "/como-funciona" && r.destination === "/como" && r.permanent === true,
+    ),
+);
 
 const htmlFiles = [
   "index.html",
@@ -911,6 +918,28 @@ assert(
   !/<input[^>]*type="date"/i.test(readFileSync(join(root, "finiquito.html"), "utf8")) &&
     !/<select\b/i.test(readFileSync(join(root, "finiquito.html"), "utf8")) &&
     /id="pickCausal"/.test(readFileSync(join(root, "finiquito.html"), "utf8")),
+);
+assert(
+  "sueldo público sin select nativo",
+  !/<select\b/i.test(readFileSync(join(root, "sueldo.html"), "utf8")) &&
+    /id="pickAfp"/.test(readFileSync(join(root, "sueldo.html"), "utf8")) &&
+    /id="pickContrato"/.test(readFileSync(join(root, "sueldo.html"), "utf8")) &&
+    /id="pickSalud"/.test(readFileSync(join(root, "sueldo.html"), "utf8")),
+);
+const pickerSrc = readFileSync(join(root, "js/picker.js"), "utf8");
+const pickerInit = (pickerSrc.match(/root\.innerHTML = `([\s\S]*?)`;/) || [])[1] || "";
+assert(
+  "picker cerrado por defecto, sin search en el layout",
+  /picker-panel" hidden/.test(pickerInit) &&
+    !/picker-search/.test(pickerInit) &&
+    /unmountSearch/.test(pickerSrc) &&
+    /closeAllPickers/.test(pickerSrc) &&
+    /Escape/.test(pickerSrc),
+);
+assert(
+  "css panel picker oculto de verdad",
+  /picker-panel\[hidden\]/.test(readFileSync(join(root, "css/app.css"), "utf8")) &&
+    /display:\s*none\s*!important/.test(readFileSync(join(root, "css/app.css"), "utf8")),
 );
 assert("admin.html noindex", /noindex/.test(readFileSync(join(root, "admin.html"), "utf8")));
 assert(

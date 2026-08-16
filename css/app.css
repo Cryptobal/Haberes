@@ -729,9 +729,9 @@ hr.sep {
 .btn-row > .btn,
 .btn-row > label.btn,
 .btn-row > a.btn {
-  flex: 1 1 160px;
+  flex: 0 1 auto;
   min-height: var(--touch);
-  min-width: min(160px, 100%);
+  width: auto;
   position: relative;
 }
 
@@ -804,9 +804,23 @@ hr.sep {
   box-shadow: var(--shadow);
   padding: 8px;
   max-height: min(360px, 70vh);
-  display: flex;
+  display: none;
   flex-direction: column;
   gap: 8px;
+}
+
+.picker.is-open .picker-panel,
+.picker-panel:not([hidden]) {
+  display: flex;
+}
+
+.picker-panel[hidden] {
+  display: none !important;
+  pointer-events: none;
+}
+
+.picker:not(.is-open) .picker-search {
+  display: none !important;
 }
 
 .picker-list {
@@ -1003,13 +1017,18 @@ hr.sep {
     padding-top: 16px;
   }
 
-  .picker-panel {
+  .picker-panel[hidden] {
+    display: none !important;
+  }
+
+  .picker.is-open .picker-panel:not([hidden]) {
     position: fixed;
     left: 12px;
     right: 12px;
     top: auto;
     bottom: 12px;
     max-height: 70vh;
+    display: flex;
   }
 }
 
