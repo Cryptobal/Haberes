@@ -100,6 +100,23 @@ export function empresaActual() {
   return loadDb()[ses.rut] || null;
 }
 
+export function cuentaLocalPorRut(rut) {
+  const id = normalizeRut(rut);
+  if (!id) return null;
+  return loadDb()[id] || null;
+}
+
+export function borrarCuentaLocal(rut) {
+  const id = normalizeRut(rut);
+  if (!id) throw new Error("RUT inválido");
+  const db = loadDb();
+  if (!db[id]) throw new Error("No hay una cuenta con ese RUT en este navegador");
+  delete db[id];
+  saveDb(db);
+  const ses = getSession();
+  if (ses?.rut === id) clearSession();
+}
+
 export function guardarEmpresa(emp) {
   const db = loadDb();
   db[emp.rut] = emp;

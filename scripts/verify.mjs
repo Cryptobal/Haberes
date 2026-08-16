@@ -251,6 +251,10 @@ const required = [
   "sueldo.html",
   "finiquito.html",
   "empresa.html",
+  "privacidad.html",
+  "terminos.html",
+  "robots.txt",
+  "sitemap.xml",
   "css/app.css",
   "js/constants.js",
   "js/sueldo.js",
@@ -259,6 +263,9 @@ const required = [
   "js/csv.js",
   "js/storage.js",
   "js/print.js",
+  "js/analytics.js",
+  "api/reset-request.js",
+  "api/reset-confirm.js",
   "vercel.json",
   "scripts/verify.mjs",
 ];
@@ -269,7 +276,14 @@ for (const f of required) {
 const vercel = JSON.parse(readFileSync(join(root, "vercel.json"), "utf8"));
 assert("vercel.json cleanUrls", vercel.cleanUrls === true);
 
-const htmlFiles = ["index.html", "sueldo.html", "finiquito.html", "empresa.html"];
+const htmlFiles = [
+  "index.html",
+  "sueldo.html",
+  "finiquito.html",
+  "empresa.html",
+  "privacidad.html",
+  "terminos.html",
+];
 for (const f of htmlFiles) {
   const html = readFileSync(join(root, f), "utf8");
   assert(
@@ -279,7 +293,109 @@ for (const f of htmlFiles) {
       /Previred/i.test(html) &&
       /asesor[ií]a legal/i.test(html),
   );
+  assert(`${f} canonical haberes.cl`, /rel="canonical" href="https:\/\/www\.haberes\.cl/.test(html));
+  assert(`${f} og:url`, /property="og:url" content="https:\/\/www\.haberes\.cl/.test(html));
+  assert(`${f} carga analytics.js`, /src="js\/analytics\.js"/.test(html));
+  assert(`${f} no define GA4 falso`, !/HABERES_GA4\s*=\s*["']G-/.test(html));
+  assert(`${f} enlace privacidad`, /href="\/privacidad"/.test(html));
+  assert(`${f} enlace términos`, /href="\/terminos"/.test(html));
 }
+
+const robots = readFileSync(join(root, "robots.txt"), "utf8");
+assert("robots User-agent *", /User-agent:\s*\*/i.test(robots));
+assert("robots Allow /", /Allow:\s*\//.test(robots));
+assert("robots Sitemap", /Sitemap:\s*https:\/\/www\.haberes\.cl\/sitemap\.xml/.test(robots));
+
+const sitemap = readFileSync(join(root, "sitemap.xml"), "utf8");
+const locs = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
+const expectedLocs = [
+  "https://www.haberes.cl/",
+  "https://www.haberes.cl/sueldo",
+  "https://www.haberes.cl/finiquito",
+  "https://www.haberes.cl/empresa",
+  "https://www.haberes.cl/privacidad",
+  "https://www.haberes.cl/terminos",
+];
+assert("sitemap 6 URLs clean", expectedLocs.every((u) => locs.includes(u)) && locs.length === 6, locs.join(", "));
+assert("sitemap lastmod 2026-08-16", /<lastmod>2026-08-16<\/lastmod>/.test(sitemap));
+assert("sitemap sin .html (cleanUrls)", !locs.some((u) => u.endsWith(".html")));
+
+const analytics = readFileSync(join(root, "js/analytics.js"), "utf8");
+assert(
+  "analytics.js exige G- no vacío",
+  /HABERES_GA4/.test(analytics) && /G-\[A-Z0-9/.test(analytics) && /if\s*\(!id/.test(analytics),
+);
+assert("analytics.js no trae property de ejemplo", !/gtag\/js\?id=G-[A-Z0-9]+/.test(analytics));
+
+console.log("\nAPI recuperación (fail closed)");
+const prevDb = process.env.DATABASE_URL;
+const prevResend = process.env.RESEND_API_KEY;
+delete process.env.DATABASE_URL;
+delete process.env.RESEND_API_KEY;
+
+function mockRes() {
+  const out = { statusCode: 200, body: null, headers: {} };
+  const res = {
+    setHeader(k, v) {
+      out.headers[k] = v;
+      return res;
+    },
+    status(code) {
+      out.statusCode = code;
+      return res;
+    },
+    json(payload) {
+      out.body = payload;
+      return res;
+    },
+  };
+  res._out = out;
+  return res;
+}
+
+const resetRequest = (await import("../api/reset-request.js")).default;
+const resetConfirm = (await import("../api/reset-confirm.js")).default;
+const reqRes = mockRes();
+await resetRequest({ method: "POST", body: { rut: "76.123.456-0" } }, reqRes);
+assert(
+  "reset-request 501 sin DATABASE_URL",
+  reqRes._out.statusCode === 501 && reqRes._out.body?.ok === false && reqRes._out.body?.reason === "no_backend",
+  JSON.stringify(reqRes._out.body),
+);
+const confRes = mockRes();
+await resetConfirm({ method: "POST", body: { token: "x", clave: "secreto" } }, confRes);
+assert(
+  "reset-confirm 501 sin DATABASE_URL",
+  confRes._out.statusCode === 501 && confRes._out.body?.reason === "no_backend",
+  JSON.stringify(confRes._out.body),
+);
+if (prevDb !== undefined) process.env.DATABASE_URL = prevDb;
+if (prevResend !== undefined) process.env.RESEND_API_KEY = prevResend;
+
+for (const f of ["api/reset-request.js", "api/reset-confirm.js", "api/_lib.js"]) {
+  const src = readFileSync(join(root, f), "utf8");
+  assert(
+    `${f} no loguea secretos`,
+    !/console\.(log|info|debug|warn|error)\([^)]*(token|clave|password)/i.test(src),
+  );
+}
+assert("sin schema prisma inventado", !existsSync(join(root, "prisma")));
+assert(
+  "empresa.html olvido honesto",
+  /Olvidé mi clave/.test(readFileSync(join(root, "empresa.html"), "utf8")) &&
+    /no se puede enviar por correo/i.test(readFileSync(join(root, "empresa.html"), "utf8")),
+);
+assert(
+  "privacidad: local + mindicador + no venta",
+  /localStorage|este navegador/i.test(readFileSync(join(root, "privacidad.html"), "utf8")) &&
+    /mindicador\.cl/.test(readFileSync(join(root, "privacidad.html"), "utf8")) &&
+    /No vendemos datos personales/.test(readFileSync(join(root, "privacidad.html"), "utf8")),
+);
+assert(
+  "términos: IA, no DT, carta no reemplaza Inspección / ministro de fe",
+  /ministro de fe/.test(readFileSync(join(root, "terminos.html"), "utf8")) &&
+    /Inspecci[oó]n del Trabajo/.test(readFileSync(join(root, "terminos.html"), "utf8")),
+);
 
 const cartaHint = readFileSync(join(root, "js/print.js"), "utf8") + readFileSync(join(root, "empresa.html"), "utf8");
 assert(

@@ -4,7 +4,9 @@ import { clp, formatRut, validarRut } from "./format.js";
 import { getIndicadores } from "./indicadores.js";
 import { abrirImpresion, cartaFiniquitoHtml, liquidacionHtml } from "./print.js";
 import {
+  borrarCuentaLocal,
   clearSession,
+  cuentaLocalPorRut,
   empresaActual,
   entrarEmpresa,
   registrarEmpresa,
@@ -114,6 +116,95 @@ el("formEntrar")?.addEventListener("submit", async (ev) => {
 el("btnSalir")?.addEventListener("click", () => {
   clearSession();
   refresh();
+});
+
+function resetOlvideUi() {
+  showError(el("errOlvide"), "");
+  const ok = el("okOlvide");
+  if (ok) {
+    ok.hidden = true;
+    ok.textContent = "";
+  }
+  const box = el("olvideResultado");
+  if (box) box.hidden = true;
+  const wipe = el("btnBorrarLocal");
+  if (wipe) {
+    wipe.hidden = true;
+    wipe.dataset.rut = "";
+  }
+}
+
+el("btnOlvide")?.addEventListener("click", () => {
+  const panel = el("panelOlvide");
+  if (!panel) return;
+  panel.hidden = false;
+  resetOlvideUi();
+  const fromLogin = val("loginRut");
+  if (fromLogin && el("olvideRut") && !el("olvideRut").value) {
+    el("olvideRut").value = fromLogin;
+  }
+  el("olvideRut")?.focus();
+  panel.scrollIntoView({ behavior: "smooth", block: "nearest" });
+});
+
+el("btnCerrarOlvide")?.addEventListener("click", () => {
+  const panel = el("panelOlvide");
+  if (panel) panel.hidden = true;
+  resetOlvideUi();
+});
+
+el("formOlvide")?.addEventListener("submit", (ev) => {
+  ev.preventDefault();
+  resetOlvideUi();
+  const rut = val("olvideRut");
+  if (!validarRut(rut)) {
+    showError(el("errOlvide"), "RUT de empresa inválido");
+    return;
+  }
+  const local = cuentaLocalPorRut(rut);
+  const box = el("olvideResultado");
+  const expl = el("olvideExplicacion");
+  const wipe = el("btnBorrarLocal");
+  if (box) box.hidden = false;
+  if (local) {
+    if (expl) {
+      expl.textContent =
+        "Hay una cuenta con ese RUT en ESTE navegador. No se envió ningún correo: los datos no salen de aquí. " +
+        "Si no recuerda la clave, puede borrar esa cuenta local y crear una nueva. Se perderán los trabajadores guardados en este navegador.";
+    }
+    if (wipe) {
+      wipe.hidden = false;
+      wipe.dataset.rut = local.rut;
+    }
+  } else if (expl) {
+    expl.textContent =
+      "No hay una cuenta con ese RUT en este navegador. Si la creó en otro computador, en el celular o en una ventana privada, no podemos recuperarla. " +
+      "No se envió ningún correo. Puede crear una cuenta local nueva con el formulario de arriba.";
+  }
+});
+
+el("btnBorrarLocal")?.addEventListener("click", () => {
+  const rut = el("btnBorrarLocal")?.dataset.rut;
+  showError(el("errOlvide"), "");
+  if (!rut) return;
+  const ok = window.confirm(
+    `¿Borrar la cuenta local de ${formatRut(rut)} en este navegador? Esta acción no se puede deshacer y no hay copia en un servidor.`,
+  );
+  if (!ok) return;
+  try {
+    borrarCuentaLocal(rut);
+    const msg = el("okOlvide");
+    if (msg) {
+      msg.hidden = false;
+      msg.textContent =
+        "Cuenta local borrada en este navegador. No se envió ningún correo. Ya puede crear una cuenta nueva con el mismo RUT.";
+    }
+    el("olvideResultado").hidden = true;
+    el("btnBorrarLocal").hidden = true;
+    refresh();
+  } catch (err) {
+    showError(el("errOlvide"), err.message);
+  }
 });
 
 el("csvFile")?.addEventListener("change", async (ev) => {

@@ -5,11 +5,21 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Para mi empresa — Haberes</title>
   <meta name="description" content="Liquidaciones y carta de finiquito para pymes. Datos locales. No es Dirección del Trabajo ni Previred." />
+  <link rel="canonical" href="https://www.haberes.cl/empresa" />
+  <meta property="og:type" content="website" />
+  <meta property="og:locale" content="es_CL" />
+  <meta property="og:site_name" content="Haberes" />
+  <meta property="og:title" content="Para mi empresa — Haberes" />
+  <meta property="og:description" content="Liquidaciones y carta de finiquito para pymes. Datos locales. No es Dirección del Trabajo ni Previred." />
+  <meta property="og:url" content="https://www.haberes.cl/empresa" />
+  <meta name="twitter:card" content="summary" />
   <link rel="icon" href="favicon.svg" type="image/svg+xml" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/app.css" />
+  <!-- GA4: para activarlo, asigne un ID G-… a window.HABERES_GA4 antes de este script. Vacío = sin peticiones. -->
+  <script src="js/analytics.js" defer></script>
 </head>
 <body>
   <header class="site-header">
@@ -70,8 +80,35 @@
               <input id="loginClave" type="password" required autocomplete="current-password" />
             </div>
             <button class="btn" type="submit">Entrar</button>
+            <button class="btn-text" type="button" id="btnOlvide">Olvidé mi clave</button>
           </form>
         </div>
+        <section id="panelOlvide" class="panel" hidden style="margin-top: 16px">
+          <h2>Olvidé mi clave</h2>
+          <p class="notice">
+            La clave no se puede enviar por correo. La cuenta vive solo en <strong>este navegador</strong>
+            (localStorage, hash SHA-256). No hay servidor que recuerde su clave ni bandeja de salida.
+            No le vamos a decir que «le enviamos un email».
+          </p>
+          <form id="formOlvide">
+            <div class="field">
+              <label for="olvideRut">RUT empresa</label>
+              <input id="olvideRut" required autocomplete="username" placeholder="76.123.456-0" />
+            </div>
+            <p class="error" id="errOlvide" hidden></p>
+            <p class="ok" id="okOlvide" hidden></p>
+            <div class="actions" style="margin-top: 12px">
+              <button class="btn" type="submit">Revisar este navegador</button>
+              <button class="btn btn-ghost" type="button" id="btnCerrarOlvide">Cerrar</button>
+            </div>
+          </form>
+          <div id="olvideResultado" hidden style="margin-top: 16px">
+            <p class="hint" id="olvideExplicacion"></p>
+            <button class="btn btn-danger" type="button" id="btnBorrarLocal" hidden>
+              Borrar la cuenta local de este RUT
+            </button>
+          </div>
+        </section>
       </section>
 
       <section id="app" hidden style="margin-top: 24px">
@@ -241,6 +278,11 @@
   <footer class="site-footer">
     <div class="wrap">
       <div><strong>Haberes</strong> · empresa local</div>
+      <div class="footer-legal">
+        <a href="/privacidad">Privacidad</a>
+        <span aria-hidden="true">·</span>
+        <a href="/terminos">Términos</a>
+      </div>
       <div data-indicadores>UF y UTM se cargan…</div>
       <div>
         Estimación generada por inteligencia artificial. No es un cálculo de la Dirección del Trabajo ni de Previred.
