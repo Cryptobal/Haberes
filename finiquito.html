@@ -10,6 +10,17 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 <!-- End Google Tag Manager -->
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script>
+  (function () {
+    try {
+      var t = localStorage.getItem("haberes:theme");
+      if (t !== "day" && t !== "night") {
+        t = window.matchMedia("(prefers-color-scheme: dark)").matches ? "night" : "day";
+      }
+      document.documentElement.setAttribute("data-theme", t);
+    } catch (e) {}
+  })();
+  </script>
   <title>Finiquito — Haberes</title>
   <meta name="description" content="Estime un finiquito en Chile (arts. 159, 160 y 161). No es Dirección del Trabajo ni Previred." />
   <link rel="canonical" href="https://www.haberes.cl/finiquito" />
@@ -42,6 +53,11 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <a href="/sueldo" data-nav>Sueldo líquido</a>
         <a href="/finiquito" data-nav>Finiquito</a>
         <a href="/empresa" data-nav>Para mi empresa</a>
+        <a href="/como" data-nav>Cómo funciona</a>
+        <a href="/precios" data-nav>Precios</a>
+        <button type="button" class="theme-toggle" data-theme-toggle aria-label="Cambiar a modo noche" aria-pressed="false">
+          <span data-theme-label>Día</span>
+        </button>
       </div>
     </nav>
   </header>
@@ -59,21 +75,17 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <div class="layout" style="margin-top: 24px">
         <form id="formFiniquito" class="panel">
           <div class="field">
-            <label for="articulo">Causal</label>
-            <select id="articulo">
-              <option value="161" selected>Art. 161 — desahucio / necesidades de la empresa</option>
-              <option value="159">Art. 159 — mutuo acuerdo, renuncia, vencimiento u otras</option>
-              <option value="160">Art. 160 — caducidad por conducta</option>
-            </select>
+            <span class="lbl">Causal</span>
+            <div id="pickCausal"></div>
           </div>
           <div class="row">
             <div class="field">
-              <label for="ingreso">Fecha de ingreso</label>
-              <input id="ingreso" type="date" value="2020-01-15" />
+              <span class="lbl">Fecha de ingreso</span>
+              <div id="pickIngreso"></div>
             </div>
             <div class="field">
-              <label for="termino">Fecha de término</label>
-              <input id="termino" type="date" value="2023-08-20" />
+              <span class="lbl">Fecha de término</span>
+              <div id="pickTermino"></div>
             </div>
           </div>
           <div class="field">
@@ -116,6 +128,10 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <div class="wrap">
       <div><strong>Haberes</strong> · finiquito</div>
       <div class="footer-legal">
+        <a href="/como">Cómo funciona</a>
+        <span aria-hidden="true">·</span>
+        <a href="/precios">Precios</a>
+        <span aria-hidden="true">·</span>
         <a href="/privacidad">Privacidad</a>
         <span aria-hidden="true">·</span>
         <a href="/terminos">Términos</a>

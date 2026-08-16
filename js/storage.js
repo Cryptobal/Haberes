@@ -101,7 +101,7 @@ export async function entrarEmpresa({ rut, clave }) {
   return emp;
 }
 
-export function ensureLocalEmpresa({ rut, email, razonSocial }) {
+export function ensureLocalEmpresa({ rut, email, razonSocial, giro, direccion, hasLogo, hasFirma }) {
   const id = normalizeRut(rut);
   if (!id) throw new Error("RUT inválido");
   const db = loadDb();
@@ -111,6 +111,10 @@ export function ensureLocalEmpresa({ rut, email, razonSocial }) {
     rut: id,
     email: String(email || prev.email || "").trim().toLowerCase(),
     razonSocial: String(razonSocial || prev.razonSocial || "").trim(),
+    giro: String(giro ?? prev.giro ?? "").trim(),
+    direccion: String(direccion ?? prev.direccion ?? "").trim(),
+    hasLogo: hasLogo == null ? Boolean(prev.hasLogo) : Boolean(hasLogo),
+    hasFirma: hasFirma == null ? Boolean(prev.hasFirma) : Boolean(hasFirma),
     claveHash: prev.claveHash || "",
     trabajadores: prev.trabajadores || [],
     createdAt: prev.createdAt || new Date().toISOString(),
@@ -165,6 +169,22 @@ export function upsertTrabajadores(emp, rows, { replace = false } = {}) {
     }
   }
   emp.trabajadores = current;
+  guardarEmpresa(emp);
+  return emp;
+}
+
+export function updateTrabajador(emp, id, patch) {
+  const list = [...(emp.trabajadores || [])];
+  const idx = list.findIndex((t) => t.id === id);
+  if (idx < 0) return emp;
+  list[idx] = { ...list[idx], ...patch, id: list[idx].id };
+  emp.trabajadores = list;
+  guardarEmpresa(emp);
+  return emp;
+}
+
+export function deleteTrabajador(emp, id) {
+  emp.trabajadores = (emp.trabajadores || []).filter((t) => t.id !== id);
   guardarEmpresa(emp);
   return emp;
 }

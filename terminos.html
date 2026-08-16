@@ -10,6 +10,17 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 <!-- End Google Tag Manager -->
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script>
+  (function () {
+    try {
+      var t = localStorage.getItem("haberes:theme");
+      if (t !== "day" && t !== "night") {
+        t = window.matchMedia("(prefers-color-scheme: dark)").matches ? "night" : "day";
+      }
+      document.documentElement.setAttribute("data-theme", t);
+    } catch (e) {}
+  })();
+  </script>
   <title>Términos — Haberes</title>
   <meta name="description" content="Estimación con IA. No es Dirección del Trabajo, Previred ni asesoría legal. Chile." />
   <link rel="canonical" href="https://www.haberes.cl/terminos" />
@@ -42,6 +53,11 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <a href="/sueldo" data-nav>Sueldo líquido</a>
         <a href="/finiquito" data-nav>Finiquito</a>
         <a href="/empresa" data-nav>Para mi empresa</a>
+        <a href="/como" data-nav>Cómo funciona</a>
+        <a href="/precios" data-nav>Precios</a>
+        <button type="button" class="theme-toggle" data-theme-toggle aria-label="Cambiar a modo noche" aria-pressed="false">
+          <span data-theme-label>Día</span>
+        </button>
       </div>
     </nav>
   </header>
@@ -50,7 +66,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <div class="wrap">
       <p class="kicker">Chile</p>
       <h1>Términos de uso</h1>
-      <p class="lede">Herramienta gratuita de estimación para pymes. Úsela como apoyo, no como dictamen oficial.</p>
+      <p class="lede">Herramienta de estimación para pymes. Las calculadoras públicas son gratis. Úsela como apoyo, no como dictamen oficial.</p>
       <p class="notice">
         Estimación generada por inteligencia artificial. No es un cálculo de la Dirección del Trabajo ni de Previred.
         No constituye asesoría legal ni previsional.
@@ -59,8 +75,9 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <div class="prose">
         <h2>Qué es Haberes</h2>
         <p>
-          Haberes estima sueldo líquido, finiquito y documentos de apoyo para imprimir. Es un producto gratuito en esta
-          versión. No es un organismo público ni un previredista.
+          Haberes estima sueldo líquido, finiquito y documentos de apoyo para imprimir. Las calculadoras públicas son
+          gratis. La cuenta empresa hoy no se cobra; el precio anunciado en Precios aún no está activo. No es un
+          organismo público ni un previredista.
         </p>
 
         <h2>Límites de la estimación</h2>
@@ -99,6 +116,10 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <div class="wrap">
       <div><strong>Haberes</strong> · estimación para pymes en Chile</div>
       <div class="footer-legal">
+        <a href="/como">Cómo funciona</a>
+        <span aria-hidden="true">·</span>
+        <a href="/precios">Precios</a>
+        <span aria-hidden="true">·</span>
         <a href="/privacidad">Privacidad</a>
         <span aria-hidden="true">·</span>
         <a href="/terminos">Términos</a>

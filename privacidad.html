@@ -10,6 +10,17 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 <!-- End Google Tag Manager -->
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script>
+  (function () {
+    try {
+      var t = localStorage.getItem("haberes:theme");
+      if (t !== "day" && t !== "night") {
+        t = window.matchMedia("(prefers-color-scheme: dark)").matches ? "night" : "day";
+      }
+      document.documentElement.setAttribute("data-theme", t);
+    } catch (e) {}
+  })();
+  </script>
   <title>Privacidad — Haberes</title>
   <meta name="description" content="Los datos de empresa viven en su navegador. Haberes no vende datos personales. Chile." />
   <link rel="canonical" href="https://www.haberes.cl/privacidad" />
@@ -42,6 +53,11 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <a href="/sueldo" data-nav>Sueldo líquido</a>
         <a href="/finiquito" data-nav>Finiquito</a>
         <a href="/empresa" data-nav>Para mi empresa</a>
+        <a href="/como" data-nav>Cómo funciona</a>
+        <a href="/precios" data-nav>Precios</a>
+        <button type="button" class="theme-toggle" data-theme-toggle aria-label="Cambiar a modo noche" aria-pressed="false">
+          <span data-theme-label>Día</span>
+        </button>
       </div>
     </nav>
   </header>
@@ -50,7 +66,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <div class="wrap">
       <p class="kicker">Chile</p>
       <h1>Privacidad</h1>
-      <p class="lede">Haberes es una herramienta gratuita. Las cuentas de empresa usan Postgres si el operador configuró la base; si no, quedan en su navegador.</p>
+      <p class="lede">Haberes estima sueldos y finiquitos. Las calculadoras públicas son gratis. La cuenta empresa hoy no se cobra.</p>
       <p class="notice">
         Estimación generada por inteligencia artificial. No es un cálculo de la Dirección del Trabajo ni de Previred.
         No constituye asesoría legal ni previsional.
@@ -65,10 +81,12 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           recuperárselos por correo.
         </p>
         <p>
-          Si el operador configuró Postgres, la cuenta de empresa (RUT, correo en minúsculas, razón social y un hash
+          Si el operador configuró Postgres, la cuenta de empresa (RUT, correo en minúsculas, razón social, giro, dirección y un hash
           Argon2id de la clave) se guarda en esa base. La sesión va en una cookie httpOnly. Los trabajadores de la
           liquidación siguen en este navegador. El enlace de recuperación, si existe, se guarda solo como hash y caduca
-          a los 30 minutos.
+          a los 30 minutos. El logo y los PDF generados se guardan en un depósito privado (Cloudflare R2): en Postgres
+          queda solo la clave del objeto, nunca los bytes. Esos archivos se sirven únicamente a la empresa autenticada;
+          no hay URL pública del depósito.
         </p>
         <p>
           No enviamos un correo de recuperación salvo que esté configurado el envío. No le diremos que «le enviamos un
@@ -103,6 +121,10 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <div class="wrap">
       <div><strong>Haberes</strong> · estimación para pymes en Chile</div>
       <div class="footer-legal">
+        <a href="/como">Cómo funciona</a>
+        <span aria-hidden="true">·</span>
+        <a href="/precios">Precios</a>
+        <span aria-hidden="true">·</span>
         <a href="/privacidad">Privacidad</a>
         <span aria-hidden="true">·</span>
         <a href="/terminos">Términos</a>
