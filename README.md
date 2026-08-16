@@ -21,7 +21,7 @@ UF y UTM se leen de [mindicador.cl](https://mindicador.cl/api) con caché de 12 
 - `/finiquito` arts. 159 / 160 / 161
 - `/empresa` cuenta de empresa (RUT + correo + clave), perfil, logo, firma, CSV, liquidación y carta de finiquito
 - `/como` cómo funciona
-- `/precios` calculadoras gratis; empresa hoy sin cobro; precio Pro anunciado
+- `/precios` registro gratis; Gratis 5 movimientos/mes; Pro $14.990 + IVA / mes
 - `/admin` operadores (no está en el sitemap; exige `ADMIN_EMAILS` + `ADMIN_PASSWORD_HASH`)
 - `/reset` cambio de clave con token de un solo uso (no está en el sitemap)
 
@@ -31,7 +31,7 @@ Los trabajadores de la liquidación viven en `localStorage` de este navegador.
 
 Si el entorno de despliegue define `DATABASE_URL`, las APIs `/api/register`, `/api/login`, `/api/reset-request` y `/api/reset-confirm` usan esa base. Si falta, las APIs responden 501 (`no_backend`) y la interfaz sigue en modo solo local, sin fingir que se envió un correo.
 
-El esquema está en `sql/001.sql` (cuentas), `sql/002.sql` (giro, dirección, clave de logo y documentos) y `sql/003.sql` (firma, `disabled_at`, sesiones de admin). Se aplica en el primer request si es seguro. Las migraciones incrementales no borran cuentas existentes.
+El esquema está en `sql/001.sql` (cuentas), `sql/002.sql` (giro, dirección, clave de logo y documentos), `sql/003.sql` (firma, `disabled_at`, sesiones de admin) y `sql/004.sql` (plan Gratis/Pro y movimientos del mes). Se aplica en el primer request si es seguro. Las migraciones incrementales no borran cuentas existentes.
 
 Opcional en el host, nunca en el repositorio:
 

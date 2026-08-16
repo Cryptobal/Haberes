@@ -120,5 +120,11 @@ export function authErrorMessage(data, status) {
   if (reason === "db_unavailable" || status === 503) {
     return "No se pudo conectar con la cuenta en este momento.";
   }
+  if (reason === "limite_gratis") {
+    return "Ya usó 5 movimientos este mes. Para seguir necesita Pro ($14.990 + IVA / mes).";
+  }
+  if (reason === "uno_a_uno") {
+    return "En Gratis se emite de a uno. Para varios a la vez necesita Pro.";
+  }
   return "No se pudo completar la solicitud.";
 }

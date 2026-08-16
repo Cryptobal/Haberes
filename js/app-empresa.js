@@ -12,7 +12,22 @@ import { parseTrabajadoresCsv } from "./csv.js";
 import { calcularFiniquitoCompleto } from "./finiquito.js";
 import { clp, formatRut, validarRut } from "./format.js";
 import { getIndicadores } from "./indicadores.js";
+import { BANCOS_CL, TIPO_CUENTA_OPTS, glosaSueldo, xlsxPagoEjemplo, xlsxPagoMasivo } from "./pago.js";
 import { createPicker } from "./picker.js";
+import {
+  MSG_CARGA_PRO,
+  MSG_LIMITE,
+  MSG_PAGO_PRO,
+  MSG_UNO_A_UNO,
+  aplicarPlanServidor,
+  puedeCargaMasiva,
+  puedeEmitir,
+  puedePagoMasivo,
+  registrarMovimientosLocal,
+  registrarMovimientosRemoto,
+  textoCupo,
+  workerKey,
+} from "./plan.js";
 import { cartaFiniquitoHtml, imprimirIframe, liquidacionHtml, mostrarVistaPrevia } from "./print.js";
 import {
   borrarCuentaLocal,
@@ -334,6 +349,10 @@ function resetAltaForm() {
   pickers.altaAfp?.setValue("modelo");
   pickers.altaSalud?.setValue("fonasa");
   pickers.altaContrato?.setValue("indefinido");
+  pickers.altaBanco?.setValue("001");
+  pickers.altaTipoCta?.setValue("corriente");
+  if (el("altaEmail")) el("altaEmail").value = "";
+  if (el("altaNroCta")) el("altaNroCta").value = "";
   mountHaberes(el("altaHaberes"), []);
 }
 
@@ -355,6 +374,10 @@ function fillAlta(t) {
   pickers.altaAfp?.setValue(t.afp || "modelo");
   pickers.altaSalud?.setValue(t.salud || "fonasa");
   pickers.altaContrato?.setValue(t.contrato || "indefinido");
+  pickers.altaBanco?.setValue(t.banco || "001");
+  pickers.altaTipoCta?.setValue(t.tipoCuenta || "corriente");
+  if (el("altaEmail")) el("altaEmail").value = t.email || "";
+  if (el("altaNroCta")) el("altaNroCta").value = t.nroCuenta || "";
   mountHaberes(el("altaHaberes"), haberesDeTrabajador(t));
 }
 
@@ -400,6 +423,35 @@ function workersForEmit() {
   return [first, ...rows.slice(1)];
 }
 
+async function consumirMovimientos(tipo, rows, errId) {
+  emp = empresaActual();
+  const keys = rows.map(workerKey);
+  const gate = puedeEmitir(emp, { tipo, keys });
+  if (!gate.ok) {
+    showError(el(errId), gate.message || MSG_LIMITE);
+    return false;
+  }
+  if (remoteOk) {
+    const remote = await registrarMovimientosRemoto({ tipo, keys });
+    if (remote.remote && !remote.data?.ok) {
+      if (remote.data?.reason === "limite_gratis") {
+        showError(el(errId), MSG_LIMITE);
+        return false;
+      }
+      if (remote.data?.reason === "uno_a_uno") {
+        showError(el(errId), MSG_UNO_A_UNO);
+        return false;
+      }
+    }
+    if (remote.remote && remote.data?.ok) {
+      aplicarPlanServidor(empresaActual(), remote.data);
+    }
+  }
+  registrarMovimientosLocal(empresaActual(), { tipo, keys: gate.nuevos?.length ? gate.nuevos : keys });
+  refresh();
+  return true;
+}
+
 function payloadTrabajador(t) {
   return {
     nombre: t.nombre,
@@ -416,6 +468,10 @@ function payloadTrabajador(t) {
     movilizacion: t.movilizacion,
     gratificacionArt50: t.gratificacionArt50,
     jornada: t.jornada,
+    email: t.email,
+    banco: t.banco,
+    tipoCuenta: t.tipoCuenta,
+    nroCuenta: t.nroCuenta,
   };
 }
 
@@ -426,6 +482,7 @@ function refresh() {
   if (!logged) return;
   el("empNombre").textContent = emp.razonSocial || "Empresa";
   el("empMeta").textContent = `${formatRut(emp.rut)} · ${emp.email}`;
+  if (el("empPlan")) el("empPlan").textContent = textoCupo(emp);
   fillPerfil();
   renderTrabajadores();
   syncCausalNota();
@@ -449,6 +506,18 @@ function initPickers() {
     value: "indefinido",
     searchable: false,
     placeholder: "Contrato",
+  });
+  pickers.altaBanco = createPicker(el("altaBancoPick"), {
+    options: BANCOS_CL,
+    value: "001",
+    searchable: true,
+    placeholder: "Banco",
+  });
+  pickers.altaTipoCta = createPicker(el("altaTipoCtaPick"), {
+    options: TIPO_CUENTA_OPTS,
+    value: "corriente",
+    searchable: false,
+    placeholder: "Tipo de cuenta",
   });
   pickers.trabajadores = createPicker(el("pickTrabajadores"), {
     options: [],
@@ -498,13 +567,17 @@ getIndicadores().then((ind) => {
 
 async function bootSession() {
   const { status, data } = await apiGet("/api/me");
-  if (data?.ok && data.company) {
-    remoteOk = true;
-    try {
-      ensureLocalEmpresa(data.company);
-    } catch {
-      // Keep local session if present.
-    }
+    if (data?.ok && data.company) {
+      remoteOk = true;
+      try {
+        ensureLocalEmpresa(data.company);
+        aplicarPlanServidor(empresaActual(), {
+          plan: data.company.plan,
+          movimientosMes: data.movimientosMes,
+        });
+      } catch {
+        // Keep local session if present.
+      }
   } else if (!isNoBackend(status, data) && status === 401) {
     const local = empresaActual();
     if (local?.remote && !local.claveHash) clearSession();
@@ -542,6 +615,7 @@ el("formRegistro")?.addEventListener("submit", async (ev) => {
     } else {
       remoteOk = true;
       ensureLocalEmpresa(data.company);
+      aplicarPlanServidor(empresaActual(), { plan: data.company.plan, movimientosMes: data.movimientosMes });
     }
     refresh();
   } catch (err) {
@@ -563,6 +637,7 @@ el("formEntrar")?.addEventListener("submit", async (ev) => {
     } else {
       remoteOk = true;
       ensureLocalEmpresa(data.company);
+      aplicarPlanServidor(empresaActual(), { plan: data.company.plan, movimientosMes: data.movimientosMes });
     }
     refresh();
     if (remoteOk) {
@@ -815,10 +890,25 @@ el("csvFile")?.addEventListener("change", async (ev) => {
   const file = ev.target.files?.[0];
   showError(el("errCsv"), "");
   if (!file) return;
-  const text = await file.text();
+  emp = empresaActual();
+  const gate = puedeCargaMasiva(emp);
+  if (!gate.ok) {
+    showError(el("errCsv"), gate.message || MSG_CARGA_PRO);
+    ev.target.value = "";
+    return;
+  }
   try {
-    const rows = parseTrabajadoresCsv(text);
-    if (!rows.length) throw new Error("El CSV no tiene filas válidas");
+    let rows;
+    const name = String(file.name || "").toLowerCase();
+    if (name.endsWith(".xlsx") || file.type.includes("spreadsheet")) {
+      const { readXlsxFirstSheet, rowsToCsv } = await import("./xlsx.js");
+      const buf = await file.arrayBuffer();
+      const table = await readXlsxFirstSheet(buf);
+      rows = parseTrabajadoresCsv(rowsToCsv(table));
+    } else {
+      rows = parseTrabajadoresCsv(await file.text());
+    }
+    if (!rows.length) throw new Error("El archivo no tiene filas válidas");
     emp = upsertTrabajadores(empresaActual(), rows);
     refresh();
   } catch (err) {
@@ -856,6 +946,10 @@ el("formAlta")?.addEventListener("submit", (ev) => {
     movilizacion: numVal("altaMov"),
     gratificacionArt50: el("altaGrat")?.checked,
     jornada: numVal("altaJornada") || 42,
+    email: val("altaEmail"),
+    banco: pickers.altaBanco?.getValue() || "",
+    tipoCuenta: pickers.altaTipoCta?.getValue() || "corriente",
+    nroCuenta: val("altaNroCta"),
   };
   if (editing) {
     emp = updateTrabajador(empresaActual(), editing, row);
@@ -906,7 +1000,7 @@ el("btnGuardarHaberes")?.addEventListener("click", () => {
   showOk(el("okHaberes"), "Haberes guardados en este navegador.");
 });
 
-el("btnLiquidacion")?.addEventListener("click", () => {
+el("btnLiquidacion")?.addEventListener("click", async () => {
   showError(el("errPrint"), "");
   const rows = workersForEmit();
   if (!rows.length) return showError(el("errPrint"), "Seleccione uno o más trabajadores");
@@ -914,6 +1008,7 @@ el("btnLiquidacion")?.addEventListener("click", () => {
   const periodo = periodoLabel(periodoVal) || periodoVal;
   try {
     const calc = calcularSueldo(rows[0], indicadores);
+    if (!(await consumirMovimientos("liquidacion", rows, "errPrint"))) return;
     abrirPreview(
       "Vista previa · liquidación",
       liquidacionHtml({
@@ -931,13 +1026,14 @@ el("btnLiquidacion")?.addEventListener("click", () => {
   }
 });
 
-el("btnCarta")?.addEventListener("click", () => {
+el("btnCarta")?.addEventListener("click", async () => {
   showError(el("errCarta"), "");
   const rows = workersForEmit();
   if (!rows.length) return showError(el("errCarta"), "Seleccione uno o más trabajadores");
   const ingreso = dateIngreso?.getValue() || "";
   const termino = dateTermino?.getValue() || "";
   if (!ingreso || !termino) return showError(el("errCarta"), "Indique ingreso y término con día, mes y año");
+  if (!(await consumirMovimientos("finiquito", rows, "errCarta"))) return;
   try {
     const t = rows[0];
     const fin = calcularFiniquitoCompleto(
@@ -976,6 +1072,7 @@ async function bajarPdf(tipo, errId, extra) {
   showError(el(errId), "");
   const rows = workersForEmit();
   if (!rows.length) return showError(el(errId), "Seleccione uno o más trabajadores");
+  if (!(await consumirMovimientos(tipo, rows, errId))) return;
   const { status, data, blob } = await apiDownloadPdf("/api/documento", {
     tipo,
     uf: indicadores.uf,
@@ -1041,4 +1138,45 @@ el("btnImprimirPreview")?.addEventListener("click", () => {
 
 el("btnCerrarPreview")?.addEventListener("click", () => {
   el("panelPreview").hidden = true;
+});
+
+el("btnPagoXlsx")?.addEventListener("click", () => {
+  showError(el("errPago"), "");
+  emp = empresaActual();
+  const gate = puedePagoMasivo(emp);
+  if (!gate.ok) return showError(el("errPago"), gate.message || MSG_PAGO_PRO);
+  const rows = workersForEmit();
+  if (!rows.length) return showError(el("errPago"), "Seleccione uno o más trabajadores");
+  const periodoVal = pickers.periodo?.getValue() || "";
+  const periodo = periodoLabel(periodoVal) || periodoVal;
+  try {
+    const bytes = xlsxPagoMasivo({
+      trabajadores: rows,
+      indicadores,
+      glosa: glosaSueldo(periodo),
+    });
+    triggerDownload(
+      new Blob([bytes], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      }),
+      "pago-masivo-haberes.xlsx",
+    );
+  } catch (err) {
+    showError(el("errPago"), err.message);
+  }
+});
+
+el("btnPagoEjemplo")?.addEventListener("click", () => {
+  showError(el("errPago"), "");
+  try {
+    const bytes = xlsxPagoEjemplo();
+    triggerDownload(
+      new Blob([bytes], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      }),
+      "pago-masivo-ejemplo.xlsx",
+    );
+  } catch (err) {
+    showError(el("errPago"), err.message);
+  }
 });
