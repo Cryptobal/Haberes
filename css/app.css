@@ -474,7 +474,8 @@ textarea:focus {
   align-items: center;
 }
 
-.footer-legal a {
+.footer-legal a,
+.footer-credit a {
   color: var(--ink);
 }
 
