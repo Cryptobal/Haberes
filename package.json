@@ -4,5 +4,8 @@
   "type": "module",
   "scripts": {
     "verify": "node scripts/verify.mjs"
+  },
+  "dependencies": {
+    "pg": "^8.16.3"
   }
 }
