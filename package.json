@@ -6,6 +6,7 @@
     "verify": "node scripts/verify.mjs"
   },
   "dependencies": {
+    "@node-rs/argon2": "^2.1.0",
     "pg": "^8.16.3"
   }
 }

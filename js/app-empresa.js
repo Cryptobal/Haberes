@@ -1,3 +1,4 @@
+import { apiGet, apiPost, authErrorMessage, isNoBackend } from "./api.js";
 import { parseTrabajadoresCsv } from "./csv.js";
 import { calcularFiniquito } from "./finiquito.js";
 import { clp, formatRut, validarRut } from "./format.js";
@@ -8,7 +9,9 @@ import {
   clearSession,
   cuentaLocalPorRut,
   empresaActual,
+  ensureLocalEmpresa,
   entrarEmpresa,
+  MIN_CLAVE,
   registrarEmpresa,
   upsertTrabajadores,
 } from "./storage.js";
@@ -77,7 +80,6 @@ function refresh() {
 }
 
 wireNav();
-refresh();
 mountIndicadores().then((ind) => {
   if (ind) indicadores = ind;
 });
@@ -85,17 +87,46 @@ getIndicadores().then((ind) => {
   indicadores = ind;
 });
 
+async function bootSession() {
+  const { status, data } = await apiGet("/api/me");
+  if (data?.ok && data.company) {
+    try {
+      ensureLocalEmpresa(data.company);
+    } catch {
+      // Keep local session if present.
+    }
+  } else if (!isNoBackend(status, data) && status === 401) {
+    const local = empresaActual();
+    if (local?.remote && !local.claveHash) clearSession();
+  }
+  refresh();
+}
+
+bootSession();
+
 el("formRegistro")?.addEventListener("submit", async (ev) => {
   ev.preventDefault();
   showError(el("errAuth"), "");
   try {
     if (!validarRut(val("regRut"))) throw new Error("RUT de empresa inválido");
-    await registrarEmpresa({
+    const payload = {
       rut: val("regRut"),
       email: val("regEmail"),
       razonSocial: val("regRazon"),
+      password: val("regClave"),
       clave: val("regClave"),
-    });
+    };
+    if (String(payload.password || "").length < MIN_CLAVE) {
+      throw new Error("La clave debe tener al menos 10 caracteres");
+    }
+    const { status, data } = await apiPost("/api/register", payload);
+    if (isNoBackend(status, data)) {
+      await registrarEmpresa(payload);
+    } else if (!data.ok) {
+      throw new Error(authErrorMessage(data, status));
+    } else {
+      ensureLocalEmpresa(data.company);
+    }
     refresh();
   } catch (err) {
     showError(el("errAuth"), err.message);
@@ -106,14 +137,23 @@ el("formEntrar")?.addEventListener("submit", async (ev) => {
   ev.preventDefault();
   showError(el("errAuth"), "");
   try {
-    await entrarEmpresa({ rut: val("loginRut"), clave: val("loginClave") });
+    const payload = { rut: val("loginRut"), password: val("loginClave"), clave: val("loginClave") };
+    const { status, data } = await apiPost("/api/login", payload);
+    if (isNoBackend(status, data)) {
+      await entrarEmpresa(payload);
+    } else if (!data.ok) {
+      throw new Error(authErrorMessage(data, status));
+    } else {
+      ensureLocalEmpresa(data.company);
+    }
     refresh();
   } catch (err) {
     showError(el("errAuth"), err.message);
   }
 });
 
-el("btnSalir")?.addEventListener("click", () => {
+el("btnSalir")?.addEventListener("click", async () => {
+  await apiPost("/api/logout", {});
   clearSession();
   refresh();
 });
@@ -153,24 +193,59 @@ el("btnCerrarOlvide")?.addEventListener("click", () => {
   resetOlvideUi();
 });
 
-el("formOlvide")?.addEventListener("submit", (ev) => {
+el("formOlvide")?.addEventListener("submit", async (ev) => {
   ev.preventDefault();
   resetOlvideUi();
   const rut = val("olvideRut");
+  const email = val("olvideEmail");
   if (!validarRut(rut)) {
     showError(el("errOlvide"), "RUT de empresa inválido");
     return;
   }
-  const local = cuentaLocalPorRut(rut);
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    showError(el("errOlvide"), "Indique el correo de la cuenta");
+    return;
+  }
+
+  const { status, data } = await apiPost("/api/reset-request", { rut, email });
   const box = el("olvideResultado");
   const expl = el("olvideExplicacion");
   const wipe = el("btnBorrarLocal");
+  const ok = el("okOlvide");
+  const local = cuentaLocalPorRut(rut);
+
+  if (!isNoBackend(status, data) && (data?.reason === "rate_limited" || status === 429)) {
+    showError(el("errOlvide"), authErrorMessage(data, status));
+    return;
+  }
+
+  if (data?.ok && !isNoBackend(status, data)) {
+    if (ok) {
+      ok.hidden = false;
+      ok.textContent = data.emailed
+        ? "Si hay una cuenta con ese RUT y correo, le enviaremos un enlace. Vale 30 minutos y es de un solo uso. No revelamos si los datos coinciden."
+        : "Recibimos la solicitud. No se envió ningún correo: el envío no está configurado.";
+    }
+    if (local && box) {
+      box.hidden = false;
+      if (expl) {
+        expl.textContent =
+          "También hay una cuenta con ese RUT en ESTE navegador. Si no recuerda la clave local, puede borrarla y los trabajadores de este navegador se perderán.";
+      }
+      if (wipe) {
+        wipe.hidden = false;
+        wipe.dataset.rut = local.rut;
+      }
+    }
+    return;
+  }
+
   if (box) box.hidden = false;
   if (local) {
     if (expl) {
       expl.textContent =
-        "Hay una cuenta con ese RUT en ESTE navegador. No se envió ningún correo: los datos no salen de aquí. " +
-        "Si no recuerda la clave, puede borrar esa cuenta local y crear una nueva. Se perderán los trabajadores guardados en este navegador.";
+        "No hay servidor de cuentas (o no respondió). Hay una cuenta con ese RUT en ESTE navegador. No se envió ningún correo: los datos no salen de aquí. " +
+        "La clave no se puede enviar por correo. Si no recuerda la clave, puede borrar esa cuenta local y crear una nueva. Se perderán los trabajadores guardados en este navegador.";
     }
     if (wipe) {
       wipe.hidden = false;
@@ -178,8 +253,9 @@ el("formOlvide")?.addEventListener("submit", (ev) => {
     }
   } else if (expl) {
     expl.textContent =
-      "No hay una cuenta con ese RUT en este navegador. Si la creó en otro computador, en el celular o en una ventana privada, no podemos recuperarla. " +
-      "No se envió ningún correo. Puede crear una cuenta local nueva con el formulario de arriba.";
+      "No hay servidor de cuentas (o no respondió) y no hay una cuenta con ese RUT en este navegador. " +
+      "Si la creó en otro computador, en el celular o en una ventana privada, no podemos recuperarla. " +
+      "No se envió ningún correo. La clave no se puede enviar por correo. Puede crear una cuenta local nueva con el formulario de arriba.";
   }
 });
 
