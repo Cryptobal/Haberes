@@ -297,6 +297,15 @@ for (const f of htmlFiles) {
   assert(`${f} og:url`, /property="og:url" content="https:\/\/www\.haberes\.cl/.test(html));
   assert(`${f} carga analytics.js`, /src="js\/analytics\.js"/.test(html));
   assert(`${f} no define GA4 falso`, !/HABERES_GA4\s*=\s*["']G-/.test(html));
+  assert(
+    `${f} GTM-PCR596Z2 en head`,
+    /dataLayer','GTM-PCR596Z2'/.test(html) && /googletagmanager\.com\/gtm\.js/.test(html),
+  );
+  assert(
+    `${f} GTM noscript`,
+    /googletagmanager\.com\/ns\.html\?id=GTM-PCR596Z2/.test(html),
+  );
+  assert(`${f} un solo contenedor GTM`, (html.match(/GTM-[A-Z0-9]+/g) || []).every((id) => id === "GTM-PCR596Z2"));
   assert(`${f} enlace privacidad`, /href="\/privacidad"/.test(html));
   assert(`${f} enlace términos`, /href="\/terminos"/.test(html));
 }
