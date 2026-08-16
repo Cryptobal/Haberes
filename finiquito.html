@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="es-CL">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Finiquito — Haberes</title>
+  <meta name="description" content="Estime un finiquito en Chile (arts. 159, 160 y 161). No es Dirección del Trabajo ni Previred." />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/app.css" />
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="brand" href="/" data-nav>
+        <span class="brand-mark">H</span> Haberes
+      </a>
+      <div class="nav-links">
+        <a href="/sueldo" data-nav>Sueldo líquido</a>
+        <a href="/finiquito" data-nav>Finiquito</a>
+        <a href="/empresa" data-nav>Para mi empresa</a>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <div class="wrap">
+      <p class="kicker">Calculadora</p>
+      <h1>Finiquito</h1>
+      <p class="lede">Indemnización por años de servicio, aviso previo y feriado proporcional. Para imprimir la carta con firmas use Para mi empresa.</p>
+      <p class="notice">
+        Estimación generada por inteligencia artificial. No es un cálculo de la Dirección del Trabajo ni de Previred.
+        No constituye asesoría legal. No reemplaza la ratificación ante la Inspección del Trabajo.
+      </p>
+
+      <div class="layout" style="margin-top: 24px">
+        <form id="formFiniquito" class="panel">
+          <div class="field">
+            <label for="articulo">Causal</label>
+            <select id="articulo">
+              <option value="161" selected>Art. 161 — desahucio / necesidades de la empresa</option>
+              <option value="159">Art. 159 — mutuo acuerdo, renuncia, vencimiento u otras</option>
+              <option value="160">Art. 160 — caducidad por conducta</option>
+            </select>
+          </div>
+          <div class="row">
+            <div class="field">
+              <label for="ingreso">Fecha de ingreso</label>
+              <input id="ingreso" type="date" value="2020-01-15" />
+            </div>
+            <div class="field">
+              <label for="termino">Fecha de término</label>
+              <input id="termino" type="date" value="2023-08-20" />
+            </div>
+          </div>
+          <div class="field">
+            <label for="remuneracion">Remuneración mensual para el cálculo</label>
+            <input id="remuneracion" type="number" min="0" step="1" value="1000000" />
+          </div>
+          <div class="row">
+            <div class="field">
+              <label for="diasFeriado">Días de feriado proporcional</label>
+              <input id="diasFeriado" type="number" min="0" step="0.5" value="10" />
+            </div>
+            <div class="field">
+              <label for="otros">Otros haberes</label>
+              <input id="otros" type="number" min="0" step="1" value="0" />
+            </div>
+          </div>
+          <label class="check">
+            <input id="avisoPrevio" type="checkbox" />
+            Se otorgó aviso previo (art. 161)
+          </label>
+          <p class="hint" id="notaArticulo"></p>
+        </form>
+
+        <aside class="panel sticky">
+          <p class="metric-label">Total estimado</p>
+          <p class="metric" id="outTotal">$ 0</p>
+          <div class="mini">
+            <div><span>Años (tope 11)</span><strong id="outAnios">0</strong></div>
+            <div><span>IAS</span><strong id="outIas">$ 0</strong></div>
+            <div><span>Aviso</span><strong id="outAviso">$ 0</strong></div>
+            <div><span>Feriado</span><strong id="outFeriado">$ 0</strong></div>
+          </div>
+          <p class="hint">IAS = años (fracción &gt; 6 meses suma 1) × min(remuneración, 90 UF), tope 11 años. Feriado = días × rem / 30.</p>
+        </aside>
+      </div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <div><strong>Haberes</strong> · finiquito</div>
+      <div data-indicadores>UF y UTM se cargan…</div>
+      <div>
+        Estimación generada por inteligencia artificial. No es un cálculo de la Dirección del Trabajo ni de Previred.
+        No constituye asesoría legal.
+      </div>
+    </div>
+  </footer>
+  <script type="module" src="js/app-finiquito.js"></script>
+</body>
+</html>
