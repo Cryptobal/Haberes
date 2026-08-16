@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="es-CL">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Haberes — liquidaciones y finiquitos para pymes en Chile</title>
+  <meta name="description" content="Estimación de sueldo líquido, finiquito y liquidaciones para pymes en Chile. No es Dirección del Trabajo ni Previred." />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/app.css" />
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="brand" href="/" data-nav>
+        <span class="brand-mark">H</span> Haberes
+      </a>
+      <div class="nav-links">
+        <a href="/sueldo" data-nav>Sueldo líquido</a>
+        <a href="/finiquito" data-nav>Finiquito</a>
+        <a href="/empresa" data-nav>Para mi empresa</a>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <div class="wrap">
+      <section class="hero">
+        <p class="kicker">Chile · pymes</p>
+        <h1>Liquidaciones claras, sin teatro legal.</h1>
+        <p class="lede">
+          Estime sueldo líquido, finiquito y cartas para su equipo. Cifras de AFP, salud, cesantía e impuesto único
+          al día de esta herramienta. Todo corre en su navegador.
+        </p>
+        <div class="actions">
+          <a class="btn" href="/sueldo">Calcular sueldo líquido</a>
+          <a class="btn btn-ghost" href="/finiquito">Calcular finiquito</a>
+        </div>
+      </section>
+
+      <p class="notice">
+        Estimación generada por inteligencia artificial. No es un cálculo de la Dirección del Trabajo ni de Previred.
+        No constituye asesoría legal ni previsional. Contraste siempre con su contador o con los canales oficiales.
+      </p>
+
+      <div class="cards">
+        <article class="card">
+          <h3>Sueldo líquido</h3>
+          <p>Modo simple o completa: AFP Circular 2414, Fonasa o Isapre, cesantía, IUSC agosto 2026, gratificación art. 50 y asignaciones no imponibles art. 41.</p>
+        </article>
+        <article class="card">
+          <h3>Finiquito</h3>
+          <p>Artículos 159, 160 y 161. Años de servicio con tope 11, aviso previo y feriado proporcional. Base tope 90 UF.</p>
+        </article>
+        <article class="card">
+          <h3>Para mi empresa</h3>
+          <p>Cuenta local (RUT, correo y clave), carga masiva CSV, liquidación de dos columnas e impresión de carta de finiquito con firmas.</p>
+        </article>
+      </div>
+
+      <h2>Cómo usarlo</h2>
+      <ol class="steps">
+        <li>Elija sueldo líquido o finiquito. Los resultados se actualizan al escribir.</li>
+        <li>UF y UTM se leen de mindicador.cl (caché 12 h). Si el valor sale de rango, se usa el respaldo.</li>
+        <li>En empresa, los datos quedan en este navegador. No hay servidor ni cobro en esta versión.</li>
+      </ol>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <div><strong>Haberes</strong> · estimación para pymes en Chile</div>
+      <div data-indicadores>UF y UTM se cargan…</div>
+      <div data-disclaimer>
+        Estimación generada por inteligencia artificial. No es un cálculo de la Dirección del Trabajo ni de Previred.
+        No constituye asesoría legal ni previsional.
+      </div>
+    </div>
+  </footer>
+  <script type="module" src="js/app-home.js"></script>
+</body>
+</html>

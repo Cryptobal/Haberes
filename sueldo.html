@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="es-CL">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sueldo líquido — Haberes</title>
+  <meta name="description" content="Calcule sueldo líquido en Chile. Estimación con IA. No es Dirección del Trabajo ni Previred." />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/app.css" />
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav">
+      <a class="brand" href="/" data-nav>
+        <span class="brand-mark">H</span> Haberes
+      </a>
+      <div class="nav-links">
+        <a href="/sueldo" data-nav>Sueldo líquido</a>
+        <a href="/finiquito" data-nav>Finiquito</a>
+        <a href="/empresa" data-nav>Para mi empresa</a>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <div class="wrap">
+      <p class="kicker">Calculadora</p>
+      <h1>Sueldo líquido</h1>
+      <p class="lede">Simple para un número rápido. Completa para extras, bonos, gratificación y asignaciones de colación o movilización.</p>
+      <p class="notice">
+        Estimación generada por inteligencia artificial. No es un cálculo de la Dirección del Trabajo ni de Previred.
+        No constituye asesoría legal ni previsional.
+      </p>
+
+      <div class="layout" style="margin-top: 24px">
+        <form id="formSueldo" class="panel">
+          <div class="seg" role="tablist">
+            <label><input type="radio" name="modo" value="simple" checked /> <span>Simple</span></label>
+            <label><input type="radio" name="modo" value="completa" /> <span>Completa</span></label>
+          </div>
+
+          <div class="field">
+            <label for="sueldoBase">Sueldo base</label>
+            <input id="sueldoBase" type="number" min="0" step="1" value="1000000" />
+          </div>
+          <div class="row">
+            <div class="field">
+              <label for="afp">AFP (Circular 2414)</label>
+              <select id="afp">
+                <option value="uno">Uno (0,49 %)</option>
+                <option value="modelo" selected>Modelo (0,58 %)</option>
+                <option value="planvital">PlanVital (1,16 %)</option>
+                <option value="habitat">Habitat (1,27 %)</option>
+                <option value="capital">Capital (1,44 %)</option>
+                <option value="cuprum">Cuprum (1,44 %)</option>
+                <option value="provida">Provida (1,45 %)</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="contrato">Contrato</label>
+              <select id="contrato">
+                <option value="indefinido" selected>Indefinido</option>
+                <option value="plazo_fijo">Plazo fijo</option>
+              </select>
+            </div>
+          </div>
+          <div class="row">
+            <div class="field">
+              <label for="salud">Salud</label>
+              <select id="salud">
+                <option value="fonasa" selected>Fonasa 7 %</option>
+                <option value="isapre">Isapre (pactado vs 7 %)</option>
+              </select>
+            </div>
+            <div class="field" id="wrapIsapre" hidden>
+              <label for="isaprePactado">Pactado Isapre</label>
+              <input id="isaprePactado" type="number" min="0" step="1" value="0" />
+            </div>
+          </div>
+
+          <div id="bloqueCompleta" hidden>
+            <hr class="sep" />
+            <div class="row">
+              <div class="field">
+                <label for="jornada">Jornada semanal (h)</label>
+                <input id="jornada" type="number" min="1" step="1" value="42" />
+              </div>
+              <div class="field">
+                <label for="horasExtras">Horas extras del mes</label>
+                <input id="horasExtras" type="number" min="0" step="0.5" value="0" />
+              </div>
+            </div>
+            <div class="row">
+              <div class="field">
+                <label for="bonos">Bonos imponibles</label>
+                <input id="bonos" type="number" min="0" step="1" value="0" />
+              </div>
+              <div class="field">
+                <label for="otrosImponibles">Otros imponibles</label>
+                <input id="otrosImponibles" type="number" min="0" step="1" value="0" />
+              </div>
+            </div>
+            <div class="row">
+              <div class="field">
+                <label for="colacion">Colación (art. 41)</label>
+                <input id="colacion" type="number" min="0" step="1" value="0" />
+              </div>
+              <div class="field">
+                <label for="movilizacion">Movilización (art. 41)</label>
+                <input id="movilizacion" type="number" min="0" step="1" value="0" />
+              </div>
+            </div>
+            <div class="row">
+              <div class="field">
+                <label for="otrosNoImponibles">Otros no imponibles</label>
+                <input id="otrosNoImponibles" type="number" min="0" step="1" value="0" />
+              </div>
+              <div class="field">
+                <label for="otrosDescuentos">Otros descuentos</label>
+                <input id="otrosDescuentos" type="number" min="0" step="1" value="0" />
+              </div>
+            </div>
+            <label class="check">
+              <input id="gratificacionArt50" type="checkbox" />
+              Gratificación art. 50 (25 % con tope $ 219.115)
+            </label>
+            <p class="hint">Hora extra: sueldo/30 × 28 / (jornada × 4) × 1,5. Tope AFP y salud 90 UF. Cesantía 0,6 % indefinido, tope 135,2 UF.</p>
+          </div>
+        </form>
+
+        <aside class="panel sticky">
+          <p class="metric-label">Líquido estimado</p>
+          <p class="metric" id="outLiquido">$ 0</p>
+          <p class="hint" id="outHoraExtra"></p>
+          <div class="mini">
+            <div><span>Haberes</span><strong id="outHaberes">$ 0</strong></div>
+            <div><span>Descuentos</span><strong id="outDescuentos">$ 0</strong></div>
+            <div><span>Imponible</span><strong id="outImponible">$ 0</strong></div>
+            <div><span>Base IUSC</span><strong id="outTributable">$ 0</strong></div>
+          </div>
+          <h3>Haberes</h3>
+          <ul class="split-list" id="listaHaberes"></ul>
+          <h3 style="margin-top:16px">Descuentos</h3>
+          <ul class="split-list" id="listaDescuentos"></ul>
+        </aside>
+      </div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <div><strong>Haberes</strong> · sueldo líquido</div>
+      <div data-indicadores>UF y UTM se cargan…</div>
+      <div>
+        Estimación generada por inteligencia artificial. No es un cálculo de la Dirección del Trabajo ni de Previred.
+        No constituye asesoría legal ni previsional.
+      </div>
+    </div>
+  </footer>
+  <script type="module" src="js/app-sueldo.js"></script>
+</body>
+</html>
