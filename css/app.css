@@ -2,6 +2,7 @@
   color-scheme: light;
   --ink: #12382c;
   --ink-2: #1a4a3c;
+  --on-ink: #f6f4ef;
   --paper: #f4f1ea;
   --surface: #fffcf7;
   --text: #161918;
@@ -22,6 +23,7 @@ html[data-theme="night"] {
   color-scheme: dark;
   --ink: #d5e6de;
   --ink-2: #b7cfc5;
+  --on-ink: #12382c;
   --paper: #101413;
   --surface: #171c1a;
   --text: #e8eeeb;
@@ -76,6 +78,10 @@ a:hover {
   backdrop-filter: blur(12px);
   background: color-mix(in srgb, var(--paper) 86%, white);
   border-bottom: 1px solid var(--line);
+}
+
+html[data-theme="night"] .site-header {
+  background: color-mix(in srgb, var(--paper) 88%, black);
 }
 
 .nav {
@@ -196,7 +202,7 @@ h2 {
   appearance: none;
   border: 1px solid var(--ink);
   background: var(--ink);
-  color: #f6f4ef;
+  color: var(--on-ink);
   font: inherit;
   font-weight: 500;
   font-size: 14px;
@@ -213,7 +219,7 @@ h2 {
 
 .btn:hover {
   background: var(--ink-2);
-  color: #f6f4ef;
+  color: var(--on-ink);
 }
 
 .btn-ghost {
@@ -321,10 +327,31 @@ input[type="file"] {
 
 input:focus,
 select:focus,
-textarea:focus {
+textarea:focus,
+.picker-trigger:focus,
+.picker-search:focus {
   outline: 2px solid color-mix(in srgb, var(--ink) 35%, transparent);
   outline-offset: 1px;
   border-color: var(--ink);
+}
+
+::placeholder {
+  color: var(--muted);
+  opacity: 1;
+}
+
+input:disabled,
+select:disabled,
+textarea:disabled {
+  color: var(--muted);
+  background: color-mix(in srgb, var(--control-bg) 70%, var(--line));
+  opacity: 1;
+  cursor: not-allowed;
+}
+
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .field {
@@ -386,7 +413,7 @@ textarea:focus {
 .seg input:checked + span,
 .seg label:has(input:checked) {
   background: var(--ink);
-  color: #f6f4ef;
+  color: var(--on-ink);
 }
 
 .seg label span {
@@ -630,7 +657,7 @@ textarea:focus {
   height: 24px;
   border-radius: 8px;
   background: var(--ink);
-  color: #f6f4ef;
+  color: var(--on-ink);
   font-size: 12px;
   display: grid;
   place-items: center;
@@ -683,7 +710,7 @@ hr.sep {
   max-height: 64px;
   max-width: 180px;
   object-fit: contain;
-  background: #fff;
+  background: var(--control-bg);
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 6px;
@@ -774,7 +801,7 @@ hr.sep {
 .ws-tab[aria-selected="true"] {
   background: var(--ink);
   border-color: var(--ink);
-  color: #f6f4ef;
+  color: var(--on-ink);
 }
 
 .picker {

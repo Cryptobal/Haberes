@@ -977,6 +977,20 @@ assert(
     /clip-path:\s*inset\(50%\)/.test(css) &&
     !/\.seg input \{\s*position:\s*absolute;\s*opacity:\s*0/.test(css),
 );
+assert(
+  "css --on-ink crema de día y verde de noche",
+  /:root\s*\{[\s\S]*?--on-ink:\s*#f6f4ef/.test(css) &&
+    /html\[data-theme="night"\]\s*\{[\s\S]*?--on-ink:\s*#12382c/.test(css),
+);
+assert(
+  "css texto sobre --ink usa --on-ink",
+  /\.btn\s*\{[\s\S]*?color:\s*var\(--on-ink\)/.test(css) &&
+    /\.btn:hover\s*\{[\s\S]*?color:\s*var\(--on-ink\)/.test(css) &&
+    /\.seg input:checked \+ span[\s\S]*?color:\s*var\(--on-ink\)/.test(css) &&
+    /\.steps li::before[\s\S]*?color:\s*var\(--on-ink\)/.test(css) &&
+    /\.ws-tab\[aria-selected="true"\][\s\S]*?color:\s*var\(--on-ink\)/.test(css),
+);
+assert("css cream #f6f4ef solo en el token --on-ink", (css.match(/#f6f4ef/g) || []).length === 1);
 assert("css dos columnas desde 900px", /@media \(min-width: 900px\)/.test(css));
 assert(
   "index y como describen Gratis/Pro",
