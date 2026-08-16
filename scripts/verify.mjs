@@ -308,6 +308,13 @@ for (const f of htmlFiles) {
   assert(`${f} no define GA4 falso`, !/HABERES_GA4\s*=\s*["']G-/.test(html));
   assert(`${f} enlace privacidad`, /href="\/privacidad"/.test(html));
   assert(`${f} enlace términos`, /href="\/terminos"/.test(html));
+  assert(
+    `${f} crédito lx3.ai`,
+    /Proyecto desarrollado por/.test(html) &&
+      /href="https:\/\/lx3\.ai"/.test(html) &&
+      /mailto:contacto@lx3\.ai/.test(html),
+  );
+  assert(`${f} sin formulario de consulta laboral`, !/consulta laboral/i.test(html));
 }
 
 const robots = readFileSync(join(root, "robots.txt"), "utf8");
