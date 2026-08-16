@@ -941,6 +941,15 @@ assert(
   /picker-panel\[hidden\]/.test(readFileSync(join(root, "css/app.css"), "utf8")) &&
     /display:\s*none\s*!important/.test(readFileSync(join(root, "css/app.css"), "utf8")),
 );
+assert(
+  "css paneles día/mes/año con min-width, sin display flex en el bloque base",
+  /\.date-selects\s+\.picker-panel\s*\{[^}]*min-width:\s*max\(100%,\s*12\.5rem\)/.test(
+    readFileSync(join(root, "css/app.css"), "utf8"),
+  ) &&
+    !/\.date-selects\s+\.picker-panel\s*\{[^}]*display:\s*flex/.test(
+      readFileSync(join(root, "css/app.css"), "utf8"),
+    ),
+);
 assert("admin.html noindex", /noindex/.test(readFileSync(join(root, "admin.html"), "utf8")));
 assert(
   "admin sin hashes en la UI",
