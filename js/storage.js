@@ -80,6 +80,8 @@ export async function registrarEmpresa({ rut, email, razonSocial, clave }) {
     razonSocial: String(razonSocial || "").trim(),
     claveHash: await hashClave(clave),
     trabajadores: [],
+    plan: "gratis",
+    movimientos: {},
     createdAt: new Date().toISOString(),
   };
   saveDb(db);
@@ -101,7 +103,7 @@ export async function entrarEmpresa({ rut, clave }) {
   return emp;
 }
 
-export function ensureLocalEmpresa({ rut, email, razonSocial, giro, direccion, hasLogo, hasFirma }) {
+export function ensureLocalEmpresa({ rut, email, razonSocial, giro, direccion, hasLogo, hasFirma, plan }) {
   const id = normalizeRut(rut);
   if (!id) throw new Error("RUT inválido");
   const db = loadDb();
@@ -117,6 +119,8 @@ export function ensureLocalEmpresa({ rut, email, razonSocial, giro, direccion, h
     hasFirma: hasFirma == null ? Boolean(prev.hasFirma) : Boolean(hasFirma),
     claveHash: prev.claveHash || "",
     trabajadores: prev.trabajadores || [],
+    plan: plan === "pro" || plan === "gratis" ? plan : prev.plan || "gratis",
+    movimientos: prev.movimientos || {},
     createdAt: prev.createdAt || new Date().toISOString(),
     remote: true,
   };

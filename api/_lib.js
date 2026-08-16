@@ -74,6 +74,20 @@ CREATE TABLE IF NOT EXISTS admin_sessions (
 CREATE INDEX IF NOT EXISTS admin_sessions_token_hash_idx ON admin_sessions (token_hash);
 `;
 
+const INLINE_SCHEMA_004 = `
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS plan TEXT NOT NULL DEFAULT 'gratis';
+CREATE TABLE IF NOT EXISTS movimientos (
+  id TEXT PRIMARY KEY,
+  company_id TEXT NOT NULL REFERENCES companies (id) ON DELETE CASCADE,
+  tipo TEXT NOT NULL,
+  trabajador_key TEXT NOT NULL,
+  periodo TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE UNIQUE INDEX IF NOT EXISTS movimientos_unique_mes
+  ON movimientos (company_id, periodo, tipo, trabajador_key);
+`;
+
 let schemaReady = false;
 let dummyHashPromise = null;
 const rateHits = new Map();
@@ -295,6 +309,7 @@ async function ensureSchema() {
     await client.query(loadSchemaFile("001.sql", INLINE_SCHEMA));
     await client.query(loadSchemaFile("002.sql", INLINE_SCHEMA_002));
     await client.query(loadSchemaFile("003.sql", INLINE_SCHEMA_003));
+    await client.query(loadSchemaFile("004.sql", INLINE_SCHEMA_004));
     schemaReady = true;
     return true;
   } finally {
@@ -327,6 +342,7 @@ export function companyPublic(row) {
     direccion: row.direccion || "",
     hasLogo: Boolean(row.logo_key),
     hasFirma: Boolean(row.firma_key),
+    plan: String(row.plan || "gratis").toLowerCase() === "pro" ? "pro" : "gratis",
   };
 }
 
@@ -380,7 +396,7 @@ export async function loadSessionCompany(client, token) {
   const tokenHash = hashToken(token);
   const found = await client.query(
     `SELECT c.id, c.rut, c.email, c.razon_social, c.giro, c.direccion, c.logo_key, c.logo_content_type,
-            c.firma_key, c.firma_content_type, c.disabled_at, s.id AS session_id
+            c.firma_key, c.firma_content_type, c.disabled_at, c.plan, s.id AS session_id
      FROM sessions s
      JOIN companies c ON c.id = s.company_id
      WHERE s.token_hash = $1 AND s.expires_at > NOW()

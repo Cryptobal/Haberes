@@ -378,6 +378,75 @@ assert(
 assert("RUT 12.345.678-5 válido", validarRut("12.345.678-5"));
 assert("DV RUT 12345678", dvRut("12345678") === "5");
 
+console.log("\nXLSX pago masivo y cupo Gratis");
+const { writeXlsx, readXlsxFirstSheet } = await import("../js/xlsx.js");
+const { xlsxPagoMasivo, xlsxPagoEjemplo, splitRut } = await import("../js/pago.js");
+const { puedeEmitir, puedeCargaMasiva, GRATIS_LIMITE } = await import("../js/plan.js");
+
+const xlsxBytes = writeXlsx([
+  {
+    name: "Haberes",
+    rows: [
+      ["nombre", "rut", "monto"],
+      ["Ana Pérez", "12.345.678-5", 818200],
+    ],
+  },
+]);
+assert("xlsx zip PK", xlsxBytes[0] === 0x50 && xlsxBytes[1] === 0x4b);
+const round = await readXlsxFirstSheet(xlsxBytes);
+assert(
+  "xlsx roundtrip",
+  round[0]?.[0] === "nombre" && round[1]?.[0] === "Ana Pérez" && String(round[1]?.[2]) === "818200",
+  JSON.stringify(round),
+);
+
+const pagoBytes = xlsxPagoMasivo({
+  trabajadores: [
+    {
+      nombre: "Ana Pérez",
+      rut: "12.345.678-5",
+      sueldoBase: 1_000_000,
+      afp: "modelo",
+      salud: "fonasa",
+      contrato: "indefinido",
+      banco: "001",
+      tipoCuenta: "corriente",
+      nroCuenta: "12345678",
+      email: "ana@empresa.cl",
+    },
+  ],
+  indicadores: { uf: FALLBACK_UF },
+  glosa: "Sueldo agosto 2026",
+});
+assert("xlsx pago masivo no vacío", pagoBytes.length > 500);
+const pagoSheet = await readXlsxFirstSheet(pagoBytes);
+assert(
+  "xlsx canónico tiene líquido",
+  pagoSheet[0]?.[0] === "nombre" &&
+    pagoSheet[1]?.[0] === "Ana Pérez" &&
+    Number(pagoSheet[1]?.[6]) === 818200 &&
+    String(pagoSheet[1]?.[7]).includes("agosto"),
+  JSON.stringify(pagoSheet[1]),
+);
+assert("xlsx ejemplo vacío", xlsxPagoEjemplo().length > 400);
+assert("split RUT", splitRut("12.345.678-5").cuerpo === "12345678" && splitRut("12.345.678-5").dv === "5");
+
+const gratisEmp = { plan: "gratis", movimientos: {} };
+assert("Gratis permite 1 movimiento", puedeEmitir(gratisEmp, { tipo: "liquidacion", keys: ["a"] }).ok);
+assert("Gratis bloquea 2 a la vez", puedeEmitir(gratisEmp, { tipo: "liquidacion", keys: ["a", "b"] }).ok === false);
+assert("Gratis bloquea carga masiva", puedeCargaMasiva(gratisEmp).ok === false);
+const lleno = {
+  plan: "gratis",
+  movimientos: {
+    [`${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`]: Array.from(
+      { length: GRATIS_LIMITE },
+      (_, i) => ({ tipo: "liquidacion", key: `k${i}` }),
+    ),
+  },
+};
+assert("Gratis bloquea el 6º", puedeEmitir(lleno, { tipo: "liquidacion", keys: ["nuevo"] }).ok === false);
+assert("Pro ilimitado", puedeEmitir({ plan: "pro" }, { tipo: "liquidacion", keys: ["a", "b", "c"] }).ok);
+
 console.log("\nIndicadores");
 const fb = fallbackIndicadores();
 assert("Fallback indicadores", fb.uf === FALLBACK_UF && fb.utm === FALLBACK_UTM && fb.fuente === "fallback");
@@ -399,6 +468,9 @@ const required = [
   "js/finiquito.js",
   "js/indicadores.js",
   "js/csv.js",
+  "js/xlsx.js",
+  "js/pago.js",
+  "js/plan.js",
   "js/storage.js",
   "js/print.js",
   "js/analytics.js",
@@ -417,9 +489,11 @@ const required = [
   "api/_pdf.js",
   "api/_admin.js",
   "api/admin-login.js",
+  "api/movimiento.js",
   "sql/001.sql",
   "sql/002.sql",
   "sql/003.sql",
+  "sql/004.sql",
   "como.html",
   "precios.html",
   "admin.html",
@@ -439,6 +513,13 @@ assert(
   "vercel.json headers /admin",
   JSON.stringify(vercel.headers || []).includes("/admin") &&
     JSON.stringify(vercel.headers || []).includes("noindex"),
+);
+assert(
+  "vercel.json 301 /como-funciona → /como",
+  Array.isArray(vercel.redirects) &&
+    vercel.redirects.some(
+      (r) => r.source === "/como-funciona" && r.destination === "/como" && r.permanent === true,
+    ),
 );
 
 const htmlFiles = [
@@ -586,6 +667,7 @@ const profile = (await import("../api/profile.js")).default;
 const logoApi = (await import("../api/logo.js")).default;
 const documento = (await import("../api/documento.js")).default;
 const adminLogin = (await import("../api/admin-login.js")).default;
+const movimiento = (await import("../api/movimiento.js")).default;
 
 const regRes = mockRes();
 await register(mockReq("POST", { rut: "12.345.678-5", email: "a@b.cl", razonSocial: "SpA", password: "tenchars!!" }, "203.0.113.21"), regRes);
@@ -657,6 +739,13 @@ assert(
   docRes._out.statusCode === 501 && docRes._out.body?.reason === "no_backend",
   JSON.stringify(docRes._out.body),
 );
+const movRes = mockRes();
+await movimiento(mockReq("POST", { tipo: "liquidacion", keys: ["a"] }, "203.0.113.27"), movRes);
+assert(
+  "movimiento 501 sin DATABASE_URL",
+  movRes._out.statusCode === 501 && movRes._out.body?.reason === "no_backend",
+  JSON.stringify(movRes._out.body),
+);
 
 const prevAdminE = process.env.ADMIN_EMAILS;
 const prevAdminH = process.env.ADMIN_PASSWORD_HASH;
@@ -716,6 +805,7 @@ const apiFiles = [
   "api/admin-logout.js",
   "api/admin-me.js",
   "api/admin-companies.js",
+  "api/movimiento.js",
 ];
 for (const f of apiFiles) {
   const src = readFileSync(join(root, f), "utf8");
@@ -729,6 +819,7 @@ const libSrc = readFileSync(join(root, "api/_lib.js"), "utf8");
 assert("sesión HttpOnly Secure SameSite=Lax", /HttpOnly/.test(libSrc) && /Secure/.test(libSrc) && /SameSite=Lax/.test(libSrc));
 assert("sin scrypt para claves", !/scrypt/i.test(libSrc));
 assert("hashPassword usa argon2", /argon2/i.test(libSrc) && /Argon2id/.test(libSrc));
+assert("schema 004 en _lib", /004\.sql/.test(libSrc) && /INLINE_SCHEMA_004/.test(libSrc));
 
 const sql = readFileSync(join(root, "sql/001.sql"), "utf8");
 assert(
@@ -763,6 +854,12 @@ assert(
     /ADD COLUMN IF NOT EXISTS/i.test(sql3),
 );
 assert("sql/003.sql sin secretos", !/postgres(ql)?:\/\//i.test(sql3) && !/DATABASE_URL\s*=/.test(sql3));
+const sql4 = readFileSync(join(root, "sql/004.sql"), "utf8");
+assert(
+  "sql/004.sql plan y movimientos",
+  /plan/.test(sql4) && /movimientos/.test(sql4) && /ADD COLUMN IF NOT EXISTS/i.test(sql4),
+);
+assert("sql/004.sql sin secretos", !/postgres(ql)?:\/\//i.test(sql4) && !/DATABASE_URL\s*=/.test(sql4));
 assert("sin schema prisma inventado", !existsSync(join(root, "prisma")));
 assert(
   "empresa.html olvido honesto",
@@ -798,6 +895,7 @@ assert("empresa.html giro y dirección", /id="perfilGiro"/.test(empHtml) && /id=
 assert("empresa.html logo file", /id="logoFile"/.test(empHtml));
 assert("empresa.html firma file", /id="firmaFile"/.test(empHtml));
 assert("empresa.html Cargar CSV y Descargar ejemplo", /Cargar CSV/.test(empHtml) && /Descargar ejemplo/.test(empHtml) && /btn-row/.test(empHtml));
+assert("empresa.html pago masivo XLSX", /btnPagoXlsx/.test(empHtml) && /btnPagoEjemplo/.test(empHtml));
 assert("empresa.html haberes nombrados", /id="emHaberes"/.test(empHtml) && /Añadir haber/.test(empHtml));
 assert("empresa.html feriado pendiente y proporcional", /finFeriadoPend/.test(empHtml) && /finFeriadoProp/.test(empHtml));
 assert("app-empresa no usa window.open", !/window\.open/.test(empJs));
@@ -807,6 +905,12 @@ assert(
   "app-empresa perfil, documento, logo y firma",
   /\/api\/profile/.test(empJs) && /\/api\/documento/.test(empJs) && /\/api\/logo/.test(empJs) && /\/api\/firma/.test(empJs),
 );
+assert(
+  "app-empresa movimientos y xlsx de pago",
+  /registrarMovimientosRemoto/.test(empJs) &&
+    /xlsxPagoMasivo/.test(empJs) &&
+    /\/api\/movimiento/.test(readFileSync(join(root, "js/plan.js"), "utf8")),
+);
 assert("app-empresa editar y eliminar trabajador", /deleteTrabajador/.test(empJs) && /updateTrabajador/.test(empJs));
 assert("app-empresa CSV upsert por RUT", /upsertTrabajadores/.test(empJs));
 assert(
@@ -814,6 +918,28 @@ assert(
   !/<input[^>]*type="date"/i.test(readFileSync(join(root, "finiquito.html"), "utf8")) &&
     !/<select\b/i.test(readFileSync(join(root, "finiquito.html"), "utf8")) &&
     /id="pickCausal"/.test(readFileSync(join(root, "finiquito.html"), "utf8")),
+);
+assert(
+  "sueldo público sin select nativo",
+  !/<select\b/i.test(readFileSync(join(root, "sueldo.html"), "utf8")) &&
+    /id="pickAfp"/.test(readFileSync(join(root, "sueldo.html"), "utf8")) &&
+    /id="pickContrato"/.test(readFileSync(join(root, "sueldo.html"), "utf8")) &&
+    /id="pickSalud"/.test(readFileSync(join(root, "sueldo.html"), "utf8")),
+);
+const pickerSrc = readFileSync(join(root, "js/picker.js"), "utf8");
+const pickerInit = (pickerSrc.match(/root\.innerHTML = `([\s\S]*?)`;/) || [])[1] || "";
+assert(
+  "picker cerrado por defecto, sin search en el layout",
+  /picker-panel" hidden/.test(pickerInit) &&
+    !/picker-search/.test(pickerInit) &&
+    /unmountSearch/.test(pickerSrc) &&
+    /closeAllPickers/.test(pickerSrc) &&
+    /Escape/.test(pickerSrc),
+);
+assert(
+  "css panel picker oculto de verdad",
+  /picker-panel\[hidden\]/.test(readFileSync(join(root, "css/app.css"), "utf8")) &&
+    /display:\s*none\s*!important/.test(readFileSync(join(root, "css/app.css"), "utf8")),
 );
 assert("admin.html noindex", /noindex/.test(readFileSync(join(root, "admin.html"), "utf8")));
 assert(
@@ -827,11 +953,27 @@ assert(
   !/changeme|admin123|haberes-admin|DEFAULT_PASSWORD/i.test(readFileSync(join(root, "api/_admin.js"), "utf8")),
 );
 assert(
-  "precios: calculadoras gratis y cobro apagado",
+  "precios: Gratis 5 movimientos y Pro 14990, sin cobro con tarjeta",
   /Gratis/.test(readFileSync(join(root, "precios.html"), "utf8")) &&
     /14\.990/.test(readFileSync(join(root, "precios.html"), "utf8")) &&
-    /no se cobra/i.test(readFileSync(join(root, "precios.html"), "utf8")) &&
-    /No hay Mercado Pago/.test(readFileSync(join(root, "precios.html"), "utf8")),
+    /5 movimientos/i.test(readFileSync(join(root, "precios.html"), "utf8")) &&
+    /CSV\/XLSX/.test(readFileSync(join(root, "precios.html"), "utf8")) &&
+    !/a[uú]n no se cobra/i.test(readFileSync(join(root, "precios.html"), "utf8")) &&
+    !/mercadopago|Mercado Pago/i.test(readFileSync(join(root, "precios.html"), "utf8")),
+);
+const css = readFileSync(join(root, "css/app.css"), "utf8");
+assert(
+  "css radios recortados, no absolute sueltos",
+  /\.seg label \{[\s\S]*position:\s*relative/.test(css) &&
+    /clip-path:\s*inset\(50%\)/.test(css) &&
+    !/\.seg input \{\s*position:\s*absolute;\s*opacity:\s*0/.test(css),
+);
+assert("css dos columnas desde 900px", /@media \(min-width: 900px\)/.test(css));
+assert(
+  "index y como describen Gratis/Pro",
+  /5 movimientos/i.test(readFileSync(join(root, "index.html"), "utf8")) &&
+    /14\.990/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+    /5 movimientos/i.test(readFileSync(join(root, "como.html"), "utf8")),
 );
 const r2src = readFileSync(join(root, "api/_r2.js"), "utf8");
 assert("R2 sin CORS público", !/Access-Control-Allow-Origin/i.test(r2src) && !/r2\.dev/.test(r2src));

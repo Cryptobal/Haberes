@@ -1,5 +1,9 @@
 {
   "cleanUrls": true,
+  "redirects": [
+    { "source": "/como-funciona", "destination": "/como", "permanent": true },
+    { "source": "/como-funciona/", "destination": "/como", "permanent": true }
+  ],
   "headers": [
     {
       "source": "/admin",

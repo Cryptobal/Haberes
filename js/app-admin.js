@@ -34,6 +34,7 @@ function renderCompanies(list) {
           <th>Alta</th>
           <th>Logo</th>
           <th>PDF</th>
+          <th>Plan</th>
           <th>Estado</th>
           <th></th>
         </tr>
@@ -51,11 +52,17 @@ function renderCompanies(list) {
               <td>${alta}</td>
               <td>${c.hasLogo ? "Sí" : "No"}</td>
               <td>${c.documentos}</td>
+              <td>${c.plan === "pro" ? "Pro" : "Gratis"}</td>
               <td>${c.disabled ? "Deshabilitada" : "Activa"}</td>
               <td>
-                <button type="button" class="btn-text" style="margin:0" data-toggle="${c.id}" data-disabled="${c.disabled ? "1" : "0"}">
-                  ${c.disabled ? "Habilitar" : "Deshabilitar"}
-                </button>
+                <div class="worker-actions">
+                  <button type="button" class="btn-text" style="margin:0" data-toggle="${esc(c.id)}" data-disabled="${c.disabled ? "1" : "0"}">
+                    ${c.disabled ? "Habilitar" : "Deshabilitar"}
+                  </button>
+                  <button type="button" class="btn-text" style="margin:0" data-plan="${esc(c.id)}" data-next="${c.plan === "pro" ? "gratis" : "pro"}">
+                    ${c.plan === "pro" ? "Pasar a Gratis" : "Pasar a Pro"}
+                  </button>
+                </div>
               </td>
             </tr>`;
           })
@@ -117,6 +124,20 @@ el("btnAdminSalir")?.addEventListener("click", async () => {
 });
 
 el("tablaEmpresas")?.addEventListener("click", async (ev) => {
+  const planBtn = ev.target.closest("[data-plan]");
+  if (planBtn) {
+    showError(el("errEmpresas"), "");
+    const { status, data } = await apiPost("/api/admin-companies", {
+      id: planBtn.dataset.plan,
+      plan: planBtn.dataset.next,
+    });
+    if (!data?.ok) {
+      showError(el("errEmpresas"), authErrorMessage(data, status));
+      return;
+    }
+    await loadCompanies();
+    return;
+  }
   const btn = ev.target.closest("[data-toggle]");
   if (!btn) return;
   showError(el("errEmpresas"), "");

@@ -67,6 +67,13 @@ function truthy(v) {
   return k === "1" || k === "si" || k === "sí" || k === "true" || k === "yes";
 }
 
+function mapTipoCuenta(v) {
+  const k = String(v || "corriente").trim().toLowerCase();
+  if (k.includes("vista") || k === "juv") return "vista";
+  if (k.includes("rut")) return "rut";
+  return "corriente";
+}
+
 function parseNamedBonos(rec) {
   const byN = new Map();
   for (const [key, val] of Object.entries(rec)) {
@@ -93,8 +100,8 @@ function parseNamedBonos(rec) {
 }
 
 /**
- * CSV: nombre, rut, cargo, sueldo_base, afp, salud, plan_isapre, contrato,
- * horas_extras, colacion, movilizacion, gratificacion,
+ * CSV/XLSX: nombre, rut, cargo, sueldo_base, afp, salud, plan_isapre, contrato,
+ * horas_extras, colacion, movilizacion, gratificacion, email, banco, tipo_cuenta, nro_cuenta,
  * bono_N_nombre, bono_N_monto, bono_N_imponible (N = 1, 2, …)
  */
 export function parseTrabajadoresCsv(text) {
@@ -134,12 +141,16 @@ export function parseTrabajadoresCsv(text) {
       gratificacionArt50:
         rec.gratificacion == null || rec.gratificacion === "" ? false : truthy(rec.gratificacion),
       jornada: parseNumber(rec.jornada) || 42,
+      email: String(rec.email || rec.correo || "").trim(),
+      banco: String(rec.banco || rec.codigo_banco || "").trim(),
+      tipoCuenta: mapTipoCuenta(rec.tipo_cuenta || rec.tipo_cta),
+      nroCuenta: String(rec.nro_cuenta || rec.cuenta || rec.nro_cta || "").trim(),
     });
   }
   return rows;
 }
 
-export const CSV_EJEMPLO = `nombre,rut,cargo,sueldo_base,afp,salud,plan_isapre,contrato,horas_extras,colacion,movilizacion,gratificacion,bono_1_nombre,bono_1_monto,bono_1_imponible,bono_2_nombre,bono_2_monto,bono_2_imponible
-Ana Pérez,12.345.678-5,Administradora,1000000,modelo,fonasa,0,indefinido,0,50000,40000,no,Bono producción,80000,si,Colación extra,15000,no
-Luis Soto,9.876.543-3,Operario,800000,habitat,fonasa,0,plazo_fijo,8,40000,35000,si,Bono asistencia,30000,si,Movilización extra,12000,no
+export const CSV_EJEMPLO = `nombre,rut,cargo,sueldo_base,afp,salud,plan_isapre,contrato,horas_extras,colacion,movilizacion,gratificacion,email,banco,tipo_cuenta,nro_cuenta,bono_1_nombre,bono_1_monto,bono_1_imponible,bono_2_nombre,bono_2_monto,bono_2_imponible
+Ana Pérez,12.345.678-5,Administradora,1000000,modelo,fonasa,0,indefinido,0,50000,40000,no,ana@empresa.cl,001,corriente,12345678,Bono producción,80000,si,Colación extra,15000,no
+Luis Soto,9.876.543-3,Operario,800000,habitat,fonasa,0,plazo_fijo,8,40000,35000,si,luis@empresa.cl,012,vista,11111111,Bono asistencia,30000,si,Movilización extra,12000,no
 `;

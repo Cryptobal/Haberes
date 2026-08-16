@@ -10,6 +10,7 @@ function companyAdminPublic(row) {
     razonSocial: row.razon_social,
     createdAt: row.created_at,
     disabled: Boolean(row.disabled_at),
+    plan: String(row.plan || "gratis").toLowerCase() === "pro" ? "pro" : "gratis",
     hasLogo: Boolean(row.has_logo),
     documentos: Number(row.documentos) || 0,
   };
@@ -28,7 +29,7 @@ export default async function handler(req, res) {
     try {
       const rows = await withDb(async (client) => {
         const found = await client.query(
-          `SELECT c.id, c.rut, c.email, c.razon_social, c.created_at, c.disabled_at,
+          `SELECT c.id, c.rut, c.email, c.razon_social, c.created_at, c.disabled_at, c.plan,
                   (c.logo_key IS NOT NULL) AS has_logo,
                   (SELECT COUNT(*)::int FROM documentos d WHERE d.company_id = c.id) AS documentos
            FROM companies c
@@ -46,22 +47,29 @@ export default async function handler(req, res) {
 
   const body = readJson(req);
   const id = String(body.id || "").trim();
-  if (!id || body.disabled == null) {
+  if (!id) return json(res, 400, { ok: false, reason: "invalid_payload" });
+  const disabled = body.disabled == null ? null : Boolean(body.disabled);
+  const plan = body.plan == null ? null : String(body.plan).toLowerCase() === "pro" ? "pro" : "gratis";
+  if (disabled == null && plan == null) {
     return json(res, 400, { ok: false, reason: "invalid_payload" });
   }
-  const disabled = Boolean(body.disabled);
 
   try {
     const result = await withDb(async (client) => {
       const updated = await client.query(
         `UPDATE companies
-         SET disabled_at = CASE WHEN $2 THEN COALESCE(disabled_at, NOW()) ELSE NULL END,
+         SET disabled_at = CASE
+               WHEN $2::boolean IS NULL THEN disabled_at
+               WHEN $2 THEN COALESCE(disabled_at, NOW())
+               ELSE NULL
+             END,
+             plan = COALESCE($3, plan),
              updated_at = NOW()
          WHERE id = $1
-         RETURNING id, rut, email, razon_social, created_at, disabled_at,
+         RETURNING id, rut, email, razon_social, created_at, disabled_at, plan,
                    (logo_key IS NOT NULL) AS has_logo,
                    (SELECT COUNT(*)::int FROM documentos d WHERE d.company_id = companies.id) AS documentos`,
-        [id, disabled],
+        [id, disabled, plan],
       );
       return { row: updated.rows[0] || null };
     });

@@ -33,7 +33,7 @@ export default async function handler(req, res) {
     const result = await withDb(async (client) => {
       const found = await client.query(
         `SELECT id, rut, email, razon_social, password_hash, giro, direccion, logo_key, logo_content_type,
-                firma_key, firma_content_type, disabled_at
+                firma_key, firma_content_type, disabled_at, plan
          FROM companies
          WHERE rut = $1
          LIMIT 1`,

@@ -66,7 +66,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <div class="wrap">
       <p class="kicker">Empresa</p>
       <h1>Para mi empresa</h1>
-      <p class="lede">Cuenta de empresa: perfil, logo y firma, trabajadores del mes, liquidación y carta de finiquito. Vista previa en esta página; no depende de ventanas emergentes.</p>
+      <p class="lede">Cuenta de empresa: perfil, logo y firma, trabajadores del mes, liquidación y carta de finiquito. El registro es gratis. Vista previa en esta página; no depende de ventanas emergentes.</p>
       <p class="notice">
         Estimación generada por inteligencia artificial. No es un cálculo de la Dirección del Trabajo ni de Previred.
         No constituye asesoría legal. La carta de finiquito no reemplaza la ratificación ante la Inspección del Trabajo.
@@ -149,6 +149,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           <div>
             <h2 id="empNombre" style="margin:0">Empresa</h2>
             <p class="hint" id="empMeta"></p>
+            <p class="hint" id="empPlan"></p>
           </div>
           <button class="btn btn-ghost" type="button" id="btnSalir">Cerrar sesión</button>
         </div>
@@ -183,7 +184,9 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             </div>
             <p class="error" id="errPerfil" hidden></p>
             <p class="ok" id="okPerfil" hidden></p>
-            <button class="btn" type="submit">Guardar perfil</button>
+            <div class="btn-row">
+              <button class="btn" type="submit">Guardar perfil</button>
+            </div>
           </form>
           <hr class="sep" />
           <h3>Logo</h3>
@@ -216,12 +219,12 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <section id="tab-trabajadores" class="panel" data-tab-panel="trabajadores" hidden>
           <h3>Trabajadores de este mes</h3>
           <p class="hint">
-            Cargue o edite la nómina del mes. Un CSV nuevo actualiza por RUT (no duplica). Columnas: nombre, rut, cargo, sueldo_base, afp, salud, plan_isapre, contrato, horas_extras, colacion, movilizacion, gratificacion, y bonos nombrados <code>bono_1_nombre</code>, <code>bono_1_monto</code>, <code>bono_1_imponible</code> (si/no), y así hasta N. Los trabajadores de esta lista viven en este navegador.
+            Cargue o edite la nómina del mes. Un archivo nuevo actualiza por RUT (no duplica). Columnas: nombre, rut, cargo, sueldo_base, afp, salud, plan_isapre, contrato, horas_extras, colacion, movilizacion, gratificacion, email, banco, tipo_cuenta, nro_cuenta, y bonos nombrados <code>bono_1_nombre</code>, <code>bono_1_monto</code>, <code>bono_1_imponible</code> (si/no). La carga masiva CSV/XLSX es Pro. Los trabajadores de esta lista viven en este navegador.
           </p>
           <div class="btn-row" style="margin: 12px 0 16px">
-            <label class="btn btn-ghost" for="csvFile">Cargar CSV</label>
-            <input id="csvFile" type="file" accept=".csv,text/csv" hidden />
-            <a class="btn btn-ghost" href="ejemplos/trabajadores.csv" download>Descargar ejemplo</a>
+            <label class="btn btn-ghost" for="csvFile">Cargar CSV/XLSX <span class="badge">Pro</span></label>
+            <input id="csvFile" type="file" accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden />
+            <a class="btn btn-ghost" href="ejemplos/trabajadores.csv" download>Descargar ejemplo CSV</a>
           </div>
           <p class="error" id="errCsv" hidden></p>
           <div class="table-wrap" id="tablaTrabajadores"></div>
@@ -289,6 +292,25 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                 <input id="altaMov" inputmode="numeric" min="0" value="0" />
               </div>
             </div>
+            <div class="field">
+              <label for="altaEmail">Correo del trabajador</label>
+              <input id="altaEmail" type="email" autocomplete="off" placeholder="opcional" />
+            </div>
+            <p class="hint">Datos de pago (para la plantilla XLSX de Pro). El banco no publica un formato único; Haberes arma una hoja para copiar.</p>
+            <div class="row">
+              <div class="field">
+                <span class="lbl">Banco</span>
+                <div id="altaBancoPick"></div>
+              </div>
+              <div class="field">
+                <span class="lbl">Tipo de cuenta</span>
+                <div id="altaTipoCtaPick"></div>
+              </div>
+            </div>
+            <div class="field">
+              <label for="altaNroCta">N° de cuenta</label>
+              <input id="altaNroCta" inputmode="numeric" autocomplete="off" />
+            </div>
             <label class="check">
               <input id="altaGrat" type="checkbox" />
               Gratificación art. 50
@@ -306,7 +328,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
         <section id="tab-documentos" class="panel" data-tab-panel="documentos" hidden>
           <h3>Liquidación o finiquito</h3>
-          <p class="hint">Elija uno o varios trabajadores que compartan la misma causal y carta. La vista previa muestra al primero y lista al resto. Un PDF por persona; si hay varios, un solo archivo con todas las páginas.</p>
+          <p class="hint">Elija uno o varios trabajadores que compartan la misma causal y carta. En Gratis: un trabajador por movimiento, 5 al mes. La vista previa muestra al primero y lista al resto. Un PDF por persona; si hay varios, un solo archivo con todas las páginas.</p>
           <div class="field">
             <span class="lbl">Trabajadores</span>
             <div id="pickTrabajadores"></div>
@@ -367,6 +389,16 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
               <div class="btn-row">
                 <button class="btn" type="button" id="btnLiquidacion">Ver liquidación</button>
                 <button class="btn btn-ghost" type="button" id="btnPdfLiquidacion">Descargar PDF</button>
+              </div>
+              <hr class="sep" />
+              <h3>Pago masivo <span class="badge">Pro</span></h3>
+              <p class="hint">
+                Excel para copiar a Office Banking o Scotia. Hoja canónica más hojas de referencia (Banco de Chile, Scotiabank, BancoEstado, Santander). No es el archivo binario del banco: contraste con la plantilla que baja cada portal.
+              </p>
+              <p class="error" id="errPago" hidden></p>
+              <div class="btn-row">
+                <button class="btn btn-ghost" type="button" id="btnPagoXlsx">Descargar XLSX de los seleccionados</button>
+                <button class="btn btn-ghost" type="button" id="btnPagoEjemplo">Descargar ejemplo vacío</button>
               </div>
             </div>
             <div>
