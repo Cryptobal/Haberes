@@ -604,7 +604,7 @@ assert(
     /data-nav-scrim/.test(uiSrc) &&
     /Escape/.test(uiSrc),
 );
-assert("ui.js no usa dialog nativo para el menú", !/<dialog/.test(uiSrc) && !/showModal/.test(uiSrc));
+assert("ui.js no usa dialog nativo para el menú", !/showModal|HTMLDialogElement|createElement\(\s*["']dialog["']\)/.test(uiSrc));
 
 const robots = readFileSync(join(root, "robots.txt"), "utf8");
 assert("robots User-agent *", /User-agent:\s*\*/i.test(robots));
