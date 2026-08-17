@@ -6,7 +6,12 @@ Estimación generada por inteligencia artificial. **No** es un cálculo de la Di
 
 ## Uso local
 
-Abra `index.html` o despliegue en Vercel (`vercel.json` con `cleanUrls`).
+```
+npm ci
+npm start                 # http://127.0.0.1:8080 (cleanUrls, como Vercel)
+```
+
+También puede abrir `index.html` o desplegar en Vercel (`vercel.json` con `cleanUrls`).
 
 ```
 node scripts/verify.mjs   # cálculo, contenido y contratos de API

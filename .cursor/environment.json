@@ -1,0 +1,11 @@
+{
+  "name": "Haberes",
+  "install": "npm ci\npython3 -m pip install --user playwright\npython3 -m playwright install chromium",
+  "start": "node scripts/serve.mjs",
+  "ports": [
+    {
+      "name": "Sitio Haberes",
+      "port": 8080
+    }
+  ]
+}

@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "start": "node scripts/serve.mjs",
     "verify": "node scripts/verify.mjs",
     "smoke": "python3 scripts/smoke.py",
     "check": "node scripts/verify.mjs && python3 scripts/smoke.py",
