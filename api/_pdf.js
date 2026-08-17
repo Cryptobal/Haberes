@@ -507,7 +507,7 @@ export async function buildFiniquitoPdf({
 
   const colGap = 24;
   const colW = (contentWidth(page) - colGap) / 2;
-  const signNeed = 36 + PDF_LAYOUT.firmaMaxH + 40 + 40;
+  const signNeed = 36 + PDF_LAYOUT.firmaMaxH + 70 + 56 + 48;
   ({ page, y } = ensureSpace(pdf, page, font, y, signNeed));
   y -= 36 + (firma ? PDF_LAYOUT.firmaMaxH : 8);
   drawSignColumn(page, {
@@ -527,8 +527,8 @@ export async function buildFiniquitoPdf({
     y,
     width: colW,
   });
-  y -= 52;
-  ({ page, y } = ensureSpace(pdf, page, font, y, 50));
+  y -= 70;
+  ({ page, y } = ensureSpace(pdf, page, font, y, 56));
   for (let i = 0; i < 2; i += 1) {
     drawSignColumn(page, {
       font,
@@ -539,7 +539,7 @@ export async function buildFiniquitoPdf({
       width: colW,
     });
   }
-  y -= 44;
+  y -= 56;
   ({ page, y } = ensureSpace(pdf, page, font, y, 60));
   drawDisclaimer(page, font, y, DISCLAIMER_FINIQUITO);
   return Buffer.from(await pdf.save());

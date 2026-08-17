@@ -2371,7 +2371,7 @@ console.log("\nPDF liquidación y finiquito");
     fin: full,
   });
   assert("preview liquidación grilla 2 columnas", /grid-template-columns: 1fr 1fr/.test(prevLiq) && /Trabajador/.test(prevLiq));
-  assert("preview líquido con aire", /margin-top: 16px/.test(prevLiq) && /Líquido a pago/.test(prevLiq));
+  assert("preview líquido con aire", /margin-top: 16pt/.test(prevLiq) && /Líquido a pago/.test(prevLiq));
   assert("preview firma sobre la línea", /firma-line/.test(prevLiq) && /max-height: 48px/.test(prevLiq));
   assert("preview finiquito Total", /<td>Total<\/td>/.test(prevFin) && !/Total estimado/.test(prevFin));
   assert("preview finiquito sin muro 330", !/tope de 330 d/.test(prevFin));

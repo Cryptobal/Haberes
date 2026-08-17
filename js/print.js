@@ -136,8 +136,8 @@ export function liquidacionHtml({ empresa, trabajador, periodo, calc, logoSrc = 
     .title-row { display:flex; justify-content:space-between; align-items:baseline; gap:16px; margin-bottom:16px; }
     .meta { margin: 0 0 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px 24px; }
     .meta .k { display:block; font-size:10px; color:#5e6864; margin-bottom:2px; }
-    .liq { margin-top: 16px; background: #12382c; color: #fff; padding: 8px 14px; min-height: 28px; display: flex; justify-content: space-between; align-items: center; }
-    .firmas { display: grid; grid-template-columns: 1fr 1fr; gap: 48px 32px; margin-top: 40px; }
+    .liq { margin-top: 16pt; background: #12382c; color: #fff; padding: 0 14px; height: 28pt; display: flex; justify-content: space-between; align-items: center; }
+    .firmas { display: grid; grid-template-columns: 1fr 1fr; gap: 48px 32px; margin-top: 40pt; }
     .firma { text-align: center; font-size: 12px; }
     .firma-space { height: 48px; }
     .firma-img { display: block; max-height: 48px; max-width: 160px; margin: 0 auto 4px; object-fit: contain; }
@@ -209,9 +209,9 @@ export function cartaFiniquitoHtml({ empresa, trabajador, fin, ciudad = "Santiag
   return docShell("Carta de finiquito", inner, {
     extraCss: `
     body { font-size: 13px; line-height: 1.55; }
-    .firmas { display: grid; grid-template-columns: 1fr 1fr; gap: 40px 32px; margin-top: 40px; }
+    .firmas { display: grid; grid-template-columns: 1fr 1fr; gap: 56px 32px; margin-top: 40pt; }
     .firma { text-align: center; font-size: 12px; }
-    .firma-space { height: 36px; }
+    .firma-space { height: 48px; }
     .firma-img { display: block; max-height: 48px; max-width: 160px; margin: 0 auto 4px; object-fit: contain; }
     .firma-line { border-top: 1px solid #12382c; }
     .firma-cap { color: #5e6864; font-size: 11px; margin-top: 6px; }
