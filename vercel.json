@@ -4,6 +4,10 @@
     { "source": "/como-funciona", "destination": "/como", "permanent": true },
     { "source": "/como-funciona/", "destination": "/como", "permanent": true }
   ],
+  "rewrites": [
+    { "source": "/sitemap.xml", "destination": "/api/sitemap" },
+    { "source": "/sitemap", "destination": "/api/sitemap" }
+  ],
   "headers": [
     {
       "source": "/admin",
@@ -11,6 +15,27 @@
         { "key": "X-Robots-Tag", "value": "noindex, nofollow" },
         { "key": "X-Frame-Options", "value": "DENY" },
         { "key": "Referrer-Policy", "value": "no-referrer" },
+        { "key": "X-Content-Type-Options", "value": "nosniff" }
+      ]
+    },
+    {
+      "source": "/sitemap.xml",
+      "headers": [
+        { "key": "Content-Type", "value": "text/xml; charset=utf-8" },
+        { "key": "X-Content-Type-Options", "value": "nosniff" }
+      ]
+    },
+    {
+      "source": "/sitemap",
+      "headers": [
+        { "key": "Content-Type", "value": "text/xml; charset=utf-8" },
+        { "key": "X-Content-Type-Options", "value": "nosniff" }
+      ]
+    },
+    {
+      "source": "/api/sitemap",
+      "headers": [
+        { "key": "Content-Type", "value": "text/xml; charset=utf-8" },
         { "key": "X-Content-Type-Options", "value": "nosniff" }
       ]
     }

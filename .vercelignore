@@ -1,0 +1,3 @@
+# El XML estático dispara 500 en fetches no-browser (GSC/Googlebot).
+# /sitemap.xml lo sirve api/sitemap.js vía rewrite.
+sitemap.xml
