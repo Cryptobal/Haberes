@@ -1646,6 +1646,66 @@ input:disabled {
   margin-top: var(--s-5);
 }
 
+.seo-calc {
+  margin: var(--s-6) 0;
+  padding: var(--s-5);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+}
+
+.seo-calc__title {
+  font-weight: 600;
+  margin: 0 0 var(--s-4);
+}
+
+.seo-calc__form {
+  display: grid;
+  gap: var(--s-3);
+}
+
+.seo-calc__field {
+  display: grid;
+  gap: var(--s-1);
+  font-size: var(--fs-sm);
+}
+
+.seo-calc__field input {
+  width: 100%;
+  max-width: 20rem;
+}
+
+.seo-calc__check {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  font-size: var(--fs-sm);
+}
+
+.seo-calc__result {
+  font-size: var(--fs-lg);
+  font-weight: 600;
+  margin: var(--s-2) 0;
+}
+
+.seo-calc__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-3);
+}
+
+.seo-calc__note {
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  margin: var(--s-3) 0 0;
+}
+
+.seo-cta {
+  margin: var(--s-6) 0;
+  padding: var(--s-5) 0 0;
+  border-top: 1px solid var(--line);
+}
+
 /* 4.14 Cuentas */
 .auth-grid {
   display: grid;

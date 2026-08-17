@@ -704,41 +704,41 @@ assert("robots Allow /", /Allow:\s*\//.test(robots));
 assert("robots Disallow /admin", /Disallow:\s*\/admin/.test(robots));
 assert("robots Sitemap", /Sitemap:\s*https:\/\/www\.haberes\.cl\/sitemap\.xml/.test(robots));
 
+const { seoPaths, GUIDE_SLUGS, CAUSAL_PAGES, BASE_PATHS } = await import("../content/registry.js");
 const sitemap = readFileSync(join(root, "sitemap.xml"), "utf8");
 const locs = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
-const expectedLocs = [
-  "https://www.haberes.cl/",
-  "https://www.haberes.cl/sueldo",
-  "https://www.haberes.cl/finiquito",
-  "https://www.haberes.cl/empresa",
-  "https://www.haberes.cl/como",
-  "https://www.haberes.cl/precios",
-  "https://www.haberes.cl/privacidad",
-  "https://www.haberes.cl/terminos",
-];
-const guiaLocs = [
-  "https://www.haberes.cl/guias/plazo-de-pago-del-finiquito",
-  "https://www.haberes.cl/guias/con-que-sueldo-se-calcula-el-finiquito",
-  "https://www.haberes.cl/guias/finiquito-trabajadora-de-casa-particular",
-  "https://www.haberes.cl/guias/me-reservo-el-derecho-en-el-finiquito",
-  "https://www.haberes.cl/guias/como-leer-una-liquidacion-de-sueldo",
-  "https://www.haberes.cl/guias/formato-de-liquidacion-de-sueldo-chile",
-  "https://www.haberes.cl/guias/liquidacion-de-sueldo-y-previred",
-];
-const causalLocs = [
-  "https://www.haberes.cl/finiquito/art-161-necesidades-de-la-empresa",
-  "https://www.haberes.cl/finiquito/art-159-renuncia-voluntaria",
-  "https://www.haberes.cl/finiquito/art-159-vencimiento-del-plazo",
-  "https://www.haberes.cl/finiquito/art-160-incumplimiento-grave",
-  "https://www.haberes.cl/finiquito/art-161-desahucio",
-];
+const expectedFromRegistry = seoPaths().map((p) =>
+  p === "/" ? "https://www.haberes.cl/" : `https://www.haberes.cl${p}`,
+);
 assert(
-  "sitemap URLs públicas base + guías + causales",
-  expectedLocs.every((u) => locs.includes(u)) &&
-    guiaLocs.every((u) => locs.includes(u)) &&
-    causalLocs.every((u) => locs.includes(u)) &&
-    locs.length === expectedLocs.length + guiaLocs.length + causalLocs.length,
-  locs.join(", "),
+  "sitemap URLs = registro SEO (base + guías + 21 causales)",
+  locs.length === expectedFromRegistry.length &&
+    expectedFromRegistry.every((u) => locs.includes(u)) &&
+    GUIDE_SLUGS.length >= 16 &&
+    CAUSAL_PAGES.length === 21 &&
+    BASE_PATHS.includes("/sueldo") &&
+    BASE_PATHS.includes("/finiquito"),
+  `${locs.length} vs ${expectedFromRegistry.length}`,
+);
+assert(
+  "content/guias tiene un md por guía del registro",
+  GUIDE_SLUGS.every((s) => existsSync(join(root, "content/guias", `${s}.md`))),
+);
+assert(
+  "content/causales tiene un md por causal",
+  CAUSAL_PAGES.every((p) => existsSync(join(root, "content/causales", `${p.slug}.md`))),
+);
+assert("docs/seo-map.md existe", existsSync(join(root, "docs/seo-map.md")));
+assert(
+  "páginas SEO tienen calculadora embebida o CTA empresa",
+  GUIDE_SLUGS.every((s) => {
+    const html = readFileSync(join(root, "guias", `${s}.html`), "utf8");
+    return /data-seo-calc=/.test(html) && /href="\/empresa"/.test(html) && /DISCLAIMER|Inspección del Trabajo|Previred/.test(html);
+  }) &&
+    CAUSAL_PAGES.every((p) => {
+      const html = readFileSync(join(root, "finiquito", `${p.slug}.html`), "utf8");
+      return /data-seo-calc=/.test(html) && /href="\/empresa"/.test(html) && /application\/ld\+json/.test(html);
+    }),
 );
 assert("sitemap sin admin ni reset", !locs.some((u) => /\/admin|\/reset/.test(u)));
 assert("sitemap lastmod presente", /<lastmod>\d{4}-\d{2}-\d{2}<\/lastmod>/.test(sitemap));
@@ -2477,8 +2477,20 @@ assert(
   assert("SEO título finiquito con calculadora y Chile", /Calculadora de finiquito Chile/.test(readFileSync(join(root, "finiquito.html"), "utf8")));
   assert("SEO fuentes autoalojadas", existsSync(join(root, "fonts/ibm-plex-sans-latin-400-normal.woff2")) && existsSync(join(root, "fonts/LICENSE")));
   assert("SEO og-default.png", existsSync(join(root, "img/og-default.png")));
-  assert("SEO guías 7", guiaLocs.every((u) => existsSync(join(root, u.replace("https://www.haberes.cl/", "") + ".html"))));
-  assert("SEO causales 5", causalLocs.every((u) => existsSync(join(root, u.replace("https://www.haberes.cl/", "") + ".html"))));
+  assert(
+    "SEO guías del registro tienen HTML",
+    GUIDE_SLUGS.every((s) => existsSync(join(root, "guias", `${s}.html`))),
+  );
+  assert(
+    "SEO 21 causales tienen HTML",
+    CAUSAL_PAGES.length === 21 &&
+      CAUSAL_PAGES.every((p) => existsSync(join(root, "finiquito", `${p.slug}.html`))),
+  );
+  assert(
+    "SEO guía finiquito tiene FAQPage + WebApplication",
+    /"@type": "FAQPage"/.test(readFileSync(join(root, "guias/finiquito.html"), "utf8")) &&
+      /"@type": "WebApplication"/.test(readFileSync(join(root, "guias/finiquito.html"), "utf8")),
+  );
   for (const file of ["admin.html", "reset.html", "privacidad.html", "terminos.html"]) {
     assert(`SEO sin Google Fonts ${file}`, !/fonts\.googleapis\.com/.test(readFileSync(join(root, file), "utf8")));
   }

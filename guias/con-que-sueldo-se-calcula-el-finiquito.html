@@ -45,8 +45,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   "name": "Haberes",
   "url": "https://www.haberes.cl/",
   "logo": "https://www.haberes.cl/favicon.svg",
-  "areaServed": "CL",
-  "sameAs": []
+  "areaServed": "CL"
 }
   </script>
   <script type="application/ld+json">
@@ -64,7 +63,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
       "@type": "ListItem",
       "position": 2,
       "name": "Guías",
-      "item": "https://www.haberes.cl/guias/como-leer-una-liquidacion-de-sueldo"
+      "item": "https://www.haberes.cl/guias/finiquito"
     },
     {
       "@type": "ListItem",
@@ -93,6 +92,28 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     "url": "https://www.haberes.cl/"
   },
   "mainEntityOfPage": "https://www.haberes.cl/guias/con-que-sueldo-se-calcula-el-finiquito"
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Calculadora de finiquito Haberes",
+  "url": "https://www.haberes.cl/finiquito",
+  "applicationCategory": "BusinessApplication",
+  "operatingSystem": "Web",
+  "inLanguage": "es-CL",
+  "description": "Base de cálculo del finiquito: última remuneración, gratificación art. 50, tope de 90 UF y feriado proporcional.",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "CLP"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Haberes",
+    "url": "https://www.haberes.cl/"
+  }
 }
   </script>
 </head>
@@ -132,44 +153,21 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <nav class="breadcrumbs" aria-label="Migas de pan">
         <ol>
           <li><a href="/">Inicio</a></li>
-          <li><a href="/guias/como-leer-una-liquidacion-de-sueldo">Guías</a></li>
+          <li><a href="/guias/finiquito">Guías</a></li>
           <li aria-current="page">¿Con qué sueldo se calcula el finiquito?</li>
         </ol>
       </nav>
-
-      <h1>¿Con qué sueldo se calcula el finiquito?</h1>
-      <p class="lede">
-        La indemnización por años de servicio y la sustitutiva de aviso previo se calculan sobre
-        la última remuneración mensual del trabajador, con el tope de noventa unidades de fomento
-        previsto para cotizaciones previsionales cuando corresponde aplicar ese límite en la práctica
-        de liquidación. La gratificación del artículo 50, si se paga mensualmente, integra la base.
-        El feriado se liquida con la remuneración diaria (remuneración mensual dividido por treinta).
-      </p>
-      <h2>Base de la indemnización (arts. 161 y 163)</h2>
-      <p>
-        Cuando la causal da derecho a indemnización por años de servicio (artículo 161, con el
-        cálculo del artículo 163), el monto es de treinta días de la última remuneración por cada
-        año de servicio y fracción superior a seis meses, con tope de trescientos treinta días
-        (once años). Haberes usa esa regla y aplica el tope de 90 UF a la base mensual de cotización
-        cuando calcula indemnizaciones, de forma alineada con el resto de la liquidación.
-      </p>
-      <h2>Qué entra y qué no</h2>
-      <ul>
-        <li>Entra: sueldo base, gratificación art. 50 si corresponde, haberes imponibles habituales.</li>
-        <li>Colación y movilización (art. 41) no son imponibles; se tratan aparte en la liquidación del mes.</li>
-        <li>El feriado pendiente y el proporcional se pagan según días y remuneración diaria.</li>
-      </ul>
-      <h2>Ejemplo numérico (ficticio)</h2>
-      <p>
-        Trabajador con sueldo base $900.000, gratificación art. 50, ingreso el 1 de marzo de 2020 y
-        término el 1 de marzo de 2026, causal necesidades de la empresa (art. 161), sin aviso previo,
-        5 días de feriado pendiente y 7 de proporcional. La calculadora de Haberes estima indemnización
-        por años de servicio, aviso sustitutivo y feriado; puede reproducirlo en
-        <a href="/finiquito/art-161-necesidades-de-la-empresa">la página de esa causal</a>.
-      </p>
-      <p class="actions"><a class="btn" href="/finiquito">Abrir calculadora de finiquito</a>
-      <a class="btn btn-ghost" href="/guias/como-leer-una-liquidacion-de-sueldo">Leer una liquidación</a></p>
-    
+<h1>¿Con qué sueldo se calcula el finiquito?</h1>
+<p class="lede">La indemnización por años de servicio y la sustitutiva de aviso previo se calculan sobre la última remuneración mensual. La gratificación del artículo 50, si se paga mensualmente, integra la base. El feriado se liquida con la remuneración diaria (remuneración mensual / 30).</p>
+<h2>Base de la indemnización (arts. 161 y 163)</h2>
+<p>Cuando la causal da derecho a IAS, el monto es de treinta días de la última remuneración por cada año y fracción superior a seis meses, con tope de trescientos treinta días.</p>
+<section class="seo-calc" data-seo-calc="finiquito" data-causal="161-necesidades" aria-label="Calculadora embebida"></section>
+<aside class="seo-cta" aria-label="Cuenta de empresa">
+  <p><strong>¿Emite liquidaciones o finiquitos cada mes?</strong>
+  Cree su <a href="/empresa">cuenta de empresa</a> gratis: PDF con membrete, trabajadores en el navegador y plan Pro cuando lo necesite.</p>
+  <p class="actions"><a class="btn" href="/empresa">Ir a cuenta de empresa</a>
+  <a class="btn btn-ghost" href="/precios">Ver precios</a></p>
+</aside>
       <p class="notice u-mt-6">Esta carta es una estimación de software. No reemplaza la ratificación del finiquito ante la Inspección del Trabajo. No es un documento oficial de la Dirección del Trabajo ni de Previred. No constituye asesoría legal.</p>
     </div>
   </main>
@@ -196,6 +194,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       </div>
     </div>
   </footer>
+  <script type="module" src="../js/seo-calc.js"></script>
   <script type="module" src="../js/app-home.js"></script>
 </body>
 </html>
