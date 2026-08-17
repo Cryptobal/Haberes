@@ -69,6 +69,10 @@ export function puedePagoMasivo(emp) {
   return { ok: false, message: MSG_PAGO_PRO };
 }
 
+export function puedeEnviar(emp, { tipo, keys }) {
+  return puedeEmitir(emp, { tipo, keys });
+}
+
 export function registrarMovimientosLocal(emp, { tipo, keys }) {
   if (!emp) return emp;
   const mes = monthKey();

@@ -5,7 +5,8 @@
   "scripts": {
     "verify": "node scripts/verify.mjs",
     "smoke": "python3 scripts/smoke.py",
-    "check": "node scripts/verify.mjs && python3 scripts/smoke.py"
+    "check": "node scripts/verify.mjs && python3 scripts/smoke.py",
+    "ejemplos": "node scripts/gen-ejemplos.mjs"
   },
   "dependencies": {
     "pdf-lib": "^1.17.1",

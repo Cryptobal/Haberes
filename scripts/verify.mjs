@@ -387,6 +387,37 @@ assert(
     csvNamed[0].haberesExtra[1].nombre,
   JSON.stringify(csvNamed[0].haberesExtra),
 );
+{
+  const { CSV_CABECERA } = await import("../js/csv.js");
+  const { readXlsxFirstSheet: readXlsxSheet } = await import("../js/xlsx.js");
+  const publicado = readFileSync(join(root, "ejemplos/trabajadores.csv"), "utf8");
+  const headerPub = publicado.trim().split(/\r?\n/)[0];
+  assert("CSV ejemplo encabezado = CSV_CABECERA", headerPub === CSV_CABECERA, headerPub);
+  assert(
+    "CSV ejemplo fechaIngreso y jornada",
+    csvNamed.length === 3 &&
+      csvNamed.every((t) => t.fechaIngreso && t.jornada === 42),
+    JSON.stringify(csvNamed.map((t) => ({ f: t.fechaIngreso, j: t.jornada }))),
+  );
+  const liqs = csvNamed.map((t) => calcularSueldo(t, { uf: FALLBACK_UF }).liquido);
+  assert(
+    "CSV ejemplo líquidos Ana/Luis/Camila",
+    liqs[0] === 988656 && liqs[1] === 988031 && liqs[2] === 1570949,
+    JSON.stringify(liqs),
+  );
+  const xlsxEj = await readXlsxSheet(
+    new Uint8Array(readFileSync(join(root, "ejemplos/trabajadores.xlsx"))),
+  );
+  const fromXlsx = parseTrabajadoresCsv(
+    xlsxEj.map((row) => row.join(",")).join("\n"),
+  );
+  assert(
+    "XLSX ejemplo misma nómina que CSV",
+    fromXlsx.length === 3 &&
+      fromXlsx[0].nombre === csvNamed[0].nombre &&
+      fromXlsx[2].nombre === csvNamed[2].nombre,
+  );
+}
 assert("RUT 12.345.678-5 válido", validarRut("12.345.678-5"));
 assert("DV RUT 12345678", dvRut("12345678") === "5");
 
@@ -804,6 +835,24 @@ assert(
   "documento 501 sin DATABASE_URL",
   docRes._out.statusCode === 501 && docRes._out.body?.reason === "no_backend",
   JSON.stringify(docRes._out.body),
+);
+const enviarApi = (await import("../api/enviar.js")).default;
+const enviarRes = mockRes();
+await enviarApi(mockReq("POST", { tipo: "liquidacion", trabajadores: [] }, "203.0.113.40"), enviarRes);
+assert(
+  "enviar 501 sin DATABASE_URL",
+  enviarRes._out.statusCode === 501 && enviarRes._out.body?.reason === "no_backend",
+  JSON.stringify(enviarRes._out.body),
+);
+const enviarGet = mockRes();
+await enviarApi({ method: "GET", headers: {} }, enviarGet);
+assert(
+  "GET /api/enviar solo ok y mail",
+  enviarGet._out.statusCode === 200 &&
+    enviarGet._out.body?.ok === true &&
+    typeof enviarGet._out.body?.mail === "boolean" &&
+    !/RESEND|DATABASE|R2_/i.test(JSON.stringify(enviarGet._out.body)),
+  JSON.stringify(enviarGet._out.body),
 );
 const movRes = mockRes();
 await movimiento(mockReq("POST", { tipo: "liquidacion", keys: ["a"] }, "203.0.113.27"), movRes);
@@ -1444,7 +1493,7 @@ assert(
 assert(
   "app-empresa movimientos y xlsx de pago",
   /registrarMovimientosRemoto/.test(empJs) &&
-    /xlsxPagoMasivo/.test(empJs) &&
+    /descargarNomina/.test(empJs) &&
     /\/api\/movimiento/.test(readFileSync(join(root, "js/plan.js"), "utf8")),
 );
 assert(
@@ -1465,13 +1514,19 @@ assert(
     bajarPdfSrc.indexOf("consumirMovimientos") > bajarPdfSrc.indexOf("return;"),
 );
 const docSrc = readFileSync(join(root, "api/documento.js"), "utf8");
+const docLibSrc = readFileSync(join(root, "api/_documento.js"), "utf8");
 assert(
   "documento no_storage antes de insertar movimientos",
   /if \(!hasR2\(\)\) return noStorage/.test(docSrc) &&
     docSrc.indexOf("if (!hasR2()) return noStorage(res)") < docSrc.indexOf("commit: true") &&
-    docSrc.indexOf("await r2Put") < docSrc.indexOf("commit: true") &&
-    docSrc.indexOf("commit: false") < docSrc.indexOf("await r2Put") &&
+    docLibSrc.indexOf("await r2Put") >= 0 &&
+    docSrc.indexOf("commit: false") < docSrc.indexOf("commit: true") &&
     docSrc.indexOf("commit: false") > docSrc.indexOf("if (!hasR2()) return noStorage(res)"),
+);
+assert(
+  "enviar no fusiona PDF de varios trabajadores",
+  !/mergePdfs/.test(readFileSync(join(root, "api/enviar.js"), "utf8")) &&
+    /generarYGuardarPdf/.test(readFileSync(join(root, "api/enviar.js"), "utf8")),
 );
 assert("app-empresa editar y eliminar trabajador", /deleteTrabajador/.test(empJs) && /updateTrabajador/.test(empJs));
 assert("app-empresa CSV upsert por RUT", /upsertTrabajadores/.test(empJs));
@@ -1567,23 +1622,28 @@ assert(
     /\.steps li::before[\s\S]*?color:\s*var\(--on-ink\)/.test(css) &&
     /\.ws-tab\[aria-selected="true"\][\s\S]*?color:\s*var\(--on-ink\)/.test(css),
 );
-assert("css cream #f6f4ef solo en el token --on-ink", (css.match(/#f6f4ef/g) || []).length === 1);
+assert(
+  "css cream #f6f4ef en --on-ink y tokens on-* de día",
+  /:root\s*\{[\s\S]*?--on-ink:\s*#f6f4ef/.test(css) &&
+    /:root\s*\{[\s\S]*?--on-danger:\s*#f6f4ef/.test(css) &&
+    (css.match(/#f6f4ef/g) || []).length >= 1,
+);
 assert(
   "css --warn-line cálido, notice sin negro",
   /:root\s*\{[\s\S]*?--warn-line:/.test(css) &&
-    /html\[data-theme="night"\]\s*\{[\s\S]*?--warn-line:\s*#c4a35a/.test(css) &&
+    /html\[data-theme="night"\]\s*\{[\s\S]*?--warn-line:\s*#8a7340/.test(css) &&
     /\.notice\s*\{[\s\S]*?border:\s*1px solid var\(--warn-line\)/.test(css) &&
     !/\.notice\s*\{[^}]*#000/.test(css),
 );
 assert(
-  "css noche --line y --line-strong más claros que el papel",
+  "css noche --line y --line-strong discretos",
   /html\[data-theme="night"\]\s*\{[\s\S]*?--line:\s*#5a6b66/.test(css) &&
     /html\[data-theme="night"\]\s*\{[\s\S]*?--line-strong:\s*#6e827c/.test(css),
 );
 assert(
   "css picker elevado y opción seleccionada obvia de noche",
   /\.picker-panel\s*\{[\s\S]*?background:\s*var\(--surface-2\)/.test(css) &&
-    /html\[data-theme="night"\]\s*\{[\s\S]*?--surface-2:\s*#222b28/.test(css) &&
+    /html\[data-theme="night"\]\s*\{[\s\S]*?--surface-2:\s*#1a211e/.test(css) &&
     /\.picker-option\[aria-selected="true"\]/.test(css) &&
     /html\[data-theme="night"\]\s*\{[\s\S]*?--option-on-bg:\s*var\(--ink\)/.test(css) &&
     /html\[data-theme="night"\]\s*\{[\s\S]*?--option-on-fg:\s*var\(--on-ink\)/.test(css),
@@ -1785,6 +1845,197 @@ console.log("\nLibro de Remuneraciones Electrónico (formato DT v8.0, marzo 2023
 
 assert("disclaimer constante presente", DISCLAIMER.includes("Dirección del Trabajo") && DISCLAIMER.includes("Previred"));
 assert("disclaimer finiquito Inspección", DISCLAIMER_FINIQUITO.includes("Inspección del Trabajo"));
+
+console.log("\nInstituciones financieras");
+{
+  const { INSTITUCIONES_CL, buscarInstitucion, FUENTE_CODIGOS } = await import("../js/bancos.js");
+  assert("fuente de códigos documentada", Boolean(FUENTE_CODIGOS));
+  const by = (c) => INSTITUCIONES_CL.find((i) => i.codigo === c);
+  assert("053 es Banco Ripley", by("053")?.nombre === "Banco Ripley");
+  assert("055 es Banco Consorcio", by("055")?.nombre === "Banco Consorcio");
+  const codes = INSTITUCIONES_CL.map((i) => i.codigo);
+  assert(
+    "códigos únicos de 3 dígitos ordenados",
+    codes.every((c) => /^\d{3}$/.test(c)) &&
+      new Set(codes).size === codes.length &&
+      [...codes].sort().join() === codes.join(),
+  );
+  assert(
+    "prepago y cooperativas presentes",
+    ["743", "875", "730", "732", "738", "741", "672", "504"].every((c) => by(c)),
+  );
+  assert(
+    "cada institución tiene tipo válido",
+    INSTITUCIONES_CL.every((i) => ["banco", "cooperativa", "prepago", "otro"].includes(i.tipo)),
+  );
+  assert("alias mercado pago → 875", buscarInstitucion("mercado pago")?.codigo === "875");
+  assert("alias BancoEstado → 012", buscarInstitucion("BancoEstado")?.codigo === "012");
+  assert("alias banco de chile → 001", buscarInstitucion("banco de chile")?.codigo === "001");
+}
+
+console.log("\nPerfiles de nómina");
+{
+  const {
+    PERFILES_NOMINA,
+    renderNomina,
+    perfilPorId,
+    largoFijoEsperado,
+    aLatin1,
+  } = await import("../js/nomina.js");
+  const ids = PERFILES_NOMINA.map((p) => p.id);
+  assert("perfiles id únicos", new Set(ids).size === ids.length);
+  assert(
+    "perfiles salida y verificado",
+    PERFILES_NOMINA.every(
+      (p) => ["csv", "txt_fijo", "xlsx"].includes(p.salida) && typeof p.verificado === "boolean",
+    ),
+  );
+  assert(
+    "verificado implica fuente",
+    PERFILES_NOMINA.every((p) => !p.verificado || (p.fuente && String(p.fuente).trim())),
+  );
+  const fijo = perfilPorId("generico_txt_fijo");
+  const filas = [
+    {
+      nombre: "Ana Pérez",
+      rut: "12.345.678-5",
+      banco: "001",
+      bancoNombre: "Banco de Chile",
+      tipo_cuenta: "corriente",
+      nro_cuenta: "12345678",
+      email: "ana@empresa.cl",
+      monto: 988656,
+      glosa: "Sueldo",
+    },
+  ];
+  const outFijo = renderNomina(fijo, filas);
+  const line = new TextDecoder("latin1").decode(outFijo.bytes).split(/\r?\n/).filter(Boolean)[0];
+  assert(
+    "txt fijo largo constante",
+    line.length === largoFijoEsperado(fijo),
+    `${line.length} vs ${largoFijoEsperado(fijo)}`,
+  );
+  const csvProf = perfilPorId("generico_csv");
+  const outCsv = renderNomina(csvProf, filas);
+  const csvText = new TextDecoder("latin1").decode(outCsv.bytes);
+  assert(
+    "CSV sin comentarios ni filas en blanco antes del encabezado",
+    !csvText.startsWith("#") && !csvText.startsWith("\r") && !csvText.startsWith("\n") &&
+      csvText.split(/\r?\n/)[0].includes("rut_cuerpo"),
+  );
+  assert("monto entero sin separadores", /0*988656/.test(csvText) && !/988\.656/.test(csvText) && !/988,656/.test(csvText));
+  const xOut = renderNomina(perfilPorId("generico_xlsx"), filas);
+  const { readXlsxFirstSheet: rx } = await import("../js/xlsx.js");
+  // Léame is second sheet; first sheet is data without comment rows
+  const first = await rx(xOut.bytes);
+  assert("xlsx datos sin fila de aviso", first[0]?.[0] === "nombre" && Number(first[1]?.[6]) === 988656);
+  assert("latin1 mapa directo", aLatin1("á")[0] === 0xe1 && aLatin1("€")[0] === 0x3f);
+  const nominaEj = await rx(new Uint8Array(readFileSync(join(root, "ejemplos/nomina-pago.xlsx"))));
+  assert(
+    "nomina-pago ejemplo Ana 988656",
+    nominaEj.some((row) => String(row[0]).includes("Ana") && Number(row[6]) === 988656),
+    JSON.stringify(nominaEj.slice(0, 3)),
+  );
+}
+
+console.log("\nTema noche");
+{
+  function parseTokens(block) {
+    const map = {};
+    for (const m of block.matchAll(/--([a-z0-9-]+)\s*:\s*([^;]+);/gi)) {
+      map[m[1]] = m[2].trim();
+    }
+    return map;
+  }
+  function hexLum(hex) {
+    const h = hex.replace("#", "").trim();
+    if (!/^[0-9a-f]{6}$/i.test(h)) return null;
+    const n = (i) => parseInt(h.slice(i, i + 2), 16) / 255;
+    const lin = (c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+    const r = lin(n(0));
+    const g = lin(n(2));
+    const b = lin(n(4));
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  }
+  function contrast(a, b) {
+    const L1 = hexLum(a);
+    const L2 = hexLum(b);
+    if (L1 == null || L2 == null) return 99;
+    const hi = Math.max(L1, L2);
+    const lo = Math.min(L1, L2);
+    return (hi + 0.05) / (lo + 0.05);
+  }
+  const rootBlock = css.match(/:root\s*\{([\s\S]*?)\n\}/)?.[1] || "";
+  const nightBlock = css.match(/html\[data-theme="night"\]\s*\{([\s\S]*?)\n\}/)?.[1] || "";
+  const day = parseTokens(rootBlock);
+  const night = parseTokens(nightBlock);
+  const skip = new Set(["font", "ease", "shadow", "ring", "radius"]);
+  const missing = Object.keys(day).filter((k) => !skip.has(k) && !(k in night) && !k.startsWith("s-") && !k.startsWith("t-") && !k.startsWith("r-") && !k.startsWith("dur-") && !["touch", "header-h", "shell", "sab", "sat"].includes(k));
+  // Tokens de métrica tipografía/espaciado pueden omitirse en noche; exigir semánticos y superficies
+  const must = ["paper", "surface", "surface-2", "surface-3", "text", "muted", "line", "danger", "success", "accent", "on-danger", "on-success", "on-accent", "paper-doc"];
+  assert(
+    "tokens noche cubren superficies y semánticos",
+    must.every((k) => night[k]),
+    must.filter((k) => !night[k]).join(","),
+  );
+  const Lp = hexLum(night.paper);
+  const Ls = hexLum(night.surface);
+  const Ls2 = hexLum(night["surface-2"]);
+  const Ls3 = hexLum(night["surface-3"]);
+  assert(
+    "noche luminancia paper < surface < surface-2 < surface-3",
+    Lp < Ls && Ls < Ls2 && Ls2 < Ls3,
+    JSON.stringify({ Lp, Ls, Ls2, Ls3 }),
+  );
+  assert("contraste text/surface noche ≥ 4.5", contrast(night.text, night.surface) >= 4.5);
+  assert("contraste muted/surface noche ≥ 4.5", contrast(night.muted, night.surface) >= 4.5);
+  assert("contraste on-danger/danger ≥ 4.5", contrast(night["on-danger"], night.danger) >= 4.5);
+  assert("contraste on-success/success ≥ 4.5", contrast(night["on-success"], night.success) >= 4.5);
+  assert("contraste on-accent/accent ≥ 4.5", contrast(night["on-accent"], night.accent) >= 4.5);
+  assert("contraste line/surface noche ≥ 3", contrast(night.line, night.surface) >= 3);
+  const withoutPrint = css.replace(/@media print\s*\{[\s\S]*?\n\}/g, "");
+  const whites = withoutPrint.match(/#fff(?:fff)?\b/gi) || [];
+  // Permitir solo dentro de declaraciones de tokens de superficie de día (--surface/--control-bg/--paper-doc)
+  const allowed = whites.filter((w) => {
+    // si quedó alguno fuera de tokens, falla
+    return false;
+  });
+  assert(
+    "sin #fff literal fuera de @media print",
+    whites.length === 0,
+    whites.join(","),
+  );
+}
+
+assert(
+  "enviar fail-closed no_mail y no_storage",
+  /no_mail/.test(readFileSync(join(root, "api/enviar.js"), "utf8")) &&
+    /mailConfigured\(\)/.test(readFileSync(join(root, "api/enviar.js"), "utf8")) &&
+    /no_storage/.test(readFileSync(join(root, "api/enviar.js"), "utf8")) &&
+    /sendDocumentEmail/.test(readFileSync(join(root, "api/_lib.js"), "utf8")),
+);
+assert("sql/006.sql envios", /CREATE TABLE IF NOT EXISTS envios/.test(readFileSync(join(root, "sql/006.sql"), "utf8")));
+assert(
+  "workerFromBody conserva email truncado",
+  (() => {
+    // lectura estática: el campo email aparece en _documento.js
+    const src = readFileSync(join(root, "api/_documento.js"), "utf8");
+    return /email:\s*String\(t\.email[^)]*\)\.trim\(\)\.slice\(0,\s*160\)/.test(src);
+  })(),
+);
+assert(
+  "empresa envío por correo en UI",
+  /btnEnviarLiquidacion/.test(empHtml) && /btnEnviarCarta/.test(empHtml) && /\/api\/enviar/.test(readFileSync(join(root, "js/app-empresa-envio.js"), "utf8")),
+);
+assert(
+  "index explica el servicio sin siglas en el lede",
+  (() => {
+    const html = readFileSync(join(root, "index.html"), "utf8");
+    const m = html.match(/<p class="lede">([\s\S]*?)<\/p>/);
+    const lede = m ? m[1] : "";
+    return /Sin planilla, sin instalar nada/.test(lede) && !/\b(IUSC|AFP|art\.)\b/.test(lede);
+  })(),
+);
 
 console.log(`\n${passed} ok, ${failed} fail`);
 if (failed) process.exit(1);

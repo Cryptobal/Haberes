@@ -285,7 +285,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             </div>
             <p class="hint">
               Un archivo nuevo actualiza por RUT (no duplica). Columnas: nombre, rut, cargo, sueldo_base, afp,
-              salud, plan_isapre, contrato, fecha_ingreso, horas_extras, colacion, movilizacion, gratificacion, email, banco,
+              salud, plan_isapre, contrato, fecha_ingreso, jornada, horas_extras, colacion, movilizacion, gratificacion, email, banco,
               tipo_cuenta, nro_cuenta, y bonos nombrados <code>bono_1_nombre</code>, <code>bono_1_monto</code>,
               <code>bono_1_imponible</code> (si/no). La carga masiva CSV/XLSX es Pro. Los trabajadores de esta
               lista viven en este navegador.
@@ -294,6 +294,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
               <label class="btn btn-ghost" for="csvFile">Cargar CSV/XLSX <span class="badge badge-pro">Pro</span></label>
               <input id="csvFile" type="file" accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden />
               <a class="btn btn-ghost" href="ejemplos/trabajadores.csv" download>Descargar ejemplo CSV</a>
+              <a class="btn btn-ghost" href="ejemplos/trabajadores.xlsx" download>Ejemplo XLSX</a>
             </div>
             <p class="error" id="errCsv" hidden></p>
             <div id="tablaTrabajadores" class="u-mt-4"></div>
@@ -492,19 +493,52 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
               <div class="actionbar">
                 <button class="btn" type="button" id="btnLiquidacion">Ver liquidación</button>
                 <button class="btn btn-ghost" type="button" id="btnPdfLiquidacion">Descargar PDF</button>
+                <button class="btn btn-ghost" type="button" id="btnEnviarLiquidacion">Enviar por correo</button>
               </div>
+              <div id="resultadoEnvioLiq" class="envio-host" hidden></div>
 
               <hr class="sep" />
-              <h3>Pago masivo <span class="badge badge-pro">Pro</span></h3>
+              <h3>Nómina de pago bancario <span class="badge badge-pro">Pro</span></h3>
               <p class="hint">
-                Excel para copiar a Office Banking o Scotia. Hoja canónica más hojas de referencia
-                (Banco de Chile, Scotiabank, BancoEstado, Santander). No es el archivo binario del banco:
-                contraste con la plantilla que baja cada portal. El XLSX incluye a los trabajadores seleccionados arriba.
+                Genere un archivo para cargar en el portal de empresas de su banco.
+                Los formatos son plantillas Haberes: solo se marcan como verificados cuando
+                citamos el instructivo del banco. Puede definir su propio orden de columnas.
               </p>
+              <p class="notice" id="avisoBancos" hidden></p>
+              <div class="field u-mt-3">
+                <span class="lbl">Formato de archivo</span>
+                <div id="pickNominaPerfil"></div>
+              </div>
+              <p class="hint" id="nominaAviso" hidden></p>
+              <div id="nominaCustom" hidden>
+                <p class="hint">Elija y ordene los campos (el orden de marcado es el de las columnas).</p>
+                <div id="nominaCampos" class="nomina-campos">
+                  <label><input type="checkbox" value="nombre" checked /> Nombre</label>
+                  <label><input type="checkbox" value="rut" checked /> RUT</label>
+                  <label><input type="checkbox" value="banco" checked /> Banco</label>
+                  <label><input type="checkbox" value="tipo_cuenta" checked /> Tipo cuenta</label>
+                  <label><input type="checkbox" value="cuenta" checked /> Cuenta</label>
+                  <label><input type="checkbox" value="monto" checked /> Monto</label>
+                  <label><input type="checkbox" value="email" checked /> Correo</label>
+                  <label><input type="checkbox" value="glosa" checked /> Glosa</label>
+                </div>
+                <div class="row u-mt-3">
+                  <div class="field">
+                    <label for="nominaSep">Separador</label>
+                    <input id="nominaSep" value=";" maxlength="1" />
+                  </div>
+                  <div class="field">
+                    <label for="nominaEnc">Codificación</label>
+                    <input id="nominaEnc" value="latin1" />
+                  </div>
+                </div>
+                <label class="check"><input type="checkbox" id="nominaHeader" checked /> Incluir encabezado</label>
+                <label class="check"><input type="checkbox" id="nominaTildes" checked /> Quitar tildes</label>
+              </div>
               <p class="error" id="errPago" hidden></p>
               <div class="btn-row u-mt-3">
-                <button class="btn btn-ghost" type="button" id="btnPagoXlsx">Descargar XLSX</button>
-                <button class="btn btn-ghost" type="button" id="btnPagoEjemplo">Ejemplo vacío</button>
+                <button class="btn btn-ghost" type="button" id="btnPagoXlsx">Descargar nómina</button>
+                <a class="btn btn-ghost" href="ejemplos/nomina-pago.xlsx" download id="btnPagoEjemplo">Ejemplo con datos</a>
               </div>
 
               <hr class="sep" />
@@ -590,7 +624,9 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
               <div class="actionbar">
                 <button class="btn" type="button" id="btnCarta">Ver carta</button>
                 <button class="btn btn-ghost" type="button" id="btnPdfCarta">Descargar PDF</button>
+                <button class="btn btn-ghost" type="button" id="btnEnviarCarta">Enviar por correo</button>
               </div>
+              <div id="resultadoEnvioFin" class="envio-host" hidden></div>
             </div>
           </div>
         </section>
