@@ -26,16 +26,18 @@
   --overlay: rgba(10, 26, 20, 0.5);
   --option-on-bg: color-mix(in srgb, var(--ink) 10%, transparent);
   --option-on-fg: var(--ink);
+  --paper-doc: #ffffff;
 
   /* Texto */
   --text: #14201c;
   --muted: #5b6a64;
   --faint: #869089;
 
-  /* Líneas */
+  /* Líneas: hair y line son decorativas; field-line es la de los campos */
   --line: #e5e0d6;
   --line-strong: #cfc8ba;
   --line-hair: #efebe3;
+  --field-line: #84908a; /* 3.31 sobre blanco, 3.04 sobre paper → 1.4.11 */
 
   /* Semánticos */
   --danger: #a03528;
@@ -48,12 +50,11 @@
   --warn-line: color-mix(in srgb, #8a6a1a 25%, var(--line));
   --info: #1d5b86;
   --info-bg: #e7f0f7;
-  --on-accent: #f6f4ef;
-  --on-danger: #f6f4ef;
-  --on-success: #f6f4ef;
-  --on-warn: #1a1408;
-  --on-info: #f6f4ef;
-  --paper-doc: #fefefe;
+  --on-accent: #ffffff; /* 5.29 */
+  --on-danger: #ffffff; /* 6.92 */
+  --on-success: #ffffff;
+  --on-warn: #ffffff;
+  --on-info: #ffffff;
 
   /* Radios */
   --r-xs: 6px;
@@ -111,50 +112,62 @@
 
 html[data-theme="night"] {
   color-scheme: dark;
-  --ink: #7fd7b4;
-  --ink-2: #a2e6ca;
-  --on-ink: #12382c;
-  --accent: #3d9e7c;
-  --accent-soft: #12261f;
-  --on-accent: #04150f;
 
-  --paper: #0b0f0e;
-  --surface: #141917;
-  --surface-2: #1a211e;
-  --surface-3: #222b28;
-  --control-bg: #101614;
-  --overlay: rgba(0, 0, 0, 0.66);
+  /* Marca */
+  --ink: #6fe3b4;
+  --ink-2: #93efc9;
+  --on-ink: #04231a;
+  --accent: #35c48f;
+  --accent-soft: #13251f;
+
+  /* Superficies — luminancia estrictamente creciente */
+  --paper: #0b0e0d; /* L 0.0041 */
+  --surface: #121614; /* L 0.0075 */
+  --surface-2: #181d1b; /* L 0.0115 */
+  --surface-3: #1f2523; /* L 0.0174 */
+  --control-bg: #0e1211;
+  --paper-doc: #efede8; /* papel del documento, no blanco puro */
+  --overlay: rgba(0, 0, 0, 0.68);
   --option-on-bg: var(--ink);
   --option-on-fg: var(--on-ink);
-  --paper-doc: #f2f0ea;
 
-  --text: #e7ecea;
-  --muted: #9aa8a3;
-  --faint: #74827d;
+  /* Texto */
+  --text: #e9efec; /* 15.66 sobre surface */
+  --muted: #a7b4ae; /*  8.50 sobre surface */
+  --faint: #7d8b85; /*  5.13 sobre surface */
 
-  --line: #5a6b66;
-  --line-strong: #6e827c;
-  --line-hair: #1e2624;
+  /* Líneas: hair y line son decorativas; field-line es la de los campos */
+  --line-hair: #1b211f;
+  --line: #273029;
+  --line-strong: #3a453f;
+  --field-line: #63736c; /*  3.77 sobre control-bg → cumple 1.4.11 */
 
-  --danger: #b04a3e;
-  --on-danger: #fef8f6;
-  --danger-bg: #2a1714;
-  --success: #2f7a58;
-  --on-success: #f4fcf8;
-  --success-bg: #10241c;
-  --warn: #c9a14a;
-  --on-warn: #1a1408;
-  --warn-bg: #2a2214;
-  --warn-text: #ecd9ad;
-  --warn-line: #8a7340;
-  --info: #6a9fbf;
-  --on-info: #f0f7fc;
-  --info-bg: #142430;
+  /* Semánticos, cada uno con su primer plano */
+  --danger: #f5907e;
+  --danger-bg: #2a1512;
+  --on-danger: #2a0a05; /* 8.02 */
+  --success: #5fd3a4;
+  --success-bg: #0f2620;
+  --on-success: #04231a; /* 9.00 */
+  --warn: #e8c273;
+  --warn-bg: #2b2314;
+  --on-warn: #2a1f06; /* 9.56 */
+  --warn-text: #efdcae;
+  --warn-line: #6b5a30;
+  --info: #8cc4ec;
+  --info-bg: #122430;
+  --on-info: #06202e; /* 8.95 */
+  --on-accent: #04231a; /* 7.49 */
 
-  --e-1: 0 1px 2px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.04);
-  --e-2: 0 1px 2px rgba(0, 0, 0, 0.4), 0 6px 18px rgba(0, 0, 0, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.05);
-  --e-3: 0 2px 8px rgba(0, 0, 0, 0.45), 0 20px 44px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  --e-4: 0 10px 28px rgba(0, 0, 0, 0.55), 0 36px 80px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  /* Elevación oscura: sombra + filo claro */
+  --e-1: 0 1px 2px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.035);
+  --e-2: 0 2px 6px rgba(0, 0, 0, 0.45), 0 8px 22px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.045);
+  --e-3: 0 4px 12px rgba(0, 0, 0, 0.5), 0 22px 48px rgba(0, 0, 0, 0.42),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  --e-4: 0 10px 28px rgba(0, 0, 0, 0.6), 0 38px 84px rgba(0, 0, 0, 0.62),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --ring: 0 0 0 3px color-mix(in srgb, var(--accent) 45%, transparent);
 }
 
 /* ---------- 2. BASE ---------- */
@@ -846,7 +859,7 @@ textarea,
   padding: var(--s-3);
   min-height: var(--touch);
   border-radius: var(--r-md);
-  border: 1px solid var(--line-strong);
+  border: 1px solid var(--field-line);
   background: var(--control-bg);
   color: var(--text);
   transition:
@@ -920,7 +933,7 @@ input:disabled {
   margin: 0 0 var(--s-4);
   min-height: var(--touch);
   padding: var(--s-2) var(--s-3);
-  border: 1px solid var(--line);
+  border: 1px solid var(--field-line);
   border-radius: var(--r-md);
   background: var(--surface-2);
   cursor: pointer;
@@ -1529,7 +1542,7 @@ input:disabled {
   max-width: 180px;
   object-fit: contain;
   background: var(--paper-doc);
-  border: 1px solid var(--line);
+  border: 1px solid var(--line-strong);
   border-radius: var(--r-sm);
   padding: var(--s-2);
 }

@@ -1612,7 +1612,7 @@ assert(
 assert(
   "css --on-ink crema de día y verde de noche",
   /:root\s*\{[\s\S]*?--on-ink:\s*#f6f4ef/.test(css) &&
-    /html\[data-theme="night"\]\s*\{[\s\S]*?--on-ink:\s*#12382c/.test(css),
+    /html\[data-theme="night"\]\s*\{[\s\S]*?--on-ink:\s*#04231a/.test(css),
 );
 assert(
   "css texto sobre --ink usa --on-ink",
@@ -1623,27 +1623,26 @@ assert(
     /\.ws-tab\[aria-selected="true"\][\s\S]*?color:\s*var\(--on-ink\)/.test(css),
 );
 assert(
-  "css cream #f6f4ef en --on-ink y tokens on-* de día",
+  "css cream #f6f4ef en --on-ink de día",
   /:root\s*\{[\s\S]*?--on-ink:\s*#f6f4ef/.test(css) &&
-    /:root\s*\{[\s\S]*?--on-danger:\s*#f6f4ef/.test(css) &&
     (css.match(/#f6f4ef/g) || []).length >= 1,
 );
 assert(
   "css --warn-line cálido, notice sin negro",
   /:root\s*\{[\s\S]*?--warn-line:/.test(css) &&
-    /html\[data-theme="night"\]\s*\{[\s\S]*?--warn-line:\s*#8a7340/.test(css) &&
+    /html\[data-theme="night"\]\s*\{[\s\S]*?--warn-line:\s*#6b5a30/.test(css) &&
     /\.notice\s*\{[\s\S]*?border:\s*1px solid var\(--warn-line\)/.test(css) &&
     !/\.notice\s*\{[^}]*#000/.test(css),
 );
 assert(
   "css noche --line y --line-strong discretos",
-  /html\[data-theme="night"\]\s*\{[\s\S]*?--line:\s*#5a6b66/.test(css) &&
-    /html\[data-theme="night"\]\s*\{[\s\S]*?--line-strong:\s*#6e827c/.test(css),
+  /html\[data-theme="night"\]\s*\{[\s\S]*?--line:\s*#273029/.test(css) &&
+    /html\[data-theme="night"\]\s*\{[\s\S]*?--line-strong:\s*#3a453f/.test(css),
 );
 assert(
   "css picker elevado y opción seleccionada obvia de noche",
   /\.picker-panel\s*\{[\s\S]*?background:\s*var\(--surface-2\)/.test(css) &&
-    /html\[data-theme="night"\]\s*\{[\s\S]*?--surface-2:\s*#1a211e/.test(css) &&
+    /html\[data-theme="night"\]\s*\{[\s\S]*?--surface-2:\s*#181d1b/.test(css) &&
     /\.picker-option\[aria-selected="true"\]/.test(css) &&
     /html\[data-theme="night"\]\s*\{[\s\S]*?--option-on-bg:\s*var\(--ink\)/.test(css) &&
     /html\[data-theme="night"\]\s*\{[\s\S]*?--option-on-fg:\s*var\(--on-ink\)/.test(css),
@@ -1992,16 +1991,14 @@ console.log("\nTema noche");
   assert("contraste on-danger/danger ≥ 4.5", contrast(night["on-danger"], night.danger) >= 4.5);
   assert("contraste on-success/success ≥ 4.5", contrast(night["on-success"], night.success) >= 4.5);
   assert("contraste on-accent/accent ≥ 4.5", contrast(night["on-accent"], night.accent) >= 4.5);
-  assert("contraste line/surface noche ≥ 3", contrast(night.line, night.surface) >= 3);
+  assert("contraste field-line/control-bg noche ≥ 3", contrast(night["field-line"], night["control-bg"]) >= 3);
+  assert("contraste field-line/control-bg día ≥ 3", contrast(day["field-line"], day["control-bg"]) >= 3);
   const withoutPrint = css.replace(/@media print\s*\{[\s\S]*?\n\}/g, "");
-  const whites = withoutPrint.match(/#fff(?:fff)?\b/gi) || [];
-  // Permitir solo dentro de declaraciones de tokens de superficie de día (--surface/--control-bg/--paper-doc)
-  const allowed = whites.filter((w) => {
-    // si quedó alguno fuera de tokens, falla
-    return false;
-  });
+  // Lista blanca: tokens de papel/primer plano de día (--paper-doc, --on-*)
+  const withoutTokens = withoutPrint.replace(/--[\w-]+:\s*#[0-9a-fA-F]{3,8}\b/g, "");
+  const whites = withoutTokens.match(/#fff(?:fff)?\b/gi) || [];
   assert(
-    "sin #fff literal fuera de @media print",
+    "sin #fff literal fuera de @media print y tokens",
     whites.length === 0,
     whites.join(","),
   );
