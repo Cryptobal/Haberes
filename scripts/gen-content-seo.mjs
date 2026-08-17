@@ -297,6 +297,11 @@ function faqLd(faq) {
   };
 }
 
+/** Título/ruta mandan: finiquito en el path usa DISCLAIMER_FINIQUITO; el resto, DISCLAIMER. */
+function disclaimerForPath(canonical) {
+  return /finiquito/.test(canonical) ? DISCLAIMER_FINIQUITO : DISCLAIMER;
+}
+
 function pageShell({ title, description, canonical, crumbsItems, article, body, faq, webApp }) {
   const jsonld = [
     orgLd(),
@@ -329,7 +334,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <div class="wrap prose guide">
       ${crumbs(crumbsItems)}
 ${body}
-      <p class="notice u-mt-6">${esc(DISCLAIMER_FINIQUITO || DISCLAIMER)}</p>
+      <p class="notice u-mt-6">${esc(disclaimerForPath(canonical))}</p>
     </div>
   </main>
   ${footer.replace(/src="js\//g, 'src="../js/')}
@@ -514,7 +519,7 @@ for (const p of CAUSAL_PAGES) {
       },
       {
         q: "¿Cómo calculo el finiquito con esta causal?",
-        a: "Use la calculadora embebida en esta página o abra /finiquito con el parámetro causal precargado. Es una estimación de software, no un cálculo oficial.",
+        a: "Use la calculadora embebida en esta página o abra /finiquito con el parámetro causal precargado. No es un cálculo oficial de la Dirección del Trabajo.",
       },
     ],
     webApp: {

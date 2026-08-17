@@ -6,7 +6,7 @@ calc: "finiquito"
 faq:
   - {"q":"¿Qué es un finiquito?","a":"Es el documento que deja constancia del término del contrato y de los haberes e indemnizaciones que se pagan al trabajador, regulado en el artículo 177 del Código del Trabajo."}
   - {"q":"¿Todas las causales pagan indemnización por años de servicio?","a":"No. En general la indemnización del artículo 163 procede cuando el término se funda en el artículo 161 (necesidades de la empresa o desahucio), con un año o más de vigencia. Las causales del artículo 160 no la generan."}
-  - {"q":"¿Puedo calcular el finiquito en línea?","a":"Sí. Haberes estima el monto según causal, fechas y remuneración. Es una estimación de software, no un cálculo oficial de la Dirección del Trabajo."}
+  - {"q":"¿Puedo calcular el finiquito en línea?","a":"Sí. Haberes estima el monto según causal, fechas y remuneración. No es un cálculo oficial de la Dirección del Trabajo."}
 ---
 
 # Finiquito en Chile: qué es y cómo se calcula
