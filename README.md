@@ -9,7 +9,7 @@ Estimación generada por inteligencia artificial. **No** es un cálculo de la Di
 Abra `index.html` o despliegue en Vercel (`vercel.json` con `cleanUrls`).
 
 ```
-node scripts/verify.mjs   # cálculo, contenido y contratos de API (351 aserciones)
+node scripts/verify.mjs   # cálculo, contenido y contratos de API (376 aserciones)
 python3 scripts/smoke.py  # interfaz en navegador real: 360 px y 1280 px
 ```
 
