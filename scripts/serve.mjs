@@ -1,13 +1,15 @@
 #!/usr/bin/env node
 /**
- * Servidor estático local con cleanUrls (como vercel.json).
+ * Servidor estático local con cleanUrls y trailingSlash: false (como vercel.json).
  * /sueldo sirve sueldo.html; /guias/foo sirve guias/foo.html.
- * Las APIs de Vercel no se ejecutan aquí: responden 501 JSON.
+ * /sitemap.xml, /sitemap y /api/sitemap salen de api/_sitemap.js (sin XML estático).
+ * Las demás APIs de Vercel no se ejecutan aquí: responden 501 JSON.
  */
 import { createReadStream, existsSync, statSync } from "node:fs";
 import { createServer } from "node:http";
 import { extname, join, normalize, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
+import { buildSitemapXml, SITEMAP_CONTENT_TYPE } from "../api/_sitemap.js";
 
 const ROOT = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const HOST = process.env.HOST || "127.0.0.1";
@@ -26,7 +28,13 @@ const TYPES = {
   ".txt": "text/plain; charset=utf-8",
   ".woff2": "font/woff2",
   ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  ".xml": "application/xml; charset=utf-8",
+  ".xml": "text/xml; charset=utf-8",
+};
+
+const SITEMAP_HEADERS = {
+  "Content-Type": SITEMAP_CONTENT_TYPE,
+  "Cache-Control": "public, max-age=0, must-revalidate",
+  "X-Content-Type-Options": "nosniff",
 };
 
 function send(res, status, headers, body) {
@@ -50,16 +58,23 @@ function tryFile(abs) {
   return abs;
 }
 
+function isSitemapPath(pathname) {
+  return pathname === "/sitemap.xml" || pathname === "/sitemap" || pathname === "/api/sitemap";
+}
+
 function resolvePath(urlPath) {
   const decoded = decodeURIComponent(urlPath.split("?")[0]);
   const cleaned = normalize(decoded).replace(/\\/g, "/");
   if (cleaned.includes("\0") || cleaned.startsWith("..") || cleaned.includes("/../")) {
     return { kind: "bad" };
   }
+  if (isSitemapPath(cleaned)) {
+    return { kind: "sitemap" };
+  }
   if (cleaned.startsWith("/api/") || cleaned === "/api") {
     return { kind: "api" };
   }
-  const rel = cleaned === "/" ? "index.html" : cleaned.replace(/^\//, "").replace(/\/$/, "");
+  const rel = cleaned === "/" ? "index.html" : cleaned.replace(/^\//, "");
   const direct = tryFile(join(ROOT, rel));
   if (direct) return { kind: "file", file: direct };
   if (!extname(rel)) {
@@ -71,17 +86,40 @@ function resolvePath(urlPath) {
   return { kind: "missing" };
 }
 
-const server = createServer((req, res) => {
-  let urlPath = "/";
+export function handleRequest(req, res) {
+  let url;
   try {
-    urlPath = new URL(req.url || "/", `http://${HOST}`).pathname;
+    url = new URL(req.url || "/", `http://${HOST}`);
   } catch {
     send(res, 400, { "Content-Type": "text/plain; charset=utf-8" }, "Bad Request");
+    return;
+  }
+  const urlPath = url.pathname;
+  if (urlPath.length > 1 && urlPath.endsWith("/")) {
+    const dest = `${urlPath.replace(/\/+$/, "")}${url.search}`;
+    send(res, 301, { Location: dest }, "");
+    return;
+  }
+  if (urlPath === "/guias") {
+    send(res, 301, { Location: `/${url.search}` }, "");
     return;
   }
   const hit = resolvePath(urlPath);
   if (hit.kind === "bad") {
     send(res, 400, { "Content-Type": "text/plain; charset=utf-8" }, "Bad Request");
+    return;
+  }
+  if (hit.kind === "sitemap") {
+    const method = String(req.method || "GET").toUpperCase();
+    if (method === "HEAD") {
+      send(res, 200, SITEMAP_HEADERS, "");
+      return;
+    }
+    if (method !== "GET") {
+      send(res, 405, { ...SITEMAP_HEADERS, Allow: "GET, HEAD" }, "");
+      return;
+    }
+    send(res, 200, SITEMAP_HEADERS, buildSitemapXml());
     return;
   }
   if (hit.kind === "api") {
@@ -93,10 +131,22 @@ const server = createServer((req, res) => {
     return;
   }
   const type = TYPES[extname(hit.file).toLowerCase()] || "application/octet-stream";
-  res.writeHead(200, { "Content-Type": type });
+  const headers = { "Content-Type": type };
+  if (String(req.method || "GET").toUpperCase() === "HEAD") {
+    send(res, 200, headers, "");
+    return;
+  }
+  res.writeHead(200, headers);
   createReadStream(hit.file).pipe(res);
-});
+}
 
-server.listen(PORT, HOST, () => {
-  console.log(`Haberes en http://${HOST}:${PORT}`);
-});
+const server = createServer(handleRequest);
+const thisFile = fileURLToPath(import.meta.url);
+const invoked = process.argv[1] ? resolve(process.argv[1]) : "";
+if (invoked === thisFile) {
+  server.listen(PORT, HOST, () => {
+    console.log(`Haberes en http://${HOST}:${PORT}`);
+  });
+}
+
+export { server, ROOT, HOST, PORT };

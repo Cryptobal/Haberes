@@ -206,6 +206,7 @@ ${GTM}
   <meta name="twitter:title" content="${meta.title}" />
   <meta name="twitter:description" content="${meta.description}" />
   <meta name="twitter:image" content="${ORIGIN}${meta.ogImage}" />
+  <link rel="icon" href="${prefix}favicon.ico" sizes="32x32" />
   <link rel="icon" href="${prefix}favicon.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="${prefix}css/app.css" />
   <!-- GA4: para activarlo, asigne un ID G-… a window.HABERES_GA4 antes de este script. Vacío = sin peticiones. -->

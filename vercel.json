@@ -1,8 +1,10 @@
 {
   "cleanUrls": true,
+  "trailingSlash": false,
   "redirects": [
     { "source": "/como-funciona", "destination": "/como", "permanent": true },
-    { "source": "/como-funciona/", "destination": "/como", "permanent": true }
+    { "source": "/como-funciona/", "destination": "/como", "permanent": true },
+    { "source": "/guias", "destination": "/", "permanent": true }
   ],
   "rewrites": [
     { "source": "/sitemap.xml", "destination": "/api/sitemap" },

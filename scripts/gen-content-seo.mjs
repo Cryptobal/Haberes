@@ -215,6 +215,7 @@ ${GTM}
   <meta name="twitter:title" content="${esc(title)}" />
   <meta name="twitter:description" content="${esc(description)}" />
   <meta name="twitter:image" content="${ORIGIN}${ogImage}" />
+  <link rel="icon" href="../favicon.ico" sizes="32x32" />
   <link rel="icon" href="../favicon.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="../css/app.css" />
   <script src="../js/analytics.js" defer></script>
