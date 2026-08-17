@@ -760,6 +760,58 @@ assert(
     return existsSync(file);
   }),
 );
+
+console.log("\nGuías: disclaimer según tema");
+function noticeDisclaimer(html) {
+  const m = html.match(/<p class="notice u-mt-6">([\s\S]*?)<\/p>/);
+  return m ? m[1].replace(/\s+/g, " ").trim() : "";
+}
+
+const guiaHtmlFiles = readdirSync(join(root, "guias")).filter((f) => f.endsWith(".html"));
+assert("hay páginas en guias/", guiaHtmlFiles.length >= 7, String(guiaHtmlFiles.length));
+for (const f of guiaHtmlFiles) {
+  const html = readFileSync(join(root, "guias", f), "utf8");
+  const notice = noticeDisclaimer(html);
+  const esFiniquito = /finiquito/.test(f);
+  if (esFiniquito) {
+    assert(
+      `guias/${f} disclaimer de finiquito`,
+      notice.includes("Inspección del Trabajo") &&
+        /ratificaci[oó]n del finiquito/i.test(notice) &&
+        /pago efectivo/i.test(notice) &&
+        !notice.includes("Documento generado por Haberes"),
+    );
+  } else {
+    assert(
+      `guias/${f} disclaimer de liquidación`,
+      notice.includes("Documento generado por Haberes") &&
+        /Direcci[oó]n del Trabajo/i.test(notice) &&
+        /Previred/i.test(notice) &&
+        /asesor[ií]a legal ni previsional/i.test(notice) &&
+        !/ratificaci[oó]n del finiquito/i.test(notice),
+    );
+  }
+}
+
+for (const f of readdirSync(join(root, "finiquito")).filter((x) => x.endsWith(".html"))) {
+  const html = readFileSync(join(root, "finiquito", f), "utf8");
+  const notice = noticeDisclaimer(html);
+  assert(
+    `finiquito/${f} disclaimer de finiquito`,
+    notice.includes("Inspección del Trabajo") &&
+      /ratificaci[oó]n del finiquito/i.test(notice) &&
+      /pago efectivo/i.test(notice),
+  );
+}
+
+const genContent = readFileSync(join(root, "scripts/gen-content-seo.mjs"), "utf8");
+assert(
+  "gen-content-seo elige disclaimer según path",
+  /disclaimerForPath/.test(genContent) &&
+    /DISCLAIMER, DISCLAIMER_FINIQUITO/.test(genContent) &&
+    /\/finiquito\/\.test\(canonical\)/.test(genContent),
+);
+
 assert("gen-sitemap.mjs existe", existsSync(join(root, "scripts/gen-sitemap.mjs")));
 assert(
   "package.json script sitemap",

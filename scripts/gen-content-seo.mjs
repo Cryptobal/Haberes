@@ -6,7 +6,7 @@ import { mkdirSync, writeFileSync, readFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { calcularFiniquitoCompleto } from "../js/finiquito.js";
-import { FALLBACK_UF, DISCLAIMER_FINIQUITO } from "../js/constants.js";
+import { FALLBACK_UF, DISCLAIMER, DISCLAIMER_FINIQUITO } from "../js/constants.js";
 import { causalPorId } from "../js/causales.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -117,6 +117,11 @@ function orgLd() {
   };
 }
 
+/** Título/ruta mandan: finiquito en el path usa DISCLAIMER_FINIQUITO; el resto, DISCLAIMER. */
+function disclaimerForPath(canonical) {
+  return /finiquito/.test(canonical) ? DISCLAIMER_FINIQUITO : DISCLAIMER;
+}
+
 function pageShell({ title, description, canonical, crumbsItems, article, body, faqLd }) {
   const jsonld = [
     orgLd(),
@@ -147,7 +152,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <div class="wrap prose guide">
       ${crumbs(crumbsItems)}
 ${body}
-      <p class="notice u-mt-6">${DISCLAIMER_FINIQUITO}</p>
+      <p class="notice u-mt-6">${disclaimerForPath(canonical)}</p>
     </div>
   </main>
   ${footer.replace(/src="js\//g, 'src="../js/')}
