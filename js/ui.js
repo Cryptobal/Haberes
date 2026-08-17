@@ -44,40 +44,89 @@ function markCurrent(scope) {
   });
 }
 
+function drawerClosed(drawer) {
+  return drawer.hasAttribute("hidden");
+}
+
+function setDrawerHidden(drawer, hide) {
+  if (hide) {
+    drawer.setAttribute("hidden", "");
+    drawer.hidden = true;
+  } else {
+    drawer.removeAttribute("hidden");
+    drawer.hidden = false;
+  }
+}
+
 /**
  * Cajón de navegación móvil. Es marcado propio: no hay <dialog> nativo.
- * Se cierra con Escape, con el velo o al elegir un enlace.
+ * Se cierra con Escape, con el velo, con Cerrar o al elegir un enlace.
+ * Vive en document.body: si queda dentro de .site-header (sticky +
+ * backdrop-filter) el position:fixed se ancla a la cabecera y el panel
+ * no llega al fondo de la pantalla.
  */
 function wireDrawer() {
   const burger = document.querySelector("[data-nav-burger]");
   const drawer = document.querySelector("[data-nav-drawer]");
   if (!burger || !drawer) return;
+  if (burger.dataset.wired === "1") return;
+  burger.dataset.wired = "1";
+
+  if (document.body && drawer.parentElement !== document.body) {
+    document.body.append(drawer);
+  }
+
   let release = null;
 
   function open() {
-    drawer.hidden = false;
+    setDrawerHidden(drawer, false);
     burger.setAttribute("aria-expanded", "true");
-    lockScroll();
-    release = trapFocus(drawer);
-    drawer.querySelector("a, button")?.focus();
+    burger.setAttribute("aria-label", "Cerrar menú");
+    try {
+      lockScroll();
+    } catch {
+      /* el cajón ya está a la vista */
+    }
+    try {
+      release = trapFocus(drawer);
+      drawer.querySelector("a, button")?.focus?.({ preventScroll: true });
+    } catch {
+      release = null;
+    }
   }
 
   function close() {
-    if (drawer.hidden) return;
-    drawer.hidden = true;
+    if (drawerClosed(drawer)) return;
+    setDrawerHidden(drawer, true);
     burger.setAttribute("aria-expanded", "false");
-    release?.();
+    burger.setAttribute("aria-label", "Abrir menú");
+    try {
+      release?.();
+    } catch {
+      /* ignore */
+    }
     release = null;
-    unlockScroll();
-    burger.focus();
+    try {
+      unlockScroll();
+    } catch {
+      /* ignore */
+    }
+    try {
+      burger.focus({ preventScroll: true });
+    } catch {
+      /* ignore */
+    }
   }
 
-  burger.addEventListener("click", () => (drawer.hidden ? open() : close()));
+  burger.addEventListener("click", (ev) => {
+    ev.preventDefault();
+    drawerClosed(drawer) ? open() : close();
+  });
   drawer.querySelector("[data-nav-scrim]")?.addEventListener("click", close);
   drawer.querySelectorAll("a").forEach((a) => a.addEventListener("click", close));
   drawer.querySelector("[data-nav-close]")?.addEventListener("click", close);
   document.addEventListener("keydown", (ev) => {
-    if (ev.key === "Escape" && !drawer.hidden) close();
+    if (ev.key === "Escape" && !drawerClosed(drawer)) close();
   });
   window.addEventListener("resize", () => {
     if (window.innerWidth >= 900) close();
@@ -85,9 +134,21 @@ function wireDrawer() {
 }
 
 export function wireNav() {
-  markCurrent(document);
-  wireDrawer();
-  wireThemeToggle();
+  try {
+    markCurrent(document);
+  } catch {
+    /* ignore */
+  }
+  try {
+    wireDrawer();
+  } catch {
+    /* ignore */
+  }
+  try {
+    wireThemeToggle();
+  } catch {
+    /* ignore */
+  }
 }
 
 export async function mountIndicadores() {

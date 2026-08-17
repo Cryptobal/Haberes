@@ -33,7 +33,8 @@ ${desktop}
         </button>
       </div>
     </nav>
-    <div class="nav-drawer" id="navDrawer" data-nav-drawer hidden>
+  </header>
+  <div class="nav-drawer" id="navDrawer" data-nav-drawer hidden>
       <div class="nav-drawer-scrim" data-nav-scrim></div>
       <div class="nav-drawer-panel" role="dialog" aria-modal="true" aria-label="Menú de navegación">
         <div class="nav-drawer-grab" aria-hidden="true"></div>
