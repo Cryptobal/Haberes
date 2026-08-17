@@ -991,6 +991,26 @@ assert(
     /\.ws-tab\[aria-selected="true"\][\s\S]*?color:\s*var\(--on-ink\)/.test(css),
 );
 assert("css cream #f6f4ef solo en el token --on-ink", (css.match(/#f6f4ef/g) || []).length === 1);
+assert(
+  "css --warn-line cálido, notice sin negro",
+  /:root\s*\{[\s\S]*?--warn-line:/.test(css) &&
+    /html\[data-theme="night"\]\s*\{[\s\S]*?--warn-line:\s*#c4a35a/.test(css) &&
+    /\.notice\s*\{[\s\S]*?border:\s*1px solid var\(--warn-line\)/.test(css) &&
+    !/\.notice\s*\{[^}]*#000/.test(css),
+);
+assert(
+  "css noche --line y --line-strong más claros que el papel",
+  /html\[data-theme="night"\]\s*\{[\s\S]*?--line:\s*#5a6b66/.test(css) &&
+    /html\[data-theme="night"\]\s*\{[\s\S]*?--line-strong:\s*#6e827c/.test(css),
+);
+assert(
+  "css picker elevado y opción seleccionada obvia de noche",
+  /\.picker-panel\s*\{[\s\S]*?background:\s*var\(--surface-2\)/.test(css) &&
+    /html\[data-theme="night"\]\s*\{[\s\S]*?--surface-2:\s*#222b28/.test(css) &&
+    /\.picker-option\[aria-selected="true"\]/.test(css) &&
+    /html\[data-theme="night"\]\s*\{[\s\S]*?--option-on-bg:\s*var\(--ink\)/.test(css) &&
+    /html\[data-theme="night"\]\s*\{[\s\S]*?--option-on-fg:\s*var\(--on-ink\)/.test(css),
+);
 assert("css dos columnas desde 900px", /@media \(min-width: 900px\)/.test(css));
 assert(
   "index y como describen Gratis/Pro",
