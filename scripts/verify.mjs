@@ -3,7 +3,7 @@
  * Verificación de cifras oficiales y de la estructura del sitio Haberes.
  * Ejecutar: node scripts/verify.mjs
  */
-import { readFileSync, existsSync, readdirSync, statSync } from "node:fs";
+import { readFileSync, writeFileSync, unlinkSync, existsSync, readdirSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -524,7 +524,8 @@ const required = [
   "privacidad.html",
   "terminos.html",
   "robots.txt",
-  "sitemap.xml",
+  "favicon.ico",
+  "favicon.svg",
   "css/app.css",
   "js/constants.js",
   "js/sueldo.js",
@@ -588,6 +589,7 @@ for (const f of required) {
 
 const vercel = JSON.parse(readFileSync(join(root, "vercel.json"), "utf8"));
 assert("vercel.json cleanUrls", vercel.cleanUrls === true);
+assert("vercel.json trailingSlash false", vercel.trailingSlash === false);
 assert(
   "vercel.json headers /admin",
   JSON.stringify(vercel.headers || []).includes("/admin") &&
@@ -599,6 +601,11 @@ assert(
     vercel.redirects.some(
       (r) => r.source === "/como-funciona" && r.destination === "/como" && r.permanent === true,
     ),
+);
+assert(
+  "vercel.json 301 /guias → /",
+  Array.isArray(vercel.redirects) &&
+    vercel.redirects.some((r) => r.source === "/guias" && r.destination === "/" && r.permanent === true),
 );
 assert(
   "vercel.json rewrite /sitemap.xml → /api/sitemap",
@@ -620,6 +627,11 @@ assert(
   ".vercelignore excluye sitemap.xml estático",
   /^\s*sitemap\.xml\s*$/m.test(vercelIgnore),
 );
+assert(
+  ".gitignore excluye /sitemap.xml",
+  /^\s*\/sitemap\.xml\s*$/m.test(readFileSync(join(root, ".gitignore"), "utf8")),
+);
+assert("sitemap.xml no está en la raíz", !existsSync(join(root, "sitemap.xml")));
 
 const htmlFiles = [
   "index.html",
@@ -679,6 +691,8 @@ for (const f of htmlFiles) {
     Boolean(header) && !/data-nav-drawer/.test(header[0]) && /data-nav-drawer/.test(html),
   );
   assert(`${f} script de app con módulos`, /type="module"[^>]*js\/app-/.test(html));
+  assert(`${f} favicon.svg`, /favicon\.svg" type="image\/svg\+xml"/.test(html));
+  assert(`${f} favicon.ico`, /favicon\.ico" sizes="32x32"/.test(html));
 }
 
 console.log("\nNavegación móvil");
@@ -714,7 +728,8 @@ assert("robots Disallow /admin", /Disallow:\s*\/admin/.test(robots));
 assert("robots Sitemap", /Sitemap:\s*https:\/\/www\.haberes\.cl\/sitemap\.xml/.test(robots));
 
 const { seoPaths, GUIDE_SLUGS, CAUSAL_PAGES, BASE_PATHS } = await import("../content/registry.js");
-const sitemap = readFileSync(join(root, "sitemap.xml"), "utf8");
+const { buildSitemapXml } = await import("../api/_sitemap.js");
+const sitemap = buildSitemapXml();
 const locs = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
 const expectedFromRegistry = seoPaths().map((p) =>
   p === "/" ? "https://www.haberes.cl/" : `https://www.haberes.cl${p}`,
@@ -774,6 +789,26 @@ assert(
     return existsSync(file);
   }),
 );
+assert(
+  "guías y causales enlazan favicon.ico y svg",
+  GUIDE_SLUGS.every((s) => {
+    const html = readFileSync(join(root, "guias", `${s}.html`), "utf8");
+    return /href="\.\.\/favicon\.ico"/.test(html) && /href="\.\.\/favicon\.svg"/.test(html);
+  }) &&
+    CAUSAL_PAGES.every((p) => {
+      const html = readFileSync(join(root, "finiquito", `${p.slug}.html`), "utf8");
+      return /href="\.\.\/favicon\.ico"/.test(html) && /href="\.\.\/favicon\.svg"/.test(html);
+    }),
+);
+const faviconIco = readFileSync(join(root, "favicon.ico"));
+assert(
+  "favicon.ico es ICO 32×32",
+  faviconIco[0] === 0 &&
+    faviconIco[1] === 0 &&
+    faviconIco[2] === 1 &&
+    faviconIco[3] === 0 &&
+    faviconIco.length > 16,
+);
 
 console.log("\nGuías: disclaimer según tema");
 function noticeDisclaimer(html) {
@@ -831,9 +866,14 @@ assert(
   "package.json script sitemap",
   /"sitemap":\s*"node scripts\/gen-sitemap\.mjs"/.test(readFileSync(join(root, "package.json"), "utf8")),
 );
+const genSitemapSrc = readFileSync(join(root, "scripts/gen-sitemap.mjs"), "utf8");
 assert(
   "gen-sitemap usa api/_sitemap.js",
-  /from ["']\.\.\/api\/_sitemap\.js["']/.test(readFileSync(join(root, "scripts/gen-sitemap.mjs"), "utf8")),
+  /from ["']\.\.\/api\/_sitemap\.js["']/.test(genSitemapSrc),
+);
+assert(
+  "gen-sitemap no escribe sitemap.xml en la raíz",
+  !/writeFileSync/.test(genSitemapSrc),
 );
 const sitemapSrc = readFileSync(join(root, "api/sitemap.js"), "utf8");
 assert("api/sitemap.js no usa _lib ni pg", !/from ["']\.\/_lib\.js["']/.test(sitemapSrc) && !/\bpg\b/.test(sitemapSrc));
@@ -842,6 +882,7 @@ assert(
   /SITEMAP_CONTENT_TYPE/.test(sitemapSrc) &&
     /text\/xml; charset=utf-8/.test(readFileSync(join(root, "api/_sitemap.js"), "utf8")),
 );
+assert("api/sitemap.js sin Content-Disposition", !/setHeader\([^)]*content-disposition/i.test(sitemapSrc));
 
 const analytics = readFileSync(join(root, "js/analytics.js"), "utf8");
 assert(
@@ -945,9 +986,93 @@ assert("GET sitemap req vacío 200 xml", sitemapEmpty.statusCode === 200 && /<ur
 
 const sitemapHead = invokeSitemap({ method: "HEAD" });
 assert("HEAD sitemap 200", sitemapHead.statusCode === 200);
+assert(
+  "GET sitemap sin Content-Disposition",
+  !Object.keys(sitemapNoHeaders.headers).some((k) => /content-disposition/i.test(k)),
+);
+const sitemapXmlAccept = invokeSitemap({
+  method: "GET",
+  headers: { accept: "application/xml", "user-agent": "Googlebot" },
+});
+assert(
+  "GET sitemap Accept application/xml 200",
+  sitemapXmlAccept.statusCode === 200 && /<urlset/.test(String(sitemapXmlAccept.body)),
+);
 
 const sitemapPost = invokeSitemap({ method: "POST" });
 assert("POST sitemap 405", sitemapPost.statusCode === 405);
+
+console.log("\nServidor local: sitemap, favicon, trailing slash");
+const { handleRequest } = await import("./serve.mjs");
+const { createServer } = await import("node:http");
+const localSrv = createServer(handleRequest);
+await new Promise((resolve) => localSrv.listen(0, "127.0.0.1", resolve));
+const localPort = localSrv.address().port;
+const localBase = `http://127.0.0.1:${localPort}`;
+
+async function hitLocal(path, opts = {}) {
+  const res = await fetch(localBase + path, { redirect: "manual", ...opts });
+  const buf = Buffer.from(await res.arrayBuffer());
+  return {
+    status: res.status,
+    type: res.headers.get("content-type") || "",
+    location: res.headers.get("location") || "",
+    disposition: res.headers.get("content-disposition") || "",
+    text: buf.toString("utf8"),
+    buf,
+  };
+}
+
+try {
+  const pretty = await hitLocal("/sitemap.xml", {
+    headers: {
+      Accept: "application/xml",
+      "User-Agent": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
+    },
+  });
+  const prettyShort = await hitLocal("/sitemap");
+  const apiSm = await hitLocal("/api/sitemap");
+  assert("GET /sitemap.xml 200 text/xml", pretty.status === 200 && /text\/xml/i.test(pretty.type));
+  assert("GET /sitemap 200 text/xml", prettyShort.status === 200 && /text\/xml/i.test(prettyShort.type));
+  assert("GET /api/sitemap 200 text/xml", apiSm.status === 200 && /text\/xml/i.test(apiSm.type));
+  assert(
+    "/sitemap.xml = /api/sitemap",
+    pretty.text === apiSm.text && prettyShort.text === apiSm.text && /<urlset/.test(pretty.text),
+  );
+  assert("/sitemap.xml sin content-disposition", pretty.disposition === "");
+  assert(
+    "/sitemap.xml 45 URLs públicas",
+    [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length && seoPaths().length === 45,
+  );
+  const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
+  assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
+  const icoHit = await hitLocal("/favicon.ico");
+  const svgHit = await hitLocal("/favicon.svg");
+  assert("GET /favicon.ico 200", icoHit.status === 200 && /icon/.test(icoHit.type) && icoHit.buf.length > 16);
+  assert("GET /favicon.svg 200", svgHit.status === 200 && /svg/.test(svgHit.type));
+  for (const p of ["/sueldo/", "/finiquito/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+    const r = await hitLocal(p);
+    assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
+  }
+  const guiasSlash = await hitLocal("/guias/");
+  assert("301 /guias/ → /guias", guiasSlash.status === 301 && guiasSlash.location === "/guias");
+  const guiasBare = await hitLocal("/guias");
+  assert("301 /guias → /", guiasBare.status === 301 && guiasBare.location === "/");
+  writeFileSync(join(root, "sitemap.xml"), "<urlset>STATIC-LEFTOVER</urlset>");
+  try {
+    const afterLeftover = await hitLocal("/sitemap.xml");
+    assert(
+      "XML estático no gana a /sitemap.xml",
+      afterLeftover.status === 200 &&
+        /<loc>/.test(afterLeftover.text) &&
+        !afterLeftover.text.includes("STATIC-LEFTOVER"),
+    );
+  } finally {
+    unlinkSync(join(root, "sitemap.xml"));
+  }
+} finally {
+  await new Promise((resolve, reject) => localSrv.close((err) => (err ? reject(err) : resolve())));
+}
 
 const {
   hashPassword,

@@ -1,7 +1,9 @@
 /**
  * /sitemap.xml para Chrome, curl y Googlebot.
  * El XML estático de Vercel responde 500 a clientes no-browser
- * (application/xml + content-disposition); esta función no.
+ * (application/xml + content-disposition). No hay sitemap.xml en el
+ * deploy; vercel.json reescribe /sitemap.xml y /sitemap aquí.
+ * Content-Type text/xml; charset=utf-8, sin Content-Disposition.
  */
 import { buildSitemapXml, SITEMAP_CONTENT_TYPE } from "./_sitemap.js";
 
