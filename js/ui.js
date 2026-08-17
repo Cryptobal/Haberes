@@ -1,18 +1,92 @@
 import { DISCLAIMER } from "./constants.js";
 import { clp, fechaLarga, ufFmt } from "./format.js";
 import { getIndicadores } from "./indicadores.js";
+import {
+  alertDialog,
+  confirmDialog,
+  lockScroll,
+  openDialog,
+  toast,
+  toastError,
+  toastInfo,
+  toastOk,
+  trapFocus,
+  unlockScroll,
+} from "./overlay.js";
 import { createPicker } from "./picker.js";
 import { wireThemeToggle } from "./theme.js";
 
-export function wireNav() {
-  const path = (location.pathname.replace(/\.html$/, "") || "/").replace(/\/$/, "") || "/";
-  document.querySelectorAll("[data-nav]").forEach((a) => {
+export {
+  alertDialog,
+  confirmDialog,
+  lockScroll,
+  openDialog,
+  toast,
+  toastError,
+  toastInfo,
+  toastOk,
+  trapFocus,
+  unlockScroll,
+};
+
+function currentPath() {
+  return (location.pathname.replace(/\.html$/, "") || "/").replace(/\/$/, "") || "/";
+}
+
+function markCurrent(scope) {
+  const path = currentPath();
+  scope.querySelectorAll("[data-nav]").forEach((a) => {
     const href = a.getAttribute("href") || "";
     const key = href.replace(/\.html$/, "").replace(/\/$/, "") || "/";
     if (key === path || (path === "/" && (href === "/" || href === "index.html"))) {
       a.setAttribute("aria-current", "page");
     }
   });
+}
+
+/**
+ * Cajón de navegación móvil. Es marcado propio: no hay <dialog> nativo.
+ * Se cierra con Escape, con el velo o al elegir un enlace.
+ */
+function wireDrawer() {
+  const burger = document.querySelector("[data-nav-burger]");
+  const drawer = document.querySelector("[data-nav-drawer]");
+  if (!burger || !drawer) return;
+  let release = null;
+
+  function open() {
+    drawer.hidden = false;
+    burger.setAttribute("aria-expanded", "true");
+    lockScroll();
+    release = trapFocus(drawer);
+    drawer.querySelector("a, button")?.focus();
+  }
+
+  function close() {
+    if (drawer.hidden) return;
+    drawer.hidden = true;
+    burger.setAttribute("aria-expanded", "false");
+    release?.();
+    release = null;
+    unlockScroll();
+    burger.focus();
+  }
+
+  burger.addEventListener("click", () => (drawer.hidden ? open() : close()));
+  drawer.querySelector("[data-nav-scrim]")?.addEventListener("click", close);
+  drawer.querySelectorAll("a").forEach((a) => a.addEventListener("click", close));
+  drawer.querySelector("[data-nav-close]")?.addEventListener("click", close);
+  document.addEventListener("keydown", (ev) => {
+    if (ev.key === "Escape" && !drawer.hidden) close();
+  });
+  window.addEventListener("resize", () => {
+    if (window.innerWidth >= 900) close();
+  });
+}
+
+export function wireNav() {
+  markCurrent(document);
+  wireDrawer();
   wireThemeToggle();
 }
 
@@ -20,19 +94,14 @@ export async function mountIndicadores() {
   const nodes = document.querySelectorAll("[data-indicadores]");
   if (!nodes.length) return null;
   const ind = await getIndicadores();
-  const fecha = ind.fecha
-    ? new Date(ind.fecha).toLocaleDateString("es-CL")
-    : fechaLarga();
+  const fecha = ind.fecha ? new Date(ind.fecha).toLocaleDateString("es-CL") : fechaLarga();
   const fuente =
-    ind.fuente === "mindicador" || ind.fuente === "cache"
-      ? "mindicador.cl"
-      : "valor de respaldo";
+    ind.fuente === "mindicador" || ind.fuente === "cache" ? "mindicador.cl" : "valor de respaldo";
   const text = `${ufFmt(ind.uf)} · UTM ${clp(ind.utm).replace("$", "").trim()} · ${fecha} · ${fuente}`;
   nodes.forEach((n) => {
     n.textContent = text;
   });
-  const disc = document.querySelectorAll("[data-disclaimer]");
-  disc.forEach((n) => {
+  document.querySelectorAll("[data-disclaimer]").forEach((n) => {
     if (!n.textContent.trim()) n.textContent = DISCLAIMER;
   });
   return ind;
@@ -57,6 +126,41 @@ export function showError(node, msg) {
   if (!node) return;
   node.hidden = !msg;
   node.textContent = msg || "";
+  if (msg) node.setAttribute("role", "alert");
+}
+
+export function showOk(node, msg) {
+  if (!node) return;
+  node.hidden = !msg;
+  node.textContent = msg || "";
+}
+
+/** Marca un botón como ocupado sin cambiar su ancho ni permitir doble envío. */
+export function setBusy(node, busy, busyLabel) {
+  if (!node) return;
+  if (busy) {
+    if (!node.dataset.label) node.dataset.label = node.textContent;
+    node.classList.add("is-busy");
+    node.setAttribute("aria-busy", "true");
+    if (busyLabel) node.textContent = busyLabel;
+  } else {
+    node.classList.remove("is-busy");
+    node.removeAttribute("aria-busy");
+    if (node.dataset.label) {
+      node.textContent = node.dataset.label;
+      delete node.dataset.label;
+    }
+  }
+}
+
+/** Envuelve una acción asíncrona con estado ocupado y captura de error. */
+export async function withBusy(node, fn, busyLabel) {
+  setBusy(node, true, busyLabel);
+  try {
+    return await fn();
+  } finally {
+    setBusy(node, false);
+  }
 }
 
 export const MESES_ES = [
@@ -116,16 +220,7 @@ export function fillYearSelect(select, { from = 1980, to, selected } = {}) {
 
 export function fillPeriodoSelect(select, { months = 36, selected } = {}) {
   if (!select) return;
-  const now = new Date();
-  const items = [];
-  for (let i = 0; i < months; i += 1) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const value = `${d.getFullYear()}-${pad2(d.getMonth() + 1)}`;
-    items.push({
-      value,
-      label: `${MESES_ES[d.getMonth()]} ${d.getFullYear()}`,
-    });
-  }
+  const items = periodoItems(months);
   fillSelect(select, items, selected || items[0]?.value);
 }
 
@@ -176,10 +271,7 @@ export function periodoItems(months = 36) {
   for (let i = 0; i < months; i += 1) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     const value = `${d.getFullYear()}-${pad2(d.getMonth() + 1)}`;
-    items.push({
-      value,
-      label: `${MESES_ES[d.getMonth()]} ${d.getFullYear()}`,
-    });
+    items.push({ value, label: `${MESES_ES[d.getMonth()]} ${d.getFullYear()}` });
   }
   return items;
 }
@@ -216,6 +308,7 @@ export function createDateFields(root, { value, onChange } = {}) {
     value: d,
     searchable: false,
     placeholder: "Día",
+    title: "Día",
     onChange: (v) => {
       d = v;
       emit();
@@ -226,6 +319,7 @@ export function createDateFields(root, { value, onChange } = {}) {
     value: mo,
     searchable: true,
     placeholder: "Mes",
+    title: "Mes",
     onChange: (v) => {
       mo = v;
       emit();
@@ -236,6 +330,7 @@ export function createDateFields(root, { value, onChange } = {}) {
     value: y,
     searchable: true,
     placeholder: "Año",
+    title: "Año",
     onChange: (v) => {
       y = v;
       emit();
@@ -255,35 +350,4 @@ export function createDateFields(root, { value, onChange } = {}) {
       py.setValue(y);
     },
   };
-}
-
-export function confirmDialog({ text, okLabel = "Confirmar", cancelLabel = "Cancelar" }) {
-  return new Promise((resolve) => {
-    const overlay = document.createElement("div");
-    overlay.className = "modal";
-    overlay.setAttribute("role", "dialog");
-    overlay.setAttribute("aria-modal", "true");
-    overlay.innerHTML = `
-      <div class="modal-card">
-        <p class="modal-text">${String(text || "")
-          .replace(/&/g, "&amp;")
-          .replace(/</g, "&lt;")
-          .replace(/>/g, "&gt;")}</p>
-        <div class="actions">
-          <button type="button" class="btn btn-danger" data-ok>${okLabel}</button>
-          <button type="button" class="btn btn-ghost" data-cancel>${cancelLabel}</button>
-        </div>
-      </div>`;
-    function close(val) {
-      overlay.remove();
-      resolve(val);
-    }
-    overlay.querySelector("[data-ok]").addEventListener("click", () => close(true));
-    overlay.querySelector("[data-cancel]").addEventListener("click", () => close(false));
-    overlay.addEventListener("click", (ev) => {
-      if (ev.target === overlay) close(false);
-    });
-    document.body.appendChild(overlay);
-    overlay.querySelector("[data-cancel]").focus();
-  });
 }

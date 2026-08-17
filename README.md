@@ -9,10 +9,25 @@ Estimación generada por inteligencia artificial. **No** es un cálculo de la Di
 Abra `index.html` o despliegue en Vercel (`vercel.json` con `cleanUrls`).
 
 ```
-node scripts/verify.mjs
+node scripts/verify.mjs   # cálculo, contenido y contratos de API (376 aserciones)
+python3 scripts/smoke.py  # interfaz en navegador real: 360 px y 1280 px
 ```
 
+`scripts/smoke.py` levanta su propio servidor estático y usa Playwright. Comprueba lo que
+solo se ve en un navegador: desborde horizontal, áreas táctiles bajo 44 px, errores de
+consola, orden de capas (cabecera, hoja del selector, cajón, avisos, diálogo) y el flujo
+de alta, edición y borrado de un trabajador. Deja capturas en `/tmp/shots`.
+
 UF y UTM se leen de [mindicador.cl](https://mindicador.cl/api) con caché de 12 horas. Si la UF sale del rango 20.000–80.000 se usa el valor de respaldo.
+
+## Interfaz
+
+Sistema de diseño en `css/app.css`: tokens de color, espaciado base 4, tipografía fluida,
+elevación y movimiento, con tema día/noche. Mobile first; el escritorio es la mejora.
+
+No se usan `alert`, `confirm`, `prompt`, `window.open` ni `<dialog>` nativo. Los diálogos,
+los avisos flotantes y el bloqueo de scroll viven en `js/overlay.js`; el selector de opciones
+en `js/picker.js` (hoja inferior con velo en móvil, panel anclado en escritorio).
 
 ## Páginas
 

@@ -55,29 +55,79 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <a href="/empresa" data-nav>Para mi empresa</a>
         <a href="/como" data-nav>Cómo funciona</a>
         <a href="/precios" data-nav>Precios</a>
+      </div>
+      <div class="nav-actions">
         <button type="button" class="theme-toggle" data-theme-toggle aria-label="Cambiar a modo noche" aria-pressed="false">
           <span data-theme-label>Día</span>
         </button>
+        <a class="btn btn-sm nav-cta" href="/empresa">Entrar</a>
+        <button type="button" class="nav-burger" data-nav-burger aria-expanded="false" aria-controls="navDrawer" aria-label="Abrir menú">
+          <i aria-hidden="true"></i>
+        </button>
       </div>
     </nav>
+    <div class="nav-drawer" id="navDrawer" data-nav-drawer hidden>
+      <div class="nav-drawer-scrim" data-nav-scrim></div>
+      <div class="nav-drawer-panel" role="dialog" aria-modal="true" aria-label="Menú de navegación">
+        <div class="nav-drawer-grab" aria-hidden="true"></div>
+        <a href="/sueldo" data-nav>Sueldo líquido</a>
+        <a href="/finiquito" data-nav>Finiquito</a>
+        <a href="/empresa" data-nav>Para mi empresa</a>
+        <a href="/como" data-nav>Cómo funciona</a>
+        <a href="/precios" data-nav>Precios</a>
+        <div class="nav-drawer-foot">
+          <a class="btn" href="/empresa">Entrar a mi empresa</a>
+          <button type="button" class="btn btn-ghost" data-nav-close>Cerrar</button>
+        </div>
+      </div>
+    </div>
   </header>
 
   <main>
     <div class="wrap">
-      <p class="kicker">Empresa</p>
-      <h1>Para mi empresa</h1>
-      <p class="lede">Cuenta de empresa: perfil, logo y firma, trabajadores del mes, liquidación y carta de finiquito. El registro es gratis. Vista previa en esta página; no depende de ventanas emergentes.</p>
-      <p class="notice">
-        Estimación generada por inteligencia artificial. No es un cálculo de la Dirección del Trabajo ni de Previred.
-        No constituye asesoría legal. La carta de finiquito no reemplaza la ratificación ante la Inspección del Trabajo.
-        Si no hay servidor de cuentas, los datos se guardan solo en este navegador.
-      </p>
+      <!-- ============ ACCESO ============ -->
+      <section id="auth" class="wrap-narrow" style="padding: 0; margin: 0 auto">
+        <p class="kicker">Empresa</p>
+        <h1>Su nómina, sus documentos</h1>
+        <p class="lede">
+          Perfil, logo y firma, trabajadores del mes, liquidación y carta de finiquito.
+          El registro es gratis y no pide tarjeta.
+        </p>
 
-      <section id="auth" style="margin-top: 24px">
-        <p class="error" id="errAuth" hidden></p>
-        <div class="auth-grid">
-          <form id="formRegistro" class="panel">
-            <h2>Crear cuenta</h2>
+        <p class="notice">
+          Estimación generada por inteligencia artificial. No es un cálculo de la Dirección del Trabajo ni de Previred.
+          No constituye asesoría legal. La carta de finiquito no reemplaza la ratificación ante la Inspección del Trabajo.
+          Si no hay servidor de cuentas, los datos se guardan solo en este navegador.
+        </p>
+
+        <div class="panel">
+          <div class="seg" role="group" aria-label="Entrar o crear cuenta">
+            <label>
+              <input type="radio" name="authModo" value="entrar" data-auth-modo checked />
+              <span>Entrar</span>
+            </label>
+            <label>
+              <input type="radio" name="authModo" value="registro" data-auth-modo />
+              <span>Crear cuenta</span>
+            </label>
+          </div>
+
+          <p class="error" id="errAuth" hidden></p>
+
+          <form id="formEntrar" data-auth-panel="entrar">
+            <div class="field">
+              <label for="loginRut">RUT empresa</label>
+              <input id="loginRut" required autocomplete="username" placeholder="76.123.456-0" />
+            </div>
+            <div class="field">
+              <label for="loginClave">Clave</label>
+              <input id="loginClave" type="password" required autocomplete="current-password" />
+            </div>
+            <button class="btn btn-block btn-lg" type="submit">Entrar</button>
+            <button class="btn-text" type="button" id="btnOlvide">Olvidé mi clave</button>
+          </form>
+
+          <form id="formRegistro" data-auth-panel="registro" hidden>
             <div class="field">
               <label for="regRazon">Razón social</label>
               <input id="regRazon" required placeholder="Comercial Ejemplo SpA" />
@@ -93,25 +143,13 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             <div class="field">
               <label for="regClave">Clave</label>
               <input id="regClave" type="password" required minlength="10" autocomplete="new-password" />
+              <p class="hint">Mínimo 10 caracteres. No hay pistas de clave.</p>
             </div>
-            <p class="hint">Mínimo 10 caracteres. No hay pistas de clave.</p>
-            <button class="btn" type="submit">Crear cuenta</button>
-          </form>
-          <form id="formEntrar" class="panel">
-            <h2>Entrar</h2>
-            <div class="field">
-              <label for="loginRut">RUT empresa</label>
-              <input id="loginRut" required autocomplete="username" />
-            </div>
-            <div class="field">
-              <label for="loginClave">Clave</label>
-              <input id="loginClave" type="password" required autocomplete="current-password" />
-            </div>
-            <button class="btn" type="submit">Entrar</button>
-            <button class="btn-text" type="button" id="btnOlvide">Olvidé mi clave</button>
+            <button class="btn btn-block btn-lg" type="submit">Crear cuenta gratis</button>
           </form>
         </div>
-        <section id="panelOlvide" class="panel" hidden style="margin-top: 16px">
+
+        <section id="panelOlvide" class="panel u-mt-4" hidden>
           <h2>Olvidé mi clave</h2>
           <p class="notice">
             Si hay servidor de cuentas, puede pedir un enlace. La respuesta es la misma exista o no la cuenta.
@@ -130,28 +168,38 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             </div>
             <p class="error" id="errOlvide" hidden></p>
             <p class="ok" id="okOlvide" hidden></p>
-            <div class="actions" style="margin-top: 12px">
+            <div class="btn-row u-mt-3">
               <button class="btn" type="submit">Pedir recuperación</button>
               <button class="btn btn-ghost" type="button" id="btnCerrarOlvide">Cerrar</button>
             </div>
           </form>
-          <div id="olvideResultado" hidden style="margin-top: 16px">
+          <div id="olvideResultado" hidden class="u-mt-4">
             <p class="hint" id="olvideExplicacion"></p>
-            <button class="btn btn-danger" type="button" id="btnBorrarLocal" hidden>
+            <button class="btn btn-danger-ghost u-mt-3" type="button" id="btnBorrarLocal" hidden>
               Borrar la cuenta local de este RUT
             </button>
           </div>
         </section>
       </section>
 
-      <section id="app" hidden style="margin-top: 24px">
-        <div class="toolbar">
-          <div>
-            <h2 id="empNombre" style="margin:0">Empresa</h2>
+      <!-- ============ ESPACIO DE TRABAJO ============ -->
+      <section id="app" hidden>
+        <div class="workspace-bar">
+          <div class="workspace-id">
+            <h2 id="empNombre">Empresa</h2>
             <p class="hint" id="empMeta"></p>
-            <p class="hint" id="empPlan"></p>
           </div>
-          <button class="btn btn-ghost" type="button" id="btnSalir">Cerrar sesión</button>
+          <div class="actions">
+            <span class="badge" id="empPlanBadge">Gratis</span>
+            <button class="btn btn-ghost btn-sm" type="button" id="btnSalir">Cerrar sesión</button>
+          </div>
+        </div>
+
+        <div class="quota" id="empQuota">
+          <div class="quota-bar" role="progressbar" aria-label="Movimientos usados este mes" aria-valuemin="0" aria-valuemax="5" aria-valuenow="0">
+            <i id="empQuotaBar" style="width: 0%"></i>
+          </div>
+          <p class="hint u-mb-0" id="empPlan" style="margin: 0"></p>
         </div>
 
         <div class="ws-tabs" role="tablist" aria-label="Áreas de trabajo">
@@ -160,10 +208,15 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           <button type="button" class="ws-tab" data-tab="documentos" aria-selected="false">Documentos</button>
         </div>
 
+        <!-- ---- Mi empresa ---- -->
         <section id="tab-empresa" class="panel" data-tab-panel="empresa">
-          <h3>Mi empresa</h3>
-          <p class="hint">Razón social, giro, dirección, logo y firma del representante legal. El RUT no se cambia. Logo y firma se guardan en almacenamiento privado (no hay URL pública) y se usan en el membrete y las firmas del PDF.</p>
-          <form id="formPerfil">
+          <h3>Datos de la empresa</h3>
+          <p class="hint">
+            Razón social, giro, dirección, logo y firma del representante legal. El RUT no se cambia.
+            Logo y firma se guardan en almacenamiento privado (no hay URL pública) y se usan en el membrete
+            y en las firmas del PDF.
+          </p>
+          <form id="formPerfil" class="u-mt-4">
             <div class="row">
               <div class="field">
                 <label for="perfilRazon">Razón social</label>
@@ -184,31 +237,36 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             </div>
             <p class="error" id="errPerfil" hidden></p>
             <p class="ok" id="okPerfil" hidden></p>
-            <div class="btn-row">
+            <div class="btn-row u-mt-3">
               <button class="btn" type="submit">Guardar perfil</button>
             </div>
           </form>
+
           <hr class="sep" />
           <h3>Logo</h3>
           <p class="hint">PNG, JPG o WebP. Máximo 1,5 MB. Si el almacenamiento no está configurado, no se finge la subida.</p>
-          <div class="logo-box">
+          <div class="logo-box u-mt-3">
             <img id="logoPreview" class="logo-preview" alt="Logo de la empresa" hidden />
-            <p class="hint" id="logoVacio">Aún no hay logo.</p>
+            <p class="hint" id="logoVacio" style="margin: 0">Aún no hay logo.</p>
           </div>
-          <div class="btn-row" style="margin-top: 12px">
+          <div class="btn-row u-mt-3">
             <label class="btn btn-ghost" for="logoFile">Subir logo</label>
             <input id="logoFile" type="file" accept="image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp" hidden />
             <button class="btn btn-ghost" type="button" id="btnQuitarLogo">Quitar logo</button>
           </div>
           <p class="error" id="errLogo" hidden></p>
+
           <hr class="sep" />
           <h3>Firma del representante legal</h3>
-          <p class="hint">Imagen de la firma (PNG, JPG o WebP). Máximo 1,5 MB. Ruta privada <code>firmas/{empresa}/{uuid}</code>. Si está, las cartas y PDF la incluyen.</p>
-          <div class="logo-box">
+          <p class="hint">
+            Imagen de la firma (PNG, JPG o WebP). Máximo 1,5 MB. Ruta privada <code>firmas/{empresa}/{uuid}</code>.
+            Si está, las cartas y PDF la incluyen.
+          </p>
+          <div class="logo-box u-mt-3">
             <img id="firmaPreview" class="firma-preview" alt="Firma del representante legal" hidden />
-            <p class="hint" id="firmaVacia">Aún no hay firma.</p>
+            <p class="hint" id="firmaVacia" style="margin: 0">Aún no hay firma.</p>
           </div>
-          <div class="btn-row" style="margin-top: 12px">
+          <div class="btn-row u-mt-3">
             <label class="btn btn-ghost" for="firmaFile">Subir firma</label>
             <input id="firmaFile" type="file" accept="image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp" hidden />
             <button class="btn btn-ghost" type="button" id="btnQuitarFirma">Quitar firma</button>
@@ -216,128 +274,159 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           <p class="error" id="errFirma" hidden></p>
         </section>
 
-        <section id="tab-trabajadores" class="panel" data-tab-panel="trabajadores" hidden>
-          <h3>Trabajadores de este mes</h3>
-          <p class="hint">
-            Cargue o edite la nómina del mes. Un archivo nuevo actualiza por RUT (no duplica). Columnas: nombre, rut, cargo, sueldo_base, afp, salud, plan_isapre, contrato, horas_extras, colacion, movilizacion, gratificacion, email, banco, tipo_cuenta, nro_cuenta, y bonos nombrados <code>bono_1_nombre</code>, <code>bono_1_monto</code>, <code>bono_1_imponible</code> (si/no). La carga masiva CSV/XLSX es Pro. Los trabajadores de esta lista viven en este navegador.
-          </p>
-          <div class="btn-row" style="margin: 12px 0 16px">
-            <label class="btn btn-ghost" for="csvFile">Cargar CSV/XLSX <span class="badge">Pro</span></label>
-            <input id="csvFile" type="file" accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden />
-            <a class="btn btn-ghost" href="ejemplos/trabajadores.csv" download>Descargar ejemplo CSV</a>
+        <!-- ---- Trabajadores ---- -->
+        <section id="tab-trabajadores" data-tab-panel="trabajadores" hidden>
+          <div class="panel">
+            <div class="toolbar">
+              <h3 style="margin: 0">Nómina del mes</h3>
+              <span class="hint" id="nominaTotal" style="margin: 0"></span>
+            </div>
+            <p class="hint">
+              Un archivo nuevo actualiza por RUT (no duplica). Columnas: nombre, rut, cargo, sueldo_base, afp,
+              salud, plan_isapre, contrato, horas_extras, colacion, movilizacion, gratificacion, email, banco,
+              tipo_cuenta, nro_cuenta, y bonos nombrados <code>bono_1_nombre</code>, <code>bono_1_monto</code>,
+              <code>bono_1_imponible</code> (si/no). La carga masiva CSV/XLSX es Pro. Los trabajadores de esta
+              lista viven en este navegador.
+            </p>
+            <div class="btn-row u-mt-3">
+              <label class="btn btn-ghost" for="csvFile">Cargar CSV/XLSX <span class="badge badge-pro">Pro</span></label>
+              <input id="csvFile" type="file" accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden />
+              <a class="btn btn-ghost" href="ejemplos/trabajadores.csv" download>Descargar ejemplo CSV</a>
+            </div>
+            <p class="error" id="errCsv" hidden></p>
+            <div id="tablaTrabajadores" class="u-mt-4"></div>
           </div>
-          <p class="error" id="errCsv" hidden></p>
-          <div class="table-wrap" id="tablaTrabajadores"></div>
-          <hr class="sep" />
-          <form id="formAlta">
-            <h3 id="altaTitulo">Agregar trabajador</h3>
-            <input type="hidden" id="altaId" value="" />
-            <div class="row">
-              <div class="field">
-                <label for="altaNombre">Nombre</label>
-                <input id="altaNombre" required />
+
+          <div class="panel u-mt-4">
+            <form id="formAlta">
+              <h3 id="altaTitulo">Agregar trabajador</h3>
+              <input type="hidden" id="altaId" value="" />
+              <div class="row">
+                <div class="field">
+                  <label for="altaNombre">Nombre</label>
+                  <input id="altaNombre" required />
+                </div>
+                <div class="field">
+                  <label for="altaRut">RUT</label>
+                  <input id="altaRut" placeholder="12.345.678-9" />
+                </div>
+              </div>
+              <div class="row">
+                <div class="field">
+                  <label for="altaCargo">Cargo</label>
+                  <input id="altaCargo" />
+                </div>
+                <div class="field">
+                  <label for="altaSueldo">Sueldo base</label>
+                  <input id="altaSueldo" inputmode="numeric" min="0" value="1000000" />
+                </div>
+              </div>
+              <div class="row">
+                <div class="field">
+                  <span class="lbl">AFP</span>
+                  <div id="altaAfpPick"></div>
+                </div>
+                <div class="field">
+                  <span class="lbl">Salud</span>
+                  <div id="altaSaludPick"></div>
+                </div>
+              </div>
+              <div class="row">
+                <div class="field">
+                  <label for="altaIsapre">Isapre pactado (pesos)</label>
+                  <input id="altaIsapre" inputmode="numeric" min="0" value="0" />
+                </div>
+                <div class="field">
+                  <span class="lbl">Contrato</span>
+                  <div id="altaContratoPick"></div>
+                </div>
+              </div>
+              <div class="row">
+                <div class="field">
+                  <label for="altaHoras">Horas extras (cantidad)</label>
+                  <input id="altaHoras" inputmode="decimal" min="0" value="0" />
+                </div>
+                <div class="field">
+                  <label for="altaJornada">Jornada semanal</label>
+                  <input id="altaJornada" inputmode="numeric" min="1" value="42" />
+                </div>
+              </div>
+              <div class="row">
+                <div class="field">
+                  <label for="altaColacion">Colación</label>
+                  <input id="altaColacion" inputmode="numeric" min="0" value="0" />
+                </div>
+                <div class="field">
+                  <label for="altaMov">Movilización</label>
+                  <input id="altaMov" inputmode="numeric" min="0" value="0" />
+                </div>
               </div>
               <div class="field">
-                <label for="altaRut">RUT</label>
-                <input id="altaRut" />
+                <label for="altaEmail">Correo del trabajador</label>
+                <input id="altaEmail" type="email" autocomplete="off" placeholder="opcional" />
               </div>
-            </div>
-            <div class="row">
-              <div class="field">
-                <label for="altaCargo">Cargo</label>
-                <input id="altaCargo" />
-              </div>
-              <div class="field">
-                <label for="altaSueldo">Sueldo base</label>
-                <input id="altaSueldo" inputmode="numeric" min="0" value="1000000" />
-              </div>
-            </div>
-            <div class="row">
-              <div class="field">
-                <span class="lbl">AFP</span>
-                <div id="altaAfpPick"></div>
-              </div>
-              <div class="field">
-                <span class="lbl">Salud</span>
-                <div id="altaSaludPick"></div>
-              </div>
-            </div>
-            <div class="row">
-              <div class="field">
-                <label for="altaIsapre">Isapre pactado (pesos)</label>
-                <input id="altaIsapre" inputmode="numeric" min="0" value="0" />
+
+              <hr class="sep" />
+              <h4>Datos de pago</h4>
+              <p class="hint">
+                Para la plantilla XLSX de Pro. El banco no publica un formato único; Haberes arma una hoja para copiar.
+              </p>
+              <div class="row u-mt-3">
+                <div class="field">
+                  <span class="lbl">Banco</span>
+                  <div id="altaBancoPick"></div>
+                </div>
+                <div class="field">
+                  <span class="lbl">Tipo de cuenta</span>
+                  <div id="altaTipoCtaPick"></div>
+                </div>
               </div>
               <div class="field">
-                <span class="lbl">Contrato</span>
-                <div id="altaContratoPick"></div>
+                <label for="altaNroCta">N° de cuenta</label>
+                <input id="altaNroCta" inputmode="numeric" autocomplete="off" />
               </div>
-            </div>
-            <div class="row">
-              <div class="field">
-                <label for="altaHoras">Horas extras (cantidad)</label>
-                <input id="altaHoras" inputmode="decimal" min="0" value="0" />
+
+              <hr class="sep" />
+              <h4>Haberes adicionales</h4>
+              <label class="check">
+                <input id="altaGrat" type="checkbox" />
+                Gratificación art. 50
+              </label>
+              <p class="hint">Bonos con nombre. Imponible entra a la base (art. 41); no imponible no.</p>
+              <div id="altaHaberes" class="u-mt-3"></div>
+              <button class="btn btn-ghost btn-sm" type="button" id="btnAltaHaber">Añadir haber</button>
+              <p class="error" id="errAlta" hidden></p>
+              <div class="actionbar">
+                <button class="btn" type="submit" id="btnAltaGuardar">Agregar</button>
+                <button class="btn btn-ghost" type="button" id="btnAltaCancelar" hidden>Cancelar edición</button>
               </div>
-              <div class="field">
-                <label for="altaJornada">Jornada semanal</label>
-                <input id="altaJornada" inputmode="numeric" min="1" value="42" />
-              </div>
-            </div>
-            <div class="row">
-              <div class="field">
-                <label for="altaColacion">Colación</label>
-                <input id="altaColacion" inputmode="numeric" min="0" value="0" />
-              </div>
-              <div class="field">
-                <label for="altaMov">Movilización</label>
-                <input id="altaMov" inputmode="numeric" min="0" value="0" />
-              </div>
-            </div>
-            <div class="field">
-              <label for="altaEmail">Correo del trabajador</label>
-              <input id="altaEmail" type="email" autocomplete="off" placeholder="opcional" />
-            </div>
-            <p class="hint">Datos de pago (para la plantilla XLSX de Pro). El banco no publica un formato único; Haberes arma una hoja para copiar.</p>
-            <div class="row">
-              <div class="field">
-                <span class="lbl">Banco</span>
-                <div id="altaBancoPick"></div>
-              </div>
-              <div class="field">
-                <span class="lbl">Tipo de cuenta</span>
-                <div id="altaTipoCtaPick"></div>
-              </div>
-            </div>
-            <div class="field">
-              <label for="altaNroCta">N° de cuenta</label>
-              <input id="altaNroCta" inputmode="numeric" autocomplete="off" />
-            </div>
-            <label class="check">
-              <input id="altaGrat" type="checkbox" />
-              Gratificación art. 50
-            </label>
-            <p class="hint" style="margin-top: 12px">Bonos con nombre. Imponible entra a la base (art. 41); no imponible no.</p>
-            <div id="altaHaberes"></div>
-            <button class="btn btn-ghost" type="button" id="btnAltaHaber">Añadir haber</button>
-            <p class="error" id="errAlta" hidden></p>
-            <div class="btn-row" style="margin-top: 12px">
-              <button class="btn" type="submit" id="btnAltaGuardar">Agregar</button>
-              <button class="btn btn-ghost" type="button" id="btnAltaCancelar" hidden>Cancelar edición</button>
-            </div>
-          </form>
+            </form>
+          </div>
         </section>
 
-        <section id="tab-documentos" class="panel" data-tab-panel="documentos" hidden>
-          <h3>Liquidación o finiquito</h3>
-          <p class="hint">Elija uno o varios trabajadores que compartan la misma causal y carta. En Gratis: un trabajador por movimiento, 5 al mes. La vista previa muestra al primero y lista al resto. Un PDF por persona; si hay varios, un solo archivo con todas las páginas.</p>
-          <div class="field">
-            <span class="lbl">Trabajadores</span>
-            <div id="pickTrabajadores"></div>
+        <!-- ---- Documentos ---- -->
+        <section id="tab-documentos" data-tab-panel="documentos" hidden>
+          <div class="panel">
+            <h3>1. Elija a quién emitir</h3>
+            <p class="hint">
+              Uno o varios trabajadores que compartan la misma causal y carta. En Gratis: un trabajador por
+              movimiento, 5 al mes. La vista previa muestra al primero y lista al resto. Un PDF por persona;
+              si hay varios, un solo archivo con todas las páginas.
+            </p>
+            <div class="field u-mt-4">
+              <span class="lbl">Trabajadores</span>
+              <div id="pickTrabajadores"></div>
+            </div>
+            <p class="hint" id="selResumen" style="margin-top: 0"></p>
           </div>
-          <p class="hint" id="selResumen"></p>
-          <div id="panelHaberesTrabajador" hidden>
-            <h3>Haberes del primer seleccionado</h3>
-            <p class="hint">Puede ajustar números de este mes antes de emitir. Guardar actualiza la nómina de este navegador.</p>
-            <div class="row">
+
+          <div class="panel u-mt-4" id="panelHaberesTrabajador" hidden>
+            <h3>2. Ajuste los haberes del mes</h3>
+            <p class="hint">
+              Números del primer seleccionado. Puede ajustarlos antes de emitir; guardar actualiza la nómina
+              de este navegador.
+            </p>
+            <div class="row u-mt-4">
               <div class="field">
                 <label for="emSueldo">Sueldo base</label>
                 <input id="emSueldo" inputmode="numeric" min="0" />
@@ -371,44 +460,55 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
               <input id="emGrat" type="checkbox" />
               Gratificación art. 50
             </label>
-            <p class="hint" style="margin-top: 12px">Haberes con nombre</p>
-            <div id="emHaberes"></div>
-            <button class="btn btn-ghost" type="button" id="btnEmHaber">Añadir haber</button>
+            <p class="hint">Haberes con nombre</p>
+            <div id="emHaberes" class="u-mt-3"></div>
+            <button class="btn btn-ghost btn-sm" type="button" id="btnEmHaber">Añadir haber</button>
             <p class="ok" id="okHaberes" hidden></p>
-            <button class="btn btn-ghost" type="button" id="btnGuardarHaberes" style="margin-top: 12px">Guardar haberes en este navegador</button>
+            <div class="btn-row u-mt-4">
+              <button class="btn btn-ghost" type="button" id="btnGuardarHaberes">Guardar haberes en este navegador</button>
+            </div>
           </div>
-          <hr class="sep" />
-          <div class="layout">
-            <div>
+
+          <h2 class="u-mt-6">3. Emita el documento</h2>
+          <p class="hint" style="margin-top: 0">
+            Liquidación de remuneraciones o carta de finiquito. Cada una consume un movimiento del plan.
+          </p>
+
+          <div class="layout u-mt-4">
+            <div class="panel">
               <h3>Liquidación</h3>
-              <div class="field">
+              <div class="field u-mt-3">
                 <span class="lbl">Periodo de remuneración</span>
                 <div id="pickPeriodo"></div>
               </div>
               <p class="error" id="errPrint" hidden></p>
-              <div class="btn-row">
+              <div class="actionbar">
                 <button class="btn" type="button" id="btnLiquidacion">Ver liquidación</button>
                 <button class="btn btn-ghost" type="button" id="btnPdfLiquidacion">Descargar PDF</button>
               </div>
+
               <hr class="sep" />
-              <h3>Pago masivo <span class="badge">Pro</span></h3>
+              <h3>Pago masivo <span class="badge badge-pro">Pro</span></h3>
               <p class="hint">
-                Excel para copiar a Office Banking o Scotia. Hoja canónica más hojas de referencia (Banco de Chile, Scotiabank, BancoEstado, Santander). No es el archivo binario del banco: contraste con la plantilla que baja cada portal.
+                Excel para copiar a Office Banking o Scotia. Hoja canónica más hojas de referencia
+                (Banco de Chile, Scotiabank, BancoEstado, Santander). No es el archivo binario del banco:
+                contraste con la plantilla que baja cada portal. El XLSX incluye a los trabajadores seleccionados arriba.
               </p>
               <p class="error" id="errPago" hidden></p>
-              <div class="btn-row">
-                <button class="btn btn-ghost" type="button" id="btnPagoXlsx">Descargar XLSX de los seleccionados</button>
-                <button class="btn btn-ghost" type="button" id="btnPagoEjemplo">Descargar ejemplo vacío</button>
+              <div class="btn-row u-mt-3">
+                <button class="btn btn-ghost" type="button" id="btnPagoXlsx">Descargar XLSX</button>
+                <button class="btn btn-ghost" type="button" id="btnPagoEjemplo">Ejemplo vacío</button>
               </div>
             </div>
-            <div>
+
+            <div class="panel">
               <h3>Carta de finiquito</h3>
-              <div class="field">
+              <div class="field u-mt-3">
                 <span class="lbl">Causal</span>
                 <div id="pickCausal"></div>
               </div>
               <p class="hint" id="finCausalNota"></p>
-              <div class="field">
+              <div class="field u-mt-3">
                 <span class="lbl">Fecha de ingreso</span>
                 <div id="finIngreso"></div>
               </div>
@@ -444,25 +544,32 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                 <input id="finAviso" type="checkbox" />
                 Hubo aviso previo de 30 días (art. 161)
               </label>
-              <p class="hint">La carta incluye membrete, causal con su texto legal y firmas de empleador, trabajador y dos testigos. No reemplaza la Inspección del Trabajo ni al ministro de fe.</p>
+              <p class="hint">
+                La carta incluye membrete, causal con su texto legal y firmas de empleador, trabajador y dos
+                testigos. No reemplaza la Inspección del Trabajo ni al ministro de fe.
+              </p>
               <p class="error" id="errCarta" hidden></p>
-              <div class="btn-row">
-                <button class="btn" type="button" id="btnCarta">Ver carta de finiquito</button>
+              <div class="actionbar">
+                <button class="btn" type="button" id="btnCarta">Ver carta</button>
                 <button class="btn btn-ghost" type="button" id="btnPdfCarta">Descargar PDF</button>
               </div>
             </div>
           </div>
         </section>
 
-        <section id="panelPreview" class="panel doc-preview" hidden style="margin-top: 16px">
+        <!-- ---- Vista previa ---- -->
+        <section id="panelPreview" class="panel doc-preview u-mt-4" hidden>
           <div class="toolbar">
-            <h3 id="docPreviewTitulo" style="margin:0">Vista previa</h3>
+            <h3 id="docPreviewTitulo" style="margin: 0">Vista previa</h3>
             <div class="actions">
-              <button class="btn" type="button" id="btnImprimirPreview">Imprimir vista previa</button>
+              <button class="btn" type="button" id="btnImprimirPreview">Imprimir</button>
               <button class="btn btn-ghost" type="button" id="btnCerrarPreview">Cerrar</button>
             </div>
           </div>
-          <p class="hint">Si una ventana emergente está bloqueada, el documento sigue aquí. Imprimir abre el diálogo del navegador sobre esta vista.</p>
+          <p class="hint">
+            El documento vive en esta página: si el navegador bloquea ventanas emergentes, igual lo ve.
+            Imprimir abre el diálogo del navegador, que permite guardar como PDF.
+          </p>
           <p class="preview-others" id="previewOtros" hidden></p>
           <iframe id="docPreviewFrame" class="doc-frame" title="Vista previa del documento"></iframe>
         </section>
