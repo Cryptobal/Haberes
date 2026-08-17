@@ -15,11 +15,14 @@ import { getIndicadores } from "./indicadores.js";
 import { BANCOS_CL, TIPO_CUENTA_OPTS, glosaSueldo, xlsxPagoEjemplo, xlsxPagoMasivo } from "./pago.js";
 import { createPicker } from "./picker.js";
 import {
+  GRATIS_LIMITE,
   MSG_CARGA_PRO,
   MSG_LIMITE,
   MSG_PAGO_PRO,
   MSG_UNO_A_UNO,
   aplicarPlanServidor,
+  isPro,
+  usadosMes,
   puedeCargaMasiva,
   puedeEmitir,
   puedePagoMasivo,
@@ -54,8 +57,12 @@ import {
   periodoItems,
   periodoLabel,
   showError,
+  toastError,
+  toastInfo,
+  toastOk,
   val,
   wireNav,
+  withBusy,
 } from "./ui.js";
 
 const AFP_OPTS = [
@@ -167,13 +174,27 @@ function haberesDeTrabajador(t) {
   return [];
 }
 
-function setTab(name) {
+function setTab(name, { scroll = false } = {}) {
   document.querySelectorAll("[data-tab]").forEach((btn) => {
     btn.setAttribute("aria-selected", btn.dataset.tab === name ? "true" : "false");
   });
   document.querySelectorAll("[data-tab-panel]").forEach((panelEl) => {
     panelEl.hidden = panelEl.dataset.tabPanel !== name;
   });
+  document
+    .querySelector(`[data-tab="${name}"]`)
+    ?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
+  if (scroll) {
+    document.querySelector(".ws-tabs")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+}
+
+/** Alterna entre «Entrar» y «Crear cuenta» sin recargar ni apilar formularios. */
+function setAuthMode(modo) {
+  document.querySelectorAll("[data-auth-panel]").forEach((form) => {
+    form.hidden = form.dataset.authPanel !== modo;
+  });
+  showError(el("errAuth"), "");
 }
 
 function showAsset(img, empty, src) {
@@ -297,44 +318,80 @@ function syncSelResumen() {
   fillHaberesEditor(rows[0]);
 }
 
+function workerActionsHtml(t) {
+  return `<div class="worker-actions">
+    <button type="button" class="btn btn-ghost btn-sm" data-doc="${escAttr(t.id)}">Documentos</button>
+    <button type="button" class="btn btn-ghost btn-sm" data-edit="${escAttr(t.id)}">Editar</button>
+    <button type="button" class="btn btn-danger-ghost btn-sm" data-del="${escAttr(t.id)}">Eliminar</button>
+  </div>`;
+}
+
+function contratoLabel(t) {
+  return t.contrato === "plazo_fijo" ? "Plazo fijo" : "Indefinido";
+}
+
+/** Tabla en escritorio, tarjetas en móvil: la misma fuente de datos, dos vistas. */
 function renderTrabajadores() {
   const list = el("tablaTrabajadores");
   const rows = emp?.trabajadores || [];
   pickers.trabajadores?.setOptions(workerOptions());
+  const total = el("nominaTotal");
+  if (total) {
+    total.textContent = rows.length
+      ? `${rows.length} ${rows.length === 1 ? "trabajador" : "trabajadores"}`
+      : "";
+  }
   if (!rows.length) {
-    list.innerHTML = `<p class="empty">Aún no hay trabajadores. Cargue un CSV o agregue uno.</p>`;
+    list.innerHTML = `<p class="empty">Aún no hay trabajadores en la nómina de este mes.<br />Agregue uno con el formulario de abajo o cargue un CSV.</p>`;
     syncSelResumen();
     return;
   }
-  list.innerHTML = `
-    <table class="table">
-      <thead>
-        <tr>
-          <th>Nombre</th><th>RUT</th><th>Cargo</th><th>Base</th><th>AFP</th><th>Contrato</th><th></th>
-        </tr>
-      </thead>
-      <tbody>
-        ${rows
-          .map(
-            (t) => `<tr>
-              <td>${escAttr(t.nombre)}</td>
-              <td>${formatRut(t.rut)}</td>
-              <td>${escAttr(t.cargo || "—")}</td>
-              <td>${clp(t.sueldoBase)}</td>
-              <td>${escAttr(t.afp)}</td>
-              <td>${t.contrato === "plazo_fijo" ? "Plazo fijo" : "Indefinido"}</td>
-              <td>
-                <div class="worker-actions">
-                  <button type="button" class="btn btn-ghost" data-edit="${escAttr(t.id)}">Editar</button>
-                  <button type="button" class="btn btn-ghost" data-del="${escAttr(t.id)}">Eliminar</button>
-                  <button type="button" class="btn btn-ghost" data-doc="${escAttr(t.id)}">Documentos</button>
-                </div>
-              </td>
-            </tr>`,
-          )
-          .join("")}
-      </tbody>
-    </table>`;
+  const table = `
+    <div class="table-wrap only-desktop">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Nombre</th><th>RUT</th><th>Cargo</th><th>Base</th><th>AFP</th><th>Contrato</th><th></th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows
+            .map(
+              (t) => `<tr>
+                <td>${escAttr(t.nombre)}</td>
+                <td>${formatRut(t.rut)}</td>
+                <td>${escAttr(t.cargo || "—")}</td>
+                <td>${clp(t.sueldoBase)}</td>
+                <td>${escAttr(t.afp)}</td>
+                <td>${contratoLabel(t)}</td>
+                <td>${workerActionsHtml(t)}</td>
+              </tr>`,
+            )
+            .join("")}
+        </tbody>
+      </table>
+    </div>`;
+  const cards = `
+    <div class="data-list only-mobile">
+      ${rows
+        .map(
+          (t) => `<article class="data-item">
+            <div class="data-item-head">
+              <p class="data-item-title">${escAttr(t.nombre)}</p>
+              <p class="data-item-sub">${clp(t.sueldoBase)}</p>
+            </div>
+            <dl class="data-item-grid">
+              <div><dt>RUT</dt><dd>${formatRut(t.rut) || "—"}</dd></div>
+              <div><dt>Cargo</dt><dd>${escAttr(t.cargo || "—")}</dd></div>
+              <div><dt>AFP</dt><dd>${escAttr(t.afp)}</dd></div>
+              <div><dt>Contrato</dt><dd>${contratoLabel(t)}</dd></div>
+            </dl>
+            ${workerActionsHtml(t)}
+          </article>`,
+        )
+        .join("")}
+    </div>`;
+  list.innerHTML = table + cards;
   syncSelResumen();
 }
 
@@ -428,7 +485,9 @@ async function consumirMovimientos(tipo, rows, errId) {
   const keys = rows.map(workerKey);
   const gate = puedeEmitir(emp, { tipo, keys });
   if (!gate.ok) {
-    showError(el(errId), gate.message || MSG_LIMITE);
+    const msg = gate.message || MSG_LIMITE;
+    showError(el(errId), msg);
+    toastError("Tope del plan Gratis", msg);
     return false;
   }
   if (remoteOk) {
@@ -475,6 +534,29 @@ function payloadTrabajador(t) {
   };
 }
 
+/** Medidor de cupo: barra + insignia. En Pro no hay tope, así que la barra va llena en verde. */
+function renderCupo() {
+  const box = el("empQuota");
+  const bar = el("empQuotaBar");
+  const badge = el("empPlanBadge");
+  if (el("empPlan")) el("empPlan").textContent = textoCupo(emp);
+  const pro = isPro(emp);
+  if (badge) {
+    badge.textContent = pro ? "Pro" : "Gratis";
+    badge.className = pro ? "badge badge-pro" : "badge";
+  }
+  if (!box || !bar) return;
+  const usados = usadosMes(emp);
+  const pct = pro ? 100 : Math.min(100, Math.round((usados / GRATIS_LIMITE) * 100));
+  bar.style.width = `${pct}%`;
+  box.classList.toggle("is-full", !pro && usados >= GRATIS_LIMITE);
+  const meter = box.querySelector('[role="progressbar"]');
+  if (meter) {
+    meter.setAttribute("aria-valuemax", pro ? "100" : String(GRATIS_LIMITE));
+    meter.setAttribute("aria-valuenow", pro ? "100" : String(usados));
+  }
+}
+
 function refresh() {
   emp = empresaActual();
   const logged = Boolean(emp);
@@ -482,7 +564,7 @@ function refresh() {
   if (!logged) return;
   el("empNombre").textContent = emp.razonSocial || "Empresa";
   el("empMeta").textContent = `${formatRut(emp.rut)} · ${emp.email}`;
-  if (el("empPlan")) el("empPlan").textContent = textoCupo(emp);
+  renderCupo();
   fillPerfil();
   renderTrabajadores();
   syncCausalNota();
@@ -555,7 +637,13 @@ mountHaberes(el("altaHaberes"), []);
 syncCausalNota();
 
 document.querySelectorAll("[data-tab]").forEach((btn) => {
-  btn.addEventListener("click", () => setTab(btn.dataset.tab));
+  btn.addEventListener("click", () => setTab(btn.dataset.tab, { scroll: true }));
+});
+
+document.querySelectorAll("[data-auth-modo]").forEach((input) => {
+  input.addEventListener("change", () => {
+    if (input.checked) setAuthMode(input.value);
+  });
 });
 
 mountIndicadores().then((ind) => {
@@ -594,68 +682,89 @@ bootSession();
 el("formRegistro")?.addEventListener("submit", async (ev) => {
   ev.preventDefault();
   showError(el("errAuth"), "");
-  try {
-    if (!validarRut(val("regRut"))) throw new Error("RUT de empresa inválido");
-    const payload = {
-      rut: val("regRut"),
-      email: val("regEmail"),
-      razonSocial: val("regRazon"),
-      password: val("regClave"),
-      clave: val("regClave"),
-    };
-    if (String(payload.password || "").length < MIN_CLAVE) {
-      throw new Error("La clave debe tener al menos 10 caracteres");
+  const submit = ev.submitter || el("formRegistro").querySelector('[type="submit"]');
+  await withBusy(submit, async () => {
+    try {
+      if (!validarRut(val("regRut"))) throw new Error("RUT de empresa inválido");
+      const payload = {
+        rut: val("regRut"),
+        email: val("regEmail"),
+        razonSocial: val("regRazon"),
+        password: val("regClave"),
+        clave: val("regClave"),
+      };
+      if (String(payload.password || "").length < MIN_CLAVE) {
+        throw new Error("La clave debe tener al menos 10 caracteres");
+      }
+      const { status, data } = await apiPost("/api/register", payload);
+      if (isNoBackend(status, data)) {
+        await registrarEmpresa(payload);
+        remoteOk = false;
+      } else if (!data.ok) {
+        throw new Error(authErrorMessage(data, status));
+      } else {
+        remoteOk = true;
+        ensureLocalEmpresa(data.company);
+        aplicarPlanServidor(empresaActual(), { plan: data.company.plan, movimientosMes: data.movimientosMes });
+      }
+      refresh();
+      toastOk(
+        "Cuenta creada",
+        remoteOk ? "Complete el perfil y suba su logo." : "Guardada solo en este navegador.",
+      );
+    } catch (err) {
+      showError(el("errAuth"), err.message);
+      toastError("No se pudo crear la cuenta", err.message);
     }
-    const { status, data } = await apiPost("/api/register", payload);
-    if (isNoBackend(status, data)) {
-      await registrarEmpresa(payload);
-      remoteOk = false;
-    } else if (!data.ok) {
-      throw new Error(authErrorMessage(data, status));
-    } else {
-      remoteOk = true;
-      ensureLocalEmpresa(data.company);
-      aplicarPlanServidor(empresaActual(), { plan: data.company.plan, movimientosMes: data.movimientosMes });
-    }
-    refresh();
-  } catch (err) {
-    showError(el("errAuth"), err.message);
-  }
+  }, "Creando…");
 });
 
 el("formEntrar")?.addEventListener("submit", async (ev) => {
   ev.preventDefault();
   showError(el("errAuth"), "");
-  try {
-    const payload = { rut: val("loginRut"), password: val("loginClave"), clave: val("loginClave") };
-    const { status, data } = await apiPost("/api/login", payload);
-    if (isNoBackend(status, data)) {
-      await entrarEmpresa(payload);
-      remoteOk = false;
-    } else if (!data.ok) {
-      throw new Error(authErrorMessage(data, status));
-    } else {
-      remoteOk = true;
-      ensureLocalEmpresa(data.company);
-      aplicarPlanServidor(empresaActual(), { plan: data.company.plan, movimientosMes: data.movimientosMes });
+  const submit = ev.submitter || el("formEntrar").querySelector('[type="submit"]');
+  await withBusy(submit, async () => {
+    try {
+      const payload = { rut: val("loginRut"), password: val("loginClave"), clave: val("loginClave") };
+      const { status, data } = await apiPost("/api/login", payload);
+      if (isNoBackend(status, data)) {
+        await entrarEmpresa(payload);
+        remoteOk = false;
+      } else if (!data.ok) {
+        throw new Error(authErrorMessage(data, status));
+      } else {
+        remoteOk = true;
+        ensureLocalEmpresa(data.company);
+        aplicarPlanServidor(empresaActual(), { plan: data.company.plan, movimientosMes: data.movimientosMes });
+      }
+      refresh();
+      toastOk(`Hola, ${empresaActual()?.razonSocial || "empresa"}`);
+      if (remoteOk) {
+        await loadLogo();
+        await loadFirma();
+      }
+    } catch (err) {
+      showError(el("errAuth"), err.message);
+      toastError("No se pudo entrar", err.message);
     }
-    refresh();
-    if (remoteOk) {
-      await loadLogo();
-      await loadFirma();
-    }
-  } catch (err) {
-    showError(el("errAuth"), err.message);
-  }
+  }, "Entrando…");
 });
 
 el("btnSalir")?.addEventListener("click", async () => {
+  const ok = await confirmDialog({
+    title: "Cerrar sesión",
+    text: "La nómina de este mes queda guardada en este navegador. ¿Cerrar sesión?",
+    okLabel: "Cerrar sesión",
+    danger: false,
+  });
+  if (!ok) return;
   await apiPost("/api/logout", {});
   clearSession();
   remoteOk = false;
   logoDataUrl = "";
   firmaDataUrl = "";
   refresh();
+  toastInfo("Sesión cerrada");
 });
 
 function resetOlvideUi() {
@@ -764,7 +873,8 @@ el("btnBorrarLocal")?.addEventListener("click", async () => {
   showError(el("errOlvide"), "");
   if (!rut) return;
   const ok = await confirmDialog({
-    text: `¿Borrar la cuenta local de ${formatRut(rut)} en este navegador? Esta acción no se puede deshacer y no hay copia en un servidor.`,
+    title: "Borrar la cuenta local",
+    text: `Se borra la cuenta de ${formatRut(rut)} en este navegador, junto con sus trabajadores. No se puede deshacer y no hay copia en un servidor.`,
     okLabel: "Borrar cuenta local",
   });
   if (!ok) return;
@@ -816,6 +926,7 @@ el("formPerfil")?.addEventListener("submit", async (ev) => {
   }
   refresh();
   showOk(el("okPerfil"), "Perfil guardado.");
+  toastOk("Perfil guardado", "Se usará en el membrete de los documentos.");
 });
 
 async function putImage(path, file, errId, flag, reload) {
@@ -826,7 +937,9 @@ async function putImage(path, file, errId, flag, reload) {
   }
   const { status, data } = await apiPutBytes(path, file, file.type || "application/octet-stream");
   if (!data.ok) {
-    showError(el(errId), authErrorMessage(data, status));
+    const msg = authErrorMessage(data, status);
+    showError(el(errId), msg);
+    toastError("No se pudo subir la imagen", msg);
     return;
   }
   emp = empresaActual();
@@ -835,6 +948,7 @@ async function putImage(path, file, errId, flag, reload) {
     guardarEmpresa(emp);
   }
   await reload();
+  toastOk("Imagen guardada");
 }
 
 async function deleteImage(path, errId, flag, clear) {
@@ -856,6 +970,7 @@ async function deleteImage(path, errId, flag, clear) {
     guardarEmpresa(emp);
   }
   clear();
+  toastInfo("Imagen quitada");
 }
 
 el("logoFile")?.addEventListener("change", async (ev) => {
@@ -911,8 +1026,13 @@ el("csvFile")?.addEventListener("change", async (ev) => {
     if (!rows.length) throw new Error("El archivo no tiene filas válidas");
     emp = upsertTrabajadores(empresaActual(), rows);
     refresh();
+    toastOk(
+      `${rows.length} ${rows.length === 1 ? "fila cargada" : "filas cargadas"}`,
+      "Se actualizó por RUT: no se duplican trabajadores.",
+    );
   } catch (err) {
     showError(el("errCsv"), err.message);
+    toastError("No se pudo leer el archivo", err.message);
   }
   ev.target.value = "";
 });
@@ -953,8 +1073,10 @@ el("formAlta")?.addEventListener("submit", (ev) => {
   };
   if (editing) {
     emp = updateTrabajador(empresaActual(), editing, row);
+    toastOk("Trabajador actualizado", nombre);
   } else {
     emp = upsertTrabajadores(empresaActual(), [row]);
+    toastOk("Trabajador agregado", nombre);
   }
   resetAltaForm();
   refresh();
@@ -975,18 +1097,20 @@ el("tablaTrabajadores")?.addEventListener("click", async (ev) => {
     const t = (emp?.trabajadores || []).find((w) => w.id === del.dataset.del);
     if (!t) return;
     const ok = await confirmDialog({
-      text: `¿Eliminar a ${t.nombre} (${formatRut(t.rut || "sin RUT")}) de la nómina de este mes?`,
+      title: `Eliminar a ${t.nombre}`,
+      text: `Se quita ${formatRut(t.rut || "sin RUT")} de la nómina de este mes en este navegador. No se puede deshacer.`,
       okLabel: "Eliminar",
     });
     if (!ok) return;
     emp = deleteTrabajador(empresaActual(), t.id);
     if (val("altaId") === t.id) resetAltaForm();
     refresh();
+    toastInfo("Trabajador eliminado", t.nombre);
     return;
   }
   if (doc) {
     pickers.trabajadores?.setValue([doc.dataset.doc]);
-    setTab("documentos");
+    setTab("documentos", { scroll: true });
     syncSelResumen();
   }
 });
@@ -998,6 +1122,7 @@ el("btnGuardarHaberes")?.addEventListener("click", () => {
   emp = updateTrabajador(empresaActual(), rows[0].id, readHaberesEditor(rows[0]));
   refresh();
   showOk(el("okHaberes"), "Haberes guardados en este navegador.");
+  toastOk("Haberes guardados");
 });
 
 el("btnLiquidacion")?.addEventListener("click", async () => {
@@ -1068,11 +1193,15 @@ el("btnCarta")?.addEventListener("click", async () => {
   }
 });
 
-async function bajarPdf(tipo, errId, extra) {
+async function bajarPdf(tipo, errId, extra, btn) {
   showError(el(errId), "");
   const rows = workersForEmit();
   if (!rows.length) return showError(el(errId), "Seleccione uno o más trabajadores");
   if (!(await consumirMovimientos(tipo, rows, errId))) return;
+  return withBusy(btn, () => descargarPdf(tipo, errId, extra, rows), "Generando…");
+}
+
+async function descargarPdf(tipo, errId, extra, rows) {
   const { status, data, blob } = await apiDownloadPdf("/api/documento", {
     tipo,
     uf: indicadores.uf,
@@ -1086,13 +1215,15 @@ async function bajarPdf(tipo, errId, extra) {
   });
   if (!blob) {
     if (data?.reason === "no_storage" || status === 501) {
-      showError(
-        el(errId),
-        "No se pudo generar el PDF: el almacenamiento no está configurado. La vista previa sí está en esta página; puede imprimirla (el navegador permite guardar como PDF).",
-      );
+      const msg =
+        "No se pudo generar el PDF: el almacenamiento no está configurado. La vista previa sí está en esta página; puede imprimirla (el navegador permite guardar como PDF).";
+      showError(el(errId), msg);
+      toastError("PDF no disponible", "Use la vista previa e imprima a PDF.");
       return;
     }
-    showError(el(errId), authErrorMessage(data, status));
+    const msg = authErrorMessage(data, status);
+    showError(el(errId), msg);
+    toastError("No se pudo generar el PDF", msg);
     return;
   }
   const many = rows.length > 1;
@@ -1106,11 +1237,17 @@ async function bajarPdf(tipo, errId, extra) {
         ? "finiquitos.pdf"
         : "finiquito.pdf",
   );
+  toastOk(
+    many ? `${rows.length} documentos descargados` : "PDF descargado",
+    many ? "Un solo archivo con todas las páginas." : undefined,
+  );
 }
 
-el("btnPdfLiquidacion")?.addEventListener("click", () => bajarPdf("liquidacion", "errPrint"));
+el("btnPdfLiquidacion")?.addEventListener("click", (ev) =>
+  bajarPdf("liquidacion", "errPrint", undefined, ev.currentTarget),
+);
 
-el("btnPdfCarta")?.addEventListener("click", () => {
+el("btnPdfCarta")?.addEventListener("click", (ev) => {
   const ingreso = dateIngreso?.getValue() || "";
   const termino = dateTermino?.getValue() || "";
   if (!ingreso || !termino) return showError(el("errCarta"), "Indique ingreso y término con día, mes y año");
@@ -1124,7 +1261,7 @@ el("btnPdfCarta")?.addEventListener("click", () => {
     avisoPrevio: Boolean(el("finAviso")?.checked),
     otros: numVal("finOtros"),
     ciudad: val("finCiudad") || "Santiago",
-  });
+  }, ev.currentTarget);
 });
 
 el("btnImprimirPreview")?.addEventListener("click", () => {
@@ -1138,6 +1275,7 @@ el("btnImprimirPreview")?.addEventListener("click", () => {
 
 el("btnCerrarPreview")?.addEventListener("click", () => {
   el("panelPreview").hidden = true;
+  document.querySelector(".ws-tabs")?.scrollIntoView({ behavior: "smooth", block: "start" });
 });
 
 el("btnPagoXlsx")?.addEventListener("click", () => {

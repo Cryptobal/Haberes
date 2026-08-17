@@ -55,59 +55,160 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <a href="/empresa" data-nav>Para mi empresa</a>
         <a href="/como" data-nav>Cómo funciona</a>
         <a href="/precios" data-nav>Precios</a>
+      </div>
+      <div class="nav-actions">
         <button type="button" class="theme-toggle" data-theme-toggle aria-label="Cambiar a modo noche" aria-pressed="false">
           <span data-theme-label>Día</span>
         </button>
+        <a class="btn btn-sm nav-cta" href="/empresa">Entrar</a>
+        <button type="button" class="nav-burger" data-nav-burger aria-expanded="false" aria-controls="navDrawer" aria-label="Abrir menú">
+          <i aria-hidden="true"></i>
+        </button>
       </div>
     </nav>
+    <div class="nav-drawer" id="navDrawer" data-nav-drawer hidden>
+      <div class="nav-drawer-scrim" data-nav-scrim></div>
+      <div class="nav-drawer-panel" role="dialog" aria-modal="true" aria-label="Menú de navegación">
+        <div class="nav-drawer-grab" aria-hidden="true"></div>
+        <a href="/sueldo" data-nav>Sueldo líquido</a>
+        <a href="/finiquito" data-nav>Finiquito</a>
+        <a href="/empresa" data-nav>Para mi empresa</a>
+        <a href="/como" data-nav>Cómo funciona</a>
+        <a href="/precios" data-nav>Precios</a>
+        <div class="nav-drawer-foot">
+          <a class="btn" href="/empresa">Entrar a mi empresa</a>
+          <button type="button" class="btn btn-ghost" data-nav-close>Cerrar</button>
+        </div>
+      </div>
+    </div>
   </header>
 
   <main>
     <div class="wrap">
       <section class="hero">
         <p class="kicker">Chile · pymes</p>
-        <h1>Liquidaciones claras, sin teatro legal.</h1>
+        <h1>Liquidaciones y finiquitos listos en minutos.</h1>
         <p class="lede">
-          Estime sueldo líquido, finiquito y cartas para su equipo. Cifras de AFP, salud, cesantía e impuesto único
-          al día de esta herramienta. Las calculadoras públicas corren en su navegador; la cuenta empresa, si hay
-          servidor, vive en la base de datos.
+          Calcule sueldo líquido y finiquito, cargue su nómina y emita el documento con su logo y su firma.
+          AFP, salud, cesantía, gratificación art. 50 e impuesto único al día de esta herramienta.
         </p>
         <div class="actions">
-          <a class="btn" href="/sueldo">Calcular sueldo líquido</a>
-          <a class="btn btn-ghost" href="/finiquito">Calcular finiquito</a>
+          <a class="btn btn-lg" href="/empresa">Crear cuenta gratis</a>
+          <a class="btn btn-lg btn-ghost" href="/sueldo">Calcular sueldo líquido</a>
+        </div>
+        <p class="hint">Sin tarjeta. Gratis incluye 5 movimientos al mes.</p>
+      </section>
+
+      <section class="cards" aria-label="Qué resuelve Haberes">
+        <a class="card card-link" href="/sueldo">
+          <h3>Sueldo líquido</h3>
+          <p>
+            Modo simple o completo: AFP Circular 2414, Fonasa o Isapre, seguro de cesantía, IUSC vigente,
+            gratificación art. 50 y asignaciones no imponibles del art. 41.
+          </p>
+        </a>
+        <a class="card card-link" href="/finiquito">
+          <h3>Finiquito</h3>
+          <p>
+            Artículos 159, 160 y 161. Años de servicio con tope 11, aviso previo, feriado pendiente y
+            proporcional. Base con tope de 90 UF.
+          </p>
+        </a>
+        <a class="card card-link" href="/empresa">
+          <h3>Para mi empresa</h3>
+          <p>
+            Cuenta con RUT, correo y clave. Perfil, logo y firma del representante, nómina del mes,
+            liquidación y carta de finiquito en PDF.
+          </p>
+        </a>
+      </section>
+
+      <section class="panel" aria-labelledby="incluye">
+        <h2 id="incluye">Qué trae cada documento</h2>
+        <p class="hint u-mb-0">
+          El PDF sale con el membrete de su empresa, no con el nuestro.
+        </p>
+        <div class="cards cards-2 u-mt-4" style="margin-bottom: 0">
+          <div class="card">
+            <h3>Liquidación de remuneraciones</h3>
+            <ul>
+              <li>Haberes imponibles y no imponibles, con nombre propio</li>
+              <li>Descuentos legales: AFP, salud, cesantía e impuesto único</li>
+              <li>Totales, líquido a pagar y periodo</li>
+              <li>Logo, datos de la empresa y firma del representante</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>Carta de finiquito</h3>
+            <ul>
+              <li>Causal con su texto legal (21 causales de los arts. 159, 160 y 161)</li>
+              <li>Indemnización por años de servicio y sustitutiva de aviso</li>
+              <li>Feriado pendiente y proporcional</li>
+              <li>Firmas de empleador, trabajador y dos testigos</li>
+            </ul>
+          </div>
         </div>
       </section>
 
-      <p class="notice">
+      <h2 class="u-mt-6">Cómo funciona</h2>
+      <ol class="steps">
+        <li>Use sueldo líquido o finiquito sin cuenta. El resultado se actualiza mientras escribe.</li>
+        <li>UF y UTM se leen de mindicador.cl con caché de 12 horas. Si el valor sale de rango, se usa el de respaldo.</li>
+        <li>Cree su cuenta de empresa, cargue la nómina y emita. Vista previa y PDF en la misma página.</li>
+      </ol>
+
+      <section class="panel u-mt-6" aria-labelledby="planes">
+        <h2 id="planes">Planes</h2>
+        <div class="cards cards-2" style="margin: var(--s-4) 0 0">
+          <div class="card">
+            <h3>Gratis <span class="badge">Sin tarjeta</span></h3>
+            <p class="price">$0</p>
+            <ul>
+              <li>5 movimientos al mes</li>
+              <li>Un trabajador por movimiento</li>
+              <li>Liquidación y carta de finiquito en PDF</li>
+              <li>Logo y firma del representante</li>
+            </ul>
+          </div>
+          <div class="card card-accent">
+            <h3>Pro <span class="badge badge-pro">Pro</span></h3>
+            <p class="price">$14.990 <span class="price-iva">+ IVA / mes</span></p>
+            <ul>
+              <li>Movimientos sin límite mensual</li>
+              <li>Varios trabajadores por movimiento</li>
+              <li>Carga masiva CSV/XLSX de la nómina</li>
+              <li>Planilla de pago masivo en Excel</li>
+            </ul>
+          </div>
+        </div>
+        <div class="actions u-mt-4">
+          <a class="btn" href="/precios">Ver precios en detalle</a>
+          <a class="btn btn-ghost" href="/como">Cómo funciona, paso a paso</a>
+        </div>
+      </section>
+
+      <section class="prose" aria-labelledby="faq">
+        <h2 id="faq">Preguntas frecuentes</h2>
+        <h3>¿Esto reemplaza a mi contador?</h3>
+        <p>
+          No. Haberes calcula y arma el documento; su contador valida y responde por la declaración.
+          El objetivo es que llegue a esa conversación con los números ya hechos.
+        </p>
+        <h3>¿Dónde quedan los datos de mis trabajadores?</h3>
+        <p>
+          La nómina del mes vive en este navegador. La cuenta de empresa, el logo y la firma viven en el
+          servidor cuando está configurado. Puede leer el detalle en <a href="/privacidad">privacidad</a>.
+        </p>
+        <h3>¿Sirve la carta de finiquito ante la Inspección del Trabajo?</h3>
+        <p>
+          Es el documento para firmar, no el trámite. No reemplaza la ratificación ante la Inspección del
+          Trabajo ni ante un ministro de fe.
+        </p>
+      </section>
+
+      <p class="notice u-mt-6">
         Estimación generada por inteligencia artificial. No es un cálculo de la Dirección del Trabajo ni de Previred.
         No constituye asesoría legal ni previsional. Contraste siempre con su contador o con los canales oficiales.
-      </p>
-
-      <div class="cards">
-        <article class="card">
-          <h3>Sueldo líquido</h3>
-          <p>Modo simple o completa: AFP Circular 2414, Fonasa o Isapre, cesantía, IUSC agosto 2026, gratificación art. 50 y asignaciones no imponibles art. 41.</p>
-        </article>
-        <article class="card">
-          <h3>Finiquito</h3>
-          <p>Artículos 159, 160 y 161. Años de servicio con tope 11, aviso previo y feriado proporcional. Base tope 90 UF.</p>
-        </article>
-        <article class="card">
-          <h3>Para mi empresa</h3>
-          <p>Cuenta con RUT, correo y clave. Registro gratis. Perfil y logo, trabajadores, liquidación y carta de finiquito. Pro: carga masiva y plantillas de pago.</p>
-        </article>
-      </div>
-
-      <h2>Cómo funciona</h2>
-      <ol class="steps">
-        <li>Use sueldo líquido o finiquito sin cuenta. Los resultados se actualizan al escribir.</li>
-        <li>UF y UTM se leen de mindicador.cl (caché 12 h). Si el valor sale de rango, se usa el respaldo.</li>
-        <li>En empresa crea una cuenta. Con servidor, la cuenta está en la base; los trabajadores siguen en este navegador. Vista previa y PDF en la misma página.</li>
-      </ol>
-      <p class="hint" style="margin-top: 8px">
-        <a href="/como">Cómo funciona, paso a paso</a>
-        ·
-        <a href="/precios">Precios</a> (Gratis: 5 movimientos al mes; Pro $14.990 + IVA).
       </p>
     </div>
   </main>

@@ -56,11 +56,32 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <a href="/empresa" data-nav>Para mi empresa</a>
         <a href="/como" data-nav>Cómo funciona</a>
         <a href="/precios" data-nav>Precios</a>
+      </div>
+      <div class="nav-actions">
         <button type="button" class="theme-toggle" data-theme-toggle aria-label="Cambiar a modo noche" aria-pressed="false">
           <span data-theme-label>Día</span>
         </button>
+        <a class="btn btn-sm nav-cta" href="/empresa">Entrar</a>
+        <button type="button" class="nav-burger" data-nav-burger aria-expanded="false" aria-controls="navDrawer" aria-label="Abrir menú">
+          <i aria-hidden="true"></i>
+        </button>
       </div>
     </nav>
+    <div class="nav-drawer" id="navDrawer" data-nav-drawer hidden>
+      <div class="nav-drawer-scrim" data-nav-scrim></div>
+      <div class="nav-drawer-panel" role="dialog" aria-modal="true" aria-label="Menú de navegación">
+        <div class="nav-drawer-grab" aria-hidden="true"></div>
+        <a href="/sueldo" data-nav>Sueldo líquido</a>
+        <a href="/finiquito" data-nav>Finiquito</a>
+        <a href="/empresa" data-nav>Para mi empresa</a>
+        <a href="/como" data-nav>Cómo funciona</a>
+        <a href="/precios" data-nav>Precios</a>
+        <div class="nav-drawer-foot">
+          <a class="btn" href="/empresa">Entrar a mi empresa</a>
+          <button type="button" class="btn btn-ghost" data-nav-close>Cerrar</button>
+        </div>
+      </div>
+    </div>
   </header>
 
   <main>
