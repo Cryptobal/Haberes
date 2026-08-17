@@ -147,7 +147,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <div class="wrap prose guide">
       ${crumbs(crumbsItems)}
 ${body}
-      <p class="notice u-mt-6">${DISCLAIMER_FINIQUITO || "Estimación generada por inteligencia artificial. No es un cálculo de la Dirección del Trabajo ni de Previred. No constituye asesoría legal ni previsional."}</p>
+      <p class="notice u-mt-6">${DISCLAIMER_FINIQUITO}</p>
     </div>
   </main>
   ${footer.replace(/src="js\//g, 'src="../js/')}

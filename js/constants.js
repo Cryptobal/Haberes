@@ -62,7 +62,18 @@ export const IUSC_TRAMOS = [
 export const IAS_TOPE_ANIOS = 11;
 
 export const DISCLAIMER =
-  "Estimación generada por inteligencia artificial. No es un cálculo de la Dirección del Trabajo ni de Previred. No constituye asesoría legal ni previsional. Verifique siempre con su contador o en los canales oficiales.";
+  "Documento generado por Haberes. No es un cálculo de la Dirección del Trabajo ni de Previred. No constituye asesoría legal ni previsional. Verifique con su contador o en los canales oficiales.";
 
 export const DISCLAIMER_FINIQUITO =
-  "Esta carta es una estimación de software. No reemplaza la ratificación del finiquito ante la Inspección del Trabajo. No es un documento oficial de la Dirección del Trabajo ni de Previred. No constituye asesoría legal.";
+  "Esta carta no reemplaza la ratificación del finiquito ante la Inspección del Trabajo ni el pago efectivo. No es un documento oficial de la Dirección del Trabajo ni de Previred. No constituye asesoría legal.";
+
+/** Texto legal de la carta: no pegar un artículo entero si es un muro. */
+export const TEXTO_LEGAL_MAX = 400;
+
+export function resumirTextoLegal(texto, causalLabel, max = TEXTO_LEGAL_MAX) {
+  const t = String(texto || "").trim();
+  const label = String(causalLabel || "").trim();
+  if (!t) return label ? `El término se funda en ${label}.` : "";
+  if (t.length <= max) return t;
+  return label ? `El término se funda en ${label}.` : `${t.slice(0, max).replace(/\s+\S*$/, "")}.`;
+}
