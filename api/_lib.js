@@ -94,6 +94,24 @@ ALTER TABLE companies ADD COLUMN IF NOT EXISTS mp_preapproval_id TEXT;
 ALTER TABLE companies ADD COLUMN IF NOT EXISTS plan_until TIMESTAMPTZ;
 `;
 
+const INLINE_SCHEMA_006 = `
+CREATE TABLE IF NOT EXISTS envios (
+  id TEXT PRIMARY KEY,
+  company_id TEXT NOT NULL REFERENCES companies (id) ON DELETE CASCADE,
+  documento_id TEXT REFERENCES documentos (id) ON DELETE SET NULL,
+  tipo TEXT NOT NULL,
+  trabajador_key TEXT NOT NULL,
+  email TEXT NOT NULL,
+  periodo TEXT,
+  status TEXT NOT NULL,
+  provider_id TEXT,
+  error TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS envios_company_created_idx ON envios (company_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS envios_company_trabajador_idx ON envios (company_id, trabajador_key);
+`;
+
 let schemaReady = false;
 let dummyHashPromise = null;
 const rateHits = new Map();
@@ -317,6 +335,7 @@ async function ensureSchema() {
     await client.query(loadSchemaFile("003.sql", INLINE_SCHEMA_003));
     await client.query(loadSchemaFile("004.sql", INLINE_SCHEMA_004));
     await client.query(loadSchemaFile("005.sql", INLINE_SCHEMA_005));
+    await client.query(loadSchemaFile("006.sql", INLINE_SCHEMA_006));
     schemaReady = true;
     return true;
   } finally {
@@ -483,10 +502,13 @@ export function mailConfigured() {
   return Boolean(String(process.env.RESEND_API_KEY || "").trim());
 }
 
+function resendFrom() {
+  return String(process.env.RESEND_FROM || "").trim() || "Haberes <noreply@haberes.cl>";
+}
+
 export async function sendResetEmail({ to, token }) {
   const apiKey = String(process.env.RESEND_API_KEY || "").trim();
   if (!apiKey || !to || !token) return false;
-  const from = String(process.env.RESEND_FROM || "").trim() || "Haberes <noreply@haberes.cl>";
   const link = `${publicOrigin()}/reset?token=${encodeURIComponent(token)}`;
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
@@ -495,7 +517,7 @@ export async function sendResetEmail({ to, token }) {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      from,
+      from: resendFrom(),
       to: [to],
       subject: "Cambiar su clave en Haberes",
       text:
@@ -505,4 +527,64 @@ export async function sendResetEmail({ to, token }) {
     }),
   });
   return res.ok;
+}
+
+/**
+ * Envía un documento PDF por correo (un destinatario, un adjunto).
+ * @returns {{ ok: boolean, id?: string, error?: string }}
+ */
+export async function sendDocumentEmail({
+  to,
+  replyTo,
+  subject,
+  text,
+  html,
+  filename,
+  pdf,
+  idempotencyKey,
+}) {
+  const apiKey = String(process.env.RESEND_API_KEY || "").trim();
+  if (!apiKey || !to || !pdf) return { ok: false, error: "not_configured" };
+  const bytes = pdf instanceof Uint8Array ? pdf : new Uint8Array(pdf);
+  const content = Buffer.from(bytes).toString("base64");
+  const headers = {
+    Authorization: `Bearer ${apiKey}`,
+    "Content-Type": "application/json",
+  };
+  if (idempotencyKey) headers["Idempotency-Key"] = String(idempotencyKey).slice(0, 256);
+  const payload = {
+    from: resendFrom(),
+    to: [to],
+    subject: String(subject || "").slice(0, 200),
+    text: String(text || ""),
+    html: html ? String(html) : undefined,
+    attachments: [
+      {
+        filename: String(filename || "documento.pdf").slice(0, 180),
+        content,
+      },
+    ],
+  };
+  if (replyTo) payload.reply_to = replyTo;
+  try {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers,
+      body: JSON.stringify(payload),
+    });
+    let data = null;
+    try {
+      data = await res.json();
+    } catch {
+      data = null;
+    }
+    if (!res.ok) {
+      return { ok: false, error: "mail_error" };
+    }
+    const id = data?.id ? String(data.id) : "";
+    if (!id) return { ok: false, error: "mail_error" };
+    return { ok: true, id };
+  } catch {
+    return { ok: false, error: "mail_error" };
+  }
 }

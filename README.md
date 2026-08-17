@@ -9,7 +9,8 @@ Estimación generada por inteligencia artificial. **No** es un cálculo de la Di
 Abra `index.html` o despliegue en Vercel (`vercel.json` con `cleanUrls`).
 
 ```
-node scripts/verify.mjs   # cálculo, contenido y contratos de API (462 aserciones)
+node scripts/verify.mjs   # cálculo, contenido y contratos de API
+node scripts/gen-ejemplos.mjs  # regenera ejemplos/ desde js/csv.js
 python3 scripts/smoke.py  # interfaz en navegador real: 360 px y 1280 px
 ```
 
@@ -34,7 +35,7 @@ en `js/picker.js` (hoja inferior con velo en móvil, panel anclado en escritorio
 - `/` inicio
 - `/sueldo` calculadora simple y completa
 - `/finiquito` arts. 159 / 160 / 161
-- `/empresa` cuenta de empresa (RUT + correo + clave), perfil, logo, firma, CSV, liquidación, carta de finiquito, pago masivo y Libro de Remuneraciones Electrónico (LRE)
+- `/empresa` cuenta de empresa (RUT + correo + clave), perfil, logo, firma, CSV, liquidación, carta de finiquito, envío por correo al trabajador, nómina bancaria por perfiles y Libro de Remuneraciones Electrónico (LRE)
 - `/como` cómo funciona
 - `/precios` registro gratis; Gratis 5 movimientos/mes; Pro $14.990 + IVA / mes, cobro con Mercado Pago
 - `/admin` operadores (no está en el sitemap; exige `ADMIN_EMAILS` + `ADMIN_PASSWORD_HASH`)
@@ -56,13 +57,21 @@ depende de cada empresa— y se usan 30 días trabajados por persona. La descarg
 
 Si el entorno de despliegue define `DATABASE_URL`, las APIs `/api/register`, `/api/login`, `/api/reset-request` y `/api/reset-confirm` usan esa base. Si falta, las APIs responden 501 (`no_backend`) y la interfaz sigue en modo solo local, sin fingir que se envió un correo.
 
-El esquema está en `sql/001.sql` (cuentas), `sql/002.sql` (giro, dirección, clave de logo y documentos), `sql/003.sql` (firma, `disabled_at`, sesiones de admin), `sql/004.sql` (plan Gratis/Pro y movimientos del mes) y `sql/005.sql` (ids de Mercado Pago y vigencia de Pro). Se aplica en el primer request si es seguro. Las migraciones incrementales no borran cuentas existentes.
+El esquema está en `sql/001.sql` (cuentas), `sql/002.sql` (giro, dirección, clave de logo y documentos), `sql/003.sql` (firma, `disabled_at`, sesiones de admin), `sql/004.sql` (plan Gratis/Pro y movimientos del mes), `sql/005.sql` (ids de Mercado Pago y vigencia de Pro) y `sql/006.sql` (registro de envíos de documentos por correo). Se aplica en el primer request si es seguro. Las migraciones incrementales no borran cuentas existentes.
+
+## Envío de documentos por correo
+
+`POST /api/enviar` genera **un PDF por trabajador** (nunca el fusionado de la descarga), lo guarda en R2, lo adjunta con Resend y registra el resultado en `envios`. `GET /api/enviar` responde solo `{ ok, mail }` sin nombres de variables. Sin `RESEND_API_KEY` responde 501 `no_mail`. `RESEND_FROM` debe ser un dominio verificado en Resend; de lo contrario los correos se rechazan o caen en spam. El asunto no incluye montos. En Gratis el envío es uno a uno, igual que la emisión.
+
+## Nómina bancaria
+
+`js/bancos.js` concentra el catálogo de instituciones (códigos CMF / CLCMF). `js/nomina.js` define perfiles declarativos (`verificado: false` hasta citar el instructivo del banco en `fuente`). No se inventan layouts de largo fijo «por analogía». La empresa puede guardar un perfil personalizado en `localStorage` (`emp.nomina`).
 
 Opcional en el host, nunca en el repositorio:
 
 - `DATABASE_URL` — conexión de la app
 - `DATABASE_URL_UNPOOLED` — preferida para aplicar el SQL
-- `RESEND_API_KEY` y `RESEND_FROM` — solo si quiere envío real del enlace de recuperación
+- `RESEND_API_KEY` y `RESEND_FROM` — recuperación de clave y envío de liquidaciones/finiquitos; `RESEND_FROM` debe usar dominio verificado en Resend
 - `PUBLIC_ORIGIN` — origen público del enlace (por defecto https://www.haberes.cl)
 - `R2_ACCOUNT_ID` (o `CLOUDFLARE_ACCOUNT_ID`, `CF_ACCOUNT_ID`), `R2_ACCESS_KEY_ID` (o `AWS_ACCESS_KEY_ID`, `R2_ACCESS_KEY`), `R2_SECRET_ACCESS_KEY` (o `AWS_SECRET_ACCESS_KEY`, `R2_SECRET`), `R2_BUCKET` (o `R2_BUCKET_NAME`, `BUCKET_NAME`) — depósito privado para logos, firmas y PDF. Si faltan, `/api/logo`, `/api/firma` y `/api/documento` responden 501 (`no_storage`) y la interfaz lo dice; no se finge la subida. `/api/me`, `/api/admin-me` y `GET /api/storage` informan solo `{ storage: true|false }`, sin nombres ni valores de variables.
 - `ADMIN_EMAILS` — correos de operadores, separados por coma

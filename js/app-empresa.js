@@ -12,7 +12,9 @@ import { parseTrabajadoresCsv } from "./csv.js";
 import { calcularFiniquitoCompleto } from "./finiquito.js";
 import { clp, formatRut, validarRut } from "./format.js";
 import { getIndicadores } from "./indicadores.js";
-import { BANCOS_CL, TIPO_CUENTA_OPTS, glosaSueldo, xlsxPagoEjemplo, xlsxPagoMasivo } from "./pago.js";
+import { BANCOS_CL, TIPO_CUENTA_OPTS, glosaSueldo, descargarNomina } from "./pago.js";
+import { PERFILES_NOMINA, CAMPOS_DISPONIBLES, perfilPorId } from "./nomina.js";
+import { initEnvioDocumentos, tieneCorreoValido } from "./app-empresa-envio.js";
 import { createPicker } from "./picker.js";
 import { startProCheckout, consumeCheckoutIntent, rememberCheckoutIntent } from "./checkout.js";
 import {
@@ -364,6 +366,7 @@ function renderTrabajadores() {
       ? `${rows.length} ${rows.length === 1 ? "trabajador" : "trabajadores"}`
       : "";
   }
+  avisoConsorcioRipley();
   if (!rows.length) {
     list.innerHTML = `<p class="empty">Aún no hay trabajadores en la nómina de este mes.<br />Agregue uno con el formulario de abajo o cargue un CSV.</p>`;
     syncSelResumen();
@@ -380,8 +383,8 @@ function renderTrabajadores() {
         <tbody>
           ${rows
             .map(
-              (t) => `<tr>
-                <td>${escAttr(t.nombre)}</td>
+              (t) => `<tr class="${tieneCorreoValido(t) ? "" : "row-sin-correo"}">
+                <td>${escAttr(t.nombre)}${tieneCorreoValido(t) ? "" : ' <span class="badge-warn" title="Sin correo válido">sin correo</span>'}</td>
                 <td>${formatRut(t.rut)}</td>
                 <td>${escAttr(t.cargo || "—")}</td>
                 <td>${clp(t.sueldoBase)}</td>
@@ -398,9 +401,9 @@ function renderTrabajadores() {
     <div class="data-list only-mobile">
       ${rows
         .map(
-          (t) => `<article class="data-item">
+          (t) => `<article class="data-item${tieneCorreoValido(t) ? "" : " row-sin-correo"}">
             <div class="data-item-head">
-              <p class="data-item-title">${escAttr(t.nombre)}</p>
+              <p class="data-item-title">${escAttr(t.nombre)}${tieneCorreoValido(t) ? "" : ' <span class="badge-warn">sin correo</span>'}</p>
               <p class="data-item-sub">${clp(t.sueldoBase)}</p>
             </div>
             <dl class="data-item-grid">
@@ -639,7 +642,17 @@ function initPickers() {
     options: BANCOS_CL,
     value: "001",
     searchable: true,
-    placeholder: "Banco",
+    placeholder: "Banco o billetera",
+  });
+  pickers.nominaPerfil = createPicker(el("pickNominaPerfil"), {
+    options: PERFILES_NOMINA.filter((p) => p.id !== "personalizado" || true).map((p) => ({
+      value: p.id,
+      label: p.verificado ? p.nombre : `${p.nombre} (no verificada)`,
+    })),
+    value: emp?.nomina?.perfilId || "generico_xlsx",
+    searchable: false,
+    placeholder: "Formato de nómina",
+    onChange: () => syncNominaAviso(),
   });
   pickers.lreRegion = createPicker(el("lreRegionPick"), {
     options: LRE_REGIONES.map(([value, label]) => ({ value: String(value), label })),
@@ -705,6 +718,65 @@ wireNav();
 initPickers();
 mountHaberes(el("altaHaberes"), []);
 syncCausalNota();
+syncNominaAviso();
+
+initEnvioDocumentos({
+  workersForEmit,
+  payloadTrabajador,
+  pickers,
+  get indicadores() {
+    return indicadores;
+  },
+  showError,
+  withBusy,
+  consumirMovimientos,
+  get dateIngreso() {
+    return dateIngreso;
+  },
+  get dateTermino() {
+    return dateTermino;
+  },
+  numVal,
+  val,
+});
+
+function syncNominaAviso() {
+  const note = el("nominaAviso");
+  if (!note) return;
+  const id = pickers.nominaPerfil?.getValue() || "generico_xlsx";
+  const spec = id === "personalizado" ? { verificado: false, banco: null, nombre: "personalizado" } : perfilPorId(id);
+  const custom = el("nominaCustom");
+  if (custom) custom.hidden = id !== "personalizado";
+  if (!spec || spec.verificado) {
+    note.hidden = true;
+    note.textContent = "";
+    return;
+  }
+  note.hidden = false;
+  note.textContent =
+    `Plantilla Haberes. No verificada contra el instructivo del banco. Compare con el archivo de ejemplo que entrega su portal antes de subirla.`;
+}
+
+function avisoConsorcioRipley() {
+  const box = el("avisoBancos");
+  if (!box) return;
+  const list = emp?.trabajadores || [];
+  const hit = list.some((t) => {
+    const b = String(t.banco || "");
+    return b === "053" || b === "055" || /consorcio|ripley/i.test(b);
+  });
+  if (!hit) {
+    hostHidden(box, true);
+    return;
+  }
+  box.hidden = false;
+  box.textContent =
+    "Corrección de códigos: Banco Ripley es 053 y Banco Consorcio es 055. Si tenía Consorcio guardado con el código anterior, revise las nóminas ya enviadas al banco.";
+}
+
+function hostHidden(node, hidden) {
+  if (node) node.hidden = hidden;
+}
 
 document.querySelectorAll("[data-tab]").forEach((btn) => {
   btn.addEventListener("click", () => setTab(btn.dataset.tab, { scroll: true }));
@@ -1432,20 +1504,55 @@ el("btnPagoXlsx")?.addEventListener("click", () => {
   if (!gate.ok) return showError(el("errPago"), gate.message || MSG_PAGO_PRO);
   const rows = workersForEmit();
   if (!rows.length) return showError(el("errPago"), "Seleccione uno o más trabajadores");
+  const excluidos = rows.filter((t) => (calcularSueldo(t, indicadores).liquido || 0) <= 0);
   const periodoVal = pickers.periodo?.getValue() || "";
   const periodo = periodoLabel(periodoVal) || periodoVal;
+  const perfilId = pickers.nominaPerfil?.getValue() || "generico_xlsx";
   try {
-    const bytes = xlsxPagoMasivo({
+    if (perfilId === "personalizado") {
+      const orden = Array.from(el("nominaCampos")?.querySelectorAll("input[type=checkbox]:checked") || []).map(
+        (i) => i.value,
+      );
+      emp.nomina = {
+        perfilId: "personalizado",
+        campos: orden.length ? orden : CAMPOS_DISPONIBLES.map((c) => c.id),
+        separador: el("nominaSep")?.value || ";",
+        codificacion: el("nominaEnc")?.value || "latin1",
+        incluirCabecera: el("nominaHeader")?.checked !== false,
+        sinTildes: el("nominaTildes")?.checked !== false,
+      };
+      try {
+        guardarEmpresa(emp);
+      } catch {
+        // Cuota de localStorage: degradar al genérico en memoria.
+      }
+    } else if (emp) {
+      emp.nomina = { ...(emp.nomina || {}), perfilId };
+      try {
+        guardarEmpresa(emp);
+      } catch {
+        /* ignore */
+      }
+    }
+    const out = descargarNomina(perfilId, {
       trabajadores: rows,
       indicadores,
       glosa: glosaSueldo(periodo),
+      nominaConfig: emp?.nomina,
+      filename: "nomina-pago",
     });
-    triggerDownload(
-      new Blob([bytes], {
-        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      }),
-      "pago-masivo-haberes.xlsx",
-    );
+    if (excluidos.length) {
+      showError(
+        el("errPago"),
+        `Se excluyeron ${excluidos.length} con líquido ≤ 0: ${excluidos.map((t) => t.nombre).join(", ")}.`,
+      );
+    }
+    const aviso = el("nominaAviso");
+    if (aviso && out.aviso) {
+      aviso.hidden = false;
+      aviso.textContent = out.aviso;
+    }
+    triggerDownload(new Blob([out.bytes], { type: out.mime }), out.filename);
   } catch (err) {
     showError(el("errPago"), err.message);
   }
@@ -1511,20 +1618,5 @@ el("btnLreCsv")?.addEventListener("click", () => {
     refrescarLre();
   } catch (err) {
     showError(el("errLre"), err.message);
-  }
-});
-
-el("btnPagoEjemplo")?.addEventListener("click", () => {
-  showError(el("errPago"), "");
-  try {
-    const bytes = xlsxPagoEjemplo();
-    triggerDownload(
-      new Blob([bytes], {
-        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      }),
-      "pago-masivo-ejemplo.xlsx",
-    );
-  } catch (err) {
-    showError(el("errPago"), err.message);
   }
 });
