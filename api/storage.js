@@ -1,5 +1,4 @@
 import { json } from "./_lib.js";
-import { requireAdmin } from "./_admin.js";
 import { hasR2 } from "./_r2.js";
 
 export default async function handler(req, res) {
@@ -7,7 +6,5 @@ export default async function handler(req, res) {
     res.setHeader?.("Allow", "GET");
     return json(res, 405, { ok: false, reason: "method_not_allowed" });
   }
-  const admin = await requireAdmin(req, res);
-  if (!admin) return;
-  return json(res, 200, { ok: true, admin: { email: admin.email }, storage: hasR2() });
+  return json(res, 200, { ok: true, storage: hasR2() });
 }
