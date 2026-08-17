@@ -43,7 +43,7 @@ en `js/picker.js` (hoja inferior con velo en móvil, panel anclado en escritorio
 - `/admin` operadores (no está en el sitemap; exige `ADMIN_EMAILS` + `ADMIN_PASSWORD_HASH`)
 - `/reset` cambio de clave con token de un solo uso (no está en el sitemap)
 
-`sitemap.xml` se regenera con `npm run sitemap` (`scripts/gen-sitemap.mjs`) a partir de los HTML públicos y el `mtime` de cada archivo. No se edita a mano.
+`/sitemap.xml` lo sirve `api/sitemap.js` (rewrite en `vercel.json`) para que curl y Googlebot no reciban el 500 del XML estático de Vercel. La lista de URLs está en `api/_sitemap.js` y `npm run sitemap` regenera el archivo de verificación. No se edita a mano. Sin `/admin` ni `/reset`.
 
 La tipografía IBM Plex Sans está autoalojada en `fonts/` (subconjunto latino, `woff2`, licencia en `fonts/LICENSE`). No se cargan fuentes desde Google Fonts.
 

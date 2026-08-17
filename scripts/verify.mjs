@@ -551,6 +551,9 @@ const required = [
   "api/checkout.js",
   "api/mp-webhook.js",
   "api/_mp.js",
+  "api/sitemap.js",
+  "api/_sitemap.js",
+  ".vercelignore",
   "js/ui.js",
   "js/overlay.js",
   "reset.html",
@@ -574,6 +577,26 @@ assert(
     vercel.redirects.some(
       (r) => r.source === "/como-funciona" && r.destination === "/como" && r.permanent === true,
     ),
+);
+assert(
+  "vercel.json rewrite /sitemap.xml → /api/sitemap",
+  Array.isArray(vercel.rewrites) &&
+    vercel.rewrites.some((r) => r.source === "/sitemap.xml" && r.destination === "/api/sitemap"),
+);
+assert(
+  "vercel.json rewrite /sitemap → /api/sitemap",
+  Array.isArray(vercel.rewrites) &&
+    vercel.rewrites.some((r) => r.source === "/sitemap" && r.destination === "/api/sitemap"),
+);
+assert(
+  "vercel.json Content-Type sitemap text/xml",
+  JSON.stringify(vercel.headers || []).includes("/sitemap.xml") &&
+    JSON.stringify(vercel.headers || []).includes("text/xml; charset=utf-8"),
+);
+const vercelIgnore = readFileSync(join(root, ".vercelignore"), "utf8");
+assert(
+  ".vercelignore excluye sitemap.xml estático",
+  /^\s*sitemap\.xml\s*$/m.test(vercelIgnore),
 );
 
 const htmlFiles = [
@@ -719,6 +742,17 @@ assert(
   "package.json script sitemap",
   /"sitemap":\s*"node scripts\/gen-sitemap\.mjs"/.test(readFileSync(join(root, "package.json"), "utf8")),
 );
+assert(
+  "gen-sitemap usa api/_sitemap.js",
+  /from ["']\.\.\/api\/_sitemap\.js["']/.test(readFileSync(join(root, "scripts/gen-sitemap.mjs"), "utf8")),
+);
+const sitemapSrc = readFileSync(join(root, "api/sitemap.js"), "utf8");
+assert("api/sitemap.js no usa _lib ni pg", !/from ["']\.\/_lib\.js["']/.test(sitemapSrc) && !/\bpg\b/.test(sitemapSrc));
+assert(
+  "api/sitemap.js Content-Type text/xml",
+  /SITEMAP_CONTENT_TYPE/.test(sitemapSrc) &&
+    /text\/xml; charset=utf-8/.test(readFileSync(join(root, "api/_sitemap.js"), "utf8")),
+);
 
 const analytics = readFileSync(join(root, "js/analytics.js"), "utf8");
 assert(
@@ -753,6 +787,14 @@ function mockRes() {
       out.body = payload;
       return res;
     },
+    send(payload) {
+      out.body = payload;
+      return res;
+    },
+    end(payload) {
+      if (payload !== undefined) out.body = payload;
+      return res;
+    },
   };
   res._out = out;
   return res;
@@ -761,6 +803,62 @@ function mockRes() {
 function mockReq(method, body, ip = "203.0.113.10") {
   return { method, body, headers: { "x-forwarded-for": ip } };
 }
+
+console.log("\nSitemap API (curl / Googlebot / sin cabeceras de navegador)");
+const sitemapHandler = (await import("../api/sitemap.js")).default;
+const { sitemapLocs: sitemapApiLocs, SITEMAP_CONTENT_TYPE } = await import("../api/_sitemap.js");
+
+function invokeSitemap(req) {
+  const res = mockRes();
+  sitemapHandler(req, res);
+  return res._out;
+}
+
+const sitemapNoHeaders = invokeSitemap({ method: "GET" });
+assert("GET sitemap sin headers 200", sitemapNoHeaders.statusCode === 200);
+assert(
+  "GET sitemap sin headers xml urlset",
+  typeof sitemapNoHeaders.body === "string" &&
+    sitemapNoHeaders.body.includes('<?xml version="1.0" encoding="UTF-8"?>') &&
+    sitemapNoHeaders.body.includes("<urlset") &&
+    sitemapNoHeaders.body.includes("</urlset>"),
+);
+assert(
+  "GET sitemap Content-Type text/xml",
+  /text\/xml/i.test(String(sitemapNoHeaders.headers["Content-Type"] || sitemapNoHeaders.headers["content-type"] || "")) &&
+    SITEMAP_CONTENT_TYPE.includes("charset=utf-8"),
+);
+const apiLocs = [...String(sitemapNoHeaders.body).matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
+assert(
+  "GET sitemap mismas URLs públicas",
+  sitemapApiLocs().every((u) => apiLocs.includes(u)) && apiLocs.length === sitemapApiLocs().length,
+  apiLocs.join(", "),
+);
+assert("GET sitemap sin admin ni reset", !apiLocs.some((u) => /\/admin|\/reset/.test(u)));
+
+const sitemapCurl = invokeSitemap({
+  method: "GET",
+  headers: { accept: "*/*", "user-agent": "curl/8.5.0" },
+});
+assert("GET sitemap curl UA 200 xml", sitemapCurl.statusCode === 200 && /<urlset/.test(String(sitemapCurl.body)));
+
+const sitemapBot = invokeSitemap({
+  method: "GET",
+  headers: {
+    accept: "*/*",
+    "user-agent": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
+  },
+});
+assert("GET sitemap Googlebot 200 xml", sitemapBot.statusCode === 200 && /<urlset/.test(String(sitemapBot.body)));
+
+const sitemapEmpty = invokeSitemap({});
+assert("GET sitemap req vacío 200 xml", sitemapEmpty.statusCode === 200 && /<urlset/.test(String(sitemapEmpty.body)));
+
+const sitemapHead = invokeSitemap({ method: "HEAD" });
+assert("HEAD sitemap 200", sitemapHead.statusCode === 200);
+
+const sitemapPost = invokeSitemap({ method: "POST" });
+assert("POST sitemap 405", sitemapPost.statusCode === 405);
 
 const {
   hashPassword,
@@ -1419,6 +1517,8 @@ const apiFiles = [
   "api/_mp.js",
   "api/checkout.js",
   "api/mp-webhook.js",
+  "api/sitemap.js",
+  "api/_sitemap.js",
 ];
 for (const f of apiFiles) {
   const src = readFileSync(join(root, f), "utf8");
