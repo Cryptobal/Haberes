@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { diasDelPeriodo, normalizarNovedades } from "../js/novedades.js";
 import { FALLBACK_UF, UF_MAX, UF_MIN } from "../js/constants.js";
 import { calcularFiniquitoCompleto } from "../js/finiquito.js";
 import { calcularSueldo } from "../js/sueldo.js";
@@ -37,6 +38,65 @@ export function companyFromRow(row) {
 
 export function workerFromBody(raw) {
   const t = raw && typeof raw === "object" ? raw : {};
+  const novRaw = t.novedades && typeof t.novedades === "object" ? t.novedades : null;
+  const hasDiasFields =
+    novRaw != null ||
+    t.diasAusencia != null ||
+    t.diasLicencia != null ||
+    t.diasVacaciones != null ||
+    t.diasTrabajadosManual != null ||
+    t.pagaCarencia != null ||
+    (Array.isArray(t.descuentos) && t.descuentos.length > 0);
+
+  const nov = normalizarNovedades(
+    {
+      ...(novRaw || {}),
+      diasAusencia: novRaw?.diasAusencia ?? t.diasAusencia,
+      diasLicencia: novRaw?.diasLicencia ?? t.diasLicencia,
+      diasVacaciones: novRaw?.diasVacaciones ?? t.diasVacaciones,
+      pagaCarencia: novRaw?.pagaCarencia ?? t.pagaCarencia,
+      horasExtras: novRaw?.horasExtras ?? t.horasExtras,
+      haberesExtra: novRaw?.haberesExtra ?? t.haberesExtra,
+      descuentos: novRaw?.descuentos ?? t.descuentos,
+      diasTrabajadosManual: novRaw?.diasTrabajadosManual ?? t.diasTrabajadosManual,
+      colacionFija: novRaw?.colacionFija ?? t.colacionFija,
+      movilizacionFija: novRaw?.movilizacionFija ?? t.movilizacionFija,
+      nota: novRaw?.nota ?? t.nota,
+    },
+    {
+      periodo: String(t.periodo || novRaw?.periodo || "").slice(0, 7),
+      trabajadorId: String(t.id || "").slice(0, 64),
+    },
+  );
+
+  const fechaIngreso = String(t.fechaIngreso || t.ingreso || "").slice(0, 10);
+  const fechaTermino = String(t.fechaTermino || t.termino || "").slice(0, 10);
+  const periodo = String(t.periodo || nov.periodo || "").slice(0, 7);
+
+  // Revalidar días en servidor; no se confía en diasTrabajados del cliente.
+  const dias = hasDiasFields
+    ? diasDelPeriodo({
+        periodo,
+        fechaIngreso,
+        fechaTermino,
+        diasAusencia: nov.diasAusencia,
+        diasLicencia: nov.diasLicencia,
+        diasVacaciones: nov.diasVacaciones,
+        pagaCarencia: nov.pagaCarencia,
+        diasTrabajadosManual: nov.diasTrabajadosManual,
+      })
+    : undefined;
+
+  // Validación de rangos (§15)
+  const diasOutOfRange = [nov.diasAusencia, nov.diasLicencia, nov.diasVacaciones].some(
+    (d) => d < 0 || d > 31,
+  );
+  if (diasOutOfRange) {
+    const err = new Error("invalid_payload");
+    err.code = "invalid_payload";
+    throw err;
+  }
+
   return {
     nombre: String(t.nombre || "").trim().slice(0, 200),
     rut: String(t.rut || "").trim().slice(0, 20),
@@ -46,16 +106,33 @@ export function workerFromBody(raw) {
     salud: String(t.salud || "fonasa"),
     isaprePactado: Number(t.isaprePactado) || 0,
     contrato: String(t.contrato || "indefinido"),
-    horasExtras: Number(t.horasExtras) || 0,
+    horasExtras: hasDiasFields || novRaw ? nov.horasExtras : Number(t.horasExtras) || 0,
     bonos: Number(t.bonos) || 0,
-    haberesExtra: Array.isArray(t.haberesExtra) ? t.haberesExtra.slice(0, 30) : [],
+    haberesExtra:
+      hasDiasFields || novRaw
+        ? nov.haberesExtra
+        : Array.isArray(t.haberesExtra)
+          ? t.haberesExtra.slice(0, 30)
+          : [],
     colacion: Number(t.colacion) || 0,
     movilizacion: Number(t.movilizacion) || 0,
+    colacionFija: Boolean(nov.colacionFija),
+    movilizacionFija: Boolean(nov.movilizacionFija),
     gratificacionArt50: Boolean(t.gratificacionArt50),
     jornada: Number(t.jornada) || 42,
-    ingreso: String(t.ingreso || "").slice(0, 10),
-    termino: String(t.termino || "").slice(0, 10),
+    fechaIngreso,
+    fechaTermino,
+    ingreso: fechaIngreso,
+    termino: fechaTermino,
     email: String(t.email || "").trim().slice(0, 160),
+    periodo,
+    descuentos: hasDiasFields || novRaw ? nov.descuentos : [],
+    dias,
+    diasAusencia: dias?.diasAusencia,
+    diasLicencia: dias?.diasLicencia,
+    diasVacaciones: dias?.diasVacaciones,
+    pagaCarencia: Boolean(nov.pagaCarencia),
+    diasTrabajadosManual: nov.diasTrabajadosManual,
   };
 }
 
@@ -82,7 +159,10 @@ export async function buildWorkerPdf({
   firmaType = "",
 }) {
   if (tipo === "liquidacion") {
-    const calc = calcularSueldo(trabajador, { uf });
+    const calc = calcularSueldo(
+      { ...trabajador, periodo: extra.periodo || trabajador.periodo },
+      { uf },
+    );
     const periodo = periodoLabel(extra.periodo) || String(extra.periodo || "");
     return buildLiquidacionPdf({
       empresa,

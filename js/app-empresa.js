@@ -76,7 +76,9 @@ let pickers = {};
 let dateIngreso = null;
 let dateTermino = null;
 let dateAltaIngreso = null;
+let dateAltaTermino = null;
 let altaIngresoTocada = false;
+let altaTerminoTocada = false;
 
 function hoyIso() {
   const h = new Date();
@@ -244,11 +246,20 @@ const ctx = {
   get dateAltaIngreso() {
     return dateAltaIngreso;
   },
+  get dateAltaTermino() {
+    return dateAltaTermino;
+  },
   get altaIngresoTocada() {
     return altaIngresoTocada;
   },
   set altaIngresoTocada(v) {
     altaIngresoTocada = v;
+  },
+  get altaTerminoTocada() {
+    return altaTerminoTocada;
+  },
+  set altaTerminoTocada(v) {
+    altaTerminoTocada = v;
   },
   hoyIso,
   setTab,
@@ -264,6 +275,8 @@ const trabajadoresApi = bindEmpresaTrabajadores(ctx);
 ctx.selectedWorkers = trabajadoresApi.selectedWorkers;
 ctx.readHaberesEditor = trabajadoresApi.readHaberesEditor;
 ctx.payloadTrabajador = trabajadoresApi.payloadTrabajador;
+ctx.art58Confirmado = trabajadoresApi.art58Confirmado;
+ctx.actualizarAvisoArt58 = trabajadoresApi.actualizarAvisoArt58;
 
 const documentosApi = bindEmpresaDocumentos(ctx);
 ctx.workersForEmit = documentosApi.workersForEmit;
@@ -358,6 +371,7 @@ function initPickers() {
     value: periodos[0]?.value,
     searchable: true,
     placeholder: "Periodo",
+    onChange: () => trabajadoresApi.syncSelResumen(),
   });
   pickers.causal = createPicker(el("pickCausal"), {
     options: opcionesCausalPicker(),
@@ -369,6 +383,11 @@ function initPickers() {
   dateAltaIngreso = createDateFields(el("altaFechaIngreso"), {
     onChange: () => {
       altaIngresoTocada = true;
+    },
+  });
+  dateAltaTermino = createDateFields(el("altaFechaTermino"), {
+    onChange: () => {
+      altaTerminoTocada = true;
     },
   });
   dateIngreso = createDateFields(el("finIngreso"), { value: "2020-01-15" });

@@ -223,6 +223,31 @@ export async function buildLiquidacionPdf({
     }  Contrato: ${calc.contrato === "plazo_fijo" ? "Plazo fijo" : "Indefinido"}`,
     { x: margin, y, size: 10, maxWidth, lineHeight: 13 },
   );
+  y -= 2;
+  const diasTxt = `Días trabajados: ${calc.dias?.diasTrabajados ?? 30} de ${calc.dias?.diasBase ?? 30}`;
+  const extrasDias = [
+    (calc.dias?.diasLicencia || 0) > 0 ? `Licencia médica: ${calc.dias.diasLicencia} días` : "",
+    (calc.dias?.diasVacaciones || 0) > 0 ? `Feriado legal: ${calc.dias.diasVacaciones} días` : "",
+  ]
+    .filter(Boolean)
+    .join("  ");
+  y = drawParagraph(page, font, extrasDias ? `${diasTxt}  ${extrasDias}` : diasTxt, {
+    x: margin,
+    y,
+    size: 10,
+    maxWidth,
+    lineHeight: 13,
+  });
+  if (calc.leyendaLicencia) {
+    y = drawParagraph(page, font, calc.leyendaLicencia, {
+      x: margin,
+      y,
+      size: 8,
+      maxWidth,
+      lineHeight: 11,
+      color: MUTED,
+    });
+  }
   y -= 8;
 
   page.drawText("Haberes", { x: margin, y, size: 10, font: fontBold, color: INK });

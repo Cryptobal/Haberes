@@ -363,8 +363,9 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                   <p class="hint">La usa el Libro de Remuneraciones (LRE). Se guarda al elegirla.</p>
                 </div>
                 <div class="field">
-                  <label for="altaHoras">Horas extras (cantidad)</label>
-                  <input id="altaHoras" inputmode="decimal" min="0" value="0" />
+                  <span class="lbl">Fecha de término</span>
+                  <div id="altaFechaTermino"></div>
+                  <p class="hint">Opcional. Si deja el cargo a mitad de mes, ajusta los días trabajados.</p>
                 </div>
                 <div class="field">
                   <label for="altaJornada">Jornada semanal</label>
@@ -407,14 +408,15 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
               </div>
 
               <hr class="sep" />
-              <h4>Haberes adicionales</h4>
+              <h4>Gratificación</h4>
               <label class="check">
                 <input id="altaGrat" type="checkbox" />
                 Gratificación art. 50
               </label>
-              <p class="hint">Bonos con nombre. Imponible entra a la base (art. 41); no imponible no.</p>
-              <div id="altaHaberes" class="u-mt-3"></div>
-              <button class="btn btn-ghost btn-sm" type="button" id="btnAltaHaber">Añadir haber</button>
+              <p class="hint">
+                Las horas extras, bonos del mes y descuentos se cargan en Documentos → Novedades del mes,
+                para que no se repitan solos al mes siguiente.
+              </p>
               <p class="error" id="errAlta" hidden></p>
               <div class="actionbar">
                 <button class="btn" type="submit" id="btnAltaGuardar">Agregar</button>
@@ -434,6 +436,10 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
               si hay varios, un solo archivo con todas las páginas.
             </p>
             <div class="field u-mt-4">
+              <span class="lbl">Periodo de remuneración</span>
+              <div id="pickPeriodo"></div>
+            </div>
+            <div class="field u-mt-4">
               <span class="lbl">Trabajadores</span>
               <div id="pickTrabajadores"></div>
             </div>
@@ -441,14 +447,16 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           </div>
 
           <div class="panel u-mt-4" id="panelHaberesTrabajador" hidden>
-            <h3>2. Ajuste los haberes del mes</h3>
+            <h3>2. Novedades del mes</h3>
             <p class="hint">
-              Números del primer seleccionado. Puede ajustarlos antes de emitir; guardar actualiza la nómina
-              de este navegador.
+              Ausencias, licencia, feriado, horas extras, bonos y descuentos del período. Por defecto todo en
+              cero: si no hubo novedades, emite igual que un mes completo. Guardar actualiza la ficha
+              (sueldo, colación…) y las novedades de este período.
             </p>
+            <p class="notice" id="novDiasResumen" aria-live="polite">Días trabajados: 30 de 30</p>
             <div class="row u-mt-4">
               <div class="field">
-                <label for="emSueldo">Sueldo base</label>
+                <label for="emSueldo">Sueldo base (pactado)</label>
                 <input id="emSueldo" inputmode="numeric" min="0" />
               </div>
               <div class="field">
@@ -458,6 +466,34 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             </div>
             <div class="row">
               <div class="field">
+                <label for="novAusencia">Días de ausencia</label>
+                <input id="novAusencia" inputmode="numeric" min="0" max="31" value="0" />
+              </div>
+              <div class="field">
+                <label for="novLicencia">Días de licencia médica</label>
+                <input id="novLicencia" inputmode="numeric" min="0" max="31" value="0" />
+              </div>
+              <div class="field">
+                <label for="novVacaciones">Días de feriado legal</label>
+                <input id="novVacaciones" inputmode="numeric" min="0" max="31" value="0" />
+              </div>
+            </div>
+            <div class="row">
+              <div class="field">
+                <label for="novDiasManual">Días trabajados (override)</label>
+                <input id="novDiasManual" inputmode="numeric" min="0" max="30" placeholder="automático" />
+              </div>
+              <div class="field">
+                <label for="novNota">Nota del override</label>
+                <input id="novNota" maxlength="200" placeholder="Motivo si cambia los días a mano" />
+              </div>
+            </div>
+            <label class="check">
+              <input id="novPagaCarencia" type="checkbox" />
+              La empresa paga los 3 días de carencia (solo si se obligó por contrato)
+            </label>
+            <div class="row u-mt-3">
+              <div class="field">
                 <label for="emColacion">Colación</label>
                 <input id="emColacion" inputmode="numeric" min="0" />
               </div>
@@ -466,6 +502,14 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                 <input id="emMov" inputmode="numeric" min="0" />
               </div>
             </div>
+            <label class="check">
+              <input id="novColacionFija" type="checkbox" />
+              Colación monto fijo del mes (no proporcional)
+            </label>
+            <label class="check">
+              <input id="novMovFija" type="checkbox" />
+              Movilización monto fijo del mes (no proporcional)
+            </label>
             <div class="row">
               <div class="field">
                 <label for="emIsapre">Isapre pactado (pesos)</label>
@@ -480,12 +524,30 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
               <input id="emGrat" type="checkbox" />
               Gratificación art. 50
             </label>
-            <p class="hint">Haberes con nombre</p>
+            <p class="hint">Haberes con nombre (del mes)</p>
             <div id="emHaberes" class="u-mt-3"></div>
             <button class="btn btn-ghost btn-sm" type="button" id="btnEmHaber">Añadir haber</button>
+            <p class="hint u-mt-4">Descuentos con nombre y tipo</p>
+            <div id="emDescuentos" class="u-mt-3"></div>
+            <button class="btn btn-ghost btn-sm" type="button" id="btnEmDesc">Añadir descuento</button>
+            <div class="field u-mt-4">
+              <label for="novCsvFile">Cargar novedades del mes (CSV)</label>
+              <input id="novCsvFile" type="file" accept=".csv,text/csv" />
+              <p class="hint">
+                Solo lo que cambió este mes. RUT debe existir en la ficha.
+                <a href="/ejemplos/novedades.csv" download>Ejemplo</a>
+              </p>
+            </div>
+            <p class="notice" id="avisoArt58" hidden></p>
+            <label class="check" id="wrapArt58Confirm" hidden>
+              <input id="novArt58Confirm" type="checkbox" />
+              Confirmo emitir con descuentos convencionales sobre el 15 % del bruto (art. 58 inciso 2)
+            </label>
+            <p class="error" id="errNov" hidden></p>
             <p class="ok" id="okHaberes" hidden></p>
             <div class="btn-row u-mt-4">
-              <button class="btn btn-ghost" type="button" id="btnGuardarHaberes">Guardar haberes en este navegador</button>
+              <button class="btn btn-ghost" type="button" id="btnGuardarHaberes">Guardar novedades en este navegador</button>
+              <button class="btn btn-ghost" type="button" id="btnCopiarNovedades">Copiar del mes anterior</button>
             </div>
           </div>
 
@@ -497,10 +559,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           <div class="layout u-mt-4">
             <div class="panel">
               <h3>Liquidación</h3>
-              <div class="field u-mt-3">
-                <span class="lbl">Periodo de remuneración</span>
-                <div id="pickPeriodo"></div>
-              </div>
+              <p class="hint">Usa el período elegido en Novedades del mes.</p>
               <p class="error" id="errPrint" hidden></p>
               <div class="actionbar">
                 <button class="btn" type="button" id="btnLiquidacion">Ver liquidación</button>
@@ -558,7 +617,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
               <p class="hint">
                 CSV con las 147 columnas del formato oficial de la Dirección del Trabajo, para subir
                 en Mi DT. Es un borrador: los aportes del empleador (mutual, SIS, reforma) van en 0
-                para que los complete su contador, y usa 30 días trabajados por persona.
+                para que los complete su contador. Los días trabajados, de licencia y de vacaciones
+                salen de las novedades del período (si no hay, se asume mes completo de 30 días).
                 <a href="https://static-content.api.dirtrab.cl/dt-docs/lre/lre_instrucciones_de_carga.pdf"
                   target="_blank" rel="noopener">Manual oficial</a>.
               </p>
