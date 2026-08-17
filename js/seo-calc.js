@@ -22,6 +22,15 @@ function pesos(n) {
   }).format(Math.round(Number(n) || 0));
 }
 
+function pesosDec(n) {
+  return new Intl.NumberFormat("es-CL", {
+    style: "currency",
+    currency: "CLP",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(Number(n) || 0);
+}
+
 function num(el) {
   const raw = String(el?.value ?? "").replace(/\./g, "").replace(/,/g, ".");
   const n = Number(raw);
@@ -204,19 +213,22 @@ function mountFeriado(root) {
 
 function mountIusc(root) {
   const rows = IUSC_TRAMOS.map((t, i) => {
-    const hasta = t.hasta === Infinity ? "Sin tope superior" : pesos(t.hasta);
-    const desde = i === 0 ? "$0" : pesos(IUSC_TRAMOS[i - 1].hasta);
-    return `<tr><td>${desde}</td><td>${hasta}</td><td>${(t.tasa * 100).toFixed(1)} %</td><td>${pesos(t.rebaja)}</td></tr>`;
+    const hasta = t.hasta === Infinity ? "Y más" : pesosDec(t.hasta);
+    const desde = i === 0 ? "—" : pesosDec(IUSC_TRAMOS[i - 1].hasta + 0.01);
+    const factor = t.tasa === 0 ? "Exento" : String(t.tasa).replace(".", ",");
+    const rebaja = t.tasa === 0 ? "—" : pesosDec(t.rebaja);
+    return `<tr><td>${desde}</td><td>${hasta}</td><td>${factor}</td><td>${rebaja}</td></tr>`;
   }).join("");
   root.innerHTML = `
     <div class="seo-calc__form">
-      <p class="seo-calc__title">Tramos IUSC vigentes (configuración Haberes)</p>
+      <p class="seo-calc__title">IUSC mensual agosto 2026 (SII / Haberes)</p>
       <div class="table-scroll">
         <table>
-          <thead><tr><th>Desde</th><th>Hasta</th><th>Tasa</th><th>Rebaja</th></tr></thead>
+          <thead><tr><th>Desde</th><th>Hasta</th><th>Factor</th><th>Cantidad a rebajar</th></tr></thead>
           <tbody>${rows}</tbody>
         </table>
       </div>
+      <p class="seo-calc__note">Fuente: <a href="https://www.sii.cl/valores_y_fechas/impuesto_2da_categoria/impuesto2026.htm">SII, impuesto 2026</a>. Exento hasta $967.261,50 (13,5 UTM).</p>
       <div class="seo-calc__actions">
         <a class="btn" href="/sueldo">Calcular con impuesto único</a>
         <a class="btn btn-ghost" href="/empresa">Cuenta de empresa</a>

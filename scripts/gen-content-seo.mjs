@@ -7,9 +7,9 @@ import { mkdirSync, writeFileSync, readFileSync, readdirSync, existsSync } from 
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { calcularFiniquitoCompleto } from "../js/finiquito.js";
-import { FALLBACK_UF, DISCLAIMER, DISCLAIMER_FINIQUITO } from "../js/constants.js";
+import { FALLBACK_UF, DISCLAIMER, DISCLAIMER_FINIQUITO, IUSC_TRAMOS } from "../js/constants.js";
 import { causalPorId, CAUSALES } from "../js/causales.js";
-import { CAUSAL_PAGES, GUIDE_SLUGS } from "../content/registry.js";
+import { CAUSAL_PAGES, GUIDE_SLUGS, GUIDES } from "../content/registry.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const ORIGIN = "https://www.haberes.cl";
@@ -51,6 +51,36 @@ function pesos(n) {
     currency: "CLP",
     maximumFractionDigits: 0,
   }).format(n);
+}
+
+function pesosDec(n) {
+  return new Intl.NumberFormat("es-CL", {
+    style: "currency",
+    currency: "CLP",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(Number(n) || 0);
+}
+
+/** Tabla mensual IUSC (configuración Haberes = SII agosto 2026). Indexable sin JS. */
+function iuscTableHtml() {
+  const rows = IUSC_TRAMOS.map((t, i) => {
+    const desde = i === 0 ? "—" : pesosDec(IUSC_TRAMOS[i - 1].hasta + 0.01);
+    const hasta = t.hasta === Infinity ? "Y más" : pesosDec(t.hasta);
+    const factor = t.tasa === 0 ? "Exento" : String(t.tasa).replace(".", ",");
+    const rebaja = t.tasa === 0 ? "—" : pesosDec(t.rebaja);
+    return `<tr><td>${desde}</td><td>${hasta}</td><td>${factor}</td><td>${rebaja}</td></tr>`;
+  }).join("\n            ");
+  return `<div class="table-scroll">
+        <table>
+          <caption>IUSC mensual, agosto 2026 (13,5 UTM de exención). Misma tabla que usa Haberes.</caption>
+          <thead><tr><th>Desde</th><th>Hasta</th><th>Factor</th><th>Cantidad a rebajar</th></tr></thead>
+          <tbody>
+            ${rows}
+          </tbody>
+        </table>
+      </div>
+      <p>Fuente: <a href="https://www.sii.cl/valores_y_fechas/impuesto_2da_categoria/impuesto2026.htm" rel="noopener noreferrer">SII, Impuesto Único de Segunda Categoría 2026</a> (tabla mensual de agosto). Los tramos se actualizan cada mes con la UTM.</p>`;
 }
 
 function esc(s) {
@@ -120,9 +150,28 @@ function mdToHtml(md) {
       i += 1;
       continue;
     }
-    if (line.trim() === "{{calc}}" || line.trim() === "{{cta}}") {
+    if (line.trim() === "{{calc}}" || line.trim() === "{{cta}}" || line.trim() === "{{iusc-table}}") {
       out.push(line.trim());
       i += 1;
+      continue;
+    }
+    if (line.trim().startsWith("|")) {
+      const rows = [];
+      while (i < lines.length && lines[i].trim().startsWith("|")) {
+        rows.push(lines[i]);
+        i += 1;
+      }
+      const parsed = rows
+        .map((r) => r.replace(/^\|/, "").replace(/\|$/, "").split("|").map((c) => c.trim()))
+        .filter((cells) => !cells.every((c) => /^:?-{3,}:?$/.test(c)));
+      if (parsed.length) {
+        const [hdr, ...body] = parsed;
+        const thead = hdr.map((c) => `<th>${inlineMd(c)}</th>`).join("");
+        const tbody = body
+          .map((r) => `<tr>${r.map((c) => `<td>${inlineMd(c)}</td>`).join("")}</tr>`)
+          .join("");
+        out.push(`<div class="table-scroll"><table><thead><tr>${thead}</tr></thead><tbody>${tbody}</tbody></table></div>`);
+      }
       continue;
     }
     if (line.startsWith("### ")) {
@@ -160,7 +209,17 @@ function mdToHtml(md) {
     }
     const paras = [line];
     i += 1;
-    while (i < lines.length && lines[i].trim() && !/^#{1,3}\s/.test(lines[i]) && !lines[i].startsWith("- ") && !/^\d+\.\s/.test(lines[i]) && lines[i].trim() !== "{{calc}}" && lines[i].trim() !== "{{cta}}") {
+    while (
+      i < lines.length &&
+      lines[i].trim() &&
+      !/^#{1,3}\s/.test(lines[i]) &&
+      !lines[i].startsWith("- ") &&
+      !/^\d+\.\s/.test(lines[i]) &&
+      !lines[i].trim().startsWith("|") &&
+      lines[i].trim() !== "{{calc}}" &&
+      lines[i].trim() !== "{{cta}}" &&
+      lines[i].trim() !== "{{iusc-table}}"
+    ) {
       paras.push(lines[i]);
       i += 1;
     }
@@ -188,10 +247,11 @@ function ctaEmpresa() {
 function applyPlaceholders(html, { calc, causal }) {
   return html
     .replaceAll("{{calc}}", calcBlock(calc || "finiquito", causal))
-    .replaceAll("{{cta}}", ctaEmpresa());
+    .replaceAll("{{cta}}", ctaEmpresa())
+    .replaceAll("{{iusc-table}}", iuscTableHtml());
 }
 
-function head({ title, description, canonical, ogImage = "/img/og-default.png", jsonld }) {
+function head({ title, description, canonical, ogImage = "/img/og-default.png", jsonld, assetPrefix = "../" }) {
   const blocks = Array.isArray(jsonld) ? jsonld : [jsonld];
   const ld = blocks
     .map((b) => `  <script type="application/ld+json">\n${JSON.stringify(b, null, 2)}\n  </script>`)
@@ -215,10 +275,10 @@ ${GTM}
   <meta name="twitter:title" content="${esc(title)}" />
   <meta name="twitter:description" content="${esc(description)}" />
   <meta name="twitter:image" content="${ORIGIN}${ogImage}" />
-  <link rel="icon" href="../favicon.ico" sizes="32x32" />
-  <link rel="icon" href="../favicon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="../css/app.css" />
-  <script src="../js/analytics.js" defer></script>
+  <link rel="icon" href="${assetPrefix}favicon.ico" sizes="32x32" />
+  <link rel="icon" href="${assetPrefix}favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="${assetPrefix}css/app.css" />
+  <script src="${assetPrefix}js/analytics.js" defer></script>
 ${ld}
 </head>`;
 }
@@ -303,11 +363,25 @@ function disclaimerForPath(canonical) {
   return /finiquito/.test(canonical) ? DISCLAIMER_FINIQUITO : DISCLAIMER;
 }
 
-function pageShell({ title, description, canonical, crumbsItems, article, body, faq, webApp }) {
+function pageShell({
+  title,
+  description,
+  canonical,
+  crumbsItems,
+  article,
+  body,
+  faq,
+  webApp,
+  extraLd,
+  assetPrefix = "../",
+  includeCalc = true,
+}) {
   const jsonld = [
     orgLd(),
     breadcrumbLd(crumbsItems),
-    {
+  ];
+  if (article) {
+    jsonld.push({
       "@context": "https://schema.org",
       "@type": "Article",
       headline: article.headline,
@@ -317,14 +391,18 @@ function pageShell({ title, description, canonical, crumbsItems, article, body, 
       author: { "@type": "Organization", name: "Haberes" },
       publisher: { "@type": "Organization", name: "Haberes", url: ORIGIN + "/" },
       mainEntityOfPage: ORIGIN + canonical,
-    },
-  ];
+    });
+  }
   const faqBlock = faqLd(faq);
   if (faqBlock) jsonld.push(faqBlock);
   if (webApp) jsonld.push(webAppLd(webApp));
+  if (extraLd) jsonld.push(...(Array.isArray(extraLd) ? extraLd : [extraLd]));
+  const calcScript = includeCalc
+    ? `  <script type="module" src="${assetPrefix}js/seo-calc.js"></script>\n`
+    : "";
   return `<!DOCTYPE html>
 <html lang="es-CL">
-${head({ title, description, canonical, jsonld })}
+${head({ title, description, canonical, jsonld, assetPrefix })}
 <body>
 <!-- Google Tag Manager (noscript) -->
 <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PCR596Z2"
@@ -338,9 +416,8 @@ ${body}
       <p class="notice u-mt-6">${esc(disclaimerForPath(canonical))}</p>
     </div>
   </main>
-  ${footer.replace(/src="js\//g, 'src="../js/')}
-  <script type="module" src="../js/seo-calc.js"></script>
-  <script type="module" src="../js/app-home.js"></script>
+  ${footer.replace(/src="js\//g, `src="${assetPrefix}js/`)}
+${calcScript}  <script type="module" src="${assetPrefix}js/app-home.js"></script>
 </body>
 </html>
 `;
@@ -367,6 +444,8 @@ if (CAUSAL_PAGES.length !== 21) {
   throw new Error(`Se esperaban 21 páginas de causal, hay ${CAUSAL_PAGES.length}`);
 }
 
+const guideIndex = [];
+
 for (const slug of GUIDE_SLUGS) {
   const file = join(root, "content/guias", `${slug}.md`);
   if (!existsSync(file)) throw new Error(`Falta content/guias/${slug}.md`);
@@ -390,7 +469,7 @@ for (const slug of GUIDE_SLUGS) {
 
   const crumbsItems = [
     { name: "Inicio", href: "/" },
-    { name: "Guías", href: "/guias/finiquito" },
+    { name: "Guías", href: "/guias" },
     { name: meta.h1, href: `/guias/${slug}` },
   ];
 
@@ -409,6 +488,14 @@ for (const slug of GUIDE_SLUGS) {
     },
   });
   writeFileSync(join(root, "guias", `${slug}.html`), html);
+  const rec = GUIDES.find((g) => g.slug === slug);
+  guideIndex.push({
+    slug,
+    title: meta.h1,
+    description: meta.description,
+    group: rec?.group || "liquidacion",
+    calc: rec?.calc || "/sueldo",
+  });
   console.log("guia", slug);
 }
 
@@ -543,3 +630,74 @@ for (const name of readdirSync(join(root, "finiquito"))) {
 }
 
 console.log("contenido generado:", GUIDE_SLUGS.length, "guías,", CAUSAL_PAGES.length, "causales");
+
+function hubList(items) {
+  return `<ul>
+        ${items
+          .map(
+            (g) =>
+              `<li><a href="/guias/${g.slug}">${esc(g.title)}</a>
+          — <a href="${g.calc}">${g.calc === "/sueldo" ? "Calculadora de sueldo líquido" : "Calculadora de finiquito"}</a></li>`,
+          )
+          .join("\n        ")}
+      </ul>`;
+}
+
+{
+  const liq = guideIndex.filter((g) => g.group === "liquidacion");
+  const fini = guideIndex.filter((g) => g.group === "finiquito");
+  if (liq.length + fini.length !== 16) {
+    throw new Error(`El hub debe listar 16 guías; hay ${liq.length}+${fini.length}`);
+  }
+  const hubBody = `
+      <h1>Guías de liquidación y finiquito en Chile</h1>
+      <p class="lede">
+        Índice de las ${guideIndex.length} guías de Haberes. Las de liquidación enlazan a la
+        <a href="/sueldo">calculadora de sueldo líquido</a>; las de finiquito, a la
+        <a href="/finiquito">calculadora de finiquito</a>. El texto es informativo; el cálculo vive en esas URLs.
+      </p>
+      <h2>Liquidación de sueldo</h2>
+      <p>Qué es el comprobante de remuneraciones, descuentos legales e impuesto único. Para estimar el líquido use <a href="/sueldo">/sueldo</a>.</p>
+      ${hubList(liq)}
+      <h2>Finiquito</h2>
+      <p>Causales, plazos del artículo 177, indemnizaciones y qué firmar. Para estimar el monto use <a href="/finiquito">/finiquito</a>.</p>
+      ${hubList(fini)}
+      <p class="actions"><a class="btn" href="/sueldo">Calcular sueldo líquido</a>
+      <a class="btn btn-ghost" href="/finiquito">Calcular finiquito</a></p>
+  `;
+  const hubLd = {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name: "Guías de liquidación y finiquito en Chile",
+    url: ORIGIN + "/guias",
+    inLanguage: "es-CL",
+    isPartOf: { "@type": "WebSite", name: "Haberes", url: ORIGIN + "/" },
+    mainEntity: {
+      "@type": "ItemList",
+      numberOfItems: guideIndex.length,
+      itemListElement: guideIndex.map((g, i) => ({
+        "@type": "ListItem",
+        position: i + 1,
+        name: g.title,
+        url: ORIGIN + `/guias/${g.slug}`,
+      })),
+    },
+  };
+  const hubHtml = pageShell({
+    title: "Guías de liquidación y finiquito en Chile — Haberes",
+    description:
+      "Índice de guías laborales para pymes en Chile: liquidación de sueldo (art. 54) y finiquito (causales y plazos). Cada guía enlaza a su calculadora.",
+    canonical: "/guias",
+    crumbsItems: [
+      { name: "Inicio", href: "/" },
+      { name: "Guías", href: "/guias" },
+    ],
+    article: null,
+    body: hubBody,
+    extraLd: hubLd,
+    assetPrefix: "",
+    includeCalc: false,
+  });
+  writeFileSync(join(root, "guias.html"), hubHtml);
+  console.log("hub /guias", guideIndex.length);
+}

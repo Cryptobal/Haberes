@@ -29,31 +29,40 @@ export const CAUSAL_PAGES = [
   { id: "161-desahucio", slug: "art-161-desahucio" },
 ];
 
-/** Guías en content/guias/{slug}.md (orden de sitemap). */
-export const GUIDE_SLUGS = [
-  "finiquito",
-  "liquidacion-de-sueldo",
-  "impuesto-unico",
-  "gratificacion-legal",
-  "indemnizacion-por-anos-de-servicio",
-  "horas-extras",
-  "vacaciones-proporcionales",
-  "semana-corrida",
-  "carta-aviso-termino-contrato",
-  "plazo-de-pago-del-finiquito",
-  "con-que-sueldo-se-calcula-el-finiquito",
-  "finiquito-trabajadora-de-casa-particular",
-  "me-reservo-el-derecho-en-el-finiquito",
-  "como-leer-una-liquidacion-de-sueldo",
-  "formato-de-liquidacion-de-sueldo-chile",
-  "liquidacion-de-sueldo-y-previred",
+/**
+ * 16 guías en content/guias/{slug}.md.
+ * group: índice /guias (liquidación vs finiquito).
+ * calc: calculadora canónica (no canibalizar titles/H1 de esas URLs).
+ * @type {{ slug: string, group: "liquidacion" | "finiquito", calc: "/sueldo" | "/finiquito" }[]}
+ */
+export const GUIDES = [
+  { slug: "liquidacion-de-sueldo", group: "liquidacion", calc: "/sueldo" },
+  { slug: "impuesto-unico", group: "liquidacion", calc: "/sueldo" },
+  { slug: "gratificacion-legal", group: "liquidacion", calc: "/sueldo" },
+  { slug: "horas-extras", group: "liquidacion", calc: "/sueldo" },
+  { slug: "semana-corrida", group: "liquidacion", calc: "/sueldo" },
+  { slug: "como-leer-una-liquidacion-de-sueldo", group: "liquidacion", calc: "/sueldo" },
+  { slug: "formato-de-liquidacion-de-sueldo-chile", group: "liquidacion", calc: "/sueldo" },
+  { slug: "liquidacion-de-sueldo-y-previred", group: "liquidacion", calc: "/sueldo" },
+  { slug: "finiquito", group: "finiquito", calc: "/finiquito" },
+  { slug: "indemnizacion-por-anos-de-servicio", group: "finiquito", calc: "/finiquito" },
+  { slug: "vacaciones-proporcionales", group: "finiquito", calc: "/finiquito" },
+  { slug: "carta-aviso-termino-contrato", group: "finiquito", calc: "/finiquito" },
+  { slug: "plazo-de-pago-del-finiquito", group: "finiquito", calc: "/finiquito" },
+  { slug: "con-que-sueldo-se-calcula-el-finiquito", group: "finiquito", calc: "/finiquito" },
+  { slug: "finiquito-trabajadora-de-casa-particular", group: "finiquito", calc: "/finiquito" },
+  { slug: "me-reservo-el-derecho-en-el-finiquito", group: "finiquito", calc: "/finiquito" },
 ];
+
+/** Guías en content/guias/{slug}.md (orden de sitemap vía seoPaths). */
+export const GUIDE_SLUGS = GUIDES.map((g) => g.slug);
 
 export const BASE_PATHS = [
   "/",
   "/como",
   "/empresa",
   "/finiquito",
+  "/guias",
   "/precios",
   "/privacidad",
   "/sueldo",

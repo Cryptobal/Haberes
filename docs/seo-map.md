@@ -8,8 +8,10 @@ Actualizar este archivo antes de crear URLs nuevas para evitar canibalización.
 
 | Intención | Keywords (vol / KD) | URL canónica | Notas |
 |---|---|---|---|
+| Producto pymes | liquidaciones / finiquitos pymes | `/` | Title de producto, no segunda calculadora |
 | Calcular finiquito | calcular finiquito (18.100/28), calculadora finiquito (1.900/23), como calcular finiquito (4.400/23) | `/finiquito` | Reforzar title/H1/FAQ; no crear `/calculadora-finiquito` |
-| Calcular sueldo líquido | calcular sueldo líquido / liquido (5.400/38), sueldo líquido (4.400/35), calculadora de sueldo liquido (1.300/32) | `/sueldo` | Reforzar; no crear `/calculadora-sueldo` |
+| Calcular sueldo líquido | calcular sueldo líquido / liquido (5.400/38), sueldo líquido (4.400/35), calculadora de sueldo liquido (1.300/32) | `/sueldo` | H1 calculadora Chile 2026; no crear `/calculadora-sueldo` |
+| Índice de guías | — | `/guias` | Hub: 16 guías, grupo liquidación vs finiquito |
 
 ## Guías pilar (contenido + calculadora embebida)
 
