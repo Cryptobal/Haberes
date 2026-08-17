@@ -603,9 +603,9 @@ assert(
     ),
 );
 assert(
-  "vercel.json 301 /guias → /",
+  "vercel.json no redirige /guias al home",
   Array.isArray(vercel.redirects) &&
-    vercel.redirects.some((r) => r.source === "/guias" && r.destination === "/" && r.permanent === true),
+    !vercel.redirects.some((r) => r.source === "/guias" && r.destination === "/"),
 );
 assert(
   "vercel.json rewrite /sitemap.xml → /api/sitemap",
@@ -725,6 +725,8 @@ const robots = readFileSync(join(root, "robots.txt"), "utf8");
 assert("robots User-agent *", /User-agent:\s*\*/i.test(robots));
 assert("robots Allow /", /Allow:\s*\//.test(robots));
 assert("robots Disallow /admin", /Disallow:\s*\/admin/.test(robots));
+assert("robots Disallow /api", /Disallow:\s*\/api/.test(robots));
+assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots));
 assert("robots Sitemap", /Sitemap:\s*https:\/\/www\.haberes\.cl\/sitemap\.xml/.test(robots));
 
 const { seoPaths, GUIDE_SLUGS, CAUSAL_PAGES, BASE_PATHS } = await import("../content/registry.js");
@@ -1041,8 +1043,10 @@ try {
   );
   assert("/sitemap.xml sin content-disposition", pretty.disposition === "");
   assert(
-    "/sitemap.xml 45 URLs públicas",
-    [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length && seoPaths().length === 45,
+    "/sitemap.xml URLs = registro (incluye /guias)",
+    [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
+      seoPaths().includes("/guias") &&
+      seoPaths().length === 46,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -1057,7 +1061,13 @@ try {
   const guiasSlash = await hitLocal("/guias/");
   assert("301 /guias/ → /guias", guiasSlash.status === 301 && guiasSlash.location === "/guias");
   const guiasBare = await hitLocal("/guias");
-  assert("301 /guias → /", guiasBare.status === 301 && guiasBare.location === "/");
+  assert(
+    "GET /guias 200 hub",
+    guiasBare.status === 200 &&
+      /Guías de liquidación y finiquito/.test(guiasBare.text) &&
+      /href="\/guias\/liquidacion-de-sueldo"/.test(guiasBare.text) &&
+      /href="\/guias\/finiquito"/.test(guiasBare.text),
+  );
   writeFileSync(join(root, "sitemap.xml"), "<urlset>STATIC-LEFTOVER</urlset>");
   try {
     const afterLeftover = await hitLocal("/sitemap.xml");
@@ -3277,6 +3287,72 @@ assert(
   }
   assert("SEO título sueldo con calculadora y Chile", /Calculadora de sueldo líquido Chile/.test(readFileSync(join(root, "sueldo.html"), "utf8")));
   assert("SEO título finiquito con calculadora y Chile", /Calculadora de finiquito Chile/.test(readFileSync(join(root, "finiquito.html"), "utf8")));
+  assert(
+    "SEO H1 sueldo es calculadora Chile 2026",
+    /<h1>Calculadora de sueldo l[ií]quido Chile 2026<\/h1>/.test(readFileSync(join(root, "sueldo.html"), "utf8")),
+  );
+  {
+    const homeTitle = (readFileSync(join(root, "index.html"), "utf8").match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    assert(
+      "SEO título home pymes, no calculadora",
+      /pymes en Chile/.test(homeTitle) && !/calculadora/i.test(homeTitle) && homeTitle.length <= 65,
+      homeTitle,
+    );
+  }
+  {
+    const liqTitle = (readFileSync(join(root, "guias/liquidacion-de-sueldo.html"), "utf8").match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    assert(
+      "SEO guía liquidación informativa, sin calculadora en title",
+      /liquidaci[oó]n de sueldo/i.test(liqTitle) && !/calculadora/i.test(liqTitle),
+      liqTitle,
+    );
+  }
+  {
+    const finiGuideTitle = (readFileSync(join(root, "guias/finiquito.html"), "utf8").match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    assert(
+      "SEO guía finiquito informativa, sin calculadora en title",
+      /finiquito/i.test(finiGuideTitle) && !/calculadora/i.test(finiGuideTitle),
+      finiGuideTitle,
+    );
+  }
+  {
+    const plazoHtml = readFileSync(join(root, "guias/plazo-de-pago-del-finiquito.html"), "utf8");
+    assert(
+      "SEO plazo finiquito 10 días hábiles art. 177",
+      /10 d[ií]as h[aá]biles/i.test(plazoHtml) &&
+        /177/.test(plazoHtml) &&
+        /dt\.gob\.cl/.test(plazoHtml) &&
+        !/al momento del t[eé]rmino de la relaci[oó]n laboral/i.test(plazoHtml),
+    );
+  }
+  {
+    const hub = readFileSync(join(root, "guias.html"), "utf8");
+    assert("SEO hub /guias existe", existsSync(join(root, "guias.html")));
+    assert(
+      "SEO hub lista 16 guías agrupadas",
+      GUIDE_SLUGS.length === 16 &&
+        GUIDE_SLUGS.every((s) => hub.includes(`/guias/${s}`)) &&
+        /Liquidaci[oó]n de sueldo/.test(hub) &&
+        /<h2>Finiquito<\/h2>/.test(hub) &&
+        /href="\/sueldo"/.test(hub) &&
+        /href="\/finiquito"/.test(hub),
+    );
+    assert("SEO hub en sitemap", locs.includes("https://www.haberes.cl/guias"));
+    assert(
+      "SEO hub enlaza favicon.ico y svg",
+      /href="favicon\.ico" sizes="32x32"/.test(hub) && /href="favicon\.svg" type="image\/svg\+xml"/.test(hub),
+    );
+  }
+  assert(
+    "SEO gratificación e IUSC sin constants.js en copy",
+    !/js\/constants\.js/.test(readFileSync(join(root, "guias/gratificacion-legal.html"), "utf8")) &&
+      !/js\/constants\.js/.test(readFileSync(join(root, "guias/impuesto-unico.html"), "utf8")),
+  );
+  assert(
+    "SEO sueldo y finiquito tienen FAQPage",
+    /"@type": "FAQPage"/.test(readFileSync(join(root, "sueldo.html"), "utf8")) &&
+      /"@type": "FAQPage"/.test(readFileSync(join(root, "finiquito.html"), "utf8")),
+  );
   assert("SEO fuentes autoalojadas", existsSync(join(root, "fonts/ibm-plex-sans-latin-400-normal.woff2")) && existsSync(join(root, "fonts/LICENSE")));
   assert("SEO og-default.png", existsSync(join(root, "img/og-default.png")));
   assert(

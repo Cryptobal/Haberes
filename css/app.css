@@ -1642,6 +1642,13 @@ input:disabled {
   color: var(--ink);
 }
 
+.table-scroll caption {
+  caption-side: top;
+  text-align: left;
+  font-weight: 600;
+  margin-bottom: var(--s-3);
+}
+
 .guide .actions {
   display: flex;
   flex-wrap: wrap;

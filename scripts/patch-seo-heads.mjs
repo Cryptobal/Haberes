@@ -22,7 +22,7 @@ const ORG = {
 const META = {
   "index.html": {
     path: "/",
-    title: "Liquidaciones de sueldo y finiquitos online — Haberes Chile",
+    title: "Liquidaciones y finiquitos para pymes en Chile — Haberes",
     description:
       "Calcule sueldo líquido, emita liquidaciones y cartas de finiquito con el formato chileno. Gratis para empezar, sin instalar nada.",
     ogImage: "/img/og-default.png",
@@ -78,6 +78,28 @@ const META = {
         inLanguage: "es-CL",
         offers: { "@type": "Offer", price: "0", priceCurrency: "CLP" },
       },
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        mainEntity: [
+          {
+            "@type": "Question",
+            name: "¿El resultado es el mismo que paga Previred?",
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: "No necesariamente. Haberes estima la liquidación del trabajador; Previred es el canal de declaración de cotizaciones. Contraste siempre antes de pagar.",
+            },
+          },
+          {
+            "@type": "Question",
+            name: "¿Puedo emitir el PDF con el logo de mi empresa?",
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: "Sí, desde la cuenta de empresa, con logo, firma y envío al correo del trabajador.",
+            },
+          },
+        ],
+      },
     ],
   },
   "finiquito.html": {
@@ -97,6 +119,28 @@ const META = {
         operatingSystem: "Web",
         inLanguage: "es-CL",
         offers: { "@type": "Offer", price: "0", priceCurrency: "CLP" },
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        mainEntity: [
+          {
+            "@type": "Question",
+            name: "¿La carta reemplaza la Inspección del Trabajo?",
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: "No. El finiquito debe ratificarse según el artículo 177. Haberes arma el documento para firmar; no es el trámite ante la Inspección ni ante un ministro de fe.",
+            },
+          },
+          {
+            "@type": "Question",
+            name: "¿Qué causal elijo si hubo renuncia?",
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: "Artículo 159 letra b). No genera indemnización por años de servicio ni aviso del empleador; sí se liquida el feriado adeudado.",
+            },
+          },
+        ],
       },
     ],
   },

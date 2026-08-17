@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Servidor estático local con cleanUrls y trailingSlash: false (como vercel.json).
- * /sueldo sirve sueldo.html; /guias/foo sirve guias/foo.html.
+ * /sueldo sirve sueldo.html; /guias sirve guias.html; /guias/foo sirve guias/foo.html.
  * /sitemap.xml, /sitemap y /api/sitemap salen de api/_sitemap.js (sin XML estático).
  * Las demás APIs de Vercel no se ejecutan aquí: responden 501 JSON.
  */
@@ -98,10 +98,6 @@ export function handleRequest(req, res) {
   if (urlPath.length > 1 && urlPath.endsWith("/")) {
     const dest = `${urlPath.replace(/\/+$/, "")}${url.search}`;
     send(res, 301, { Location: dest }, "");
-    return;
-  }
-  if (urlPath === "/guias") {
-    send(res, 301, { Location: `/${url.search}` }, "");
     return;
   }
   const hit = resolvePath(urlPath);
