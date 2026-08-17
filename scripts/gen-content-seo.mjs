@@ -151,6 +151,7 @@ ${body}
     </div>
   </main>
   ${footer.replace(/src="js\//g, 'src="../js/')}
+  <script type="module" src="../js/app-home.js"></script>
 </body>
 </html>
 `;

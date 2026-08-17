@@ -35,11 +35,17 @@ en `js/picker.js` (hoja inferior con velo en móvil, panel anclado en escritorio
 - `/` inicio
 - `/sueldo` calculadora simple y completa
 - `/finiquito` arts. 159 / 160 / 161
+- `/finiquito/{slug}` páginas por causal prioritaria (necesidades de la empresa, renuncia, vencimiento del plazo, incumplimiento grave, desahucio)
+- `/guias/{slug}` guías laborales (plazo de pago, base de cálculo, casa particular, reserva de derechos, leer liquidación, formato, Previred)
 - `/empresa` cuenta de empresa (RUT + correo + clave), perfil, logo, firma, CSV, liquidación, carta de finiquito, envío por correo al trabajador, nómina bancaria por perfiles y Libro de Remuneraciones Electrónico (LRE)
 - `/como` cómo funciona
 - `/precios` registro gratis; Gratis 5 movimientos/mes; Pro $14.990 + IVA / mes, cobro con Mercado Pago
 - `/admin` operadores (no está en el sitemap; exige `ADMIN_EMAILS` + `ADMIN_PASSWORD_HASH`)
 - `/reset` cambio de clave con token de un solo uso (no está en el sitemap)
+
+`sitemap.xml` se regenera con `npm run sitemap` (`scripts/gen-sitemap.mjs`) a partir de los HTML públicos y el `mtime` de cada archivo. No se edita a mano.
+
+La tipografía IBM Plex Sans está autoalojada en `fonts/` (subconjunto latino, `woff2`, licencia en `fonts/LICENSE`). No se cargan fuentes desde Google Fonts.
 
 Los trabajadores de la liquidación viven en `localStorage` de este navegador.
 
