@@ -44,7 +44,7 @@ en `js/picker.js` (hoja inferior con velo en móvil, panel anclado en escritorio
 - `/guias/{slug}` guías laborales (plazo de pago, base de cálculo, casa particular, reserva de derechos, leer liquidación, formato, Previred)
 - `/empresa` cuenta de empresa (RUT + correo + clave), perfil, logo, firma, CSV, liquidación, carta de finiquito, envío por correo al trabajador, nómina bancaria por perfiles y Libro de Remuneraciones Electrónico (LRE)
 - `/como` cómo funciona
-- `/precios` registro gratis; Gratis 5 movimientos/mes; Pro $14.990 + IVA / mes, cobro con Mercado Pago
+- `/precios` registro gratis; Gratis 5 movimientos/mes; Pro $14.990 + IVA / mes, cobro con Mercado Pago o Flow
 - `/admin` operadores (no está en el sitemap; exige `ADMIN_EMAILS` + `ADMIN_PASSWORD_HASH`)
 - `/reset` cambio de clave con token de un solo uso (no está en el sitemap)
 
@@ -73,7 +73,7 @@ hay novedades, se asume mes completo de 30 días. La descarga es Pro.
 
 Si el entorno de despliegue define `DATABASE_URL`, las APIs `/api/register`, `/api/login`, `/api/reset-request` y `/api/reset-confirm` usan esa base. Si falta, las APIs responden 501 (`no_backend`) y la interfaz sigue en modo solo local, sin fingir que se envió un correo.
 
-El esquema está en `sql/001.sql` (cuentas), `sql/002.sql` (giro, dirección, clave de logo y documentos), `sql/003.sql` (firma, `disabled_at`, sesiones de admin), `sql/004.sql` (plan Gratis/Pro y movimientos del mes), `sql/005.sql` (ids de Mercado Pago y vigencia de Pro) y `sql/006.sql` (registro de envíos de documentos por correo). Se aplica en el primer request si es seguro. Las migraciones incrementales no borran cuentas existentes.
+El esquema está en `sql/001.sql` (cuentas), `sql/002.sql` (giro, dirección, clave de logo y documentos), `sql/003.sql` (firma, `disabled_at`, sesiones de admin), `sql/004.sql` (plan Gratis/Pro y movimientos del mes), `sql/005.sql` (ids de Mercado Pago y vigencia de Pro), `sql/006.sql` (registro de envíos de documentos por correo) y `sql/007.sql` (ids de Flow). Se aplica en el primer request si es seguro. Las migraciones incrementales no borran cuentas existentes.
 
 ## Envío de documentos por correo
 
@@ -92,11 +92,12 @@ Opcional en el host, nunca en el repositorio:
 - `R2_ACCOUNT_ID` (o `CLOUDFLARE_ACCOUNT_ID`, `CF_ACCOUNT_ID`), `R2_ACCESS_KEY_ID` (o `AWS_ACCESS_KEY_ID`, `R2_ACCESS_KEY`), `R2_SECRET_ACCESS_KEY` (o `AWS_SECRET_ACCESS_KEY`, `R2_SECRET`), `R2_BUCKET` (o `R2_BUCKET_NAME`, `BUCKET_NAME`) — depósito privado para logos, firmas y PDF. Si faltan, `/api/logo`, `/api/firma` y `/api/documento` responden 501 (`no_storage`) y la interfaz lo dice; no se finge la subida. `/api/me`, `/api/admin-me` y `GET /api/storage` informan solo `{ storage: true|false }`, sin nombres ni valores de variables.
 - `ADMIN_EMAILS` — correos de operadores, separados por coma
 - `ADMIN_PASSWORD_HASH` — hash Argon2id de la clave de admin. Sin ambos, `/admin` responde 503 (`admin_unavailable`). No hay clave por defecto. El hash se genera con `node scripts/admin-hash.mjs 'SuClave'` y se pega en el host; nunca en el repositorio.
-- `mp_access_token` (o `mp_access`, `MP_ACCESS_YOKEN`, `MP_ACCESS_TOKEN`, `MERCADOPAGO_ACCESS_TOKEN`, `MP_ACCESS_TOKEN_PROD`, `MP_ACCESS`) — token de Checkout Pro. Se usa el primero que tenga valor. Sin él, `POST /api/checkout` responde 501 (`mp_unavailable`) y el botón lo dice; no se finge el pago. No hace falta renombrar la variable.
+- `mp_access_token` (o `mp_access`, `MP_ACCESS_YOKEN`, `MP_ACCESS_TOKEN`, `MERCADOPAGO_ACCESS_TOKEN`, `MP_ACCESS_TOKEN_PROD`, `MP_ACCESS`) — token de Checkout Pro. Se usa el primero que tenga valor. Sin él, `POST /api/checkout` con `provider: "mp"` responde 501 (`mp_unavailable`) y el botón no se muestra; no se finge el pago. No hace falta renombrar la variable.
 - `MP_WEBHOOK_SECRET` (o `MERCADOPAGO_WEBHOOK_SECRET`) — si está, `/api/mp-webhook` exige la firma `x-signature` de Mercado Pago.
+- `FLOW_API_KEY` (o `flow_api_key`, `FLOW_APIKEY`, `FLOW_KEY`, `API_KEY`, `FLOW_API_KEY_PROD`) y `FLOW_SECRET_KEY` (o `flow_secret_key`, `FLOW_SECRET`, `SECRET_KEY`, `FLOW_SECRET_KEY_PROD`) — credenciales de Flow. Se usa el primero que tenga valor de cada lista. Sin ambos, no aparece el botón de Flow. `FLOW_API_URL` / `FLOW_BASE_URL` opcional; `FLOW_SANDBOX=1` apunta a `https://sandbox.flow.cl/api`. Producción: `https://www.flow.cl/api`.
 
-Pro se cobra **$14.990 + IVA** (IVA 19 % Chile) = **17.838 CLP**. Si Mercado Pago autoriza una suscripción mensual (preapproval) para la cuenta cobradora, se usa esa vía. Si no, Checkout Pro cobra un mes y el webhook deja `plan = pro` por 31 días. Para renovar, la empresa pulsa de nuevo Pasar a Pro. El plan no se activa por `?pago=ok` en la URL: solo tras consultar el pago en la API de Mercado Pago.
+Pro se cobra **$14.990 + IVA** (IVA 19 % Chile) = **17.838 CLP**. `POST /api/checkout` acepta `{ provider: "mp" | "flow" }` (si se omite, Mercado Pago). `GET /api/checkout` y `/api/me` informan `providers: ["mp", "flow"]` según las claves presentes. Si Mercado Pago autoriza una suscripción mensual (preapproval) para la cuenta cobradora, se usa esa vía. Si no, Checkout Pro cobra un mes. Flow cobra un mes (orden `payment/create`). El webhook deja `plan = pro` por 31 días. Para renovar, la empresa pulsa de nuevo el cobro. El plan no se activa por `?pago=ok` en la URL: solo tras consultar el pago en la API de Mercado Pago o `payment/getStatus` de Flow.
 
-En el panel de la aplicación de Mercado Pago, apunte las notificaciones a `https://www.haberes.cl/api/mp-webhook`.
+En el panel de Mercado Pago, apunte las notificaciones a `https://www.haberes.cl/api/mp-webhook`. En Flow, `urlConfirmation` de cada orden es `https://www.haberes.cl/api/flow-webhook`; si el dashboard pide una URL de confirmación, use la misma.
 
 No copie secretos, contraseñas ni cadenas de conexión a git, README, comentarios ni archivos de entorno versionados.

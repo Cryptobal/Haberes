@@ -560,6 +560,7 @@ const required = [
   "sql/003.sql",
   "sql/004.sql",
   "sql/005.sql",
+  "sql/007.sql",
   "como.html",
   "precios.html",
   "admin.html",
@@ -570,6 +571,8 @@ const required = [
   "api/checkout.js",
   "api/mp-webhook.js",
   "api/_mp.js",
+  "api/flow-webhook.js",
+  "api/_flow.js",
   "api/sitemap.js",
   "api/_sitemap.js",
   ".vercelignore",
@@ -1174,7 +1177,9 @@ const {
   applyFetchedPayment,
   createProCheckout,
 } = await import("../api/_mp.js");
-const checkout = (await import("../api/checkout.js")).default;
+const checkoutMod = await import("../api/checkout.js");
+const checkout = checkoutMod.default;
+const { handleCheckout, configuredProviders, normalizeProvider } = checkoutMod;
 const { default: mpWebhook, handleMpWebhook } = await import("../api/mp-webhook.js");
 const { createHmac } = await import("node:crypto");
 
@@ -1441,6 +1446,407 @@ assert("webhook GET 200", hookGet._out.statusCode === 200 && hookGet._out.body?.
 
 restoreMpEnv();
 
+console.log("\nCheckout Flow");
+const FLOW_ENV_KEYS = [
+  "FLOW_API_KEY",
+  "flow_api_key",
+  "FLOW_APIKEY",
+  "FLOW_KEY",
+  "API_KEY",
+  "FLOW_API_KEY_PROD",
+  "FLOW_APIKEY_PROD",
+  "FLOW_API_KEEY",
+  "FLOW_API_YKEY",
+  "FLOW_SECRET_KEY",
+  "flow_secret_key",
+  "FLOW_SECRET",
+  "SECRET_KEY",
+  "FLOW_SECRET_KEY_PROD",
+  "FLOW_SECRETKEY",
+  "FLOW_SECREY_KEY",
+  "FLOW_API_URL",
+  "FLOW_BASE_URL",
+  "FLOW_SANDBOX",
+];
+const prevFlowEnv = Object.fromEntries(FLOW_ENV_KEYS.map((k) => [k, process.env[k]]));
+function clearFlowEnv() {
+  for (const k of FLOW_ENV_KEYS) delete process.env[k];
+}
+function restoreFlowEnv() {
+  for (const k of FLOW_ENV_KEYS) {
+    if (prevFlowEnv[k] === undefined) delete process.env[k];
+    else process.env[k] = prevFlowEnv[k];
+  }
+}
+clearFlowEnv();
+
+const {
+  FLOW_API_KEY_ENV,
+  FLOW_SECRET_KEY_ENV,
+  hasFlow,
+  flowApiKey,
+  flowSecretKey,
+  flowApiBase,
+  flowSign,
+  flowRedirectUrl,
+  companyIdFromStatus,
+  applyFetchedFlowStatus,
+  createFlowOrder,
+  readFlowToken,
+} = await import("../api/_flow.js");
+const { default: flowWebhook, handleFlowWebhook } = await import("../api/flow-webhook.js");
+
+assert("hasFlow false sin claves", hasFlow() === false);
+assert(
+  "alias Flow apiKey y secretKey",
+  FLOW_API_KEY_ENV.includes("FLOW_API_KEY") &&
+    FLOW_API_KEY_ENV.includes("FLOW_APIKEY") &&
+    FLOW_API_KEY_ENV.includes("API_KEY") &&
+    FLOW_API_KEY_ENV.includes("FLOW_API_KEY_PROD") &&
+    FLOW_API_KEY_ENV.includes("FLOW_API_YKEY") &&
+    FLOW_SECRET_KEY_ENV.includes("FLOW_SECRET_KEY") &&
+    FLOW_SECRET_KEY_ENV.includes("SECRET_KEY") &&
+    FLOW_SECRET_KEY_ENV.includes("FLOW_SECREY_KEY"),
+);
+
+process.env.FLOW_API_KEY = "unit-flow-canonical";
+process.env.flow_api_key = "unit-flow-lower";
+assert("FLOW_API_KEY gana a flow_api_key", flowApiKey() === "unit-flow-canonical");
+delete process.env.FLOW_API_KEY;
+assert("flow_api_key funciona si no hay FLOW_API_KEY", flowApiKey() === "unit-flow-lower");
+delete process.env.flow_api_key;
+process.env.FLOW_API_YKEY = "unit-flow-typo";
+process.env.FLOW_SECREY_KEY = "unit-flow-secret-typo";
+assert("typos Flow tipo MP_ACCESS_YOKEN", hasFlow() === true && flowApiKey() === "unit-flow-typo" && flowSecretKey() === "unit-flow-secret-typo");
+delete process.env.FLOW_API_YKEY;
+delete process.env.FLOW_SECREY_KEY;
+assert("sin alias Flow no hay claves", hasFlow() === false);
+
+const flowSignParams = { apiKey: "1F90971E-8276-4715-97FF-2BLG5030EE3B", token: "AJ089FF5467367" };
+const flowExpected = createHmac("sha256", "my secret")
+  .update("apiKey1F90971E-8276-4715-97FF-2BLG5030EE3BtokenAJ089FF5467367", "utf8")
+  .digest("hex");
+assert("firma Flow oficial key+value ordenado", flowSign(flowSignParams, "my secret") === flowExpected);
+assert(
+  "firma Flow ignora s y ordena claves",
+  flowSign({ token: "AJ089FF5467367", s: "nope", apiKey: "1F90971E-8276-4715-97FF-2BLG5030EE3B" }, "my secret") ===
+    flowExpected,
+);
+assert(
+  "firma Flow distinta con otro secreto",
+  flowSign(flowSignParams, "other secret") !== flowExpected,
+);
+assert(
+  "redirect Flow url?token=",
+  flowRedirectUrl("https://www.flow.cl/app/web/pay.php", "TOK") ===
+    "https://www.flow.cl/app/web/pay.php?token=TOK",
+);
+assert(
+  "company_id desde optional y commerceOrder",
+  companyIdFromStatus({ optional: { company_id: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee" } }) ===
+    "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee" &&
+    companyIdFromStatus({
+      commerceOrder: "pro-aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee-1-abcd",
+    }) === "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+);
+
+assert("normalizeProvider default mp", normalizeProvider(undefined) === "mp" && normalizeProvider("FLOW") === "flow");
+const chkGet = mockRes();
+await checkout(mockReq("GET", null, "203.0.113.90"), chkGet);
+assert(
+  "GET checkout lista providers sin sesión",
+  chkGet._out.statusCode === 200 &&
+    chkGet._out.body?.ok === true &&
+    Array.isArray(chkGet._out.body?.providers) &&
+    chkGet._out.body.providers.includes("flow") === false,
+  JSON.stringify(chkGet._out.body),
+);
+
+const chkFlowAnon = mockRes();
+await checkout(mockReq("POST", { provider: "flow" }, "203.0.113.91"), chkFlowAnon);
+assert(
+  "checkout Flow 401 sin sesión",
+  chkFlowAnon._out.statusCode === 401 && chkFlowAnon._out.body?.reason === "unauthorized",
+  JSON.stringify(chkFlowAnon._out.body),
+);
+
+process.env.FLOW_API_KEY = "unit-flow-key";
+process.env.FLOW_SECRET_KEY = "unit-flow-secret";
+assert("hasFlow true con alias", hasFlow() === true);
+assert("Flow API prod por defecto", flowApiBase() === "https://www.flow.cl/api");
+process.env.FLOW_SANDBOX = "1";
+assert("FLOW_SANDBOX=1 usa sandbox", flowApiBase() === "https://sandbox.flow.cl/api");
+delete process.env.FLOW_SANDBOX;
+process.env.FLOW_API_URL = "https://sandbox.flow.cl/api/";
+assert("FLOW_API_URL gana y recorta slash", flowApiBase() === "https://sandbox.flow.cl/api");
+delete process.env.FLOW_API_URL;
+
+const fakeFlowFetch = async (url, opts) => {
+  const u = String(url);
+  if (!u.includes("/payment/create")) throw new Error("live Flow blocked in verify");
+  const body = String(opts?.body || "");
+  if (!body.includes("apiKey=") || !body.includes("s=")) throw new Error("create must be signed form");
+  return {
+    ok: true,
+    status: 200,
+    json: async () => ({
+      url: "https://www.flow.cl/app/web/pay.php",
+      token: "unit-flow-token",
+      flowOrder: 776655,
+    }),
+  };
+};
+const flowCreated = await createFlowOrder(
+  { id: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", email: "pyme@example.cl" },
+  { fetchImpl: fakeFlowFetch },
+);
+assert(
+  "checkout Flow mock init_point sin API viva",
+  flowCreated.ok === true &&
+    String(flowCreated.init_point) === "https://www.flow.cl/app/web/pay.php?token=unit-flow-token",
+  JSON.stringify(flowCreated),
+);
+
+const flowProv = mockRes();
+await handleCheckout(
+  {
+    method: "POST",
+    body: { provider: "flow" },
+    headers: { "x-forwarded-for": "203.0.113.92", cookie: "haberes_session=unit-session" },
+  },
+  flowProv,
+  {
+    hasDatabaseUrl: () => true,
+    requireCompany: async () => ({ id: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", email: "pyme@example.cl" }),
+    hasMp: () => true,
+    hasFlow: () => true,
+    createMp: async () => ({ ok: true, init_point: "https://www.mercadopago.cl/checkout/v1/redirect?pref_id=nope" }),
+    createFlow: async () => ({
+      ok: true,
+      init_point: "https://www.flow.cl/app/web/pay.php?token=from-provider",
+    }),
+  },
+);
+assert(
+  "checkout body provider flow no usa MP",
+  flowProv._out.statusCode === 200 &&
+    flowProv._out.body?.ok === true &&
+    flowProv._out.body?.provider === "flow" &&
+    String(flowProv._out.body?.init_point).includes("flow.cl"),
+  JSON.stringify(flowProv._out.body),
+);
+
+const mpDefault = mockRes();
+await handleCheckout(
+  {
+    method: "POST",
+    body: {},
+    headers: { "x-forwarded-for": "203.0.113.93", cookie: "haberes_session=unit-session" },
+  },
+  mpDefault,
+  {
+    hasDatabaseUrl: () => true,
+    requireCompany: async () => ({ id: "co1", email: "pyme@example.cl" }),
+    hasMp: () => true,
+    hasFlow: () => true,
+    createMp: async () => ({ ok: true, init_point: "https://www.mercadopago.cl/checkout/v1/redirect?pref_id=unit" }),
+    createFlow: async () => ({ ok: true, init_point: "https://www.flow.cl/app/web/pay.php?token=nope" }),
+  },
+);
+assert(
+  "checkout sin provider sigue MP",
+  mpDefault._out.statusCode === 200 &&
+    mpDefault._out.body?.provider === "mp" &&
+    String(mpDefault._out.body?.init_point).includes("mercadopago.cl"),
+  JSON.stringify(mpDefault._out.body),
+);
+
+let flowApplyHits = 0;
+const missingTok = mockRes();
+await handleFlowWebhook(
+  { method: "POST", body: {}, headers: { "x-forwarded-for": "203.0.113.94" } },
+  missingTok,
+  {
+    fetchImpl: async () => {
+      flowApplyHits += 1;
+      return { ok: true, status: 200, json: async () => ({ status: 2 }) };
+    },
+    applyStatus: async () => {
+      flowApplyHits += 10;
+    },
+  },
+);
+assert(
+  "webhook Flow sin token no voltea plan",
+  missingTok._out.statusCode === 200 && flowApplyHits === 0,
+  JSON.stringify({ status: missingTok._out.statusCode, hits: flowApplyHits, body: missingTok._out.body }),
+);
+
+flowApplyHits = 0;
+const unknownTok = mockRes();
+await handleFlowWebhook(
+  { method: "POST", body: { token: "unknown-token" }, headers: { "x-forwarded-for": "203.0.113.95" } },
+  unknownTok,
+  {
+    fetchImpl: async () => {
+      flowApplyHits += 1;
+      return { ok: false, status: 400, json: async () => ({ code: 404, message: "not found" }) };
+    },
+    applyStatus: async () => {
+      flowApplyHits += 10;
+    },
+  },
+);
+assert(
+  "webhook Flow token desconocido no voltea plan",
+  unknownTok._out.statusCode === 200 && flowApplyHits === 1,
+  JSON.stringify({ status: unknownTok._out.statusCode, hits: flowApplyHits }),
+);
+
+assert(
+  "readFlowToken form-urlencoded",
+  readFlowToken({ body: "token=abc123", headers: {}, url: "/api/flow-webhook" }) === "abc123",
+);
+
+flowApplyHits = 0;
+let flowAppliedPlan = null;
+const paidHook = mockRes();
+await handleFlowWebhook(
+  { method: "POST", body: { token: "paid-token", status: "2" }, headers: { "x-forwarded-for": "203.0.113.96" } },
+  paidHook,
+  {
+    fetchImpl: async (url) => {
+      flowApplyHits += 1;
+      if (String(url).includes("/payment/getStatus")) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            flowOrder: 776655,
+            commerceOrder: "pro-aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee-1-abcd",
+            status: 2,
+            subject: "Haberes Pro — 1 mes",
+            currency: "CLP",
+            amount: 17838,
+            optional: { company_id: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee" },
+          }),
+        };
+      }
+      return { ok: false, status: 404, json: async () => ({}) };
+    },
+    applyStatus: async (_client, status) => {
+      flowAppliedPlan = Number(status.status) === 2 ? "pro" : "gratis";
+    },
+    withDb: async (fn) => fn({}),
+  },
+);
+assert(
+  "webhook Flow consulta getStatus y no usa el body crudo",
+  paidHook._out.statusCode === 200 && flowApplyHits === 1 && flowAppliedPlan === "pro",
+  JSON.stringify({ status: paidHook._out.statusCode, hits: flowApplyHits, plan: flowAppliedPlan }),
+);
+
+function mockFlowClient(row) {
+  const state = { row: { ...row }, sql: [] };
+  return {
+    state,
+    async query(sql, params = []) {
+      state.sql.push(sql);
+      if (/SELECT id, plan, flow_token/.test(sql)) {
+        return { rows: state.row ? [state.row] : [] };
+      }
+      if (/SET plan = 'pro'/.test(sql)) {
+        state.row = {
+          ...state.row,
+          plan: "pro",
+          flow_token: params[1],
+          flow_order: params[2],
+          flow_commerce_order: params[3],
+          plan_until: params[4],
+        };
+        return { rowCount: 1 };
+      }
+      if (/SET plan = 'gratis'/.test(sql)) {
+        if (state.row && String(state.row.flow_token) === String(params[1])) {
+          state.row = { ...state.row, plan: "gratis", plan_until: null };
+          return { rowCount: 1, rows: [{ id: state.row.id }] };
+        }
+        return { rowCount: 0, rows: [] };
+      }
+      return { rows: [], rowCount: 0 };
+    },
+  };
+}
+
+const flowClient = mockFlowClient({
+  id: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+  plan: "gratis",
+  flow_token: null,
+  plan_until: null,
+});
+const flowPaid = await applyFetchedFlowStatus(
+  flowClient,
+  {
+    flowOrder: 776655,
+    commerceOrder: "pro-aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee-1-abcd",
+    status: 2,
+    currency: "CLP",
+    amount: 17838,
+    optional: { company_id: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee" },
+  },
+  "paid-token",
+);
+assert(
+  "pago Flow aprobado activa Pro",
+  flowPaid.applied && flowPaid.plan === "pro" && flowClient.state.row.plan === "pro",
+  JSON.stringify(flowPaid),
+);
+const flowPending = await applyFetchedFlowStatus(
+  flowClient,
+  {
+    status: 1,
+    currency: "CLP",
+    amount: 17838,
+    optional: { company_id: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee" },
+  },
+  "other-token",
+);
+assert("pago Flow pendiente no cambia plan", flowPending.applied === false && flowClient.state.row.plan === "pro");
+const flowRejectedOther = await applyFetchedFlowStatus(
+  flowClient,
+  {
+    status: 3,
+    optional: { company_id: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee" },
+  },
+  "other-token",
+);
+assert(
+  "Flow rechazado de otro token no baja Pro",
+  flowRejectedOther.applied === false && flowClient.state.row.plan === "pro",
+);
+const flowCanceled = await applyFetchedFlowStatus(
+  flowClient,
+  {
+    status: 4,
+    optional: { company_id: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee" },
+  },
+  "paid-token",
+);
+assert(
+  "Flow anulado del cobro activo vuelve a Gratis",
+  flowCanceled.applied && flowCanceled.plan === "gratis" && flowClient.state.row.plan === "gratis",
+  JSON.stringify(flowCanceled),
+);
+
+const flowHookGet = mockRes();
+await flowWebhook({ method: "GET", headers: {} }, flowHookGet);
+assert("webhook Flow GET 200", flowHookGet._out.statusCode === 200 && flowHookGet._out.body?.ok === true);
+
+assert("configuredProviders incluye flow con claves", configuredProviders().includes("flow"));
+clearFlowEnv();
+assert("configuredProviders sin flow si no hay claves", configuredProviders().includes("flow") === false);
+restoreFlowEnv();
+
 const prevAdminE = process.env.ADMIN_EMAILS;
 const prevAdminH = process.env.ADMIN_PASSWORD_HASH;
 delete process.env.ADMIN_EMAILS;
@@ -1603,6 +2009,8 @@ const apiFiles = [
   "api/_mp.js",
   "api/checkout.js",
   "api/mp-webhook.js",
+  "api/_flow.js",
+  "api/flow-webhook.js",
   "api/sitemap.js",
   "api/_sitemap.js",
 ];
@@ -1620,6 +2028,7 @@ assert("sin scrypt para claves", !/scrypt/i.test(libSrc));
 assert("hashPassword usa argon2", /argon2/i.test(libSrc) && /Argon2id/.test(libSrc));
 assert("schema 004 en _lib", /004\.sql/.test(libSrc) && /INLINE_SCHEMA_004/.test(libSrc));
 assert("schema 005 en _lib", /005\.sql/.test(libSrc) && /INLINE_SCHEMA_005/.test(libSrc));
+assert("schema 007 en _lib", /007\.sql/.test(libSrc) && /INLINE_SCHEMA_007/.test(libSrc));
 
 const sql = readFileSync(join(root, "sql/001.sql"), "utf8");
 assert(
@@ -1669,6 +2078,15 @@ assert(
     /ADD COLUMN IF NOT EXISTS/i.test(sql5),
 );
 assert("sql/005.sql sin secretos", !/postgres(ql)?:\/\//i.test(sql5) && !/DATABASE_URL\s*=/.test(sql5));
+const sql7 = readFileSync(join(root, "sql/007.sql"), "utf8");
+assert(
+  "sql/007.sql cobro Flow",
+  /flow_token/.test(sql7) &&
+    /flow_order/.test(sql7) &&
+    /flow_commerce_order/.test(sql7) &&
+    /ADD COLUMN IF NOT EXISTS/i.test(sql7),
+);
+assert("sql/007.sql sin secretos", !/postgres(ql)?:\/\//i.test(sql7) && !/DATABASE_URL\s*=/.test(sql7));
 assert("sin schema prisma inventado", !existsSync(join(root, "prisma")));
 assert(
   "empresa.html olvido honesto",
@@ -1734,8 +2152,9 @@ assert(
   "app-empresa checkout y retorno de pago",
   /startProCheckout/.test(empJs) &&
     /pago === "ok"/.test(empJs) &&
-    /Pro se activa cuando Mercado Pago confirma/.test(empJs) &&
+    /Pro se activa cuando Mercado Pago o Flow confirman/.test(empJs) &&
     /\/api\/checkout/.test(readFileSync(join(root, "js/checkout.js"), "utf8")) &&
+    /provider/.test(readFileSync(join(root, "js/checkout.js"), "utf8")) &&
     !/emp\.plan\s*=\s*["']pro["']/.test(empJs),
 );
 const bajarPdfSrc = empDocJs.slice(empDocJs.indexOf("async function bajarPdf"), empDocJs.indexOf('el("btnPdfLiquidacion")'));
@@ -1818,8 +2237,9 @@ assert(
     /14\.990/.test(readFileSync(join(root, "precios.html"), "utf8")) &&
     /5 movimientos/i.test(readFileSync(join(root, "precios.html"), "utf8")) &&
     /CSV\/XLSX/.test(readFileSync(join(root, "precios.html"), "utf8")) &&
-    /Pasar a Pro/.test(readFileSync(join(root, "precios.html"), "utf8")) &&
+    /Pagar con Mercado Pago/.test(readFileSync(join(root, "precios.html"), "utf8")) &&
     /Mercado Pago/.test(readFileSync(join(root, "precios.html"), "utf8")) &&
+    /Pagar con Flow/.test(readFileSync(join(root, "precios.html"), "utf8")) &&
     !/No hay cobro con tarjeta/i.test(readFileSync(join(root, "precios.html"), "utf8")) &&
     !/a[uú]n no se cobra/i.test(readFileSync(join(root, "precios.html"), "utf8")),
 );
@@ -1904,6 +2324,23 @@ assert(
     /notification_url/.test(mpSrc) &&
     /external_reference/.test(mpSrc),
 );
+const flowSrc =
+  readFileSync(join(root, "api/_flow.js"), "utf8") +
+  readFileSync(join(root, "api/flow-webhook.js"), "utf8") +
+  readFileSync(join(root, "api/checkout.js"), "utf8");
+assert("Flow no imprime secretos", !/console\.(log|info|debug|warn|error)/.test(flowSrc));
+assert(
+  "Flow acepta alias de apiKey y secretKey",
+  /FLOW_API_KEY/.test(flowSrc) &&
+    /FLOW_APIKEY/.test(flowSrc) &&
+    /FLOW_API_YKEY/.test(flowSrc) &&
+    /FLOW_SECRET_KEY/.test(flowSrc) &&
+    /FLOW_SECREY_KEY/.test(flowSrc) &&
+    /SECRET_KEY/.test(flowSrc) &&
+    /payment\/create/.test(flowSrc) &&
+    /payment\/getStatus/.test(flowSrc) &&
+    /urlConfirmation/.test(flowSrc),
+);
 assert(
   "R2 acepta alias Cloudflare/AWS",
   /CLOUDFLARE_ACCOUNT_ID/.test(r2src) &&
@@ -1924,6 +2361,7 @@ assert(
 );
 const meSrc = readFileSync(join(root, "api/me.js"), "utf8");
 assert("me incluye storage boolean", /storage:\s*hasR2\(\)/.test(meSrc));
+assert("me incluye providers de cobro", /providers:\s*configuredProviders\(\)/.test(meSrc));
 const adminMeSrc = readFileSync(join(root, "api/admin-me.js"), "utf8");
 assert("admin-me incluye storage boolean", /storage:\s*hasR2\(\)/.test(adminMeSrc));
 assert(
@@ -1936,6 +2374,7 @@ assert(
   /localStorage|este navegador/i.test(readFileSync(join(root, "privacidad.html"), "utf8")) &&
     /mindicador\.cl/.test(readFileSync(join(root, "privacidad.html"), "utf8")) &&
     /Mercado Pago/.test(readFileSync(join(root, "privacidad.html"), "utf8")) &&
+    /Flow/.test(readFileSync(join(root, "privacidad.html"), "utf8")) &&
     /No vendemos datos personales/.test(readFileSync(join(root, "privacidad.html"), "utf8")) &&
     !/No hay cobro ni pasarela/.test(readFileSync(join(root, "privacidad.html"), "utf8")),
 );

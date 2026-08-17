@@ -18,5 +18,5 @@ python3 scripts/smoke.py  # interfaz en Playwright (360 px y 1280 px)
 - Tras el arranque, el sitio queda en `http://127.0.0.1:8080`.
 - Use `npm run verify` para validar cifras y contenido sin navegador.
 - `python3 scripts/smoke.py` levanta su propio servidor en el puerto 8099; no depende de `npm start`.
-- No copie secretos (`DATABASE_URL`, `RESEND_*`, `R2_*`, `ADMIN_*`, tokens de Mercado Pago) al repositorio. Sin ellos, las APIs de cuenta/pago/correo responden 501/503 de forma explícita.
+- No copie secretos (`DATABASE_URL`, `RESEND_*`, `R2_*`, `ADMIN_*`, tokens de Mercado Pago, claves de Flow) al repositorio. Sin ellos, las APIs de cuenta/pago/correo responden 501/503 de forma explícita.
 - No hace falta Postgres para demostrar la UI. Con `DATABASE_URL` las cuentas pasan a Postgres; sin ella la interfaz sigue en modo solo local.
