@@ -16,7 +16,13 @@ const ORIGIN = "https://www.haberes.cl";
 const TODAY = new Date().toISOString().slice(0, 10);
 
 const indexHtml = readFileSync(join(root, "index.html"), "utf8");
-const header = indexHtml.match(/<header class="site-header">[\s\S]*?<div class="nav-drawer"[\s\S]*?<\/div>\n/)[0];
+const headerStart = indexHtml.indexOf('<header class="site-header">');
+const mainStart = indexHtml.indexOf("<main>");
+if (headerStart < 0 || mainStart < 0 || mainStart <= headerStart) {
+  throw new Error("No se pudo extraer cabecera/nav-drawer desde index.html");
+}
+/** Cabecera + cajón de navegación (hermano del header, como en index.html). */
+const header = indexHtml.slice(headerStart, mainStart);
 const footer = indexHtml.match(/<footer class="site-footer">[\s\S]*?<\/footer>/)[0];
 
 const THEME_SCRIPT = `  <script>

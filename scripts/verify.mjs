@@ -740,6 +740,17 @@ assert(
       return /data-seo-calc=/.test(html) && /href="\/empresa"/.test(html) && /application\/ld\+json/.test(html);
     }),
 );
+assert(
+  "guías: cajón cerrado antes de main (no anida contenido)",
+  GUIDE_SLUGS.every((s) => {
+    const html = readFileSync(join(root, "guias", `${s}.html`), "utf8");
+    const headerEnd = html.indexOf("</header>");
+    const drawer = html.indexOf('data-nav-drawer');
+    const drawerClose = html.indexOf("</div>", html.indexOf("nav-drawer-foot"));
+    const main = html.indexOf("<main");
+    return headerEnd > 0 && drawer > headerEnd && drawerClose > drawer && main > drawerClose;
+  }),
+);
 assert("sitemap sin admin ni reset", !locs.some((u) => /\/admin|\/reset/.test(u)));
 assert("sitemap lastmod presente", /<lastmod>\d{4}-\d{2}-\d{2}<\/lastmod>/.test(sitemap));
 assert("sitemap sin .html (cleanUrls)", !locs.some((u) => u.endsWith(".html")));
