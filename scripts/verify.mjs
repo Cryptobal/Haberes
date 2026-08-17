@@ -381,7 +381,7 @@ assert("DV RUT 12345678", dvRut("12345678") === "5");
 console.log("\nXLSX pago masivo y cupo Gratis");
 const { writeXlsx, readXlsxFirstSheet } = await import("../js/xlsx.js");
 const { xlsxPagoMasivo, xlsxPagoEjemplo, splitRut } = await import("../js/pago.js");
-const { puedeEmitir, puedeCargaMasiva, GRATIS_LIMITE } = await import("../js/plan.js");
+const { puedeEmitir, puedeCargaMasiva, GRATIS_LIMITE, isPro } = await import("../js/plan.js");
 
 const xlsxBytes = writeXlsx([
   {
@@ -446,6 +446,8 @@ const lleno = {
 };
 assert("Gratis bloquea el 6º", puedeEmitir(lleno, { tipo: "liquidacion", keys: ["nuevo"] }).ok === false);
 assert("Pro ilimitado", puedeEmitir({ plan: "pro" }, { tipo: "liquidacion", keys: ["a", "b", "c"] }).ok);
+assert("isPro respeta vigencia", isPro({ plan: "pro", planUntil: "2099-01-01T00:00:00Z" }) === true);
+assert("isPro vencido es Gratis", isPro({ plan: "pro", planUntil: "2000-01-01T00:00:00Z" }) === false);
 
 console.log("\nIndicadores");
 const fb = fallbackIndicadores();
@@ -495,11 +497,17 @@ const required = [
   "sql/002.sql",
   "sql/003.sql",
   "sql/004.sql",
+  "sql/005.sql",
   "como.html",
   "precios.html",
   "admin.html",
   "js/theme.js",
   "js/picker.js",
+  "js/checkout.js",
+  "js/app-precios.js",
+  "api/checkout.js",
+  "api/mp-webhook.js",
+  "api/_mp.js",
   "js/ui.js",
   "js/overlay.js",
   "reset.html",
@@ -589,6 +597,7 @@ const appEntries = [
   "js/app-empresa.js",
   "js/app-admin.js",
   "js/app-reset.js",
+  "js/app-precios.js",
 ];
 for (const f of appEntries) {
   assert(`${f} llama wireNav()`, /wireNav\(\s*\)/.test(readFileSync(join(root, f), "utf8")));
@@ -626,7 +635,7 @@ const expectedLocs = [
 ];
 assert("sitemap 8 URLs clean", expectedLocs.every((u) => locs.includes(u)) && locs.length === 8, locs.join(", "));
 assert("sitemap sin admin ni reset", !locs.some((u) => /\/admin|\/reset/.test(u)));
-assert("sitemap lastmod 2026-08-16", /<lastmod>2026-08-16<\/lastmod>/.test(sitemap));
+assert("sitemap lastmod 2026-08-17", /<lastmod>2026-08-17<\/lastmod>/.test(sitemap));
 assert("sitemap sin .html (cleanUrls)", !locs.some((u) => u.endsWith(".html")));
 
 const analytics = readFileSync(join(root, "js/analytics.js"), "utf8");
@@ -841,6 +850,313 @@ assert(
   JSON.stringify(committed.body),
 );
 
+console.log("\nCheckout Mercado Pago");
+const MP_TOKEN_KEYS = [
+  "mp_access_token",
+  "mp_access",
+  "MP_ACCESS_YOKEN",
+  "Mp:access_token",
+  "MP_ACCESS_TOKEN",
+  "MERCADOPAGO_ACCESS_TOKEN",
+  "MP_ACCESS_TOKEN_PROD",
+  "MP_ACCESS",
+];
+const prevMpToks = Object.fromEntries(MP_TOKEN_KEYS.map((k) => [k, process.env[k]]));
+const prevMpSec = process.env.MP_WEBHOOK_SECRET;
+const prevMpSec2 = process.env.MERCADOPAGO_WEBHOOK_SECRET;
+function clearMpEnv() {
+  for (const k of MP_TOKEN_KEYS) delete process.env[k];
+  delete process.env.MP_WEBHOOK_SECRET;
+  delete process.env.MERCADOPAGO_WEBHOOK_SECRET;
+}
+function restoreMpEnv() {
+  for (const k of MP_TOKEN_KEYS) {
+    if (prevMpToks[k] === undefined) delete process.env[k];
+    else process.env[k] = prevMpToks[k];
+  }
+  if (prevMpSec === undefined) delete process.env.MP_WEBHOOK_SECRET;
+  else process.env.MP_WEBHOOK_SECRET = prevMpSec;
+  if (prevMpSec2 === undefined) delete process.env.MERCADOPAGO_WEBHOOK_SECRET;
+  else process.env.MERCADOPAGO_WEBHOOK_SECRET = prevMpSec2;
+}
+clearMpEnv();
+
+const {
+  PRO_AMOUNT_CLP,
+  MP_TOKEN_ENV,
+  hasMp,
+  mpAccessToken,
+  verifyMpSignature,
+  applyFetchedPayment,
+  createProCheckout,
+} = await import("../api/_mp.js");
+const checkout = (await import("../api/checkout.js")).default;
+const { default: mpWebhook, handleMpWebhook } = await import("../api/mp-webhook.js");
+const { createHmac } = await import("node:crypto");
+
+assert("Pro cobra 17838 CLP", PRO_AMOUNT_CLP === 17838, String(PRO_AMOUNT_CLP));
+assert("hasMp false sin token", hasMp() === false);
+assert("mpAccessToken vacío sin env", mpAccessToken() === "");
+assert(
+  "MP_TOKEN_ENV: mp_access_token primero",
+  MP_TOKEN_ENV[0] === "mp_access_token" &&
+    MP_TOKEN_ENV.includes("mp_access") &&
+    MP_TOKEN_ENV.includes("MP_ACCESS_YOKEN") &&
+    MP_TOKEN_ENV.includes("MP_ACCESS_TOKEN") &&
+    MP_TOKEN_ENV.includes("MERCADOPAGO_ACCESS_TOKEN") &&
+    MP_TOKEN_ENV.includes("MP_ACCESS_TOKEN_PROD") &&
+    MP_TOKEN_ENV.includes("MP_ACCESS"),
+);
+
+process.env.MP_ACCESS_TOKEN = "unit-mp-canonical";
+process.env.mp_access_token = "unit-mp-vercel";
+assert("mp_access_token gana al canónico", mpAccessToken() === "unit-mp-vercel");
+delete process.env.mp_access_token;
+process.env.mp_access = "unit-mp-short-alias";
+assert("mp_access funciona si no hay mp_access_token", mpAccessToken() === "unit-mp-short-alias");
+delete process.env.mp_access;
+delete process.env.MP_ACCESS_TOKEN;
+process.env.MP_ACCESS_YOKEN = "unit-mp-typo";
+assert("MP_ACCESS_YOKEN funciona", hasMp() === true && mpAccessToken() === "unit-mp-typo");
+delete process.env.MP_ACCESS_YOKEN;
+process.env.MP_ACCESS = "unit-mp-short";
+assert("MP_ACCESS funciona", hasMp() === true && mpAccessToken() === "unit-mp-short");
+delete process.env.MP_ACCESS;
+assert("sin alias no hay token", hasMp() === false);
+
+const chkAnon = mockRes();
+await checkout(mockReq("POST", {}, "203.0.113.81"), chkAnon);
+assert(
+  "checkout 401 sin sesión",
+  chkAnon._out.statusCode === 401 && chkAnon._out.body?.reason === "unauthorized",
+  JSON.stringify(chkAnon._out.body),
+);
+
+const chkCookie = mockRes();
+await checkout(
+  { method: "POST", body: {}, headers: { "x-forwarded-for": "203.0.113.82", cookie: "haberes_session=unit-session" } },
+  chkCookie,
+);
+assert(
+  "checkout 501 sin DATABASE_URL con sesión",
+  chkCookie._out.statusCode === 501 && chkCookie._out.body?.reason === "no_backend",
+  JSON.stringify(chkCookie._out.body),
+);
+
+process.env.MP_ACCESS_TOKEN = "unit-mp-token";
+assert("hasMp true con alias", hasMp() === true);
+const fakeFetch = async (url) => {
+  const u = String(url);
+  if (u.includes("/preapproval") && !u.includes("/checkout/")) {
+    return { ok: false, status: 400, json: async () => ({ message: "no_sub" }) };
+  }
+  if (u.includes("/checkout/preferences")) {
+    return {
+      ok: true,
+      status: 201,
+      json: async () => ({ init_point: "https://www.mercadopago.cl/checkout/v1/redirect?pref_id=unit" }),
+    };
+  }
+  throw new Error("live MP blocked in verify");
+};
+const created = await createProCheckout({ id: "co-unit", email: "pyme@example.cl" }, { fetchImpl: fakeFetch });
+assert(
+  "checkout mock init_point sin API viva",
+  created.ok === true && String(created.init_point).includes("mercadopago.cl"),
+  JSON.stringify(created),
+);
+delete process.env.MP_ACCESS_TOKEN;
+
+let applyHits = 0;
+const unsigned = mockRes();
+process.env.MP_WEBHOOK_SECRET = "unit-webhook-secret";
+process.env.MP_ACCESS_TOKEN = "unit-mp-token";
+await handleMpWebhook(
+  {
+    method: "POST",
+    body: { type: "payment", data: { id: "999" }, status: "approved", external_reference: "co1" },
+    headers: { "x-forwarded-for": "203.0.113.83" },
+    url: "/api/mp-webhook?data.id=999&type=payment",
+  },
+  unsigned,
+  {
+    fetchImpl: async () => {
+      applyHits += 1;
+      return { ok: true, status: 200, json: async () => ({ status: "approved" }) };
+    },
+    applyPayment: async () => {
+      applyHits += 10;
+    },
+  },
+);
+assert(
+  "webhook unsigned 401",
+  unsigned._out.statusCode === 401 && unsigned._out.body?.reason === "unauthorized" && applyHits === 0,
+  JSON.stringify({ status: unsigned._out.statusCode, hits: applyHits, body: unsigned._out.body }),
+);
+
+applyHits = 0;
+const forged = mockRes();
+await handleMpWebhook(
+  {
+    method: "POST",
+    body: { type: "payment", data: { id: "999" } },
+    headers: {
+      "x-forwarded-for": "203.0.113.84",
+      "x-signature": "ts=1704908010,v1=deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
+      "x-request-id": "req-unit",
+    },
+    url: "/api/mp-webhook?data.id=999&type=payment",
+  },
+  forged,
+  {
+    fetchImpl: async () => {
+      applyHits += 1;
+      return { ok: true, status: 200, json: async () => ({}) };
+    },
+    applyPayment: async () => {
+      applyHits += 10;
+    },
+  },
+);
+assert(
+  "webhook forged 401 sin voltear plan",
+  forged._out.statusCode === 401 && applyHits === 0,
+  JSON.stringify({ status: forged._out.statusCode, hits: applyHits }),
+);
+
+const ts = "1704908010";
+const dataId = "999";
+const requestId = "req-unit";
+const manifest = `id:${dataId};request-id:${requestId};ts:${ts};`;
+const goodV1 = createHmac("sha256", "unit-webhook-secret").update(manifest, "utf8").digest("hex");
+assert(
+  "firma MP oficial",
+  verifyMpSignature({
+    secret: "unit-webhook-secret",
+    xSignature: `ts=${ts},v1=${goodV1}`,
+    xRequestId: requestId,
+    dataId,
+  }) === true,
+);
+assert(
+  "firma MP rechaza otra",
+  verifyMpSignature({
+    secret: "unit-webhook-secret",
+    xSignature: `ts=${ts},v1=${goodV1.replace(/a/g, "b")}`,
+    xRequestId: requestId,
+    dataId,
+  }) === false,
+);
+
+applyHits = 0;
+let appliedPlan = null;
+const signed = mockRes();
+await handleMpWebhook(
+  {
+    method: "POST",
+    body: { type: "payment", data: { id: "999" } },
+    headers: {
+      "x-forwarded-for": "203.0.113.85",
+      "x-signature": `ts=${ts},v1=${goodV1}`,
+      "x-request-id": requestId,
+    },
+    url: "/api/mp-webhook?data.id=999&type=payment",
+  },
+  signed,
+  {
+    fetchImpl: async (url) => {
+      applyHits += 1;
+      if (String(url).includes("/v1/payments/999")) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            id: 999,
+            status: "approved",
+            transaction_amount: 17838,
+            currency_id: "CLP",
+            external_reference: "co1",
+          }),
+        };
+      }
+      return { ok: false, status: 404, json: async () => ({}) };
+    },
+    applyPayment: async (_client, payment) => {
+      appliedPlan = payment.status === "approved" ? "pro" : "gratis";
+    },
+    withDb: async (fn) => fn({}),
+  },
+);
+assert(
+  "webhook firmado consulta MP y no usa el body crudo",
+  signed._out.statusCode === 200 && applyHits === 1 && appliedPlan === "pro",
+  JSON.stringify({ status: signed._out.statusCode, hits: applyHits, plan: appliedPlan }),
+);
+
+function mockPayClient(row) {
+  const state = { row: { ...row }, sql: [] };
+  return {
+    state,
+    async query(sql, params = []) {
+      state.sql.push(sql);
+      if (/SELECT id, plan, mp_payment_id/.test(sql)) {
+        return { rows: state.row ? [state.row] : [] };
+      }
+      if (/SET plan = 'pro'/.test(sql)) {
+        state.row = { ...state.row, plan: "pro", mp_payment_id: params[1], plan_until: params[2] };
+        return { rowCount: 1 };
+      }
+      if (/SET plan = 'gratis'/.test(sql)) {
+        if (state.row && String(state.row.mp_payment_id) === String(params[1])) {
+          state.row = { ...state.row, plan: "gratis", plan_until: null };
+          return { rowCount: 1, rows: [{ id: state.row.id }] };
+        }
+        return { rowCount: 0, rows: [] };
+      }
+      return { rows: [], rowCount: 0 };
+    },
+  };
+}
+
+const payClient = mockPayClient({ id: "co1", plan: "gratis", mp_payment_id: null, plan_until: null });
+const approved = await applyFetchedPayment(payClient, {
+  id: "pay-1",
+  status: "approved",
+  transaction_amount: 17838,
+  currency_id: "CLP",
+  external_reference: "co1",
+});
+assert(
+  "pago aprobado activa Pro",
+  approved.applied && approved.plan === "pro" && payClient.state.row.plan === "pro",
+  JSON.stringify(approved),
+);
+const pending = await applyFetchedPayment(payClient, {
+  id: "pay-2",
+  status: "pending",
+  transaction_amount: 17838,
+  currency_id: "CLP",
+  external_reference: "co1",
+});
+assert("pago pendiente no cambia plan", pending.applied === false && payClient.state.row.plan === "pro");
+const refunded = await applyFetchedPayment(payClient, {
+  id: "pay-1",
+  status: "refunded",
+  external_reference: "co1",
+});
+assert(
+  "reembolso vuelve a Gratis",
+  refunded.applied && refunded.plan === "gratis" && payClient.state.row.plan === "gratis",
+  JSON.stringify(refunded),
+);
+
+const hookGet = mockRes();
+await mpWebhook({ method: "GET", headers: {} }, hookGet);
+assert("webhook GET 200", hookGet._out.statusCode === 200 && hookGet._out.body?.ok === true);
+
+restoreMpEnv();
+
 const prevAdminE = process.env.ADMIN_EMAILS;
 const prevAdminH = process.env.ADMIN_PASSWORD_HASH;
 delete process.env.ADMIN_EMAILS;
@@ -1000,6 +1316,9 @@ const apiFiles = [
   "api/admin-me.js",
   "api/admin-companies.js",
   "api/movimiento.js",
+  "api/_mp.js",
+  "api/checkout.js",
+  "api/mp-webhook.js",
 ];
 for (const f of apiFiles) {
   const src = readFileSync(join(root, f), "utf8");
@@ -1014,6 +1333,7 @@ assert("sesión HttpOnly Secure SameSite=Lax", /HttpOnly/.test(libSrc) && /Secur
 assert("sin scrypt para claves", !/scrypt/i.test(libSrc));
 assert("hashPassword usa argon2", /argon2/i.test(libSrc) && /Argon2id/.test(libSrc));
 assert("schema 004 en _lib", /004\.sql/.test(libSrc) && /INLINE_SCHEMA_004/.test(libSrc));
+assert("schema 005 en _lib", /005\.sql/.test(libSrc) && /INLINE_SCHEMA_005/.test(libSrc));
 
 const sql = readFileSync(join(root, "sql/001.sql"), "utf8");
 assert(
@@ -1054,6 +1374,15 @@ assert(
   /plan/.test(sql4) && /movimientos/.test(sql4) && /ADD COLUMN IF NOT EXISTS/i.test(sql4),
 );
 assert("sql/004.sql sin secretos", !/postgres(ql)?:\/\//i.test(sql4) && !/DATABASE_URL\s*=/.test(sql4));
+const sql5 = readFileSync(join(root, "sql/005.sql"), "utf8");
+assert(
+  "sql/005.sql cobro Mercado Pago",
+  /mp_payment_id/.test(sql5) &&
+    /mp_preapproval_id/.test(sql5) &&
+    /plan_until/.test(sql5) &&
+    /ADD COLUMN IF NOT EXISTS/i.test(sql5),
+);
+assert("sql/005.sql sin secretos", !/postgres(ql)?:\/\//i.test(sql5) && !/DATABASE_URL\s*=/.test(sql5));
 assert("sin schema prisma inventado", !existsSync(join(root, "prisma")));
 assert(
   "empresa.html olvido honesto",
@@ -1090,6 +1419,7 @@ assert("empresa.html logo file", /id="logoFile"/.test(empHtml));
 assert("empresa.html firma file", /id="firmaFile"/.test(empHtml));
 assert("empresa.html Cargar CSV y Descargar ejemplo", /Cargar CSV/.test(empHtml) && /Descargar ejemplo/.test(empHtml) && /btn-row/.test(empHtml));
 assert("empresa.html pago masivo XLSX", /btnPagoXlsx/.test(empHtml) && /btnPagoEjemplo/.test(empHtml));
+assert("empresa.html Pasar a Pro", /btnPasarPro/.test(empHtml) && /14\.990/.test(empHtml));
 assert("empresa.html haberes nombrados", /id="emHaberes"/.test(empHtml) && /Añadir haber/.test(empHtml));
 assert("empresa.html feriado pendiente y proporcional", /finFeriadoPend/.test(empHtml) && /finFeriadoProp/.test(empHtml));
 assert("app-empresa no usa window.open", !/window\.open/.test(empJs));
@@ -1104,6 +1434,14 @@ assert(
   /registrarMovimientosRemoto/.test(empJs) &&
     /xlsxPagoMasivo/.test(empJs) &&
     /\/api\/movimiento/.test(readFileSync(join(root, "js/plan.js"), "utf8")),
+);
+assert(
+  "app-empresa checkout y retorno de pago",
+  /startProCheckout/.test(empJs) &&
+    /pago === "ok"/.test(empJs) &&
+    /Pro se activa cuando Mercado Pago confirma/.test(empJs) &&
+    /\/api\/checkout/.test(readFileSync(join(root, "js/checkout.js"), "utf8")) &&
+    !/emp\.plan\s*=\s*["']pro["']/.test(empJs),
 );
 const bajarPdfSrc = empJs.slice(empJs.indexOf("async function bajarPdf"), empJs.indexOf('el("btnPdfLiquidacion")'));
 assert(
@@ -1174,13 +1512,15 @@ assert(
   !/changeme|admin123|haberes-admin|DEFAULT_PASSWORD/i.test(readFileSync(join(root, "api/_admin.js"), "utf8")),
 );
 assert(
-  "precios: Gratis 5 movimientos y Pro 14990, sin cobro con tarjeta",
+  "precios: Gratis 5 movimientos y Pro 14990 con Mercado Pago",
   /Gratis/.test(readFileSync(join(root, "precios.html"), "utf8")) &&
     /14\.990/.test(readFileSync(join(root, "precios.html"), "utf8")) &&
     /5 movimientos/i.test(readFileSync(join(root, "precios.html"), "utf8")) &&
     /CSV\/XLSX/.test(readFileSync(join(root, "precios.html"), "utf8")) &&
-    !/a[uú]n no se cobra/i.test(readFileSync(join(root, "precios.html"), "utf8")) &&
-    !/mercadopago|Mercado Pago/i.test(readFileSync(join(root, "precios.html"), "utf8")),
+    /Pasar a Pro/.test(readFileSync(join(root, "precios.html"), "utf8")) &&
+    /Mercado Pago/.test(readFileSync(join(root, "precios.html"), "utf8")) &&
+    !/No hay cobro con tarjeta/i.test(readFileSync(join(root, "precios.html"), "utf8")) &&
+    !/a[uú]n no se cobra/i.test(readFileSync(join(root, "precios.html"), "utf8")),
 );
 const css = readFileSync(join(root, "css/app.css"), "utf8");
 assert(
@@ -1247,6 +1587,18 @@ const r2src = readFileSync(join(root, "api/_r2.js"), "utf8");
 assert("R2 sin CORS público", !/Access-Control-Allow-Origin/i.test(r2src) && !/r2\.dev/.test(r2src));
 assert("R2 lee solo process.env", /R2_ACCOUNT_ID/.test(r2src) && /process\.env/.test(r2src));
 assert("R2 no imprime secretos", !/console\.(log|info|debug|warn|error)/.test(r2src));
+const mpSrc = readFileSync(join(root, "api/_mp.js"), "utf8") + readFileSync(join(root, "api/checkout.js"), "utf8") + readFileSync(join(root, "api/mp-webhook.js"), "utf8");
+assert("MP no imprime secretos", !/console\.(log|info|debug|warn|error)/.test(mpSrc));
+assert(
+  "MP acepta alias de token y secreto",
+  /mp_access_token/.test(mpSrc) &&
+    /MP_ACCESS_YOKEN/.test(mpSrc) &&
+    /MERCADOPAGO_ACCESS_TOKEN/.test(mpSrc) &&
+    /MP_ACCESS_TOKEN_PROD/.test(mpSrc) &&
+    /MERCADOPAGO_WEBHOOK_SECRET/.test(mpSrc) &&
+    /notification_url/.test(mpSrc) &&
+    /external_reference/.test(mpSrc),
+);
 assert(
   "R2 acepta alias Cloudflare/AWS",
   /CLOUDFLARE_ACCOUNT_ID/.test(r2src) &&
@@ -1275,15 +1627,18 @@ assert(
     /\/api\/reset-confirm/.test(readFileSync(join(root, "js/app-reset.js"), "utf8")),
 );
 assert(
-  "privacidad: local + mindicador + no venta",
+  "privacidad: local + mindicador + cobro Mercado Pago + no venta",
   /localStorage|este navegador/i.test(readFileSync(join(root, "privacidad.html"), "utf8")) &&
     /mindicador\.cl/.test(readFileSync(join(root, "privacidad.html"), "utf8")) &&
-    /No vendemos datos personales/.test(readFileSync(join(root, "privacidad.html"), "utf8")),
+    /Mercado Pago/.test(readFileSync(join(root, "privacidad.html"), "utf8")) &&
+    /No vendemos datos personales/.test(readFileSync(join(root, "privacidad.html"), "utf8")) &&
+    !/No hay cobro ni pasarela/.test(readFileSync(join(root, "privacidad.html"), "utf8")),
 );
 assert(
   "términos: IA, no DT, carta no reemplaza Inspección / ministro de fe",
   /ministro de fe/.test(readFileSync(join(root, "terminos.html"), "utf8")) &&
-    /Inspecci[oó]n del Trabajo/.test(readFileSync(join(root, "terminos.html"), "utf8")),
+    /Inspecci[oó]n del Trabajo/.test(readFileSync(join(root, "terminos.html"), "utf8")) &&
+    /Mercado Pago/.test(readFileSync(join(root, "terminos.html"), "utf8")),
 );
 
 const cartaHint = readFileSync(join(root, "js/print.js"), "utf8") + readFileSync(join(root, "empresa.html"), "utf8");
@@ -1309,7 +1664,7 @@ let leaked = false;
 for (const p of files) {
   if (p.endsWith("scripts/verify.mjs")) continue;
   const text = readFileSync(p, "utf8");
-  if (/APP_USR-|TEST-[0-9a-f-]{8,}|access_token|mercadopago|MercadoPago/i.test(text)) {
+  if (/APP_USR-|TEST-[0-9a-f-]{8,}/i.test(text)) {
     fail("sin tokens Mercado Pago", p);
     leaked = true;
   }

@@ -677,11 +677,13 @@ main {
   align-items: stretch;
 }
 
-.btn-row > .btn,
-.btn-row > label.btn,
-.btn-row > a.btn {
-  flex: 1 1 auto;
-  min-height: var(--touch);
+.btn-wrap {
+  white-space: normal;
+  text-align: center;
+}
+
+.workspace-bar .actions {
+  justify-content: flex-end;
 }
 
 /* En pantallas angostas una etiqueta larga no debe estirar el contenedor. */

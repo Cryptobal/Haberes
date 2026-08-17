@@ -1,4 +1,4 @@
-import { json, readJson, withDb } from "./_lib.js";
+import { effectivePlan, json, readJson, withDb } from "./_lib.js";
 import { requireAdmin } from "./_admin.js";
 
 function companyAdminPublic(row) {
@@ -10,7 +10,8 @@ function companyAdminPublic(row) {
     razonSocial: row.razon_social,
     createdAt: row.created_at,
     disabled: Boolean(row.disabled_at),
-    plan: String(row.plan || "gratis").toLowerCase() === "pro" ? "pro" : "gratis",
+    plan: effectivePlan(row),
+    planUntil: row.plan_until ? new Date(row.plan_until).toISOString() : null,
     hasLogo: Boolean(row.has_logo),
     documentos: Number(row.documentos) || 0,
   };
@@ -29,7 +30,7 @@ export default async function handler(req, res) {
     try {
       const rows = await withDb(async (client) => {
         const found = await client.query(
-          `SELECT c.id, c.rut, c.email, c.razon_social, c.created_at, c.disabled_at, c.plan,
+          `SELECT c.id, c.rut, c.email, c.razon_social, c.created_at, c.disabled_at, c.plan, c.plan_until,
                   (c.logo_key IS NOT NULL) AS has_logo,
                   (SELECT COUNT(*)::int FROM documentos d WHERE d.company_id = c.id) AS documentos
            FROM companies c
@@ -64,9 +65,14 @@ export default async function handler(req, res) {
                ELSE NULL
              END,
              plan = COALESCE($3, plan),
+             plan_until = CASE
+               WHEN $3 IS NULL THEN plan_until
+               WHEN $3 = 'pro' THEN NULL
+               ELSE NULL
+             END,
              updated_at = NOW()
          WHERE id = $1
-         RETURNING id, rut, email, razon_social, created_at, disabled_at, plan,
+         RETURNING id, rut, email, razon_social, created_at, disabled_at, plan, plan_until,
                    (logo_key IS NOT NULL) AS has_logo,
                    (SELECT COUNT(*)::int FROM documentos d WHERE d.company_id = companies.id) AS documentos`,
         [id, disabled, plan],

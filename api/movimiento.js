@@ -1,5 +1,6 @@
 import {
   companyPublic,
+  effectivePlan,
   hasDatabaseUrl,
   json,
   loadSessionCompany,
@@ -18,7 +19,7 @@ export function periodoMes(d = new Date()) {
 }
 
 export function isProPlan(row) {
-  return String(row?.plan || "gratis").toLowerCase() === "pro";
+  return effectivePlan(row) === "pro";
 }
 
 export async function countMovimientos(client, companyId, periodo) {

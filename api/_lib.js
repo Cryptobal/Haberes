@@ -88,6 +88,12 @@ CREATE UNIQUE INDEX IF NOT EXISTS movimientos_unique_mes
   ON movimientos (company_id, periodo, tipo, trabajador_key);
 `;
 
+const INLINE_SCHEMA_005 = `
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS mp_payment_id TEXT;
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS mp_preapproval_id TEXT;
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS plan_until TIMESTAMPTZ;
+`;
+
 let schemaReady = false;
 let dummyHashPromise = null;
 const rateHits = new Map();
@@ -310,6 +316,7 @@ async function ensureSchema() {
     await client.query(loadSchemaFile("002.sql", INLINE_SCHEMA_002));
     await client.query(loadSchemaFile("003.sql", INLINE_SCHEMA_003));
     await client.query(loadSchemaFile("004.sql", INLINE_SCHEMA_004));
+    await client.query(loadSchemaFile("005.sql", INLINE_SCHEMA_005));
     schemaReady = true;
     return true;
   } finally {
@@ -331,8 +338,32 @@ export async function withDb(fn) {
   }
 }
 
+export function effectivePlan(row) {
+  if (String(row?.plan || "gratis").toLowerCase() !== "pro") return "gratis";
+  if (row.plan_until) {
+    const t = new Date(row.plan_until).getTime();
+    if (Number.isFinite(t) && t < Date.now()) return "gratis";
+  }
+  return "pro";
+}
+
+export async function expireStaleProPlan(client, row) {
+  if (!client || !row) return row;
+  if (effectivePlan(row) === "pro") return row;
+  if (String(row.plan || "").toLowerCase() !== "pro") return row;
+  await client.query(
+    `UPDATE companies
+     SET plan = 'gratis', updated_at = NOW()
+     WHERE id = $1 AND plan = 'pro' AND plan_until IS NOT NULL AND plan_until < NOW()`,
+    [row.id],
+  );
+  return { ...row, plan: "gratis" };
+}
+
 export function companyPublic(row) {
   if (!row) return null;
+  const plan = effectivePlan(row);
+  const until = row.plan_until ? new Date(row.plan_until) : null;
   return {
     id: row.id,
     rut: row.rut,
@@ -342,7 +373,8 @@ export function companyPublic(row) {
     direccion: row.direccion || "",
     hasLogo: Boolean(row.logo_key),
     hasFirma: Boolean(row.firma_key),
-    plan: String(row.plan || "gratis").toLowerCase() === "pro" ? "pro" : "gratis",
+    plan,
+    planUntil: plan === "pro" && until && Number.isFinite(until.getTime()) ? until.toISOString() : null,
   };
 }
 
@@ -396,14 +428,15 @@ export async function loadSessionCompany(client, token) {
   const tokenHash = hashToken(token);
   const found = await client.query(
     `SELECT c.id, c.rut, c.email, c.razon_social, c.giro, c.direccion, c.logo_key, c.logo_content_type,
-            c.firma_key, c.firma_content_type, c.disabled_at, c.plan, s.id AS session_id
+            c.firma_key, c.firma_content_type, c.disabled_at, c.plan, c.plan_until, c.mp_payment_id,
+            c.mp_preapproval_id, s.id AS session_id
      FROM sessions s
      JOIN companies c ON c.id = s.company_id
      WHERE s.token_hash = $1 AND s.expires_at > NOW()
      LIMIT 1`,
     [tokenHash],
   );
-  return found.rows[0] || null;
+  return expireStaleProPlan(client, found.rows[0] || null);
 }
 
 export async function requireCompany(req, res) {
