@@ -45,8 +45,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   "name": "Haberes",
   "url": "https://www.haberes.cl/",
   "logo": "https://www.haberes.cl/favicon.svg",
-  "areaServed": "CL",
-  "sameAs": []
+  "areaServed": "CL"
 }
   </script>
   <script type="application/ld+json">
@@ -64,7 +63,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
       "@type": "ListItem",
       "position": 2,
       "name": "Guías",
-      "item": "https://www.haberes.cl/guias/como-leer-una-liquidacion-de-sueldo"
+      "item": "https://www.haberes.cl/guias/finiquito"
     },
     {
       "@type": "ListItem",
@@ -93,6 +92,28 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     "url": "https://www.haberes.cl/"
   },
   "mainEntityOfPage": "https://www.haberes.cl/guias/como-leer-una-liquidacion-de-sueldo"
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Calculadora de sueldo líquido Haberes",
+  "url": "https://www.haberes.cl/sueldo",
+  "applicationCategory": "BusinessApplication",
+  "operatingSystem": "Web",
+  "inLanguage": "es-CL",
+  "description": "Guía del formato de liquidación de sueldo: haberes, descuentos legales, líquido a pagar y qué revisar cada mes.",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "CLP"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Haberes",
+    "url": "https://www.haberes.cl/"
+  }
 }
   </script>
 </head>
@@ -126,47 +147,39 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   </header>
   <div class="nav-drawer" id="navDrawer" data-nav-drawer hidden>
       <div class="nav-drawer-scrim" data-nav-scrim></div>
+      <div class="nav-drawer-panel" role="dialog" aria-modal="true" aria-label="Menú de navegación">
+        <div class="nav-drawer-grab" aria-hidden="true"></div>
+        <a href="/sueldo" data-nav>Sueldo líquido</a>
+        <a href="/finiquito" data-nav>Finiquito</a>
+        <a href="/empresa" data-nav>Para mi empresa</a>
+        <a href="/como" data-nav>Cómo funciona</a>
+        <a href="/precios" data-nav>Precios</a>
+        <div class="nav-drawer-foot">
+          <a class="btn" href="/empresa">Entrar a mi empresa</a>
+          <button type="button" class="btn btn-ghost" data-nav-close>Cerrar</button>
+        </div>
+      </div>
+    </div>
 
+  
   <main>
     <div class="wrap prose guide">
       <nav class="breadcrumbs" aria-label="Migas de pan">
         <ol>
           <li><a href="/">Inicio</a></li>
-          <li><a href="/guias/como-leer-una-liquidacion-de-sueldo">Guías</a></li>
+          <li><a href="/guias/finiquito">Guías</a></li>
           <li aria-current="page">Cómo leer una liquidación de sueldo</li>
         </ol>
       </nav>
-
-      <h1>Cómo leer una liquidación de sueldo</h1>
-      <p class="lede">
-        Una liquidación de sueldo en Chile separa haberes (lo que se devenga) y descuentos (lo que
-        se rebaja) para llegar al líquido a pagar. Los descuentos legales típicos son cotización
-        AFP, salud (Fonasa o Isapre), seguro de cesantía del trabajador e impuesto único de segunda
-        categoría. El documento debe identificar al empleador, al trabajador y el periodo.
-      </p>
-      <h2>Haberes imponibles y no imponibles</h2>
-      <p>
-        Los haberes imponibles (sueldo, gratificación art. 50, bonos imponibles) forman la base de
-        cotizaciones. Colación y movilización del artículo 41 del Código del Trabajo no son
-        imponibles ni tributables en los términos de esa norma, y suelen mostrarse aparte.
-      </p>
-      <h2>Descuentos legales</h2>
-      <ul>
-        <li>AFP: 10 % obligatorio más la comisión de la administradora (Circular 2414), con tope de 90 UF.</li>
-        <li>Salud: 7 % Fonasa o el plan Isapre, con el mismo tope cuando aplica.</li>
-        <li>Seguro de cesantía: aporte del trabajador según contrato.</li>
-        <li>Impuesto único (IUSC) sobre la base tributable del mes.</li>
-      </ul>
-      <h2>Líquido a pagar</h2>
-      <p>
-        Es la suma de haberes menos descuentos. Si no cuadra con lo depositado, revise días
-        trabajados, horas extras y descuentos voluntarios (anticipo, crédito). Puede estimar el
-        líquido en la <a href="/sueldo">calculadora de sueldo líquido</a> o emitir el PDF con membrete
-        desde <a href="/empresa">la cuenta de empresa</a>.
-      </p>
-      <p class="actions"><a class="btn" href="/sueldo">Calcular sueldo líquido</a>
-      <a class="btn btn-ghost" href="/guias/formato-de-liquidacion-de-sueldo-chile">Formato y plantilla</a></p>
-    
+<h1>Cómo leer una liquidación de sueldo</h1>
+<p class="lede">Una liquidación separa haberes y descuentos para llegar al líquido a pagar. Revise AFP, salud, cesantía e impuesto único, además de días trabajados y horas extras.</p>
+<section class="seo-calc" data-seo-calc="sueldo" aria-label="Calculadora embebida"></section>
+<aside class="seo-cta" aria-label="Cuenta de empresa">
+  <p><strong>¿Emite liquidaciones o finiquitos cada mes?</strong>
+  Cree su <a href="/empresa">cuenta de empresa</a> gratis: PDF con membrete, trabajadores en el navegador y plan Pro cuando lo necesite.</p>
+  <p class="actions"><a class="btn" href="/empresa">Ir a cuenta de empresa</a>
+  <a class="btn btn-ghost" href="/precios">Ver precios</a></p>
+</aside>
       <p class="notice u-mt-6">Documento generado por Haberes. No es un cálculo de la Dirección del Trabajo ni de Previred. No constituye asesoría legal ni previsional. Verifique con su contador o en los canales oficiales.</p>
     </div>
   </main>
@@ -193,6 +206,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       </div>
     </div>
   </footer>
+  <script type="module" src="../js/seo-calc.js"></script>
   <script type="module" src="../js/app-home.js"></script>
 </body>
 </html>

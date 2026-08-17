@@ -45,8 +45,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   "name": "Haberes",
   "url": "https://www.haberes.cl/",
   "logo": "https://www.haberes.cl/favicon.svg",
-  "areaServed": "CL",
-  "sameAs": []
+  "areaServed": "CL"
 }
   </script>
   <script type="application/ld+json">
@@ -64,7 +63,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
       "@type": "ListItem",
       "position": 2,
       "name": "Guías",
-      "item": "https://www.haberes.cl/guias/como-leer-una-liquidacion-de-sueldo"
+      "item": "https://www.haberes.cl/guias/finiquito"
     },
     {
       "@type": "ListItem",
@@ -93,6 +92,28 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     "url": "https://www.haberes.cl/"
   },
   "mainEntityOfPage": "https://www.haberes.cl/guias/liquidacion-de-sueldo-y-previred"
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Calculadora de sueldo líquido Haberes",
+  "url": "https://www.haberes.cl/sueldo",
+  "applicationCategory": "BusinessApplication",
+  "operatingSystem": "Web",
+  "inLanguage": "es-CL",
+  "description": "Diferencia entre la liquidación estimada en Haberes y la declaración en Previred: cotizaciones, topes y responsabilidad del empleador.",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "CLP"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Haberes",
+    "url": "https://www.haberes.cl/"
+  }
 }
   </script>
 </head>
@@ -126,47 +147,39 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   </header>
   <div class="nav-drawer" id="navDrawer" data-nav-drawer hidden>
       <div class="nav-drawer-scrim" data-nav-scrim></div>
+      <div class="nav-drawer-panel" role="dialog" aria-modal="true" aria-label="Menú de navegación">
+        <div class="nav-drawer-grab" aria-hidden="true"></div>
+        <a href="/sueldo" data-nav>Sueldo líquido</a>
+        <a href="/finiquito" data-nav>Finiquito</a>
+        <a href="/empresa" data-nav>Para mi empresa</a>
+        <a href="/como" data-nav>Cómo funciona</a>
+        <a href="/precios" data-nav>Precios</a>
+        <div class="nav-drawer-foot">
+          <a class="btn" href="/empresa">Entrar a mi empresa</a>
+          <button type="button" class="btn btn-ghost" data-nav-close>Cerrar</button>
+        </div>
+      </div>
+    </div>
 
+  
   <main>
     <div class="wrap prose guide">
       <nav class="breadcrumbs" aria-label="Migas de pan">
         <ol>
           <li><a href="/">Inicio</a></li>
-          <li><a href="/guias/como-leer-una-liquidacion-de-sueldo">Guías</a></li>
+          <li><a href="/guias/finiquito">Guías</a></li>
           <li aria-current="page">Liquidación de sueldo y Previred</li>
         </ol>
       </nav>
-
-      <h1>Liquidación de sueldo y Previred</h1>
-      <p class="lede">
-        Previred es el canal de declaración y pago de cotizaciones previsionales. Haberes estima
-        la liquidación de sueldo (haberes, descuentos y líquido) para armar el documento del
-        trabajador. No declara ante Previred ni reemplaza esa obligación del empleador. Los montos
-        deben contrastarse con las planillas oficiales antes de pagar cotizaciones.
-      </p>
-      <h2>Qué hace cada uno</h2>
-      <ul>
-        <li><strong>Haberes:</strong> calcula y emite liquidaciones y finiquitos con formato chileno.</li>
-        <li><strong>Previred:</strong> declara y paga cotizaciones a AFP, salud, mutual y seguro de cesantía según las reglas vigentes.</li>
-      </ul>
-      <h2>Por qué pueden diferir</h2>
-      <p>
-        Topes en UF, días trabajados, licencias, reliquidaciones y códigos de la reforma previsional
-        pueden hacer que la estimación del documento no coincida al peso con la declaración del mes.
-        Haberes documenta sus supuestos (por ejemplo, aportes del empleador en el LRE van en cero
-        cuando la tasa no está publicada para automatizar). El empleador sigue siendo responsable
-        de la declaración correcta en Previred.
-      </p>
-      <h2>Flujo recomendado</h2>
-      <p>
-        Arme la liquidación en <a href="/sueldo">sueldo líquido</a> o en
-        <a href="/empresa">empresa</a>, revise el PDF con el trabajador y declare cotizaciones en
-        Previred con su software o planilla oficial. Si necesita el Libro de Remuneraciones
-        Electrónico, la cuenta Pro genera un borrador CSV para revisar antes de subir a Mi DT.
-      </p>
-      <p class="actions"><a class="btn" href="/sueldo">Calcular sueldo líquido</a>
-      <a class="btn btn-ghost" href="/empresa">Ir a mi empresa</a></p>
-    
+<h1>Liquidación de sueldo y Previred</h1>
+<p class="lede">Haberes estima la liquidación del trabajador. Previred es el canal de declaración y pago de cotizaciones. No son lo mismo: contraste siempre antes de declarar.</p>
+<section class="seo-calc" data-seo-calc="sueldo" aria-label="Calculadora embebida"></section>
+<aside class="seo-cta" aria-label="Cuenta de empresa">
+  <p><strong>¿Emite liquidaciones o finiquitos cada mes?</strong>
+  Cree su <a href="/empresa">cuenta de empresa</a> gratis: PDF con membrete, trabajadores en el navegador y plan Pro cuando lo necesite.</p>
+  <p class="actions"><a class="btn" href="/empresa">Ir a cuenta de empresa</a>
+  <a class="btn btn-ghost" href="/precios">Ver precios</a></p>
+</aside>
       <p class="notice u-mt-6">Documento generado por Haberes. No es un cálculo de la Dirección del Trabajo ni de Previred. No constituye asesoría legal ni previsional. Verifique con su contador o en los canales oficiales.</p>
     </div>
   </main>
@@ -193,6 +206,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       </div>
     </div>
   </footer>
+  <script type="module" src="../js/seo-calc.js"></script>
   <script type="module" src="../js/app-home.js"></script>
 </body>
 </html>

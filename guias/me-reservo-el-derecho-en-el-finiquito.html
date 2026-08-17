@@ -45,8 +45,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   "name": "Haberes",
   "url": "https://www.haberes.cl/",
   "logo": "https://www.haberes.cl/favicon.svg",
-  "areaServed": "CL",
-  "sameAs": []
+  "areaServed": "CL"
 }
   </script>
   <script type="application/ld+json">
@@ -64,7 +63,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
       "@type": "ListItem",
       "position": 2,
       "name": "Guías",
-      "item": "https://www.haberes.cl/guias/como-leer-una-liquidacion-de-sueldo"
+      "item": "https://www.haberes.cl/guias/finiquito"
     },
     {
       "@type": "ListItem",
@@ -93,6 +92,28 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     "url": "https://www.haberes.cl/"
   },
   "mainEntityOfPage": "https://www.haberes.cl/guias/me-reservo-el-derecho-en-el-finiquito"
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Calculadora de finiquito Haberes",
+  "url": "https://www.haberes.cl/finiquito",
+  "applicationCategory": "BusinessApplication",
+  "operatingSystem": "Web",
+  "inLanguage": "es-CL",
+  "description": "Qué implica firmar el finiquito con reserva de derechos, para qué sirve y qué no evita, según el artículo 177 del Código del Trabajo.",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "CLP"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Haberes",
+    "url": "https://www.haberes.cl/"
+  }
 }
   </script>
 </head>
@@ -126,46 +147,39 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   </header>
   <div class="nav-drawer" id="navDrawer" data-nav-drawer hidden>
       <div class="nav-drawer-scrim" data-nav-scrim></div>
+      <div class="nav-drawer-panel" role="dialog" aria-modal="true" aria-label="Menú de navegación">
+        <div class="nav-drawer-grab" aria-hidden="true"></div>
+        <a href="/sueldo" data-nav>Sueldo líquido</a>
+        <a href="/finiquito" data-nav>Finiquito</a>
+        <a href="/empresa" data-nav>Para mi empresa</a>
+        <a href="/como" data-nav>Cómo funciona</a>
+        <a href="/precios" data-nav>Precios</a>
+        <div class="nav-drawer-foot">
+          <a class="btn" href="/empresa">Entrar a mi empresa</a>
+          <button type="button" class="btn btn-ghost" data-nav-close>Cerrar</button>
+        </div>
+      </div>
+    </div>
 
+  
   <main>
     <div class="wrap prose guide">
       <nav class="breadcrumbs" aria-label="Migas de pan">
         <ol>
           <li><a href="/">Inicio</a></li>
-          <li><a href="/guias/como-leer-una-liquidacion-de-sueldo">Guías</a></li>
+          <li><a href="/guias/finiquito">Guías</a></li>
           <li aria-current="page">Qué significa «me reservo el derecho» en el finiquito</li>
         </ol>
       </nav>
-
-      <h1>Qué significa «me reservo el derecho» en el finiquito</h1>
-      <p class="lede">
-        «Me reservo el derecho» es una fórmula que el trabajador puede dejar escrita al firmar el
-        finiquito para dejar constancia de que no está conforme con todos los montos o con la causal,
-        y que no renuncia a reclamar lo que estime pendiente. El artículo 177 exige finiquito escrito
-        y ratificado; la reserva no anula el documento, pero ayuda a que la firma no se interprete
-        como un quicio total e irrevocable de toda controversia.
-      </p>
-      <h2>Para qué se usa</h2>
-      <p>
-        Suele usarse cuando hay duda sobre indemnizaciones, feriado, horas extras o la causal invocada.
-        La reserva debe ser clara y concreta cuando sea posible (por ejemplo, discrepar del cálculo
-        de años de servicio). Un abogado laboral puede precisar el texto según el caso.
-      </p>
-      <h2>Qué no hace la reserva</h2>
-      <ul>
-        <li>No reemplaza una demanda ni un reclamo formal ante la Inspección del Trabajo.</li>
-        <li>No obliga al empleador a pagar de inmediato un monto distinto al del finiquito.</li>
-        <li>No transforma una causal del artículo 160 (sin indemnización por años de servicio) en una del 161.</li>
-      </ul>
-      <h2>Antes de firmar</h2>
-      <p>
-        Revise causal, fechas, feriado e indemnizaciones con la
-        <a href="/finiquito">calculadora de finiquito</a>. Si el monto no cuadra, documente la
-        diferencia y consulte. Haberes estima; no es la Dirección del Trabajo ni asesoría legal.
-      </p>
-      <p class="actions"><a class="btn" href="/finiquito">Calcular finiquito</a>
-      <a class="btn btn-ghost" href="/guias/plazo-de-pago-del-finiquito">Plazo de pago</a></p>
-    
+<h1>Qué significa «me reservo el derecho» en el finiquito</h1>
+<p class="lede">«Me reservo el derecho» es una fórmula que el trabajador puede dejar escrita al firmar el finiquito para constatar que no está conforme con todos los montos o con la causal. No anula el documento ni reemplaza un reclamo formal.</p>
+<section class="seo-calc" data-seo-calc="finiquito" aria-label="Calculadora embebida"></section>
+<aside class="seo-cta" aria-label="Cuenta de empresa">
+  <p><strong>¿Emite liquidaciones o finiquitos cada mes?</strong>
+  Cree su <a href="/empresa">cuenta de empresa</a> gratis: PDF con membrete, trabajadores en el navegador y plan Pro cuando lo necesite.</p>
+  <p class="actions"><a class="btn" href="/empresa">Ir a cuenta de empresa</a>
+  <a class="btn btn-ghost" href="/precios">Ver precios</a></p>
+</aside>
       <p class="notice u-mt-6">Esta carta no reemplaza la ratificación del finiquito ante la Inspección del Trabajo ni el pago efectivo. No es un documento oficial de la Dirección del Trabajo ni de Previred. No constituye asesoría legal.</p>
     </div>
   </main>
@@ -192,6 +206,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       </div>
     </div>
   </footer>
+  <script type="module" src="../js/seo-calc.js"></script>
   <script type="module" src="../js/app-home.js"></script>
 </body>
 </html>

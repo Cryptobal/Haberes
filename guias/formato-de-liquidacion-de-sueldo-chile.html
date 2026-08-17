@@ -45,8 +45,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   "name": "Haberes",
   "url": "https://www.haberes.cl/",
   "logo": "https://www.haberes.cl/favicon.svg",
-  "areaServed": "CL",
-  "sameAs": []
+  "areaServed": "CL"
 }
   </script>
   <script type="application/ld+json">
@@ -64,7 +63,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
       "@type": "ListItem",
       "position": 2,
       "name": "Guías",
-      "item": "https://www.haberes.cl/guias/como-leer-una-liquidacion-de-sueldo"
+      "item": "https://www.haberes.cl/guias/finiquito"
     },
     {
       "@type": "ListItem",
@@ -93,6 +92,28 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     "url": "https://www.haberes.cl/"
   },
   "mainEntityOfPage": "https://www.haberes.cl/guias/formato-de-liquidacion-de-sueldo-chile"
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Calculadora de sueldo líquido Haberes",
+  "url": "https://www.haberes.cl/sueldo",
+  "applicationCategory": "BusinessApplication",
+  "operatingSystem": "Web",
+  "inLanguage": "es-CL",
+  "description": "Formato chileno de liquidación de sueldo para pymes: qué campos llevar, cómo emitir el PDF y diferencia con una planilla Excel.",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "CLP"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Haberes",
+    "url": "https://www.haberes.cl/"
+  }
 }
   </script>
 </head>
@@ -126,48 +147,39 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   </header>
   <div class="nav-drawer" id="navDrawer" data-nav-drawer hidden>
       <div class="nav-drawer-scrim" data-nav-scrim></div>
+      <div class="nav-drawer-panel" role="dialog" aria-modal="true" aria-label="Menú de navegación">
+        <div class="nav-drawer-grab" aria-hidden="true"></div>
+        <a href="/sueldo" data-nav>Sueldo líquido</a>
+        <a href="/finiquito" data-nav>Finiquito</a>
+        <a href="/empresa" data-nav>Para mi empresa</a>
+        <a href="/como" data-nav>Cómo funciona</a>
+        <a href="/precios" data-nav>Precios</a>
+        <div class="nav-drawer-foot">
+          <a class="btn" href="/empresa">Entrar a mi empresa</a>
+          <button type="button" class="btn btn-ghost" data-nav-close>Cerrar</button>
+        </div>
+      </div>
+    </div>
 
+  
   <main>
     <div class="wrap prose guide">
       <nav class="breadcrumbs" aria-label="Migas de pan">
         <ol>
           <li><a href="/">Inicio</a></li>
-          <li><a href="/guias/como-leer-una-liquidacion-de-sueldo">Guías</a></li>
+          <li><a href="/guias/finiquito">Guías</a></li>
           <li aria-current="page">Formato de liquidación de sueldo en Chile</li>
         </ol>
       </nav>
-
-      <h1>Formato de liquidación de sueldo en Chile</h1>
-      <p class="lede">
-        El formato habitual de una liquidación incluye datos del empleador y del trabajador,
-        periodo, detalle de haberes, detalle de descuentos legales y el líquido a pagar. No existe
-        un único formulario obligatorio idéntico para todas las empresas, pero sí debe ser claro,
-        trazable y coherente con lo cotizado. Una planilla Excel sirve de borrador; el PDF firmado
-        es el comprobante que se entrega al trabajador.
-      </p>
-      <h2>Campos mínimos útiles</h2>
-      <ul>
-        <li>Razón social, RUT y periodo de la liquidación.</li>
-        <li>Nombre, RUT y cargo del trabajador.</li>
-        <li>Haberes con nombre propio (no solo un total).</li>
-        <li>AFP, salud, cesantía e impuesto único desglosados.</li>
-        <li>Totales y líquido a pagar.</li>
-      </ul>
-      <h2>Excel frente a PDF</h2>
-      <p>
-        Un archivo Excel ayuda a armar la nómina del mes. El documento que se entrega y archiva
-        suele ser el PDF con membrete. En Haberes, la cuenta de empresa genera ese PDF con logo y
-        firma; el plan Pro agrega carga masiva y nómina bancaria.
-      </p>
-      <h2>Emitir el formato con Haberes</h2>
-      <p>
-        Calcule un caso suelto en <a href="/sueldo">sueldo líquido</a> o cargue la nómina en
-        <a href="/empresa">empresa</a>. Para entender cada línea, lea
-        <a href="/guias/como-leer-una-liquidacion-de-sueldo">cómo leer una liquidación</a>.
-      </p>
-      <p class="actions"><a class="btn" href="/empresa">Emitir liquidaciones</a>
-      <a class="btn btn-ghost" href="/guias/liquidacion-de-sueldo-y-previred">Liquidación y Previred</a></p>
-    
+<h1>Formato de liquidación de sueldo en Chile</h1>
+<p class="lede">Incluya razón social, RUT, periodo, trabajador, haberes con nombre, descuentos legales desglosados y líquido. Emita el PDF desde la <a href="/empresa">cuenta de empresa</a>.</p>
+<section class="seo-calc" data-seo-calc="sueldo" aria-label="Calculadora embebida"></section>
+<aside class="seo-cta" aria-label="Cuenta de empresa">
+  <p><strong>¿Emite liquidaciones o finiquitos cada mes?</strong>
+  Cree su <a href="/empresa">cuenta de empresa</a> gratis: PDF con membrete, trabajadores en el navegador y plan Pro cuando lo necesite.</p>
+  <p class="actions"><a class="btn" href="/empresa">Ir a cuenta de empresa</a>
+  <a class="btn btn-ghost" href="/precios">Ver precios</a></p>
+</aside>
       <p class="notice u-mt-6">Documento generado por Haberes. No es un cálculo de la Dirección del Trabajo ni de Previred. No constituye asesoría legal ni previsional. Verifique con su contador o en los canales oficiales.</p>
     </div>
   </main>
@@ -194,6 +206,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       </div>
     </div>
   </footer>
+  <script type="module" src="../js/seo-calc.js"></script>
   <script type="module" src="../js/app-home.js"></script>
 </body>
 </html>
