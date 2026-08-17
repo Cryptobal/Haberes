@@ -7,6 +7,7 @@ import {
   readSessionToken,
   withDb,
 } from "./_lib.js";
+import { configuredProviders } from "./checkout.js";
 import { hasR2 } from "./_r2.js";
 
 export default async function handler(req, res) {
@@ -41,6 +42,7 @@ export default async function handler(req, res) {
       movimientosMes: result.movimientosMes,
       limite: company.plan === "pro" ? null : 5,
       storage: hasR2(),
+      providers: configuredProviders(),
     });
   } catch {
     return json(res, 503, { ok: false, reason: "db_unavailable" });

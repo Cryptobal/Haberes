@@ -6,7 +6,13 @@ import {
   isNoBackend,
 } from "./api.js";
 import { initEnvioDocumentos } from "./app-empresa-envio.js";
-import { startProCheckout, consumeCheckoutIntent, rememberCheckoutIntent } from "./checkout.js";
+import {
+  checkoutBusyLabel,
+  consumeCheckoutIntent,
+  loadCheckoutProviders,
+  rememberCheckoutIntent,
+  startProCheckout,
+} from "./checkout.js";
 import {
   LRE_COMUNAS_FRECUENTES,
   LRE_MUTUALES,
@@ -181,12 +187,20 @@ function fillPerfil() {
   if (el("perfilDireccion")) el("perfilDireccion").value = emp.direccion || "";
 }
 
+let payProviders = [];
+
+function renderPayButtons(pro) {
+  const mpBtn = el("btnPasarPro");
+  const flowBtn = el("btnPasarProFlow");
+  if (mpBtn) mpBtn.hidden = Boolean(pro) || !payProviders.includes("mp");
+  if (flowBtn) flowBtn.hidden = Boolean(pro) || !payProviders.includes("flow");
+}
+
 /** Medidor de cupo: barra + insignia. En Pro no hay tope, así que la barra va llena en verde. */
 function renderCupo() {
   const box = el("empQuota");
   const bar = el("empQuotaBar");
   const badge = el("empPlanBadge");
-  const cta = el("btnPasarPro");
   const state = el("empProState");
   if (el("empPlan")) el("empPlan").textContent = textoCupo(emp);
   const pro = isPro(emp);
@@ -194,7 +208,7 @@ function renderCupo() {
     badge.textContent = pro ? "Pro" : "Gratis";
     badge.className = pro ? "badge badge-pro" : "badge";
   }
-  if (cta) cta.hidden = pro;
+  renderPayButtons(pro);
   if (state) {
     state.hidden = !pro;
     if (pro) {
@@ -440,6 +454,11 @@ getIndicadores().then((ind) => {
   indicadores = ind;
 });
 
+async function refreshPayProviders() {
+  const { providers } = await loadCheckoutProviders();
+  payProviders = providers;
+}
+
 async function bootSession() {
   const { status, data } = await apiGet("/api/me");
   if (data?.ok && data.company) {
@@ -458,8 +477,14 @@ async function bootSession() {
     const local = empresaActual();
     if (local?.remote && !local.claveHash) clearSession();
   }
+  if (Array.isArray(data?.providers)) {
+    payProviders = data.providers.filter((p) => p === "mp" || p === "flow");
+  } else {
+    await refreshPayProviders();
+  }
   refresh();
-  if (new URLSearchParams(location.search).get("checkout") === "1") rememberCheckoutIntent();
+  const bootParams = new URLSearchParams(location.search);
+  if (bootParams.get("checkout") === "1") rememberCheckoutIntent(bootParams.get("provider"));
   await handlePagoReturn();
   stripPagoQuery();
   if (remoteOk) {
@@ -471,8 +496,9 @@ async function bootSession() {
 
 function stripPagoQuery() {
   const params = new URLSearchParams(location.search);
-  if (!params.has("pago") && params.get("checkout") !== "1") return;
+  if (!params.has("pago") && params.get("checkout") !== "1" && !params.has("token")) return;
   params.delete("pago");
+  params.delete("token");
   const next = params.toString();
   history.replaceState({}, "", next ? `/empresa?${next}` : "/empresa");
 }
@@ -485,24 +511,27 @@ async function handlePagoReturn() {
     refresh();
     toastInfo(
       pago === "ok" ? "Pago recibido" : "Pago en revisión",
-      "Pro se activa cuando Mercado Pago confirma (puede tardar unos segundos).",
+      "Pro se activa cuando Mercado Pago o Flow confirman (puede tardar unos segundos).",
     );
   } else if (pago === "fail") {
-    toastError("No se completó el pago", "Puede intentarlo de nuevo desde Pasar a Pro.");
+    toastError("No se completó el pago", "Puede intentarlo de nuevo desde Pagar con Mercado Pago o Flow.");
   }
 }
 
 async function maybeContinueCheckout() {
-  if (new URLSearchParams(location.search).get("checkout") === "1") rememberCheckoutIntent();
-  if (!remoteOk || isPro(empresaActual())) return;
-  if (!consumeCheckoutIntent()) return;
   const params = new URLSearchParams(location.search);
-  if (params.has("checkout")) {
+  if (params.get("checkout") === "1") rememberCheckoutIntent(params.get("provider"));
+  if (!remoteOk || isPro(empresaActual())) return;
+  const intent = consumeCheckoutIntent();
+  if (!intent.wanted) return;
+  if (params.has("checkout") || params.has("provider")) {
     params.delete("checkout");
+    params.delete("provider");
     const next = params.toString();
     history.replaceState({}, "", next ? `/empresa?${next}` : "/empresa");
   }
   await startProCheckout({
+    provider: intent.provider,
     onError(msg) {
       toastError("No se pudo iniciar el pago", msg);
     },
@@ -548,7 +577,11 @@ el("formRegistro")?.addEventListener("submit", async (ev) => {
         "Cuenta creada",
         remoteOk ? "Complete el perfil y suba su logo." : "Guardada solo en este navegador.",
       );
-      if (remoteOk) await maybeContinueCheckout();
+      if (remoteOk) {
+        await refreshPayProviders();
+        refresh();
+        await maybeContinueCheckout();
+      }
     } catch (err) {
       showError(el("errAuth"), err.message);
       toastError("No se pudo crear la cuenta", err.message);
@@ -581,6 +614,8 @@ el("formEntrar")?.addEventListener("submit", async (ev) => {
       refresh();
       toastOk(`Hola, ${empresaActual()?.razonSocial || "empresa"}`);
       if (remoteOk) {
+        await refreshPayProviders();
+        refresh();
         await loadLogo();
         await loadFirma();
         await maybeContinueCheckout();
@@ -592,18 +627,24 @@ el("formEntrar")?.addEventListener("submit", async (ev) => {
   }, "Entrando…");
 });
 
-el("btnPasarPro")?.addEventListener("click", async (ev) => {
-  await withBusy(
-    ev.currentTarget,
-    () =>
-      startProCheckout({
-        onError(msg) {
-          toastError("No se pudo iniciar el pago", msg);
-        },
-      }),
-    "Abriendo Mercado Pago…",
-  );
-});
+function bindPay(id, provider) {
+  el(id)?.addEventListener("click", async (ev) => {
+    await withBusy(
+      ev.currentTarget,
+      () =>
+        startProCheckout({
+          provider,
+          onError(msg) {
+            toastError("No se pudo iniciar el pago", msg);
+          },
+        }),
+      checkoutBusyLabel(provider),
+    );
+  });
+}
+
+bindPay("btnPasarPro", "mp");
+bindPay("btnPasarProFlow", "flow");
 
 el("btnSalir")?.addEventListener("click", async () => {
   const ok = await confirmDialog({

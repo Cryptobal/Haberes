@@ -112,6 +112,12 @@ CREATE INDEX IF NOT EXISTS envios_company_created_idx ON envios (company_id, cre
 CREATE INDEX IF NOT EXISTS envios_company_trabajador_idx ON envios (company_id, trabajador_key);
 `;
 
+const INLINE_SCHEMA_007 = `
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS flow_token TEXT;
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS flow_order TEXT;
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS flow_commerce_order TEXT;
+`;
+
 let schemaReady = false;
 let dummyHashPromise = null;
 const rateHits = new Map();
@@ -336,6 +342,7 @@ async function ensureSchema() {
     await client.query(loadSchemaFile("004.sql", INLINE_SCHEMA_004));
     await client.query(loadSchemaFile("005.sql", INLINE_SCHEMA_005));
     await client.query(loadSchemaFile("006.sql", INLINE_SCHEMA_006));
+    await client.query(loadSchemaFile("007.sql", INLINE_SCHEMA_007));
     schemaReady = true;
     return true;
   } finally {

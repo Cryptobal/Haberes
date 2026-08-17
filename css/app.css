@@ -758,6 +758,9 @@ main {
 
 /* En pantallas angostas una etiqueta larga no debe estirar el contenedor. */
 @media (max-width: 639px) {
+  .workspace-bar .actions > .btn-wrap {
+    flex: 1 1 calc(50% - var(--s-2));
+  }
   .btn-row > .btn,
   .btn-row > label.btn,
   .btn-row > a.btn,

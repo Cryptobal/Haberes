@@ -1,43 +1,61 @@
-import { apiGet } from "./api.js";
-import { startProCheckout } from "./checkout.js";
+import {
+  checkoutBusyLabel,
+  loadCheckoutProviders,
+  startProCheckout,
+} from "./checkout.js";
 import { el, mountIndicadores, toastError, wireNav, withBusy } from "./ui.js";
 
 wireNav();
 mountIndicadores();
 
-function setCta(loggedPro) {
-  const btn = el("btnPasarPro");
+function setCta(loggedPro, providers) {
+  const mpBtn = el("btnPasarPro");
+  const flowBtn = el("btnPasarProFlow");
   const state = el("proState");
-  if (!btn) return;
+  const hasMp = providers.includes("mp");
+  const hasFlow = providers.includes("flow");
   if (loggedPro) {
-    btn.hidden = true;
+    if (mpBtn) mpBtn.hidden = true;
+    if (flowBtn) flowBtn.hidden = true;
     if (state) {
       state.hidden = false;
       state.textContent = "Ya es Pro";
     }
     return;
   }
-  btn.hidden = false;
-  btn.disabled = false;
   if (state) state.hidden = true;
+  if (mpBtn) {
+    mpBtn.hidden = !hasMp;
+    mpBtn.disabled = false;
+  }
+  if (flowBtn) {
+    flowBtn.hidden = !hasFlow;
+    flowBtn.disabled = false;
+  }
 }
 
 async function paintCta() {
-  const { data } = await apiGet("/api/me");
-  setCta(Boolean(data?.ok && data.company?.plan === "pro"));
+  const { providers, loggedPro } = await loadCheckoutProviders();
+  setCta(loggedPro, providers);
 }
 
 paintCta();
 
-el("btnPasarPro")?.addEventListener("click", async (ev) => {
-  await withBusy(
-    ev.currentTarget,
-    () =>
-      startProCheckout({
-        onError(msg) {
-          toastError("No se pudo iniciar el pago", msg);
-        },
-      }),
-    "Abriendo Mercado Pago…",
-  );
-});
+function bindPay(id, provider) {
+  el(id)?.addEventListener("click", async (ev) => {
+    await withBusy(
+      ev.currentTarget,
+      () =>
+        startProCheckout({
+          provider,
+          onError(msg) {
+            toastError("No se pudo iniciar el pago", msg);
+          },
+        }),
+      checkoutBusyLabel(provider),
+    );
+  });
+}
+
+bindPay("btnPasarPro", "mp");
+bindPay("btnPasarProFlow", "flow");

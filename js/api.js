@@ -132,5 +132,14 @@ export function authErrorMessage(data, status) {
   if (reason === "mp_error") {
     return "No se pudo abrir el cobro de Mercado Pago. Inténtelo de nuevo en un momento.";
   }
+  if (reason === "flow_unavailable") {
+    return "El cobro con Flow no está configurado. Escríbanos a contacto@lx3.ai.";
+  }
+  if (reason === "flow_error") {
+    return "No se pudo abrir el cobro de Flow. Inténtelo de nuevo en un momento.";
+  }
+  if (reason === "payment_unavailable") {
+    return "El cobro de Pro no está configurado. Escríbanos a contacto@lx3.ai.";
+  }
   return "No se pudo completar la solicitud.";
 }
