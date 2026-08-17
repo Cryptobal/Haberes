@@ -20,11 +20,13 @@ function markDialog(open) {
 export function lockScroll() {
   lockCount += 1;
   if (lockCount > 1) return;
+  const body = document.body;
+  if (!body) return;
   savedScroll = window.scrollY || 0;
-  document.body.classList.add("is-locked");
-  document.body.style.top = `-${savedScroll}px`;
-  document.body.style.position = "fixed";
-  document.body.style.width = "100%";
+  body.classList.add("is-locked");
+  body.style.top = `-${savedScroll}px`;
+  body.style.position = "fixed";
+  body.style.width = "100%";
 }
 
 export function unlockScroll() {
@@ -39,6 +41,9 @@ export function unlockScroll() {
 
 /** Mantiene el tabulador dentro del contenedor mientras esté abierto. */
 export function trapFocus(container) {
+  if (!container || typeof container.addEventListener !== "function") {
+    return () => {};
+  }
   function onKey(ev) {
     if (ev.key !== "Tab") return;
     const nodes = [...container.querySelectorAll(FOCUSABLE)].filter(

@@ -158,6 +158,12 @@ html {
   -webkit-text-size-adjust: 100%;
 }
 
+/* El atributo hidden debe ganar a cualquier display del componente.
+   Sin esto, un picker o el cajón nacen abiertos o tapan clics. */
+[hidden] {
+  display: none !important;
+}
+
 body {
   margin: 0;
   font-family: var(--font);
@@ -370,6 +376,7 @@ main {
   height: 1.5px;
   border-radius: 2px;
   background: currentColor;
+  pointer-events: none;
   transition: transform var(--dur-2) var(--ease);
 }
 
@@ -409,10 +416,12 @@ main {
   position: fixed;
   inset: 0;
   z-index: 80;
+  display: block;
 }
 
 .nav-drawer[hidden] {
   display: none !important;
+  pointer-events: none;
 }
 
 .nav-drawer-scrim {

@@ -500,6 +500,8 @@ const required = [
   "admin.html",
   "js/theme.js",
   "js/picker.js",
+  "js/ui.js",
+  "js/overlay.js",
   "reset.html",
   "vercel.json",
   "scripts/verify.mjs",
@@ -562,7 +564,47 @@ for (const f of htmlFiles) {
     `${f} tema día/noche`,
     /haberes:theme/.test(html) && /data-theme-toggle/.test(html),
   );
+  assert(
+    `${f} hamburguesa y cajón`,
+    /data-nav-burger/.test(html) &&
+      /id="navDrawer"/.test(html) &&
+      /data-nav-drawer/.test(html) &&
+      /data-nav-scrim/.test(html) &&
+      /data-nav-close/.test(html) &&
+      /Cerrar/.test(html),
+  );
+  const header = html.match(/<header class="site-header">[\s\S]*?<\/header>/);
+  assert(
+    `${f} cajón fuera de .site-header`,
+    Boolean(header) && !/data-nav-drawer/.test(header[0]) && /data-nav-drawer/.test(html),
+  );
+  assert(`${f} script de app con módulos`, /type="module"[^>]*js\/app-/.test(html));
 }
+
+console.log("\nNavegación móvil");
+const appEntries = [
+  "js/app-home.js",
+  "js/app-sueldo.js",
+  "js/app-finiquito.js",
+  "js/app-empresa.js",
+  "js/app-admin.js",
+  "js/app-reset.js",
+];
+for (const f of appEntries) {
+  assert(`${f} llama wireNav()`, /wireNav\(\s*\)/.test(readFileSync(join(root, f), "utf8")));
+}
+const uiSrc = readFileSync(join(root, "js/ui.js"), "utf8");
+assert("ui.js define wireDrawer", /function wireDrawer/.test(uiSrc) && /export function wireNav/.test(uiSrc));
+assert("ui.js monta el cajón en document.body", /document\.body\.append\(\s*drawer\s*\)/.test(uiSrc));
+assert(
+  "ui.js abre/cierra con el atributo hidden",
+  /removeAttribute\(\s*["']hidden["']\s*\)/.test(uiSrc) &&
+    /setAttribute\(\s*["']hidden["']/.test(uiSrc) &&
+    /data-nav-close/.test(uiSrc) &&
+    /data-nav-scrim/.test(uiSrc) &&
+    /Escape/.test(uiSrc),
+);
+assert("ui.js no usa dialog nativo para el menú", !/showModal|HTMLDialogElement|createElement\(\s*["']dialog["']\)/.test(uiSrc));
 
 const robots = readFileSync(join(root, "robots.txt"), "utf8");
 assert("robots User-agent *", /User-agent:\s*\*/i.test(robots));
@@ -1141,6 +1183,19 @@ assert(
     !/mercadopago|Mercado Pago/i.test(readFileSync(join(root, "precios.html"), "utf8")),
 );
 const css = readFileSync(join(root, "css/app.css"), "utf8");
+assert(
+  "css [hidden] global con display none !important",
+  /(?:^|\n)\[hidden\]\s*\{[^}]*display:\s*none\s*!important/.test(css),
+);
+assert(
+  "css hamburguesa i no intercepta el clic",
+  /\.nav-burger i\s*\{[^}]*pointer-events:\s*none/.test(css),
+);
+assert(
+  "css cajón fixed a viewport y oculto de verdad",
+  /\.nav-drawer\s*\{[\s\S]*?position:\s*fixed/.test(css) &&
+    /\.nav-drawer\[hidden\]\s*\{[^}]*display:\s*none\s*!important/.test(css),
+);
 assert(
   "css radios recortados, no absolute sueltos",
   /\.seg label \{[\s\S]*position:\s*relative/.test(css) &&
