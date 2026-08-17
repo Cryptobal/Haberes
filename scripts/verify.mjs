@@ -486,6 +486,7 @@ const required = [
   "api/firma.js",
   "api/documento.js",
   "api/_r2.js",
+  "api/storage.js",
   "api/_pdf.js",
   "api/_admin.js",
   "api/admin-login.js",
@@ -667,7 +668,9 @@ const profile = (await import("../api/profile.js")).default;
 const logoApi = (await import("../api/logo.js")).default;
 const documento = (await import("../api/documento.js")).default;
 const adminLogin = (await import("../api/admin-login.js")).default;
-const movimiento = (await import("../api/movimiento.js")).default;
+const movimientoMod = await import("../api/movimiento.js");
+const movimiento = movimientoMod.default;
+const { applyMovimientos } = movimientoMod;
 
 const regRes = mockRes();
 await register(mockReq("POST", { rut: "12.345.678-5", email: "a@b.cl", razonSocial: "SpA", password: "tenchars!!" }, "203.0.113.21"), regRes);
@@ -747,6 +750,55 @@ assert(
   JSON.stringify(movRes._out.body),
 );
 
+function mockMovClient(existingKeys = []) {
+  const { periodoMes } = movimientoMod;
+  const periodo = periodoMes();
+  const rows = existingKeys.map((key) => ["id", "co1", "liquidacion", key, periodo]);
+  let inserts = 0;
+  return {
+    get inserts() {
+      return inserts;
+    },
+    async query(sql, params = []) {
+      if (/SELECT COUNT/.test(sql)) return { rows: [{ n: rows.length }] };
+      if (/SELECT 1 FROM movimientos/.test(sql)) {
+        const found = rows.some(
+          (r) => r[1] === params[0] && r[4] === params[1] && r[2] === params[2] && r[3] === params[3],
+        );
+        return { rowCount: found ? 1 : 0, rows: found ? [{}] : [] };
+      }
+      if (/INSERT INTO movimientos/.test(sql)) {
+        inserts += 1;
+        rows.push(params);
+        return { rowCount: 1 };
+      }
+      return { rows: [], rowCount: 0 };
+    },
+  };
+}
+const dryClient = mockMovClient();
+const dry = await applyMovimientos(dryClient, { id: "co1", plan: "gratis" }, {
+  tipo: "liquidacion",
+  keys: ["a"],
+  commit: false,
+});
+assert(
+  "applyMovimientos dry-run no inserta",
+  dry.status === 200 && dry.body?.ok === true && dryClient.inserts === 0,
+  JSON.stringify({ status: dry.status, inserts: dryClient.inserts }),
+);
+const commitClient = mockMovClient();
+const committed = await applyMovimientos(commitClient, { id: "co1", plan: "gratis" }, {
+  tipo: "liquidacion",
+  keys: ["a"],
+  commit: true,
+});
+assert(
+  "applyMovimientos commit inserta una vez",
+  committed.status === 200 && committed.body?.movimientosMes === 1 && commitClient.inserts === 1,
+  JSON.stringify(committed.body),
+);
+
 const prevAdminE = process.env.ADMIN_EMAILS;
 const prevAdminH = process.env.ADMIN_PASSWORD_HASH;
 delete process.env.ADMIN_EMAILS;
@@ -763,8 +815,107 @@ else delete process.env.ADMIN_EMAILS;
 if (prevAdminH !== undefined) process.env.ADMIN_PASSWORD_HASH = prevAdminH;
 else delete process.env.ADMIN_PASSWORD_HASH;
 
-const { hasR2 } = await import("../api/_r2.js");
+const R2_ENV_KEYS = [
+  "R2_ACCOUNT_ID",
+  "CLOUDFLARE_ACCOUNT_ID",
+  "CF_ACCOUNT_ID",
+  "R2_ACCESS_KEY_ID",
+  "AWS_ACCESS_KEY_ID",
+  "R2_ACCESS_KEY",
+  "R2_SECRET_ACCESS_KEY",
+  "AWS_SECRET_ACCESS_KEY",
+  "R2_SECRET",
+  "R2_BUCKET",
+  "R2_BUCKET_NAME",
+  "BUCKET_NAME",
+];
+const prevR2 = Object.fromEntries(R2_ENV_KEYS.map((k) => [k, process.env[k]]));
+function restoreR2Env() {
+  for (const k of R2_ENV_KEYS) {
+    if (prevR2[k] === undefined) delete process.env[k];
+    else process.env[k] = prevR2[k];
+  }
+}
+function clearR2Env() {
+  for (const k of R2_ENV_KEYS) delete process.env[k];
+}
+
+const { hasR2, r2Config } = await import("../api/_r2.js");
+const storageApi = (await import("../api/storage.js")).default;
+clearR2Env();
 assert("hasR2 false sin env", hasR2() === false);
+assert("r2Config null sin env", r2Config() === null);
+
+const storageOff = mockRes();
+await storageApi({ method: "GET", headers: {} }, storageOff);
+assert(
+  "GET /api/storage false sin env",
+  storageOff._out.statusCode === 200 &&
+    storageOff._out.body?.ok === true &&
+    storageOff._out.body?.storage === false &&
+    Object.keys(storageOff._out.body).sort().join(",") === "ok,storage",
+  Object.keys(storageOff._out.body || {}).join(","),
+);
+const storagePost = mockRes();
+await storageApi(mockReq("POST", {}), storagePost);
+assert(
+  "POST /api/storage 405",
+  storagePost._out.statusCode === 405 && storagePost._out.body?.reason === "method_not_allowed",
+);
+
+process.env.CLOUDFLARE_ACCOUNT_ID = "acct-cf";
+process.env.AWS_ACCESS_KEY_ID = "key-aws";
+process.env.AWS_SECRET_ACCESS_KEY = "secret-aws";
+process.env.BUCKET_NAME = "haberes";
+assert("hasR2 true con alias Cloudflare/AWS", hasR2() === true);
+const aliasCfg = r2Config();
+assert(
+  "r2Config usa alias",
+  aliasCfg?.accountId === "acct-cf" &&
+    aliasCfg?.accessKeyId === "key-aws" &&
+    aliasCfg?.secretAccessKey === "secret-aws" &&
+    aliasCfg?.bucket === "haberes",
+);
+
+process.env.R2_ACCOUNT_ID = "acct-r2";
+process.env.R2_ACCESS_KEY_ID = "key-r2";
+process.env.R2_SECRET_ACCESS_KEY = "secret-r2";
+process.env.R2_BUCKET = "haberes-r2";
+const canonCfg = r2Config();
+assert(
+  "r2Config canónico gana al alias",
+  canonCfg?.accountId === "acct-r2" &&
+    canonCfg?.accessKeyId === "key-r2" &&
+    canonCfg?.secretAccessKey === "secret-r2" &&
+    canonCfg?.bucket === "haberes-r2",
+);
+
+clearR2Env();
+process.env.R2_ACCOUNT_ID = "   ";
+process.env.CF_ACCOUNT_ID = "acct-cf2";
+process.env.R2_ACCESS_KEY = "key-short";
+process.env.R2_SECRET = "secret-short";
+process.env.R2_BUCKET_NAME = "haberes";
+const blankCfg = r2Config();
+assert(
+  "r2Config salta vacíos y usa el siguiente",
+  blankCfg?.accountId === "acct-cf2" &&
+    blankCfg?.accessKeyId === "key-short" &&
+    blankCfg?.secretAccessKey === "secret-short" &&
+    blankCfg?.bucket === "haberes",
+);
+
+const storageOn = mockRes();
+await storageApi({ method: "GET", headers: {} }, storageOn);
+assert(
+  "GET /api/storage true con alias",
+  storageOn._out.statusCode === 200 &&
+    storageOn._out.body?.ok === true &&
+    storageOn._out.body?.storage === true &&
+    Object.keys(storageOn._out.body).sort().join(",") === "ok,storage" &&
+    !Object.values(storageOn._out.body).some((v) => typeof v === "string" && /acct-|key-|secret-/.test(v)),
+);
+restoreR2Env();
 
 const resetIp = "203.0.113.25";
 for (let i = 0; i < 5; i += 1) {
@@ -788,6 +939,7 @@ else delete process.env.RESEND_API_KEY;
 const apiFiles = [
   "api/_lib.js",
   "api/_r2.js",
+  "api/storage.js",
   "api/_pdf.js",
   "api/register.js",
   "api/login.js",
@@ -911,6 +1063,24 @@ assert(
     /xlsxPagoMasivo/.test(empJs) &&
     /\/api\/movimiento/.test(readFileSync(join(root, "js/plan.js"), "utf8")),
 );
+const bajarPdfSrc = empJs.slice(empJs.indexOf("async function bajarPdf"), empJs.indexOf('el("btnPdfLiquidacion")'));
+assert(
+  "Descargar PDF no cuenta movimiento si falla el almacenamiento",
+  /no_storage/.test(bajarPdfSrc) &&
+    /el almacenamiento no está configurado/.test(bajarPdfSrc) &&
+    bajarPdfSrc.indexOf("apiDownloadPdf") < bajarPdfSrc.indexOf("consumirMovimientos") &&
+    bajarPdfSrc.indexOf("if (!blob)") < bajarPdfSrc.indexOf("consumirMovimientos") &&
+    bajarPdfSrc.indexOf("consumirMovimientos") > bajarPdfSrc.indexOf("return;"),
+);
+const docSrc = readFileSync(join(root, "api/documento.js"), "utf8");
+assert(
+  "documento no_storage antes de insertar movimientos",
+  /if \(!hasR2\(\)\) return noStorage/.test(docSrc) &&
+    docSrc.indexOf("if (!hasR2()) return noStorage(res)") < docSrc.indexOf("commit: true") &&
+    docSrc.indexOf("await r2Put") < docSrc.indexOf("commit: true") &&
+    docSrc.indexOf("commit: false") < docSrc.indexOf("await r2Put") &&
+    docSrc.indexOf("commit: false") > docSrc.indexOf("if (!hasR2()) return noStorage(res)"),
+);
 assert("app-empresa editar y eliminar trabajador", /deleteTrabajador/.test(empJs) && /updateTrabajador/.test(empJs));
 assert("app-empresa CSV upsert por RUT", /upsertTrabajadores/.test(empJs));
 assert(
@@ -977,6 +1147,40 @@ assert(
     /clip-path:\s*inset\(50%\)/.test(css) &&
     !/\.seg input \{\s*position:\s*absolute;\s*opacity:\s*0/.test(css),
 );
+assert(
+  "css --on-ink crema de día y verde de noche",
+  /:root\s*\{[\s\S]*?--on-ink:\s*#f6f4ef/.test(css) &&
+    /html\[data-theme="night"\]\s*\{[\s\S]*?--on-ink:\s*#12382c/.test(css),
+);
+assert(
+  "css texto sobre --ink usa --on-ink",
+  /\.btn\s*\{[\s\S]*?color:\s*var\(--on-ink\)/.test(css) &&
+    /\.btn:hover\s*\{[\s\S]*?color:\s*var\(--on-ink\)/.test(css) &&
+    /\.seg input:checked \+ span[\s\S]*?color:\s*var\(--on-ink\)/.test(css) &&
+    /\.steps li::before[\s\S]*?color:\s*var\(--on-ink\)/.test(css) &&
+    /\.ws-tab\[aria-selected="true"\][\s\S]*?color:\s*var\(--on-ink\)/.test(css),
+);
+assert("css cream #f6f4ef solo en el token --on-ink", (css.match(/#f6f4ef/g) || []).length === 1);
+assert(
+  "css --warn-line cálido, notice sin negro",
+  /:root\s*\{[\s\S]*?--warn-line:/.test(css) &&
+    /html\[data-theme="night"\]\s*\{[\s\S]*?--warn-line:\s*#c4a35a/.test(css) &&
+    /\.notice\s*\{[\s\S]*?border:\s*1px solid var\(--warn-line\)/.test(css) &&
+    !/\.notice\s*\{[^}]*#000/.test(css),
+);
+assert(
+  "css noche --line y --line-strong más claros que el papel",
+  /html\[data-theme="night"\]\s*\{[\s\S]*?--line:\s*#5a6b66/.test(css) &&
+    /html\[data-theme="night"\]\s*\{[\s\S]*?--line-strong:\s*#6e827c/.test(css),
+);
+assert(
+  "css picker elevado y opción seleccionada obvia de noche",
+  /\.picker-panel\s*\{[\s\S]*?background:\s*var\(--surface-2\)/.test(css) &&
+    /html\[data-theme="night"\]\s*\{[\s\S]*?--surface-2:\s*#222b28/.test(css) &&
+    /\.picker-option\[aria-selected="true"\]/.test(css) &&
+    /html\[data-theme="night"\]\s*\{[\s\S]*?--option-on-bg:\s*var\(--ink\)/.test(css) &&
+    /html\[data-theme="night"\]\s*\{[\s\S]*?--option-on-fg:\s*var\(--on-ink\)/.test(css),
+);
 assert("css dos columnas desde 900px", /@media \(min-width: 900px\)/.test(css));
 assert(
   "index y como describen Gratis/Pro",
@@ -987,6 +1191,29 @@ assert(
 const r2src = readFileSync(join(root, "api/_r2.js"), "utf8");
 assert("R2 sin CORS público", !/Access-Control-Allow-Origin/i.test(r2src) && !/r2\.dev/.test(r2src));
 assert("R2 lee solo process.env", /R2_ACCOUNT_ID/.test(r2src) && /process\.env/.test(r2src));
+assert("R2 no imprime secretos", !/console\.(log|info|debug|warn|error)/.test(r2src));
+assert(
+  "R2 acepta alias Cloudflare/AWS",
+  /CLOUDFLARE_ACCOUNT_ID/.test(r2src) &&
+    /CF_ACCOUNT_ID/.test(r2src) &&
+    /AWS_ACCESS_KEY_ID/.test(r2src) &&
+    /R2_ACCESS_KEY/.test(r2src) &&
+    /AWS_SECRET_ACCESS_KEY/.test(r2src) &&
+    /R2_SECRET/.test(r2src) &&
+    /R2_BUCKET_NAME/.test(r2src) &&
+    /BUCKET_NAME/.test(r2src),
+);
+const storageSrc = readFileSync(join(root, "api/storage.js"), "utf8");
+assert(
+  "storage no revela variables",
+  /hasR2/.test(storageSrc) &&
+    !/missing|R2_ACCOUNT_ID|CLOUDFLARE|AWS_/.test(storageSrc) &&
+    !/console\./.test(storageSrc),
+);
+const meSrc = readFileSync(join(root, "api/me.js"), "utf8");
+assert("me incluye storage boolean", /storage:\s*hasR2\(\)/.test(meSrc));
+const adminMeSrc = readFileSync(join(root, "api/admin-me.js"), "utf8");
+assert("admin-me incluye storage boolean", /storage:\s*hasR2\(\)/.test(adminMeSrc));
 assert(
   "reset.html pide newPassword",
   /newPassword/.test(readFileSync(join(root, "js/app-reset.js"), "utf8")) &&

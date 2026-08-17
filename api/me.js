@@ -7,6 +7,7 @@ import {
   readSessionToken,
   withDb,
 } from "./_lib.js";
+import { hasR2 } from "./_r2.js";
 
 export default async function handler(req, res) {
   if (req.method !== "GET") {
@@ -38,6 +39,7 @@ export default async function handler(req, res) {
       company: companyPublic(result.row),
       movimientosMes: result.movimientosMes,
       limite: String(result.row.plan || "gratis").toLowerCase() === "pro" ? null : 5,
+      storage: hasR2(),
     });
   } catch {
     return json(res, 503, { ok: false, reason: "db_unavailable" });

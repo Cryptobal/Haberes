@@ -3,6 +3,7 @@ import { FALLBACK_UF, UF_MAX, UF_MIN } from "../js/constants.js";
 import { calcularFiniquitoCompleto } from "../js/finiquito.js";
 import { calcularSueldo } from "../js/sueldo.js";
 import { json, newId, noStorage, requireCompany, sendBytes, withDb } from "./_lib.js";
+import { applyMovimientos, normalizeKeys } from "./movimiento.js";
 import { buildFiniquitoPdf, buildLiquidacionPdf, mergePdfs } from "./_pdf.js";
 import { hasR2, r2Get, r2Put } from "./_r2.js";
 
@@ -127,6 +128,18 @@ export default async function handler(req, res) {
   if (!trabajadores.length) return json(res, 400, { ok: false, reason: "invalid_payload" });
   const uf = parseUf(body.uf);
   const empresa = companyFromRow(companyRow);
+  const movimientoKeys = normalizeKeys(trabajadores.map((t) => t.rut));
+  if (movimientoKeys.length) {
+    try {
+      const cupo = await withDb(async (client) =>
+        applyMovimientos(client, companyRow, { tipo, keys: movimientoKeys, commit: false }),
+      );
+      if (!cupo) return json(res, 503, { ok: false, reason: "db_unavailable" });
+      if (cupo.status !== 200) return json(res, cupo.status, cupo.body);
+    } catch {
+      return json(res, 503, { ok: false, reason: "db_unavailable" });
+    }
+  }
   const logo = await assetBytes(companyRow, "logo_key", "logo_content_type");
   const firma = await assetBytes(companyRow, "firma_key", "firma_content_type");
 
@@ -199,6 +212,9 @@ export default async function handler(req, res) {
          VALUES ($1, $2, $3, $4, $5)`,
         [id, companyRow.id, tipo, key, "application/pdf"],
       );
+      if (movimientoKeys.length) {
+        await applyMovimientos(client, companyRow, { tipo, keys: movimientoKeys, commit: true });
+      }
     });
   } catch {
     return json(res, 502, { ok: false, reason: "storage_error" });

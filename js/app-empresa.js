@@ -1197,7 +1197,14 @@ async function bajarPdf(tipo, errId, extra, btn) {
   showError(el(errId), "");
   const rows = workersForEmit();
   if (!rows.length) return showError(el(errId), "Seleccione uno o más trabajadores");
-  if (!(await consumirMovimientos(tipo, rows, errId))) return;
+  emp = empresaActual();
+  const gate = puedeEmitir(emp, { tipo, keys: rows.map(workerKey) });
+  if (!gate.ok) {
+    const msg = gate.message || MSG_LIMITE;
+    showError(el(errId), msg);
+    toastError("Tope del plan Gratis", msg);
+    return;
+  }
   return withBusy(btn, () => descargarPdf(tipo, errId, extra, rows), "Generando…");
 }
 
@@ -1226,6 +1233,7 @@ async function descargarPdf(tipo, errId, extra, rows) {
     toastError("No se pudo generar el PDF", msg);
     return;
   }
+  await consumirMovimientos(tipo, rows, errId);
   const many = rows.length > 1;
   triggerDownload(
     blob,

@@ -29,7 +29,7 @@ export async function countMovimientos(client, companyId, periodo) {
   return Number(found.rows[0]?.n) || 0;
 }
 
-function normalizeKeys(raw) {
+export function normalizeKeys(raw) {
   const list = Array.isArray(raw) ? raw : [];
   const out = [];
   const seen = new Set();
@@ -40,6 +40,49 @@ function normalizeKeys(raw) {
     out.push(key);
   }
   return out.slice(0, 200);
+}
+
+export async function applyMovimientos(client, company, { tipo, keys, commit = true }) {
+  const periodo = periodoMes();
+  const pro = isProPlan(company);
+  const usados = await countMovimientos(client, company.id, periodo);
+  if (!pro && keys.length > 1) {
+    return { status: 403, body: { ok: false, reason: "uno_a_uno", usados, limite: GRATIS_LIMITE } };
+  }
+  let inserted = 0;
+  for (const key of keys) {
+    const exists = await client.query(
+      `SELECT 1 FROM movimientos WHERE company_id = $1 AND periodo = $2 AND tipo = $3 AND trabajador_key = $4 LIMIT 1`,
+      [company.id, periodo, tipo, key],
+    );
+    if (exists.rowCount) continue;
+    if (!pro && usados + inserted + 1 > GRATIS_LIMITE) {
+      return {
+        status: 403,
+        body: { ok: false, reason: "limite_gratis", usados: usados + inserted, limite: GRATIS_LIMITE },
+      };
+    }
+    if (commit) {
+      await client.query(
+        `INSERT INTO movimientos (id, company_id, tipo, trabajador_key, periodo)
+         VALUES ($1, $2, $3, $4, $5)
+         ON CONFLICT (company_id, periodo, tipo, trabajador_key) DO NOTHING`,
+        [newId(), company.id, tipo, key, periodo],
+      );
+    }
+    inserted += 1;
+  }
+  const total = commit ? await countMovimientos(client, company.id, periodo) : usados + inserted;
+  return {
+    status: 200,
+    body: {
+      ok: true,
+      plan: company.plan || "gratis",
+      movimientosMes: total,
+      limite: pro ? null : GRATIS_LIMITE,
+      company: companyPublic(company),
+    },
+  };
 }
 
 export default async function handler(req, res) {
@@ -85,48 +128,8 @@ export default async function handler(req, res) {
   const keys = normalizeKeys(body.keys);
   if (!keys.length) return json(res, 400, { ok: false, reason: "invalid_payload" });
 
-  const periodo = periodoMes();
-  const pro = isProPlan(company);
-
   try {
-    const result = await withDb(async (client) => {
-      const usados = await countMovimientos(client, company.id, periodo);
-      if (!pro && keys.length > 1) {
-        return { status: 403, body: { ok: false, reason: "uno_a_uno", usados, limite: GRATIS_LIMITE } };
-      }
-      let inserted = 0;
-      for (const key of keys) {
-        const exists = await client.query(
-          `SELECT 1 FROM movimientos WHERE company_id = $1 AND periodo = $2 AND tipo = $3 AND trabajador_key = $4 LIMIT 1`,
-          [company.id, periodo, tipo, key],
-        );
-        if (exists.rowCount) continue;
-        if (!pro && usados + inserted + 1 > GRATIS_LIMITE) {
-          return {
-            status: 403,
-            body: { ok: false, reason: "limite_gratis", usados: usados + inserted, limite: GRATIS_LIMITE },
-          };
-        }
-        await client.query(
-          `INSERT INTO movimientos (id, company_id, tipo, trabajador_key, periodo)
-           VALUES ($1, $2, $3, $4, $5)
-           ON CONFLICT (company_id, periodo, tipo, trabajador_key) DO NOTHING`,
-          [newId(), company.id, tipo, key, periodo],
-        );
-        inserted += 1;
-      }
-      const total = await countMovimientos(client, company.id, periodo);
-      return {
-        status: 200,
-        body: {
-          ok: true,
-          plan: company.plan || "gratis",
-          movimientosMes: total,
-          limite: pro ? null : GRATIS_LIMITE,
-          company: companyPublic(company),
-        },
-      };
-    });
+    const result = await withDb(async (client) => applyMovimientos(client, company, { tipo, keys, commit: true }));
     if (!result) return noBackend(res);
     return json(res, result.status, result.body);
   } catch {

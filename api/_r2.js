@@ -2,23 +2,25 @@ import { createHash, createHmac } from "node:crypto";
 
 const EMPTY_SHA256 = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
 
-export function hasR2() {
-  return Boolean(
-    String(process.env.R2_ACCOUNT_ID || "").trim() &&
-      String(process.env.R2_ACCESS_KEY_ID || "").trim() &&
-      String(process.env.R2_SECRET_ACCESS_KEY || "").trim() &&
-      String(process.env.R2_BUCKET || "").trim(),
-  );
+function envFirst(...names) {
+  for (const name of names) {
+    const value = String(process.env[name] || "").trim();
+    if (value) return value;
+  }
+  return "";
 }
 
-function r2Config() {
-  if (!hasR2()) return null;
-  return {
-    accountId: String(process.env.R2_ACCOUNT_ID).trim(),
-    accessKeyId: String(process.env.R2_ACCESS_KEY_ID).trim(),
-    secretAccessKey: String(process.env.R2_SECRET_ACCESS_KEY).trim(),
-    bucket: String(process.env.R2_BUCKET).trim(),
-  };
+export function r2Config() {
+  const accountId = envFirst("R2_ACCOUNT_ID", "CLOUDFLARE_ACCOUNT_ID", "CF_ACCOUNT_ID");
+  const accessKeyId = envFirst("R2_ACCESS_KEY_ID", "AWS_ACCESS_KEY_ID", "R2_ACCESS_KEY");
+  const secretAccessKey = envFirst("R2_SECRET_ACCESS_KEY", "AWS_SECRET_ACCESS_KEY", "R2_SECRET");
+  const bucket = envFirst("R2_BUCKET", "R2_BUCKET_NAME", "BUCKET_NAME");
+  if (!accountId || !accessKeyId || !secretAccessKey || !bucket) return null;
+  return { accountId, accessKeyId, secretAccessKey, bucket };
+}
+
+export function hasR2() {
+  return Boolean(r2Config());
 }
 
 function hmac(key, data) {
