@@ -107,7 +107,7 @@ export function calcularSueldo(input = {}, indicadores = {}) {
 
   const saludLegal = roundPeso(baseAfpSalud * SALUD_TASA);
   const saludMonto =
-    saludTipo === "isapre" ? Math.max(saludLegal, roundPeso(isaprePactado)) : saludLegal;
+    saludTipo !== "fonasa" ? Math.max(saludLegal, roundPeso(isaprePactado)) : saludLegal;
 
   const cesantiaTasa = contrato === "indefinido" || contrato === "indefinido " ? CESANTIA_INDEFINIDO : 0;
   const cesantiaMonto = roundPeso(baseCesantia * cesantiaTasa);
@@ -137,7 +137,7 @@ export function calcularSueldo(input = {}, indicadores = {}) {
     { key: "afp", label: `AFP ${AFP_NOMBRES[afpKey] || afpKey} (${(tasa * 100).toFixed(2)} %)`, monto: afpMonto },
     {
       key: "salud",
-      label: saludTipo === "isapre" ? "Salud Isapre" : "Salud Fonasa (7 %)",
+      label: saludTipo !== "fonasa" ? "Salud Isapre" : "Salud Fonasa (7 %)",
       monto: saludMonto,
     },
     { key: "cesantia", label: "Seguro de cesantía (trabajador)", monto: cesantiaMonto },

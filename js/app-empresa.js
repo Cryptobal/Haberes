@@ -16,6 +16,16 @@ import { BANCOS_CL, TIPO_CUENTA_OPTS, glosaSueldo, xlsxPagoEjemplo, xlsxPagoMasi
 import { createPicker } from "./picker.js";
 import { startProCheckout, consumeCheckoutIntent, rememberCheckoutIntent } from "./checkout.js";
 import {
+  LRE_COMUNAS_FRECUENTES,
+  LRE_MUTUALES,
+  LRE_REGIONES,
+  LRE_SALUD,
+  codificarAnsi,
+  datosFaltantesLre,
+  generarLre,
+  nombreArchivoLre,
+} from "./lre.js";
+import {
   GRATIS_LIMITE,
   MSG_CARGA_PRO,
   MSG_LIMITE,
@@ -78,7 +88,10 @@ const AFP_OPTS = [
 ];
 const SALUD_OPTS = [
   { value: "fonasa", label: "Fonasa" },
-  { value: "isapre", label: "Isapre" },
+  ...Object.entries(LRE_SALUD)
+    .filter(([k]) => k !== "fonasa")
+    .map(([value, s]) => ({ value, label: s.nombre })),
+  { value: "isapre", label: "Isapre (sin especificar)" },
 ];
 const CONTRATO_OPTS = [
   { value: "indefinido", label: "Indefinido" },
@@ -93,6 +106,14 @@ let remoteOk = false;
 let pickers = {};
 let dateIngreso = null;
 let dateTermino = null;
+let dateAltaIngreso = null;
+let altaIngresoTocada = false;
+
+function hoyIso() {
+  const h = new Date();
+  const p2 = (n) => String(n).padStart(2, "0");
+  return `${h.getFullYear()}-${p2(h.getMonth() + 1)}-${p2(h.getDate())}`;
+}
 
 function panel(logged) {
   el("auth").hidden = logged;
@@ -407,6 +428,8 @@ function resetAltaForm() {
   if (el("altaSueldo")) el("altaSueldo").value = "1000000";
   pickers.altaAfp?.setValue("modelo");
   pickers.altaSalud?.setValue("fonasa");
+  altaIngresoTocada = false;
+  dateAltaIngreso?.setValue(hoyIso());
   pickers.altaContrato?.setValue("indefinido");
   pickers.altaBanco?.setValue("001");
   pickers.altaTipoCta?.setValue("corriente");
@@ -432,6 +455,13 @@ function fillAlta(t) {
   el("altaGrat").checked = Boolean(t.gratificacionArt50);
   pickers.altaAfp?.setValue(t.afp || "modelo");
   pickers.altaSalud?.setValue(t.salud || "fonasa");
+  if (t.fechaIngreso) {
+    altaIngresoTocada = true;
+    dateAltaIngreso?.setValue(t.fechaIngreso);
+  } else {
+    altaIngresoTocada = false;
+    dateAltaIngreso?.setValue(hoyIso());
+  }
   pickers.altaContrato?.setValue(t.contrato || "indefinido");
   pickers.altaBanco?.setValue(t.banco || "001");
   pickers.altaTipoCta?.setValue(t.tipoCuenta || "corriente");
@@ -582,6 +612,7 @@ function refresh() {
   renderCupo();
   fillPerfil();
   renderTrabajadores();
+  refrescarLre();
   syncCausalNota();
 }
 
@@ -610,6 +641,25 @@ function initPickers() {
     searchable: true,
     placeholder: "Banco",
   });
+  pickers.lreRegion = createPicker(el("lreRegionPick"), {
+    options: LRE_REGIONES.map(([value, label]) => ({ value: String(value), label })),
+    value: "13",
+    searchable: true,
+    placeholder: "Región",
+  });
+  pickers.lreMutual = createPicker(el("lreMutualPick"), {
+    options: LRE_MUTUALES.map(([value, label]) => ({ value: String(value), label })),
+    value: "0",
+    searchable: false,
+    placeholder: "Mutual",
+  });
+  const dl = el("lreComunas");
+  if (dl) {
+    dl.innerHTML = LRE_COMUNAS_FRECUENTES.map(
+      ([cod, nombre]) => `<option value="${cod}">${nombre}</option>`,
+    ).join("");
+  }
+
   pickers.altaTipoCta = createPicker(el("altaTipoCtaPick"), {
     options: TIPO_CUENTA_OPTS,
     value: "corriente",
@@ -637,6 +687,11 @@ function initPickers() {
     searchable: true,
     placeholder: "Causal",
     onChange: syncCausalNota,
+  });
+  dateAltaIngreso = createDateFields(el("altaFechaIngreso"), {
+    onChange: () => {
+      altaIngresoTocada = true;
+    },
   });
   dateIngreso = createDateFields(el("finIngreso"), { value: "2020-01-15" });
   dateTermino = createDateFields(el("finTermino"), {
@@ -1140,6 +1195,7 @@ el("formAlta")?.addEventListener("submit", (ev) => {
     sueldoBase: numVal("altaSueldo"),
     afp: pickers.altaAfp?.getValue() || "modelo",
     salud: pickers.altaSalud?.getValue() || "fonasa",
+    fechaIngreso: altaIngresoTocada ? dateAltaIngreso?.getValue() || "" : "",
     isaprePactado: numVal("altaIsapre"),
     contrato: pickers.altaContrato?.getValue() || "indefinido",
     horasExtras: numVal("altaHoras"),
@@ -1392,6 +1448,69 @@ el("btnPagoXlsx")?.addEventListener("click", () => {
     );
   } catch (err) {
     showError(el("errPago"), err.message);
+  }
+});
+
+function lreConfigGuardada() {
+  return emp?.lre || {};
+}
+
+function refrescarLre() {
+  const cfg = lreConfigGuardada();
+  if (cfg.region) pickers.lreRegion?.setValue(String(cfg.region));
+  if (cfg.comuna) el("lreComuna").value = cfg.comuna;
+  if (cfg.mutual !== undefined) pickers.lreMutual?.setValue(String(cfg.mutual));
+  const lista = emp?.trabajadores || [];
+  const faltan = lista
+    .map((t) => ({ t, campos: datosFaltantesLre(t) }))
+    .filter((x) => x.campos.length);
+  const nota = el("lreFaltantes");
+  if (!nota) return;
+  if (!faltan.length) {
+    nota.hidden = true;
+    nota.textContent = "";
+  } else {
+    nota.hidden = false;
+    nota.textContent =
+      `Datos pendientes para el LRE — ` +
+      faltan
+        .map((x) => `${x.t.nombre || x.t.rut || "trabajador"}: ${x.campos.join(", ")}`)
+        .join(" · ") +
+      ". Edite cada ficha para completarlos; el CSV deja esas celdas vacías.";
+  }
+}
+
+el("btnLreCsv")?.addEventListener("click", () => {
+  showError(el("errLre"), "");
+  emp = empresaActual();
+  if (!isPro(emp)) {
+    return showError(el("errLre"), "El LRE es parte del plan Pro. Escríbanos para activarlo.");
+  }
+  const lista = emp?.trabajadores || [];
+  if (!lista.length) return showError(el("errLre"), "No hay trabajadores en la nómina");
+  const region = Number(pickers.lreRegion?.getValue()) || 0;
+  const comuna = Number(val("lreComuna")) || 0;
+  const mutual = Number(pickers.lreMutual?.getValue()) || 0;
+  if (!region || !comuna) {
+    return showError(el("errLre"), "Indique la región y el código de comuna (Tabla N°3 del manual)");
+  }
+  emp.lre = { region, comuna, mutual };
+  guardarEmpresa(emp);
+  const periodo = pickers.periodo?.getValue() || "";
+  try {
+    const csv = generarLre({
+      trabajadores: lista,
+      contexto: { region, comuna, mutual },
+      indicadores,
+    });
+    triggerDownload(
+      new Blob([codificarAnsi(csv)], { type: "text/csv" }),
+      nombreArchivoLre(emp.rut, periodo),
+    );
+    toastOk("LRE descargado", `${lista.length} trabajador${lista.length === 1 ? "" : "es"} · revíselo antes de subirlo a Mi DT`);
+    refrescarLre();
+  } catch (err) {
+    showError(el("errLre"), err.message);
   }
 });
 

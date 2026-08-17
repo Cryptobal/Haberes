@@ -316,6 +316,23 @@ def run():
             page.screenshot(path=f"{SHOTS}/movil-documentos.png", full_page=True)
             audit(page, "empresa/documentos", MOBILE)
 
+            # Libro de Remuneraciones Electrónico (LRE)
+            if not page.query_selector("#lreRegionPick .picker-trigger"):
+                note("el selector de región del LRE no renderizó")
+            if page.is_hidden("#lreFaltantes"):
+                note("el LRE no avisa los datos faltantes (la trabajadora no tiene fecha de ingreso)")
+            elif "fecha de ingreso" not in (page.text_content("#lreFaltantes") or ""):
+                note("la nota de faltantes del LRE no menciona la fecha de ingreso")
+            page.fill("#lreComuna", "13101")
+            page.click("#btnLreCsv")
+            page.wait_for_timeout(400)
+            if page.is_hidden("#errLre"):
+                note("el LRE no bloqueó la descarga en plan Gratis (es una función Pro)")
+            elif "Pro" not in (page.text_content("#errLre") or ""):
+                note("el error del LRE en plan Gratis no explica que es una función Pro")
+            page.locator("#btnLreCsv").scroll_into_view_if_needed()
+            page.screenshot(path=f"{SHOTS}/movil-lre.png")
+
         if js_errors:
             note(f"errores de JS durante la interacción: {js_errors[:4]}")
 
