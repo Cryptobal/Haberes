@@ -1,0 +1,4 @@
+rut,dias_ausencia,dias_licencia,dias_vacaciones,horas_extras,bono_1_nombre,bono_1_monto,bono_1_imponible,descuento_1_nombre,descuento_1_monto,descuento_1_tipo,descuento_2_nombre,descuento_2_monto,descuento_2_tipo
+12.345.678-5,3,5,0,0,Bono producción,80000,si,Cuota préstamo,120000,convencional,,,
+9.876.543-3,0,0,15,8,Bono asistencia,30000,si,Anticipo agosto,100000,anticipo,,,
+11.111.111-1,0,0,0,2,Bono de cargo,90000,si,,,,,,

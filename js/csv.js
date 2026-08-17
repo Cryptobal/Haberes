@@ -152,6 +152,7 @@ export function parseTrabajadoresCsv(text) {
       isaprePactado: parseNumber(rec.plan_isapre || rec.isapre || rec.pactado || 0),
       contrato: mapContrato(rec.contrato || rec.tipo_contrato),
       fechaIngreso: parseFechaIso(rec.fecha_ingreso || rec.fecha_inicio || rec.ingreso),
+      fechaTermino: parseFechaIso(rec.fecha_termino || rec.fecha_fin || rec.termino),
       horasExtras: parseNumber(rec.horas_extras || rec.he || 0),
       bonos: 0,
       haberesExtra,
@@ -169,11 +170,113 @@ export function parseTrabajadoresCsv(text) {
   return rows;
 }
 
+function parseNamedDescuentos(rec) {
+  const byN = new Map();
+  for (const [key, val] of Object.entries(rec)) {
+    const m = String(key).match(/^descuento_(\d+)_(nombre|monto|tipo)$/);
+    if (!m) continue;
+    const n = Number(m[1]);
+    const field = m[2];
+    if (!byN.has(n)) byN.set(n, { nombre: "", monto: 0, tipo: "convencional" });
+    const row = byN.get(n);
+    if (field === "nombre") row.nombre = String(val || "").trim();
+    if (field === "monto") row.monto = parseNumber(val);
+    if (field === "tipo") {
+      const t = String(val || "convencional").trim().toLowerCase();
+      row.tipo = ["legal", "anticipo", "convencional", "vivienda_educacion"].includes(t)
+        ? t
+        : "convencional";
+    }
+  }
+  return [...byN.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .map(([, row]) => row)
+    .filter((row) => row.nombre || row.monto);
+}
+
+/**
+ * Novedades del mes. RUT es la llave.
+ * @param {string} text
+ * @param {{ rutsConocidos?: Set<string>|string[] }} [opts]
+ * @returns {{ rows: object[], rechazados: { rut: string, motivo: string }[], error?: string }}
+ */
+export function parseNovedadesCsv(text, opts = {}) {
+  const lines = String(text || "")
+    .replace(/^\uFEFF/, "")
+    .split(/\r?\n/)
+    .filter((l) => l.trim());
+  if (lines.length < 2) return { rows: [], rechazados: [] };
+
+  const headers = parseLine(lines[0]).map(normHeader);
+  const conocidos = opts.rutsConocidos
+    ? new Set(
+        [...opts.rutsConocidos].map((r) =>
+          String(r || "")
+            .replace(/\./g, "")
+            .replace(/\s/g, "")
+            .toUpperCase(),
+        ),
+      )
+    : null;
+
+  const rows = [];
+  const rechazados = [];
+  const vistos = new Map();
+
+  for (let i = 1; i < lines.length; i += 1) {
+    const cols = parseLine(lines[i]);
+    const rec = {};
+    headers.forEach((h, idx) => {
+      rec[h] = cols[idx] ?? "";
+    });
+    const rutRaw = String(rec.rut || "").trim();
+    if (!rutRaw) continue;
+    const rutKey = rutRaw.replace(/\./g, "").replace(/\s/g, "").toUpperCase();
+    if (vistos.has(rutKey)) {
+      return {
+        rows: [],
+        rechazados: [],
+        error: `RUT duplicado en novedades: ${rutRaw}`,
+      };
+    }
+    vistos.set(rutKey, true);
+    if (conocidos && !conocidos.has(rutKey)) {
+      rechazados.push({ rut: rutRaw, motivo: "RUT no está en la ficha de trabajadores" });
+      continue;
+    }
+    rows.push({
+      rut: rutRaw,
+      diasAusencia: parseNumber(rec.dias_ausencia || rec.ausencia || 0),
+      diasLicencia: parseNumber(rec.dias_licencia || rec.licencia || 0),
+      diasVacaciones: parseNumber(rec.dias_vacaciones || rec.vacaciones || 0),
+      pagaCarencia: truthy(rec.paga_carencia),
+      horasExtras: parseNumber(rec.horas_extras || rec.he || 0),
+      haberesExtra: parseNamedBonos(rec),
+      descuentos: parseNamedDescuentos(rec),
+      diasTrabajadosManual:
+        rec.dias_trabajados == null || String(rec.dias_trabajados).trim() === ""
+          ? null
+          : parseNumber(rec.dias_trabajados),
+      nota: String(rec.nota || "").trim().slice(0, 200),
+    });
+  }
+  return { rows, rechazados };
+}
+
 export const CSV_CABECERA =
-  "nombre,rut,cargo,sueldo_base,afp,salud,plan_isapre,contrato,fecha_ingreso,jornada,horas_extras,colacion,movilizacion,gratificacion,email,banco,tipo_cuenta,nro_cuenta,bono_1_nombre,bono_1_monto,bono_1_imponible,bono_2_nombre,bono_2_monto,bono_2_imponible";
+  "nombre,rut,cargo,sueldo_base,afp,salud,plan_isapre,contrato,fecha_ingreso,fecha_termino,jornada,horas_extras,colacion,movilizacion,gratificacion,email,banco,tipo_cuenta,nro_cuenta,bono_1_nombre,bono_1_monto,bono_1_imponible,bono_2_nombre,bono_2_monto,bono_2_imponible";
 
 export const CSV_EJEMPLO = `${CSV_CABECERA}
-Ana Pérez,12.345.678-5,Administradora,1000000,modelo,fonasa,0,indefinido,01/03/2023,42,0,50000,40000,no,ana@empresa.cl,001,corriente,12345678,Bono producción,80000,si,Colación extra,15000,no
-Luis Soto,9.876.543-3,Operario,800000,habitat,banmedica,45000,plazo_fijo,15/01/2025,42,8,40000,35000,si,luis@empresa.cl,012,vista,11111111,Bono asistencia,30000,si,Movilización extra,12000,no
-Camila Núñez,11.111.111-1,Supervisora,1450000,uno,isapre,120000,indefinido,01/06/2022,42,2,60000,50000,si,camila@empresa.cl,037,corriente,98765432,Bono de cargo,90000,si,Asignación de movilización,20000,no
+Ana Pérez,12.345.678-5,Administradora,1000000,modelo,fonasa,0,indefinido,01/03/2023,,42,0,50000,40000,no,ana@empresa.cl,001,corriente,12345678,Bono producción,80000,si,Colación extra,15000,no
+Luis Soto,9.876.543-3,Operario,800000,habitat,banmedica,45000,plazo_fijo,15/01/2025,,42,8,40000,35000,si,luis@empresa.cl,012,vista,11111111,Bono asistencia,30000,si,Movilización extra,12000,no
+Camila Núñez,11.111.111-1,Supervisora,1450000,uno,isapre,120000,indefinido,01/06/2022,,42,2,60000,50000,si,camila@empresa.cl,037,corriente,98765432,Bono de cargo,90000,si,Asignación de movilización,20000,no
+`;
+
+export const NOVEDADES_CABECERA =
+  "rut,dias_ausencia,dias_licencia,dias_vacaciones,horas_extras,bono_1_nombre,bono_1_monto,bono_1_imponible,descuento_1_nombre,descuento_1_monto,descuento_1_tipo,descuento_2_nombre,descuento_2_monto,descuento_2_tipo";
+
+export const NOVEDADES_EJEMPLO = `${NOVEDADES_CABECERA}
+12.345.678-5,3,5,0,0,Bono producción,80000,si,Cuota préstamo,120000,convencional,,,
+9.876.543-3,0,0,15,8,Bono asistencia,30000,si,Anticipo agosto,100000,anticipo,,,
+11.111.111-1,0,0,0,2,Bono de cargo,90000,si,,,,,,
 `;

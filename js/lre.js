@@ -20,6 +20,7 @@
 // sitio no calcula tasas de cargo del empleador, y la DT aún no publica
 // códigos propios para el aporte de la reforma.
 
+import { sumaAnticiposPrestamos } from "./novedades.js";
 import { calcularSueldo, roundPeso } from "./sueldo.js";
 
 // ---------------------------------------------------------------------------
@@ -340,10 +341,22 @@ function filaLre(trabajador, contexto, indicadores) {
       .filter((h) => h.imponible && !["sueldoBase", "horasExtras", "gratificacion"].includes(h.key))
       .reduce((s, h) => s + h.monto, 0),
   );
-  const otrosNoImp = roundPeso(Math.max(0, c.noImponible - roundPeso(trabajador.colacion || 0) - roundPeso(trabajador.movilizacion || 0)));
+  const colacionCalc = roundPeso((c.haberes || []).find((h) => h.key === "colacion")?.monto || 0);
+  const movilizacionCalc = roundPeso((c.haberes || []).find((h) => h.key === "movilizacion")?.monto || 0);
+  const otrosNoImp = roundPeso(Math.max(0, c.noImponible - colacionCalc - movilizacionCalc));
   const saludVoluntaria = Math.max(0, c.salud.monto - c.salud.legal);
   const cotizaciones = c.afp.monto + c.salud.monto + c.cesantia.monto;
-  const otrosDescuentos = roundPeso(trabajador.otrosDescuentos || 0);
+  const namedDesc = Array.isArray(c.descuentosNombrados) ? c.descuentosNombrados : [];
+  const anticiposPrestamos = sumaAnticiposPrestamos(namedDesc);
+  const otrosDescLegal = namedDesc
+    .filter((d) => d.tipo === "legal" || d.tipo === "vivienda_educacion")
+    .reduce((s, d) => s + roundPeso(d.monto), 0);
+  const otrosDescuentos = roundPeso(
+    (namedDesc.length ? 0 : Number(trabajador.otrosDescuentos) || 0) + otrosDescLegal,
+  );
+  const diasTrabajados = c.dias?.diasTrabajados ?? 30;
+  const diasLicencia = c.dias?.diasLicencia || 0;
+  const diasVacaciones = c.dias?.diasVacaciones || 0;
 
   // Identificación
   v[1101] = rutParaLre(trabajador.rut);
@@ -361,7 +374,9 @@ function filaLre(trabajador, contexto, indicadores) {
   v[1151] = 1;
   v[1110] = 0;
   v[1152] = contexto.mutual ?? 0;
-  v[1115] = 30;
+  v[1115] = diasTrabajados;
+  if (diasLicencia) v[1116] = diasLicencia;
+  if (diasVacaciones) v[1117] = diasVacaciones;
   v[1118] = 0;
   v[1155] = 0;
   v[1157] = 0;
@@ -372,10 +387,8 @@ function filaLre(trabajador, contexto, indicadores) {
   if (c.montoHorasExtras) v[2102] = c.montoHorasExtras;
   if (c.gratificacion) v[2106] = c.gratificacion;
   if (bonosImp) v[2111] = bonosImp;
-  const colacion = roundPeso(trabajador.colacion || 0);
-  const movilizacion = roundPeso(trabajador.movilizacion || 0);
-  if (colacion) v[2301] = colacion;
-  if (movilizacion) v[2302] = movilizacion;
+  if (colacionCalc) v[2301] = colacionCalc;
+  if (movilizacionCalc) v[2302] = movilizacionCalc;
   if (otrosNoImp) v[2306] = otrosNoImp; // devoluciones de gastos, art. 41 inciso 2
 
   // Descuentos
@@ -385,6 +398,7 @@ function filaLre(trabajador, contexto, indicadores) {
   if (c.cesantia.monto) v[3151] = c.cesantia.monto;
   v[3161] = c.iusc;
   if (otrosDescuentos) v[3183] = otrosDescuentos;
+  if (anticiposPrestamos) v[3188] = anticiposPrestamos;
 
   // Aportes del empleador: el sitio no calcula tasas de cargo del empleador
   // (mutual según siniestralidad, SIS, aporte Ley 21.735). Van en 0 para que

@@ -55,7 +55,13 @@ export function bindEmpresaDocumentos(ctx) {
     const rows = ctx.selectedWorkers();
     if (!rows.length) return [];
     const first = ctx.readHaberesEditor(rows[0]);
-    return [first, ...rows.slice(1)];
+    const periodo = ctx.pickers.periodo?.getValue() || "";
+    const rest = rows.slice(1).map((t) => {
+      if (!ctx.payloadTrabajador) return t;
+      const p = ctx.payloadTrabajador(t);
+      return { ...t, ...p, periodo };
+    });
+    return [first, ...rest];
   }
 
   async function consumirMovimientos(tipo, rows, errId) {
@@ -93,6 +99,25 @@ export function bindEmpresaDocumentos(ctx) {
     showError(el(errId), "");
     const rows = workersForEmit();
     if (!rows.length) return showError(el(errId), "Seleccione uno o más trabajadores");
+    if (tipo === "liquidacion") {
+      for (const t of rows) {
+        const calc = calcularSueldo(t, ctx.indicadores);
+        if (calc.liquidoNegativo) {
+          return showError(
+            el(errId),
+            `No se puede emitir para ${t.nombre}: líquido negativo (${calc.liquido}).`,
+          );
+        }
+      }
+      if (ctx.actualizarAvisoArt58) ctx.actualizarAvisoArt58(rows[0]);
+      const aviso = el("avisoArt58");
+      if (aviso && !aviso.hidden && !ctx.art58Confirmado?.()) {
+        return showError(
+          el(errId),
+          "Los descuentos convencionales superan el 15 % del bruto (art. 58). Confirme la casilla antes de emitir.",
+        );
+      }
+    }
     ctx.emp = empresaActual();
     const gate = puedeEmitir(ctx.emp, { tipo, keys: rows.map(workerKey) });
     if (!gate.ok) {
@@ -155,6 +180,20 @@ export function bindEmpresaDocumentos(ctx) {
     const periodo = periodoLabel(periodoVal) || periodoVal;
     try {
       const calc = calcularSueldo(rows[0], ctx.indicadores);
+      if (calc.liquidoNegativo) {
+        return showError(
+          el("errPrint"),
+          `No se puede emitir: el líquido queda negativo (${calc.liquido}). Revise los descuentos.`,
+        );
+      }
+      if (ctx.actualizarAvisoArt58) ctx.actualizarAvisoArt58(rows[0]);
+      const aviso = el("avisoArt58");
+      if (aviso && !aviso.hidden && !ctx.art58Confirmado?.()) {
+        return showError(
+          el("errPrint"),
+          "Los descuentos convencionales superan el 15 % del bruto (art. 58). Confirme la casilla antes de emitir.",
+        );
+      }
       if (!(await consumirMovimientos("liquidacion", rows, "errPrint"))) return;
       abrirPreview(
         "Vista previa · liquidación",

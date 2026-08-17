@@ -1,4 +1,4 @@
-nombre,rut,cargo,sueldo_base,afp,salud,plan_isapre,contrato,fecha_ingreso,jornada,horas_extras,colacion,movilizacion,gratificacion,email,banco,tipo_cuenta,nro_cuenta,bono_1_nombre,bono_1_monto,bono_1_imponible,bono_2_nombre,bono_2_monto,bono_2_imponible
-Ana Pérez,12.345.678-5,Administradora,1000000,modelo,fonasa,0,indefinido,01/03/2023,42,0,50000,40000,no,ana@empresa.cl,001,corriente,12345678,Bono producción,80000,si,Colación extra,15000,no
-Luis Soto,9.876.543-3,Operario,800000,habitat,banmedica,45000,plazo_fijo,15/01/2025,42,8,40000,35000,si,luis@empresa.cl,012,vista,11111111,Bono asistencia,30000,si,Movilización extra,12000,no
-Camila Núñez,11.111.111-1,Supervisora,1450000,uno,isapre,120000,indefinido,01/06/2022,42,2,60000,50000,si,camila@empresa.cl,037,corriente,98765432,Bono de cargo,90000,si,Asignación de movilización,20000,no
+nombre,rut,cargo,sueldo_base,afp,salud,plan_isapre,contrato,fecha_ingreso,fecha_termino,jornada,horas_extras,colacion,movilizacion,gratificacion,email,banco,tipo_cuenta,nro_cuenta,bono_1_nombre,bono_1_monto,bono_1_imponible,bono_2_nombre,bono_2_monto,bono_2_imponible
+Ana Pérez,12.345.678-5,Administradora,1000000,modelo,fonasa,0,indefinido,01/03/2023,,42,0,50000,40000,no,ana@empresa.cl,001,corriente,12345678,Bono producción,80000,si,Colación extra,15000,no
+Luis Soto,9.876.543-3,Operario,800000,habitat,banmedica,45000,plazo_fijo,15/01/2025,,42,8,40000,35000,si,luis@empresa.cl,012,vista,11111111,Bono asistencia,30000,si,Movilización extra,12000,no
+Camila Núñez,11.111.111-1,Supervisora,1450000,uno,isapre,120000,indefinido,01/06/2022,,42,2,60000,50000,si,camila@empresa.cl,037,corriente,98765432,Bono de cargo,90000,si,Asignación de movilización,20000,no

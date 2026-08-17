@@ -52,7 +52,10 @@ en `js/picker.js` (hoja inferior con velo en móvil, panel anclado en escritorio
 
 La tipografía IBM Plex Sans está autoalojada en `fonts/` (subconjunto latino, `woff2`, licencia en `fonts/LICENSE`). No se cargan fuentes desde Google Fonts.
 
-Los trabajadores de la liquidación viven en `localStorage` de este navegador.
+Los trabajadores de la liquidación viven en `localStorage` de este navegador. La **ficha**
+guarda lo permanente del contrato; las **novedades del período** (ausencias, licencia, feriado,
+horas extras, bonos y descuentos con nombre) se cargan por mes, a mano o con
+`ejemplos/novedades.csv`, para que no se repitan solas al mes siguiente.
 
 ## Libro de Remuneraciones Electrónico (LRE)
 
@@ -62,7 +65,9 @@ Los trabajadores de la liquidación viven en `localStorage` de este navegador.
 Los montos salen del mismo `calcularSueldo` de la liquidación, así que cuadran al peso.
 Es un borrador para revisar antes de subir a Mi DT: los aportes del empleador (mutual, SIS,
 aporte Ley 21.735) van en 0 —la DT aún no publica códigos para la reforma y la tasa de mutual
-depende de cada empresa— y se usan 30 días trabajados por persona. La descarga es Pro.
+depende de cada empresa—. Los días trabajados, de licencia y de vacaciones (códigos 1115–1117)
+y los descuentos por anticipos y préstamos (3188) salen de las **novedades del período**; si no
+hay novedades, se asume mes completo de 30 días. La descarga es Pro.
 
 ## Cuentas en Postgres (opcional)
 

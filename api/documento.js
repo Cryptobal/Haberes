@@ -67,9 +67,27 @@ export default async function handler(req, res) {
     : body.trabajador
       ? [body.trabajador]
       : [];
-  const trabajadores = rawList.map(workerFromBody).filter((t) => t.nombre);
+  let trabajadores;
+  try {
+    trabajadores = rawList.map(workerFromBody).filter((t) => t.nombre);
+  } catch (err) {
+    if (err?.code === "invalid_payload") {
+      return json(res, 400, { ok: false, reason: "invalid_payload" });
+    }
+    throw err;
+  }
   if (!trabajadores.length) return json(res, 400, { ok: false, reason: "invalid_payload" });
   const uf = parseUf(body.uf);
+  // Bloquear líquido negativo en liquidación
+  if (tipo === "liquidacion") {
+    const { calcularSueldo } = await import("../js/sueldo.js");
+    for (const t of trabajadores) {
+      const calc = calcularSueldo({ ...t, periodo: body.periodo || t.periodo }, { uf });
+      if (calc.liquidoNegativo) {
+        return json(res, 400, { ok: false, reason: "liquido_negativo" });
+      }
+    }
+  }
   const empresa = companyFromRow(companyRow);
   const movimientoKeys = normalizeKeys(trabajadores.map((t) => t.rut));
   if (movimientoKeys.length) {

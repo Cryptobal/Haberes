@@ -20,7 +20,7 @@ import {
   TOPE_CESANTIA_UF,
 } from "../js/constants.js";
 import { CAUSALES, causalPorId } from "../js/causales.js";
-import { parseTrabajadoresCsv } from "../js/csv.js";
+import { parseNovedadesCsv, parseTrabajadoresCsv } from "../js/csv.js";
 import {
   aniosServicio,
   calcularFiniquito,
@@ -28,6 +28,12 @@ import {
   feriadoProporcional,
   vigenciaUnAnioOMas,
 } from "../js/finiquito.js";
+import {
+  diasDelPeriodo,
+  inputDesdeFichaYNovedades,
+  proporcional,
+  validarArt58,
+} from "../js/novedades.js";
 import {
   calcularIusc,
   calcularSueldo,
@@ -74,6 +80,17 @@ function close(a, b, eps = 0.01) {
 }
 
 console.log("Haberes verify\n");
+
+console.log("No regresión · mes completo sin novedades");
+{
+  const csvNamed0 = parseTrabajadoresCsv(readFileSync(join(root, "ejemplos/trabajadores.csv"), "utf8"));
+  const liqs0 = csvNamed0.map((t) => calcularSueldo(t, { uf: FALLBACK_UF }).liquido);
+  assert(
+    "No regresión: Ana/Luis/Camila sin novedades → 988656 / 988031 / 1570949",
+    liqs0[0] === 988656 && liqs0[1] === 988031 && liqs0[2] === 1570949,
+    JSON.stringify(liqs0),
+  );
+}
 
 console.log("Constantes oficiales");
 assert("UF fallback", FALLBACK_UF === 40854.01, String(FALLBACK_UF));
@@ -1988,6 +2005,206 @@ console.log("\nLibro de Remuneraciones Electrónico (formato DT v8.0, marzo 2023
   assert("empresa.html: panel LRE con descarga y manual oficial",
     html.includes("btnLreCsv") && html.includes("Libro de Remuneraciones") && html.includes("dt-docs/lre"));
   assert("empresa.html: ficha con fecha de ingreso (selector propio)", html.includes("altaFechaIngreso"));
+  assert("empresa.html: fecha de término en ficha", html.includes("altaFechaTermino"));
+  assert("empresa.html: novedades del mes", html.includes("Novedades del mes") && html.includes("novAusencia"));
+  assert(
+    "empresa.html: LRE ya no afirma 30 días fijos",
+    !html.includes("usa 30 días trabajados por persona"),
+  );
+  const readme = readFileSync(join(root, "README.md"), "utf8");
+  assert(
+    "README: LRE ya no afirma 30 días fijos por persona",
+    !readme.includes("se usan 30 días trabajados por persona") &&
+      readme.toLowerCase().includes("novedades"),
+  );
+
+  // LRE con novedades reales
+  const anaLre = inputDesdeFichaYNovedades(
+    {
+      nombre: "Ana Pérez",
+      rut: "12.345.678-5",
+      sueldoBase: 1_000_000,
+      afp: "modelo",
+      salud: "fonasa",
+      contrato: "indefinido",
+      colacion: 50_000,
+      movilizacion: 40_000,
+      fechaIngreso: "2023-03-01",
+    },
+    {
+      diasAusencia: 3,
+      diasLicencia: 5,
+      haberesExtra: [{ nombre: "Bono producción", monto: 80_000, imponible: true }],
+      descuentos: [{ nombre: "Cuota préstamo", monto: 120_000, tipo: "convencional" }],
+    },
+    { periodo: "2026-08" },
+  );
+  const csvAna = generarLre({
+    trabajadores: [anaLre],
+    contexto: { region: 13, comuna: 13101, mutual: 0 },
+    indicadores: fallbackIndicadores(),
+  });
+  const colsAna = csvAna.trim().split(/\r?\n/)[0].split(";");
+  const valsAna = csvAna.trim().split(/\r?\n/)[1].split(";");
+  const enAna = (cod) => valsAna[colsAna.findIndex((c) => c.includes(`(${cod})`))];
+  assert("LRE: 1115 = 22 días trabajados (no 30)", enAna("1115") === "22", enAna("1115"));
+  assert("LRE: 1116 = 5 días licencia", enAna("1116") === "5", enAna("1116"));
+  assert("LRE: 3188 = anticipos+préstamos 120000", enAna("3188") === "120000", enAna("3188"));
+}
+
+console.log("\nDías trabajados y proporcionalidad");
+{
+  const d22 = diasDelPeriodo({ diasAusencia: 3, diasLicencia: 5 });
+  assert("3 ausencia + 5 licencia → 22 días", d22.diasTrabajados === 22 && d22.diasBase === 30);
+  assert("sueldo 1e6 × 22/30 → 733333", proporcional(1_000_000, 22) === 733333);
+
+  const ana = calcularSueldo(
+    {
+      sueldoBase: 1_000_000,
+      afp: "modelo",
+      salud: "fonasa",
+      contrato: "indefinido",
+      colacion: 50_000,
+      movilizacion: 40_000,
+      haberesExtra: [{ nombre: "Bono producción", monto: 80_000, imponible: true }],
+      diasAusencia: 3,
+      diasLicencia: 5,
+      descuentos: [{ nombre: "Cuota préstamo", monto: 120_000, tipo: "convencional" }],
+    },
+    { uf: FALLBACK_UF },
+  );
+  assert("caso §3 imponible 813333", ana.imponible === 813333, String(ana.imponible));
+  assert("caso §3 no imponible 66000", ana.noImponible === 66_000, String(ana.noImponible));
+  assert("caso §3 AFP 86051", ana.afp.monto === 86_051, String(ana.afp.monto));
+  assert("caso §3 salud 56933", ana.salud.monto === 56_933, String(ana.salud.monto));
+  assert("caso §3 cesantía 4880", ana.cesantia.monto === 4_880, String(ana.cesantia.monto));
+  assert("caso §3 total haberes 879333", ana.totalHaberes === 879_333, String(ana.totalHaberes));
+  assert("caso §3 líquido 611469", ana.liquido === 611_469, String(ana.liquido));
+  assert(
+    "descuento con nombre en salida",
+    ana.descuentos.some((d) => d.label === "Cuota préstamo" && d.monto === 120_000),
+  );
+
+  assert(
+    "ingreso día 16 → diasBase 15",
+    diasDelPeriodo({ periodo: "2026-08", fechaIngreso: "2026-08-16" }).diasBase === 15,
+  );
+  assert(
+    "término día 10 → diasBase 10",
+    diasDelPeriodo({ periodo: "2026-08", fechaTermino: "2026-08-10" }).diasBase === 10,
+  );
+  assert(
+    "término día 31 → diasBase 30",
+    diasDelPeriodo({ periodo: "2026-08", fechaTermino: "2026-08-31" }).diasBase === 30,
+  );
+  assert(
+    "mes 31 y mes 28 → mismo diasBase 30 si trabaja completo",
+    diasDelPeriodo({ periodo: "2026-08" }).diasBase === 30 &&
+      diasDelPeriodo({ periodo: "2026-02" }).diasBase === 30,
+  );
+  assert(
+    "vacaciones no restan días trabajados",
+    diasDelPeriodo({ diasVacaciones: 15 }).diasTrabajados === 30,
+  );
+  assert(
+    "pagaCarencia false: licencia 5 descuenta 5",
+    diasDelPeriodo({ diasLicencia: 5, pagaCarencia: false }).diasTrabajados === 25,
+  );
+  assert(
+    "pagaCarencia true + licencia 5: paga 3 de carencia → 28",
+    diasDelPeriodo({ diasLicencia: 5, pagaCarencia: true }).diasTrabajados === 28,
+  );
+
+  const he30 = calcularSueldo(
+    { sueldoBase: 800_000, horasExtras: 8, jornada: 42 },
+    { uf: FALLBACK_UF },
+  );
+  const he15 = calcularSueldo(
+    {
+      sueldoBase: 800_000,
+      horasExtras: 8,
+      jornada: 42,
+      diasTrabajadosManual: 15,
+      diasAusencia: 0,
+      diasLicencia: 0,
+    },
+    { uf: FALLBACK_UF },
+  );
+  assert(
+    "horas extras no se proporcionalizan",
+    he30.montoHorasExtras === he15.montoHorasExtras && he30.montoHorasExtras > 0,
+    `${he30.montoHorasExtras} vs ${he15.montoHorasExtras}`,
+  );
+
+  const capped = diasDelPeriodo({ diasAusencia: 40, diasLicencia: 10 });
+  assert(
+    "días trabajados nunca negativos ni > diasBase",
+    capped.diasTrabajados >= 0 &&
+      capped.diasTrabajados <= capped.diasBase &&
+      capped.avisoTope === true,
+  );
+}
+
+console.log("\nDescuentos y artículo 58");
+{
+  const vOk = validarArt58({
+    totalHaberes: 879_333,
+    descuentos: [{ monto: 120_000, tipo: "convencional" }],
+  });
+  assert("tope 15 % de 879333 = 131900", vOk.tope15 === 131_900);
+  assert("120000 no dispara aviso art. 58", vOk.supera15 === false);
+
+  const vEx = validarArt58({
+    totalHaberes: 879_333,
+    descuentos: [{ monto: 150_000, tipo: "convencional" }],
+  });
+  assert("150000 dispara exceso 18100", vEx.supera15 && vEx.exceso15 === 18_100);
+
+  const vAnt = validarArt58({
+    totalHaberes: 879_333,
+    descuentos: [{ monto: 500_000, tipo: "anticipo" }],
+  });
+  assert("anticipo no dispara aviso del 15 %", vAnt.supera15 === false && vAnt.anticipos === 500_000);
+
+  const neg = calcularSueldo(
+    {
+      sueldoBase: 100_000,
+      descuentos: [{ nombre: "Préstamo", monto: 500_000, tipo: "convencional" }],
+      diasAusencia: 0,
+    },
+    { uf: FALLBACK_UF },
+  );
+  assert("líquido negativo señalado", neg.liquidoNegativo === true && neg.liquido < 0);
+}
+
+console.log("\nNovedades por planilla");
+{
+  const novPath = join(root, "ejemplos/novedades.csv");
+  assert("existe ejemplos/novedades.csv", existsSync(novPath));
+  const parsed = parseNovedadesCsv(readFileSync(novPath, "utf8"), {
+    rutsConocidos: ["12345678-5", "9876543-3", "11111111-1"],
+  });
+  assert("parseNovedadesCsv: 3 filas", parsed.rows.length === 3, String(parsed.rows.length));
+  assert(
+    "Ana: 3 ausencia, 5 licencia, descuento convencional",
+    parsed.rows[0].diasAusencia === 3 &&
+      parsed.rows[0].diasLicencia === 5 &&
+      parsed.rows[0].descuentos[0]?.tipo === "convencional" &&
+      parsed.rows[0].descuentos[0]?.monto === 120_000,
+  );
+  assert(
+    "Luis: anticipo no convencional",
+    parsed.rows[1].descuentos[0]?.tipo === "anticipo",
+  );
+  const unk = parseNovedadesCsv("rut,dias_ausencia\n1.234.567-4,1\n", {
+    rutsConocidos: ["12345678-5"],
+  });
+  assert(
+    "RUT desconocido en rechazados",
+    unk.rows.length === 0 && unk.rechazados.some((r) => r.rut.includes("1.234.567")),
+  );
+  const dup = parseNovedadesCsv("rut,dias_ausencia\n12.345.678-5,1\n12.345.678-5,2\n");
+  assert("RUT duplicado invalida archivo", Boolean(dup.error) && /duplicado/i.test(dup.error));
 }
 
 assert("disclaimer constante presente", DISCLAIMER.includes("Dirección del Trabajo") && DISCLAIMER.includes("Previred"));

@@ -1,7 +1,8 @@
 import { triggerDownload } from "./api.js";
+import { inputDesdeFichaYNovedades } from "./novedades.js";
 import { codificarAnsi, datosFaltantesLre, generarLre, nombreArchivoLre } from "./lre.js";
 import { isPro } from "./plan.js";
-import { empresaActual, guardarEmpresa } from "./storage.js";
+import { empresaActual, getNovedades, guardarEmpresa } from "./storage.js";
 import { el, showError, toastOk, val } from "./ui.js";
 
 export function bindEmpresaLre(ctx) {
@@ -52,8 +53,11 @@ export function bindEmpresaLre(ctx) {
     guardarEmpresa(ctx.emp);
     const periodo = ctx.pickers.periodo?.getValue() || "";
     try {
+      const trabajadores = lista.map((t) =>
+        inputDesdeFichaYNovedades(t, getNovedades(ctx.emp, periodo, t.id), { periodo }),
+      );
       const csv = generarLre({
-        trabajadores: lista,
+        trabajadores,
         contexto: { region, comuna, mutual },
         indicadores: ctx.indicadores,
       });
@@ -61,7 +65,10 @@ export function bindEmpresaLre(ctx) {
         new Blob([codificarAnsi(csv)], { type: "text/csv" }),
         nombreArchivoLre(ctx.emp.rut, periodo),
       );
-      toastOk("LRE descargado", `${lista.length} trabajador${lista.length === 1 ? "" : "es"} · revíselo antes de subirlo a Mi DT`);
+      toastOk(
+        "LRE descargado",
+        `${lista.length} trabajador${lista.length === 1 ? "" : "es"} · revíselo antes de subirlo a Mi DT`,
+      );
       refrescarLre();
     } catch (err) {
       showError(el("errLre"), err.message);

@@ -82,7 +82,23 @@ export function liquidacionHtml({ empresa, trabajador, periodo, calc, logoSrc = 
     <div>RUT: ${esc(formatRut(trabajador?.rut || "—"))}</div>
     <div>Cargo: ${esc(trabajador?.cargo || "—")}</div>
     <div>Contrato: ${esc(calc.contrato === "plazo_fijo" ? "Plazo fijo" : "Indefinido")}</div>
+    <div>Días trabajados: <strong>${esc(String(calc.dias?.diasTrabajados ?? 30))} de ${esc(String(calc.dias?.diasBase ?? 30))}</strong></div>
+    ${
+      (calc.dias?.diasLicencia || 0) > 0
+        ? `<div>Licencia médica: ${esc(String(calc.dias.diasLicencia))} día${calc.dias.diasLicencia === 1 ? "" : "s"}</div>`
+        : ""
+    }
+    ${
+      (calc.dias?.diasVacaciones || 0) > 0
+        ? `<div>Feriado legal: ${esc(String(calc.dias.diasVacaciones))} día${calc.dias.diasVacaciones === 1 ? "" : "s"}</div>`
+        : ""
+    }
   </div>
+  ${
+    calc.leyendaLicencia
+      ? `<p class="muted" style="margin:0 0 12px;font-size:12px">${esc(calc.leyendaLicencia)}</p>`
+      : ""
+  }
   <div class="grid">
     <table>
       <thead><tr><th>Haberes</th><th class="n">Monto</th></tr></thead>

@@ -6,7 +6,13 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { FALLBACK_UF } from "../js/constants.js";
-import { CSV_CABECERA, CSV_EJEMPLO, parseTrabajadoresCsv } from "../js/csv.js";
+import {
+  CSV_CABECERA,
+  CSV_EJEMPLO,
+  NOVEDADES_CABECERA,
+  NOVEDADES_EJEMPLO,
+  parseTrabajadoresCsv,
+} from "../js/csv.js";
 import { calcularSueldo } from "../js/sueldo.js";
 import { filasPago } from "../js/pago.js";
 import { renderNomina, perfilPorId } from "../js/nomina.js";
@@ -21,6 +27,12 @@ if (!csvText.startsWith(CSV_CABECERA)) {
   throw new Error("CSV_EJEMPLO no empieza con CSV_CABECERA");
 }
 writeFileSync(join(outDir, "trabajadores.csv"), csvText, "utf8");
+
+const novText = NOVEDADES_EJEMPLO.trimEnd() + "\n";
+if (!novText.startsWith(NOVEDADES_CABECERA)) {
+  throw new Error("NOVEDADES_EJEMPLO no empieza con NOVEDADES_CABECERA");
+}
+writeFileSync(join(outDir, "novedades.csv"), novText, "utf8");
 
 const trabajadores = parseTrabajadoresCsv(csvText);
 if (trabajadores.length !== 3) throw new Error(`Se esperaban 3 trabajadores, hay ${trabajadores.length}`);
@@ -59,5 +71,6 @@ writeFileSync(join(outDir, "nomina-pago.xlsx"), nomina.bytes);
 
 console.log("ejemplos/trabajadores.csv");
 console.log("ejemplos/trabajadores.xlsx");
+console.log("ejemplos/novedades.csv");
 console.log("ejemplos/nomina-pago.xlsx");
 console.log("líquidos:", filas.map((f) => f.monto).join(", "));
