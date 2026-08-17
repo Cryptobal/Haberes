@@ -508,10 +508,8 @@ const required = [
   "api/checkout.js",
   "api/mp-webhook.js",
   "api/_mp.js",
-  "precios.html",
-  "admin.html",
-  "js/theme.js",
-  "js/picker.js",
+  "js/ui.js",
+  "js/overlay.js",
   "reset.html",
   "vercel.json",
   "scripts/verify.mjs",
@@ -574,7 +572,48 @@ for (const f of htmlFiles) {
     `${f} tema día/noche`,
     /haberes:theme/.test(html) && /data-theme-toggle/.test(html),
   );
+  assert(
+    `${f} hamburguesa y cajón`,
+    /data-nav-burger/.test(html) &&
+      /id="navDrawer"/.test(html) &&
+      /data-nav-drawer/.test(html) &&
+      /data-nav-scrim/.test(html) &&
+      /data-nav-close/.test(html) &&
+      /Cerrar/.test(html),
+  );
+  const header = html.match(/<header class="site-header">[\s\S]*?<\/header>/);
+  assert(
+    `${f} cajón fuera de .site-header`,
+    Boolean(header) && !/data-nav-drawer/.test(header[0]) && /data-nav-drawer/.test(html),
+  );
+  assert(`${f} script de app con módulos`, /type="module"[^>]*js\/app-/.test(html));
 }
+
+console.log("\nNavegación móvil");
+const appEntries = [
+  "js/app-home.js",
+  "js/app-sueldo.js",
+  "js/app-finiquito.js",
+  "js/app-empresa.js",
+  "js/app-admin.js",
+  "js/app-reset.js",
+  "js/app-precios.js",
+];
+for (const f of appEntries) {
+  assert(`${f} llama wireNav()`, /wireNav\(\s*\)/.test(readFileSync(join(root, f), "utf8")));
+}
+const uiSrc = readFileSync(join(root, "js/ui.js"), "utf8");
+assert("ui.js define wireDrawer", /function wireDrawer/.test(uiSrc) && /export function wireNav/.test(uiSrc));
+assert("ui.js monta el cajón en document.body", /document\.body\.append\(\s*drawer\s*\)/.test(uiSrc));
+assert(
+  "ui.js abre/cierra con el atributo hidden",
+  /removeAttribute\(\s*["']hidden["']\s*\)/.test(uiSrc) &&
+    /setAttribute\(\s*["']hidden["']/.test(uiSrc) &&
+    /data-nav-close/.test(uiSrc) &&
+    /data-nav-scrim/.test(uiSrc) &&
+    /Escape/.test(uiSrc),
+);
+assert("ui.js no usa dialog nativo para el menú", !/showModal|HTMLDialogElement|createElement\(\s*["']dialog["']\)/.test(uiSrc));
 
 const robots = readFileSync(join(root, "robots.txt"), "utf8");
 assert("robots User-agent *", /User-agent:\s*\*/i.test(robots));
@@ -815,6 +854,7 @@ console.log("\nCheckout Mercado Pago");
 const MP_TOKEN_KEYS = [
   "mp_access_token",
   "mp_access",
+  "MP_ACCESS_YOKEN",
   "Mp:access_token",
   "MP_ACCESS_TOKEN",
   "MERCADOPAGO_ACCESS_TOKEN",
@@ -861,6 +901,7 @@ assert(
   "MP_TOKEN_ENV: mp_access_token primero",
   MP_TOKEN_ENV[0] === "mp_access_token" &&
     MP_TOKEN_ENV.includes("mp_access") &&
+    MP_TOKEN_ENV.includes("MP_ACCESS_YOKEN") &&
     MP_TOKEN_ENV.includes("MP_ACCESS_TOKEN") &&
     MP_TOKEN_ENV.includes("MERCADOPAGO_ACCESS_TOKEN") &&
     MP_TOKEN_ENV.includes("MP_ACCESS_TOKEN_PROD") &&
@@ -875,6 +916,9 @@ process.env.mp_access = "unit-mp-short-alias";
 assert("mp_access funciona si no hay mp_access_token", mpAccessToken() === "unit-mp-short-alias");
 delete process.env.mp_access;
 delete process.env.MP_ACCESS_TOKEN;
+process.env.MP_ACCESS_YOKEN = "unit-mp-typo";
+assert("MP_ACCESS_YOKEN funciona", hasMp() === true && mpAccessToken() === "unit-mp-typo");
+delete process.env.MP_ACCESS_YOKEN;
 process.env.MP_ACCESS = "unit-mp-short";
 assert("MP_ACCESS funciona", hasMp() === true && mpAccessToken() === "unit-mp-short");
 delete process.env.MP_ACCESS;
@@ -1480,6 +1524,19 @@ assert(
 );
 const css = readFileSync(join(root, "css/app.css"), "utf8");
 assert(
+  "css [hidden] global con display none !important",
+  /(?:^|\n)\[hidden\]\s*\{[^}]*display:\s*none\s*!important/.test(css),
+);
+assert(
+  "css hamburguesa i no intercepta el clic",
+  /\.nav-burger i\s*\{[^}]*pointer-events:\s*none/.test(css),
+);
+assert(
+  "css cajón fixed a viewport y oculto de verdad",
+  /\.nav-drawer\s*\{[\s\S]*?position:\s*fixed/.test(css) &&
+    /\.nav-drawer\[hidden\]\s*\{[^}]*display:\s*none\s*!important/.test(css),
+);
+assert(
   "css radios recortados, no absolute sueltos",
   /\.seg label \{[\s\S]*position:\s*relative/.test(css) &&
     /clip-path:\s*inset\(50%\)/.test(css) &&
@@ -1535,6 +1592,7 @@ assert("MP no imprime secretos", !/console\.(log|info|debug|warn|error)/.test(mp
 assert(
   "MP acepta alias de token y secreto",
   /mp_access_token/.test(mpSrc) &&
+    /MP_ACCESS_YOKEN/.test(mpSrc) &&
     /MERCADOPAGO_ACCESS_TOKEN/.test(mpSrc) &&
     /MP_ACCESS_TOKEN_PROD/.test(mpSrc) &&
     /MERCADOPAGO_WEBHOOK_SECRET/.test(mpSrc) &&

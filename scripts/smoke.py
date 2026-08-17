@@ -179,6 +179,53 @@ def run():
         if not page.is_hidden("[data-nav-drawer]"):
             note("el cajón no se cerró con Escape")
 
+        print("[interacción] hamburguesa 390px")
+        ctx390 = browser.new_context(viewport={"width": 390, "height": 844}, device_scale_factor=2)
+        page390 = ctx390.new_page()
+        page390.goto(f"{BASE}/index.html", wait_until="networkidle")
+        page390.wait_for_timeout(350)
+        burger390 = page390.locator("[data-nav-burger]")
+        if burger390.count() == 0 or not burger390.is_visible():
+            note("hamburguesa no visible a 390px")
+        else:
+            box_b = burger390.bounding_box()
+            if box_b and (box_b["width"] < 44 or box_b["height"] < 44):
+                note(f"hamburguesa bajo 44px a 390px: {box_b}")
+            burger390.click()
+            page390.wait_for_timeout(400)
+            drawer390 = page390.locator("#navDrawer")
+            if drawer390.get_attribute("hidden") is not None:
+                note("el cajón #navDrawer sigue hidden tras clic a 390px")
+            elif page390.is_hidden("#navDrawer"):
+                note("el cajón #navDrawer no es visible tras clic a 390px")
+            else:
+                panel = page390.locator("#navDrawer .nav-drawer-panel")
+                box = panel.bounding_box()
+                vp = page390.viewport_size
+                if not box:
+                    note("el panel del cajón no tiene caja a 390px")
+                elif box["y"] + box["height"] < vp["height"] * 0.7:
+                    note(f"el panel no está anclado al fondo a 390px: {box}")
+                if page390.locator("#navDrawer a").count() < 5:
+                    note("el cajón no listó los enlaces")
+                if page390.locator("[data-nav-close]").count() == 0:
+                    note("el cajón no tiene botón Cerrar")
+                page390.screenshot(path=f"{SHOTS}/movil-390-drawer.png")
+                page390.click("[data-nav-close]")
+                page390.wait_for_timeout(350)
+                if drawer390.get_attribute("hidden") is None:
+                    note("Cerrar no ocultó #navDrawer a 390px")
+                burger390.click()
+                page390.wait_for_timeout(350)
+                if drawer390.get_attribute("hidden") is not None:
+                    note("el segundo clic no reabrió el cajón a 390px")
+                else:
+                    page390.locator("[data-nav-scrim]").click(position={"x": 10, "y": 10}, force=True)
+                    page390.wait_for_timeout(350)
+                    if drawer390.get_attribute("hidden") is None:
+                        note("el velo no cerró #navDrawer a 390px")
+        ctx390.close()
+
         print("[interacción] picker como hoja inferior")
         page.goto(f"{BASE}/sueldo.html", wait_until="networkidle")
         page.wait_for_timeout(400)

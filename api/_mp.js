@@ -18,6 +18,7 @@ function envFirst(...names) {
 export const MP_TOKEN_ENV = [
   "mp_access_token",
   "mp_access",
+  "MP_ACCESS_YOKEN",
   "Mp:access_token",
   "MP_ACCESS_TOKEN",
   "MERCADOPAGO_ACCESS_TOKEN",
