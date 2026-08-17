@@ -1,66 +1,43 @@
 import {
-  apiDownloadPdf,
   apiGet,
   apiPost,
   apiPutBytes,
   authErrorMessage,
   isNoBackend,
-  triggerDownload,
 } from "./api.js";
-import { causalPorId, opcionesCausalPicker } from "./causales.js";
-import { parseTrabajadoresCsv } from "./csv.js";
-import { calcularFiniquitoCompleto } from "./finiquito.js";
-import { clp, formatRut, validarRut } from "./format.js";
-import { getIndicadores } from "./indicadores.js";
-import { BANCOS_CL, TIPO_CUENTA_OPTS, glosaSueldo, descargarNomina } from "./pago.js";
-import { PERFILES_NOMINA, CAMPOS_DISPONIBLES, perfilPorId } from "./nomina.js";
-import { initEnvioDocumentos, tieneCorreoValido } from "./app-empresa-envio.js";
-import { createPicker } from "./picker.js";
+import { initEnvioDocumentos } from "./app-empresa-envio.js";
 import { startProCheckout, consumeCheckoutIntent, rememberCheckoutIntent } from "./checkout.js";
 import {
   LRE_COMUNAS_FRECUENTES,
   LRE_MUTUALES,
   LRE_REGIONES,
   LRE_SALUD,
-  codificarAnsi,
-  datosFaltantesLre,
-  generarLre,
-  nombreArchivoLre,
 } from "./lre.js";
+import { BANCOS_CL, TIPO_CUENTA_OPTS } from "./pago.js";
+import { PERFILES_NOMINA } from "./nomina.js";
 import {
   GRATIS_LIMITE,
-  MSG_CARGA_PRO,
-  MSG_LIMITE,
-  MSG_PAGO_PRO,
-  MSG_UNO_A_UNO,
   aplicarPlanServidor,
   isPro,
-  usadosMes,
-  puedeCargaMasiva,
-  puedeEmitir,
-  puedePagoMasivo,
-  registrarMovimientosLocal,
-  registrarMovimientosRemoto,
   syncPlanRemoto,
   textoCupo,
-  workerKey,
+  usadosMes,
 } from "./plan.js";
-import { cartaFiniquitoHtml, imprimirIframe, liquidacionHtml, mostrarVistaPrevia } from "./print.js";
 import {
   borrarCuentaLocal,
   clearSession,
   cuentaLocalPorRut,
-  deleteTrabajador,
   empresaActual,
   ensureLocalEmpresa,
   entrarEmpresa,
   guardarEmpresa,
   MIN_CLAVE,
   registrarEmpresa,
-  updateTrabajador,
-  upsertTrabajadores,
 } from "./storage.js";
-import { calcularSueldo } from "./sueldo.js";
+import { getIndicadores } from "./indicadores.js";
+import { opcionesCausalPicker } from "./causales.js";
+import { createPicker } from "./picker.js";
+import { formatRut, validarRut } from "./format.js";
 import {
   confirmDialog,
   createDateFields,
@@ -69,7 +46,6 @@ import {
   mountIndicadores,
   numVal,
   periodoItems,
-  periodoLabel,
   showError,
   toastError,
   toastInfo,
@@ -78,27 +54,18 @@ import {
   wireNav,
   withBusy,
 } from "./ui.js";
+import {
+  AFP_OPTS,
+  CONTRATO_OPTS,
+  SALUD_OPTS,
+  bindEmpresaTrabajadores,
+  installSaludOpts,
+} from "./empresa-trabajadores.js";
+import { bindEmpresaDocumentos } from "./empresa-documentos.js";
+import { bindEmpresaNomina } from "./empresa-nomina.js";
+import { bindEmpresaLre } from "./empresa-lre.js";
 
-const AFP_OPTS = [
-  { value: "modelo", label: "Modelo" },
-  { value: "uno", label: "Uno" },
-  { value: "planvital", label: "PlanVital" },
-  { value: "habitat", label: "Habitat" },
-  { value: "capital", label: "Capital" },
-  { value: "cuprum", label: "Cuprum" },
-  { value: "provida", label: "Provida" },
-];
-const SALUD_OPTS = [
-  { value: "fonasa", label: "Fonasa" },
-  ...Object.entries(LRE_SALUD)
-    .filter(([k]) => k !== "fonasa")
-    .map(([value, s]) => ({ value, label: s.nombre })),
-  { value: "isapre", label: "Isapre (sin especificar)" },
-];
-const CONTRATO_OPTS = [
-  { value: "indefinido", label: "Indefinido" },
-  { value: "plazo_fijo", label: "Plazo fijo" },
-];
+installSaludOpts(LRE_SALUD);
 
 let indicadores = { uf: 40854.01, utm: 71649 };
 let emp = null;
@@ -126,77 +93,6 @@ function showOk(node, msg) {
   if (!node) return;
   node.hidden = !msg;
   node.textContent = msg || "";
-}
-
-function escAttr(s) {
-  return String(s ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/"/g, "&quot;")
-    .replace(/</g, "&lt;");
-}
-
-function haberRowHtml(h = {}) {
-  const imp = h.imponible !== false;
-  return `<div class="haber-row" data-haber>
-    <div class="field" style="margin:0">
-      <label>Nombre</label>
-      <input data-h-nombre maxlength="80" placeholder="Ej. Bono de producción" value="${escAttr(h.nombre || "")}" />
-    </div>
-    <div class="field" style="margin:0">
-      <label>Monto</label>
-      <input data-h-monto inputmode="numeric" min="0" value="${Number(h.monto) || 0}" />
-    </div>
-    <div class="field" style="margin:0">
-      <span class="lbl">Base imponible</span>
-      <button type="button" class="btn btn-ghost" data-h-imp aria-pressed="${imp ? "true" : "false"}">${
-        imp ? "Imponible" : "No imponible"
-      }</button>
-    </div>
-    <button type="button" class="btn btn-ghost" data-h-del>Quitar</button>
-  </div>`;
-}
-
-function mountHaberes(container, rows) {
-  if (!container) return;
-  const list = Array.isArray(rows) && rows.length ? rows : [];
-  container.innerHTML = list.map((h) => haberRowHtml(h)).join("");
-  if (!container.dataset.wired) {
-    container.dataset.wired = "1";
-    container.addEventListener("click", (ev) => {
-      const del = ev.target.closest("[data-h-del]");
-      if (del) {
-        del.closest("[data-haber]")?.remove();
-        return;
-      }
-      const tog = ev.target.closest("[data-h-imp]");
-      if (!tog) return;
-      const on = tog.getAttribute("aria-pressed") !== "true";
-      tog.setAttribute("aria-pressed", on ? "true" : "false");
-      tog.textContent = on ? "Imponible" : "No imponible";
-    });
-  }
-}
-
-function readHaberes(container) {
-  if (!container) return [];
-  return [...container.querySelectorAll("[data-haber]")]
-    .map((row) => ({
-      nombre: String(row.querySelector("[data-h-nombre]")?.value || "").trim(),
-      monto: Number(String(row.querySelector("[data-h-monto]")?.value || "").replace(/\./g, "").replace(",", ".")) || 0,
-      imponible: row.querySelector("[data-h-imp]")?.getAttribute("aria-pressed") !== "false",
-    }))
-    .filter((h) => h.nombre || h.monto);
-}
-
-function addHaber(container) {
-  if (!container) return;
-  container.insertAdjacentHTML("beforeend", haberRowHtml({ nombre: "", monto: 0, imponible: true }));
-}
-
-function haberesDeTrabajador(t) {
-  if (Array.isArray(t?.haberesExtra) && t.haberesExtra.length) return t.haberesExtra;
-  if (t?.bonos) return [{ nombre: "Bonos", monto: t.bonos, imponible: true }];
-  return [];
 }
 
 function setTab(name, { scroll = false } = {}) {
@@ -283,292 +179,6 @@ function fillPerfil() {
   if (el("perfilDireccion")) el("perfilDireccion").value = emp.direccion || "";
 }
 
-function workerOptions() {
-  return (emp?.trabajadores || []).map((t) => ({
-    value: t.id,
-    label: `${t.nombre} · ${formatRut(t.rut || "—")}`,
-  }));
-}
-
-function selectedWorkers() {
-  const ids = pickers.trabajadores?.getValue() || [];
-  const list = Array.isArray(ids) ? ids : ids ? [ids] : [];
-  return list.map((id) => (emp?.trabajadores || []).find((t) => t.id === id)).filter(Boolean);
-}
-
-function fillHaberesEditor(t) {
-  const box = el("panelHaberesTrabajador");
-  if (!box) return;
-  if (!t) {
-    box.hidden = true;
-    return;
-  }
-  box.hidden = false;
-  el("emSueldo").value = t.sueldoBase || 0;
-  el("emHoras").value = t.horasExtras || 0;
-  el("emColacion").value = t.colacion || 0;
-  el("emMov").value = t.movilizacion || 0;
-  el("emIsapre").value = t.isaprePactado || 0;
-  el("emJornada").value = t.jornada || 42;
-  el("emGrat").checked = Boolean(t.gratificacionArt50);
-  mountHaberes(el("emHaberes"), haberesDeTrabajador(t));
-}
-
-function readHaberesEditor(base) {
-  return {
-    ...base,
-    sueldoBase: numVal("emSueldo") || base.sueldoBase,
-    horasExtras: numVal("emHoras"),
-    colacion: numVal("emColacion"),
-    movilizacion: numVal("emMov"),
-    isaprePactado: numVal("emIsapre"),
-    jornada: numVal("emJornada") || 42,
-    gratificacionArt50: Boolean(el("emGrat")?.checked),
-    haberesExtra: readHaberes(el("emHaberes")),
-    bonos: 0,
-  };
-}
-
-function syncSelResumen() {
-  const rows = selectedWorkers();
-  const n = el("selResumen");
-  if (!n) return;
-  if (!rows.length) {
-    n.textContent = "Ningún trabajador seleccionado.";
-    fillHaberesEditor(null);
-    return;
-  }
-  if (rows.length === 1) n.textContent = `Seleccionado: ${rows[0].nombre}.`;
-  else n.textContent = `${rows.length} seleccionados. Vista previa del primero (${rows[0].nombre}); el resto se lista abajo.`;
-  fillHaberesEditor(rows[0]);
-}
-
-function workerActionsHtml(t) {
-  return `<div class="worker-actions">
-    <button type="button" class="btn btn-ghost btn-sm" data-doc="${escAttr(t.id)}">Documentos</button>
-    <button type="button" class="btn btn-ghost btn-sm" data-edit="${escAttr(t.id)}">Editar</button>
-    <button type="button" class="btn btn-danger-ghost btn-sm" data-del="${escAttr(t.id)}">Eliminar</button>
-  </div>`;
-}
-
-function contratoLabel(t) {
-  return t.contrato === "plazo_fijo" ? "Plazo fijo" : "Indefinido";
-}
-
-/** Tabla en escritorio, tarjetas en móvil: la misma fuente de datos, dos vistas. */
-function renderTrabajadores() {
-  const list = el("tablaTrabajadores");
-  const rows = emp?.trabajadores || [];
-  pickers.trabajadores?.setOptions(workerOptions());
-  const total = el("nominaTotal");
-  if (total) {
-    total.textContent = rows.length
-      ? `${rows.length} ${rows.length === 1 ? "trabajador" : "trabajadores"}`
-      : "";
-  }
-  avisoConsorcioRipley();
-  if (!rows.length) {
-    list.innerHTML = `<p class="empty">Aún no hay trabajadores en la nómina de este mes.<br />Agregue uno con el formulario de abajo o cargue un CSV.</p>`;
-    syncSelResumen();
-    return;
-  }
-  const table = `
-    <div class="table-wrap only-desktop">
-      <table class="table">
-        <thead>
-          <tr>
-            <th>Nombre</th><th>RUT</th><th>Cargo</th><th>Base</th><th>AFP</th><th>Contrato</th><th></th>
-          </tr>
-        </thead>
-        <tbody>
-          ${rows
-            .map(
-              (t) => `<tr class="${tieneCorreoValido(t) ? "" : "row-sin-correo"}">
-                <td>${escAttr(t.nombre)}${tieneCorreoValido(t) ? "" : ' <span class="badge-warn" title="Sin correo válido">sin correo</span>'}</td>
-                <td>${formatRut(t.rut)}</td>
-                <td>${escAttr(t.cargo || "—")}</td>
-                <td>${clp(t.sueldoBase)}</td>
-                <td>${escAttr(t.afp)}</td>
-                <td>${contratoLabel(t)}</td>
-                <td>${workerActionsHtml(t)}</td>
-              </tr>`,
-            )
-            .join("")}
-        </tbody>
-      </table>
-    </div>`;
-  const cards = `
-    <div class="data-list only-mobile">
-      ${rows
-        .map(
-          (t) => `<article class="data-item${tieneCorreoValido(t) ? "" : " row-sin-correo"}">
-            <div class="data-item-head">
-              <p class="data-item-title">${escAttr(t.nombre)}${tieneCorreoValido(t) ? "" : ' <span class="badge-warn">sin correo</span>'}</p>
-              <p class="data-item-sub">${clp(t.sueldoBase)}</p>
-            </div>
-            <dl class="data-item-grid">
-              <div><dt>RUT</dt><dd>${formatRut(t.rut) || "—"}</dd></div>
-              <div><dt>Cargo</dt><dd>${escAttr(t.cargo || "—")}</dd></div>
-              <div><dt>AFP</dt><dd>${escAttr(t.afp)}</dd></div>
-              <div><dt>Contrato</dt><dd>${contratoLabel(t)}</dd></div>
-            </dl>
-            ${workerActionsHtml(t)}
-          </article>`,
-        )
-        .join("")}
-    </div>`;
-  list.innerHTML = table + cards;
-  syncSelResumen();
-}
-
-function resetAltaForm() {
-  el("altaId").value = "";
-  el("altaTitulo").textContent = "Agregar trabajador";
-  el("btnAltaGuardar").textContent = "Agregar";
-  el("btnAltaCancelar").hidden = true;
-  el("formAlta")?.reset();
-  if (el("altaJornada")) el("altaJornada").value = "42";
-  if (el("altaSueldo")) el("altaSueldo").value = "1000000";
-  pickers.altaAfp?.setValue("modelo");
-  pickers.altaSalud?.setValue("fonasa");
-  altaIngresoTocada = false;
-  dateAltaIngreso?.setValue(hoyIso());
-  pickers.altaContrato?.setValue("indefinido");
-  pickers.altaBanco?.setValue("001");
-  pickers.altaTipoCta?.setValue("corriente");
-  if (el("altaEmail")) el("altaEmail").value = "";
-  if (el("altaNroCta")) el("altaNroCta").value = "";
-  mountHaberes(el("altaHaberes"), []);
-}
-
-function fillAlta(t) {
-  el("altaId").value = t.id;
-  el("altaTitulo").textContent = `Editar ${t.nombre}`;
-  el("btnAltaGuardar").textContent = "Guardar cambios";
-  el("btnAltaCancelar").hidden = false;
-  el("altaNombre").value = t.nombre || "";
-  el("altaRut").value = t.rut || "";
-  el("altaCargo").value = t.cargo || "";
-  el("altaSueldo").value = t.sueldoBase || 0;
-  el("altaIsapre").value = t.isaprePactado || 0;
-  el("altaHoras").value = t.horasExtras || 0;
-  el("altaJornada").value = t.jornada || 42;
-  el("altaColacion").value = t.colacion || 0;
-  el("altaMov").value = t.movilizacion || 0;
-  el("altaGrat").checked = Boolean(t.gratificacionArt50);
-  pickers.altaAfp?.setValue(t.afp || "modelo");
-  pickers.altaSalud?.setValue(t.salud || "fonasa");
-  if (t.fechaIngreso) {
-    altaIngresoTocada = true;
-    dateAltaIngreso?.setValue(t.fechaIngreso);
-  } else {
-    altaIngresoTocada = false;
-    dateAltaIngreso?.setValue(hoyIso());
-  }
-  pickers.altaContrato?.setValue(t.contrato || "indefinido");
-  pickers.altaBanco?.setValue(t.banco || "001");
-  pickers.altaTipoCta?.setValue(t.tipoCuenta || "corriente");
-  if (el("altaEmail")) el("altaEmail").value = t.email || "";
-  if (el("altaNroCta")) el("altaNroCta").value = t.nroCuenta || "";
-  mountHaberes(el("altaHaberes"), haberesDeTrabajador(t));
-}
-
-function syncCausalNota() {
-  const c = causalPorId(pickers.causal?.getValue());
-  const nota = el("finCausalNota");
-  const wrap = el("wrapAviso");
-  if (!nota || !c) return;
-  nota.textContent = c.aplicaIas
-    ? "Esta causal puede incluir IAS (si el contrato lleva un año o más) e indemnización sustitutiva de aviso si no hubo aviso de 30 días. Tope 11 años y 90 UF."
-    : "Esta causal no da derecho a IAS ni a indemnización sustitutiva de aviso. Sí se estiman remuneración del mes, gratificación, feriado y otros haberes.";
-  if (wrap) wrap.hidden = !c.aplicaAviso;
-}
-
-function empresaParaDoc() {
-  return {
-    ...emp,
-    giro: val("perfilGiro") || emp?.giro || "",
-    direccion: val("perfilDireccion") || emp?.direccion || "",
-    razonSocial: val("perfilRazon") || emp?.razonSocial || "",
-  };
-}
-
-function abrirPreview(titulo, html, others) {
-  el("panelPreview").hidden = false;
-  el("docPreviewTitulo").textContent = titulo;
-  const extra = el("previewOtros");
-  if (others?.length) {
-    extra.hidden = false;
-    extra.textContent = `También se emitirá para: ${others.map((t) => t.nombre).join(", ")}.`;
-  } else {
-    extra.hidden = true;
-    extra.textContent = "";
-  }
-  mostrarVistaPrevia(el("docPreviewFrame"), html);
-  el("panelPreview").scrollIntoView({ behavior: "smooth", block: "start" });
-}
-
-function workersForEmit() {
-  const rows = selectedWorkers();
-  if (!rows.length) return [];
-  const first = readHaberesEditor(rows[0]);
-  return [first, ...rows.slice(1)];
-}
-
-async function consumirMovimientos(tipo, rows, errId) {
-  emp = empresaActual();
-  const keys = rows.map(workerKey);
-  const gate = puedeEmitir(emp, { tipo, keys });
-  if (!gate.ok) {
-    const msg = gate.message || MSG_LIMITE;
-    showError(el(errId), msg);
-    toastError("Tope del plan Gratis", msg);
-    return false;
-  }
-  if (remoteOk) {
-    const remote = await registrarMovimientosRemoto({ tipo, keys });
-    if (remote.remote && !remote.data?.ok) {
-      if (remote.data?.reason === "limite_gratis") {
-        showError(el(errId), MSG_LIMITE);
-        return false;
-      }
-      if (remote.data?.reason === "uno_a_uno") {
-        showError(el(errId), MSG_UNO_A_UNO);
-        return false;
-      }
-    }
-    if (remote.remote && remote.data?.ok) {
-      aplicarPlanServidor(empresaActual(), remote.data);
-    }
-  }
-  registrarMovimientosLocal(empresaActual(), { tipo, keys: gate.nuevos?.length ? gate.nuevos : keys });
-  refresh();
-  return true;
-}
-
-function payloadTrabajador(t) {
-  return {
-    nombre: t.nombre,
-    rut: t.rut,
-    cargo: t.cargo,
-    sueldoBase: t.sueldoBase,
-    afp: t.afp,
-    salud: t.salud,
-    isaprePactado: t.isaprePactado,
-    contrato: t.contrato,
-    horasExtras: t.horasExtras,
-    haberesExtra: t.haberesExtra,
-    colacion: t.colacion,
-    movilizacion: t.movilizacion,
-    gratificacionArt50: t.gratificacionArt50,
-    jornada: t.jornada,
-    email: t.email,
-    banco: t.banco,
-    tipoCuenta: t.tipoCuenta,
-    nroCuenta: t.nroCuenta,
-  };
-}
-
 /** Medidor de cupo: barra + insignia. En Pro no hay tope, así que la barra va llena en verde. */
 function renderCupo() {
   const box = el("empQuota");
@@ -605,6 +215,61 @@ function renderCupo() {
   }
 }
 
+const ctx = {
+  get emp() {
+    return emp;
+  },
+  set emp(v) {
+    emp = v;
+  },
+  get indicadores() {
+    return indicadores;
+  },
+  get logoDataUrl() {
+    return logoDataUrl;
+  },
+  get firmaDataUrl() {
+    return firmaDataUrl;
+  },
+  get remoteOk() {
+    return remoteOk;
+  },
+  pickers,
+  get dateIngreso() {
+    return dateIngreso;
+  },
+  get dateTermino() {
+    return dateTermino;
+  },
+  get dateAltaIngreso() {
+    return dateAltaIngreso;
+  },
+  get altaIngresoTocada() {
+    return altaIngresoTocada;
+  },
+  set altaIngresoTocada(v) {
+    altaIngresoTocada = v;
+  },
+  hoyIso,
+  setTab,
+  showOk,
+  refresh,
+};
+
+const nominaApi = bindEmpresaNomina(ctx);
+ctx.avisoConsorcioRipley = nominaApi.avisoConsorcioRipley;
+ctx.syncNominaAviso = nominaApi.syncNominaAviso;
+
+const trabajadoresApi = bindEmpresaTrabajadores(ctx);
+ctx.selectedWorkers = trabajadoresApi.selectedWorkers;
+ctx.readHaberesEditor = trabajadoresApi.readHaberesEditor;
+ctx.payloadTrabajador = trabajadoresApi.payloadTrabajador;
+
+const documentosApi = bindEmpresaDocumentos(ctx);
+ctx.workersForEmit = documentosApi.workersForEmit;
+
+const lreApi = bindEmpresaLre(ctx);
+
 function refresh() {
   emp = empresaActual();
   const logged = Boolean(emp);
@@ -614,9 +279,9 @@ function refresh() {
   el("empMeta").textContent = `${formatRut(emp.rut)} · ${emp.email}`;
   renderCupo();
   fillPerfil();
-  renderTrabajadores();
-  refrescarLre();
-  syncCausalNota();
+  trabajadoresApi.renderTrabajadores();
+  lreApi.refrescarLre();
+  documentosApi.syncCausalNota();
 }
 
 function initPickers() {
@@ -652,7 +317,7 @@ function initPickers() {
     value: emp?.nomina?.perfilId || "generico_xlsx",
     searchable: false,
     placeholder: "Formato de nómina",
-    onChange: () => syncNominaAviso(),
+    onChange: () => nominaApi.syncNominaAviso(),
   });
   pickers.lreRegion = createPicker(el("lreRegionPick"), {
     options: LRE_REGIONES.map(([value, label]) => ({ value: String(value), label })),
@@ -685,7 +350,7 @@ function initPickers() {
     multiple: true,
     searchable: true,
     placeholder: "Buscar y elegir uno o varios",
-    onChange: syncSelResumen,
+    onChange: trabajadoresApi.syncSelResumen,
   });
   const periodos = periodoItems();
   pickers.periodo = createPicker(el("pickPeriodo"), {
@@ -699,7 +364,7 @@ function initPickers() {
     value: "161-necesidades",
     searchable: true,
     placeholder: "Causal",
-    onChange: syncCausalNota,
+    onChange: documentosApi.syncCausalNota,
   });
   dateAltaIngreso = createDateFields(el("altaFechaIngreso"), {
     onChange: () => {
@@ -716,20 +381,19 @@ function initPickers() {
 
 wireNav();
 initPickers();
-mountHaberes(el("altaHaberes"), []);
-syncCausalNota();
-syncNominaAviso();
+documentosApi.syncCausalNota();
+nominaApi.syncNominaAviso();
 
 initEnvioDocumentos({
-  workersForEmit,
-  payloadTrabajador,
+  workersForEmit: documentosApi.workersForEmit,
+  payloadTrabajador: trabajadoresApi.payloadTrabajador,
   pickers,
   get indicadores() {
     return indicadores;
   },
   showError,
   withBusy,
-  consumirMovimientos,
+  consumirMovimientos: documentosApi.consumirMovimientos,
   get dateIngreso() {
     return dateIngreso;
   },
@@ -739,44 +403,6 @@ initEnvioDocumentos({
   numVal,
   val,
 });
-
-function syncNominaAviso() {
-  const note = el("nominaAviso");
-  if (!note) return;
-  const id = pickers.nominaPerfil?.getValue() || "generico_xlsx";
-  const spec = id === "personalizado" ? { verificado: false, banco: null, nombre: "personalizado" } : perfilPorId(id);
-  const custom = el("nominaCustom");
-  if (custom) custom.hidden = id !== "personalizado";
-  if (!spec || spec.verificado) {
-    note.hidden = true;
-    note.textContent = "";
-    return;
-  }
-  note.hidden = false;
-  note.textContent =
-    `Plantilla Haberes. No verificada contra el instructivo del banco. Compare con el archivo de ejemplo que entrega su portal antes de subirla.`;
-}
-
-function avisoConsorcioRipley() {
-  const box = el("avisoBancos");
-  if (!box) return;
-  const list = emp?.trabajadores || [];
-  const hit = list.some((t) => {
-    const b = String(t.banco || "");
-    return b === "053" || b === "055" || /consorcio|ripley/i.test(b);
-  });
-  if (!hit) {
-    hostHidden(box, true);
-    return;
-  }
-  box.hidden = false;
-  box.textContent =
-    "Corrección de códigos: Banco Ripley es 053 y Banco Consorcio es 055. Si tenía Consorcio guardado con el código anterior, revise las nóminas ya enviadas al banco.";
-}
-
-function hostHidden(node, hidden) {
-  if (node) node.hidden = hidden;
-}
 
 document.querySelectorAll("[data-tab]").forEach((btn) => {
   btn.addEventListener("click", () => setTab(btn.dataset.tab, { scroll: true }));
@@ -797,18 +423,18 @@ getIndicadores().then((ind) => {
 
 async function bootSession() {
   const { status, data } = await apiGet("/api/me");
-    if (data?.ok && data.company) {
-      remoteOk = true;
-      try {
-        ensureLocalEmpresa(data.company);
-        aplicarPlanServidor(empresaActual(), {
-          plan: data.company.plan,
-          planUntil: data.company.planUntil,
-          movimientosMes: data.movimientosMes,
-        });
-      } catch {
-        // Keep local session if present.
-      }
+  if (data?.ok && data.company) {
+    remoteOk = true;
+    try {
+      ensureLocalEmpresa(data.company);
+      aplicarPlanServidor(empresaActual(), {
+        plan: data.company.plan,
+        planUntil: data.company.planUntil,
+        movimientosMes: data.movimientosMes,
+      });
+    } catch {
+      // Keep local session if present.
+    }
   } else if (!isNoBackend(status, data) && status === 401) {
     const local = empresaActual();
     if (local?.remote && !local.claveHash) clearSession();
@@ -1210,413 +836,3 @@ el("btnQuitarFirma")?.addEventListener("click", () =>
     showAsset(el("firmaPreview"), el("firmaVacia"), "");
   }),
 );
-
-el("csvFile")?.addEventListener("change", async (ev) => {
-  const file = ev.target.files?.[0];
-  showError(el("errCsv"), "");
-  if (!file) return;
-  emp = empresaActual();
-  const gate = puedeCargaMasiva(emp);
-  if (!gate.ok) {
-    showError(el("errCsv"), gate.message || MSG_CARGA_PRO);
-    ev.target.value = "";
-    return;
-  }
-  try {
-    let rows;
-    const name = String(file.name || "").toLowerCase();
-    if (name.endsWith(".xlsx") || file.type.includes("spreadsheet")) {
-      const { readXlsxFirstSheet, rowsToCsv } = await import("./xlsx.js");
-      const buf = await file.arrayBuffer();
-      const table = await readXlsxFirstSheet(buf);
-      rows = parseTrabajadoresCsv(rowsToCsv(table));
-    } else {
-      rows = parseTrabajadoresCsv(await file.text());
-    }
-    if (!rows.length) throw new Error("El archivo no tiene filas válidas");
-    emp = upsertTrabajadores(empresaActual(), rows);
-    refresh();
-    toastOk(
-      `${rows.length} ${rows.length === 1 ? "fila cargada" : "filas cargadas"}`,
-      "Se actualizó por RUT: no se duplican trabajadores.",
-    );
-  } catch (err) {
-    showError(el("errCsv"), err.message);
-    toastError("No se pudo leer el archivo", err.message);
-  }
-  ev.target.value = "";
-});
-
-el("btnAltaHaber")?.addEventListener("click", () => addHaber(el("altaHaberes")));
-el("btnEmHaber")?.addEventListener("click", () => addHaber(el("emHaberes")));
-el("btnAltaCancelar")?.addEventListener("click", resetAltaForm);
-
-el("formAlta")?.addEventListener("submit", (ev) => {
-  ev.preventDefault();
-  showError(el("errAlta"), "");
-  const nombre = val("altaNombre");
-  const rut = val("altaRut");
-  if (!nombre) return showError(el("errAlta"), "Indique el nombre");
-  if (rut && !validarRut(rut)) return showError(el("errAlta"), "RUT inválido");
-  const editing = val("altaId");
-  const row = {
-    id: editing || `t_${Date.now()}`,
-    nombre,
-    rut,
-    cargo: val("altaCargo"),
-    sueldoBase: numVal("altaSueldo"),
-    afp: pickers.altaAfp?.getValue() || "modelo",
-    salud: pickers.altaSalud?.getValue() || "fonasa",
-    fechaIngreso: altaIngresoTocada ? dateAltaIngreso?.getValue() || "" : "",
-    isaprePactado: numVal("altaIsapre"),
-    contrato: pickers.altaContrato?.getValue() || "indefinido",
-    horasExtras: numVal("altaHoras"),
-    bonos: 0,
-    haberesExtra: readHaberes(el("altaHaberes")),
-    colacion: numVal("altaColacion"),
-    movilizacion: numVal("altaMov"),
-    gratificacionArt50: el("altaGrat")?.checked,
-    jornada: numVal("altaJornada") || 42,
-    email: val("altaEmail"),
-    banco: pickers.altaBanco?.getValue() || "",
-    tipoCuenta: pickers.altaTipoCta?.getValue() || "corriente",
-    nroCuenta: val("altaNroCta"),
-  };
-  if (editing) {
-    emp = updateTrabajador(empresaActual(), editing, row);
-    toastOk("Trabajador actualizado", nombre);
-  } else {
-    emp = upsertTrabajadores(empresaActual(), [row]);
-    toastOk("Trabajador agregado", nombre);
-  }
-  resetAltaForm();
-  refresh();
-});
-
-el("tablaTrabajadores")?.addEventListener("click", async (ev) => {
-  const edit = ev.target.closest("[data-edit]");
-  const del = ev.target.closest("[data-del]");
-  const doc = ev.target.closest("[data-doc]");
-  if (edit) {
-    const t = (emp?.trabajadores || []).find((w) => w.id === edit.dataset.edit);
-    if (!t) return;
-    fillAlta(t);
-    el("formAlta").scrollIntoView({ behavior: "smooth", block: "start" });
-    return;
-  }
-  if (del) {
-    const t = (emp?.trabajadores || []).find((w) => w.id === del.dataset.del);
-    if (!t) return;
-    const ok = await confirmDialog({
-      title: `Eliminar a ${t.nombre}`,
-      text: `Se quita ${formatRut(t.rut || "sin RUT")} de la nómina de este mes en este navegador. No se puede deshacer.`,
-      okLabel: "Eliminar",
-    });
-    if (!ok) return;
-    emp = deleteTrabajador(empresaActual(), t.id);
-    if (val("altaId") === t.id) resetAltaForm();
-    refresh();
-    toastInfo("Trabajador eliminado", t.nombre);
-    return;
-  }
-  if (doc) {
-    pickers.trabajadores?.setValue([doc.dataset.doc]);
-    setTab("documentos", { scroll: true });
-    syncSelResumen();
-  }
-});
-
-el("btnGuardarHaberes")?.addEventListener("click", () => {
-  const rows = selectedWorkers();
-  showOk(el("okHaberes"), "");
-  if (!rows[0]) return;
-  emp = updateTrabajador(empresaActual(), rows[0].id, readHaberesEditor(rows[0]));
-  refresh();
-  showOk(el("okHaberes"), "Haberes guardados en este navegador.");
-  toastOk("Haberes guardados");
-});
-
-el("btnLiquidacion")?.addEventListener("click", async () => {
-  showError(el("errPrint"), "");
-  const rows = workersForEmit();
-  if (!rows.length) return showError(el("errPrint"), "Seleccione uno o más trabajadores");
-  const periodoVal = pickers.periodo?.getValue() || "";
-  const periodo = periodoLabel(periodoVal) || periodoVal;
-  try {
-    const calc = calcularSueldo(rows[0], indicadores);
-    if (!(await consumirMovimientos("liquidacion", rows, "errPrint"))) return;
-    abrirPreview(
-      "Vista previa · liquidación",
-      liquidacionHtml({
-        empresa: empresaParaDoc(),
-        trabajador: rows[0],
-        periodo,
-        calc,
-        logoSrc: logoDataUrl,
-        firmaSrc: firmaDataUrl,
-      }),
-      rows.slice(1),
-    );
-  } catch (err) {
-    showError(el("errPrint"), err.message);
-  }
-});
-
-el("btnCarta")?.addEventListener("click", async () => {
-  showError(el("errCarta"), "");
-  const rows = workersForEmit();
-  if (!rows.length) return showError(el("errCarta"), "Seleccione uno o más trabajadores");
-  const ingreso = dateIngreso?.getValue() || "";
-  const termino = dateTermino?.getValue() || "";
-  if (!ingreso || !termino) return showError(el("errCarta"), "Indique ingreso y término con día, mes y año");
-  if (!(await consumirMovimientos("finiquito", rows, "errCarta"))) return;
-  try {
-    const t = rows[0];
-    const fin = calcularFiniquitoCompleto(
-      {
-        ...t,
-        causal: pickers.causal?.getValue(),
-        remuneracion: t.sueldoBase,
-        ingreso,
-        termino,
-        diasMes: numVal("finDiasMes"),
-        avisoPrevio: el("finAviso")?.checked,
-        diasFeriadoPendiente: numVal("finFeriadoPend"),
-        diasFeriadoProporcional: numVal("finFeriadoProp"),
-        otros: numVal("finOtros"),
-      },
-      indicadores,
-    );
-    abrirPreview(
-      "Vista previa · carta de finiquito",
-      cartaFiniquitoHtml({
-        empresa: empresaParaDoc(),
-        trabajador: { ...t, ingreso, termino },
-        fin,
-        ciudad: val("finCiudad") || "Santiago",
-        logoSrc: logoDataUrl,
-        firmaSrc: firmaDataUrl,
-      }),
-      rows.slice(1),
-    );
-  } catch (err) {
-    showError(el("errCarta"), err.message);
-  }
-});
-
-async function bajarPdf(tipo, errId, extra, btn) {
-  showError(el(errId), "");
-  const rows = workersForEmit();
-  if (!rows.length) return showError(el(errId), "Seleccione uno o más trabajadores");
-  emp = empresaActual();
-  const gate = puedeEmitir(emp, { tipo, keys: rows.map(workerKey) });
-  if (!gate.ok) {
-    const msg = gate.message || MSG_LIMITE;
-    showError(el(errId), msg);
-    toastError("Tope del plan Gratis", msg);
-    return;
-  }
-  return withBusy(btn, () => descargarPdf(tipo, errId, extra, rows), "Generando…");
-}
-
-async function descargarPdf(tipo, errId, extra, rows) {
-  const { status, data, blob } = await apiDownloadPdf("/api/documento", {
-    tipo,
-    uf: indicadores.uf,
-    trabajadores: rows.map((t) => ({
-      ...payloadTrabajador(t),
-      ingreso: extra?.ingreso || "",
-      termino: extra?.termino || "",
-    })),
-    periodo: pickers.periodo?.getValue(),
-    ...extra,
-  });
-  if (!blob) {
-    if (data?.reason === "no_storage" || status === 501) {
-      const msg =
-        "No se pudo generar el PDF: el almacenamiento no está configurado. La vista previa sí está en esta página; puede imprimirla (el navegador permite guardar como PDF).";
-      showError(el(errId), msg);
-      toastError("PDF no disponible", "Use la vista previa e imprima a PDF.");
-      return;
-    }
-    const msg = authErrorMessage(data, status);
-    showError(el(errId), msg);
-    toastError("No se pudo generar el PDF", msg);
-    return;
-  }
-  await consumirMovimientos(tipo, rows, errId);
-  const many = rows.length > 1;
-  triggerDownload(
-    blob,
-    tipo === "liquidacion"
-      ? many
-        ? "liquidaciones.pdf"
-        : "liquidacion.pdf"
-      : many
-        ? "finiquitos.pdf"
-        : "finiquito.pdf",
-  );
-  toastOk(
-    many ? `${rows.length} documentos descargados` : "PDF descargado",
-    many ? "Un solo archivo con todas las páginas." : undefined,
-  );
-}
-
-el("btnPdfLiquidacion")?.addEventListener("click", (ev) =>
-  bajarPdf("liquidacion", "errPrint", undefined, ev.currentTarget),
-);
-
-el("btnPdfCarta")?.addEventListener("click", (ev) => {
-  const ingreso = dateIngreso?.getValue() || "";
-  const termino = dateTermino?.getValue() || "";
-  if (!ingreso || !termino) return showError(el("errCarta"), "Indique ingreso y término con día, mes y año");
-  return bajarPdf("finiquito", "errCarta", {
-    causal: pickers.causal?.getValue(),
-    ingreso,
-    termino,
-    diasMes: numVal("finDiasMes"),
-    diasFeriadoPendiente: numVal("finFeriadoPend"),
-    diasFeriadoProporcional: numVal("finFeriadoProp"),
-    avisoPrevio: Boolean(el("finAviso")?.checked),
-    otros: numVal("finOtros"),
-    ciudad: val("finCiudad") || "Santiago",
-  }, ev.currentTarget);
-});
-
-el("btnImprimirPreview")?.addEventListener("click", () => {
-  try {
-    imprimirIframe(el("docPreviewFrame"));
-  } catch (err) {
-    showError(el("errPrint"), err.message);
-    showError(el("errCarta"), err.message);
-  }
-});
-
-el("btnCerrarPreview")?.addEventListener("click", () => {
-  el("panelPreview").hidden = true;
-  document.querySelector(".ws-tabs")?.scrollIntoView({ behavior: "smooth", block: "start" });
-});
-
-el("btnPagoXlsx")?.addEventListener("click", () => {
-  showError(el("errPago"), "");
-  emp = empresaActual();
-  const gate = puedePagoMasivo(emp);
-  if (!gate.ok) return showError(el("errPago"), gate.message || MSG_PAGO_PRO);
-  const rows = workersForEmit();
-  if (!rows.length) return showError(el("errPago"), "Seleccione uno o más trabajadores");
-  const excluidos = rows.filter((t) => (calcularSueldo(t, indicadores).liquido || 0) <= 0);
-  const periodoVal = pickers.periodo?.getValue() || "";
-  const periodo = periodoLabel(periodoVal) || periodoVal;
-  const perfilId = pickers.nominaPerfil?.getValue() || "generico_xlsx";
-  try {
-    if (perfilId === "personalizado") {
-      const orden = Array.from(el("nominaCampos")?.querySelectorAll("input[type=checkbox]:checked") || []).map(
-        (i) => i.value,
-      );
-      emp.nomina = {
-        perfilId: "personalizado",
-        campos: orden.length ? orden : CAMPOS_DISPONIBLES.map((c) => c.id),
-        separador: el("nominaSep")?.value || ";",
-        codificacion: el("nominaEnc")?.value || "latin1",
-        incluirCabecera: el("nominaHeader")?.checked !== false,
-        sinTildes: el("nominaTildes")?.checked !== false,
-      };
-      try {
-        guardarEmpresa(emp);
-      } catch {
-        // Cuota de localStorage: degradar al genérico en memoria.
-      }
-    } else if (emp) {
-      emp.nomina = { ...(emp.nomina || {}), perfilId };
-      try {
-        guardarEmpresa(emp);
-      } catch {
-        /* ignore */
-      }
-    }
-    const out = descargarNomina(perfilId, {
-      trabajadores: rows,
-      indicadores,
-      glosa: glosaSueldo(periodo),
-      nominaConfig: emp?.nomina,
-      filename: "nomina-pago",
-    });
-    if (excluidos.length) {
-      showError(
-        el("errPago"),
-        `Se excluyeron ${excluidos.length} con líquido ≤ 0: ${excluidos.map((t) => t.nombre).join(", ")}.`,
-      );
-    }
-    const aviso = el("nominaAviso");
-    if (aviso && out.aviso) {
-      aviso.hidden = false;
-      aviso.textContent = out.aviso;
-    }
-    triggerDownload(new Blob([out.bytes], { type: out.mime }), out.filename);
-  } catch (err) {
-    showError(el("errPago"), err.message);
-  }
-});
-
-function lreConfigGuardada() {
-  return emp?.lre || {};
-}
-
-function refrescarLre() {
-  const cfg = lreConfigGuardada();
-  if (cfg.region) pickers.lreRegion?.setValue(String(cfg.region));
-  if (cfg.comuna) el("lreComuna").value = cfg.comuna;
-  if (cfg.mutual !== undefined) pickers.lreMutual?.setValue(String(cfg.mutual));
-  const lista = emp?.trabajadores || [];
-  const faltan = lista
-    .map((t) => ({ t, campos: datosFaltantesLre(t) }))
-    .filter((x) => x.campos.length);
-  const nota = el("lreFaltantes");
-  if (!nota) return;
-  if (!faltan.length) {
-    nota.hidden = true;
-    nota.textContent = "";
-  } else {
-    nota.hidden = false;
-    nota.textContent =
-      `Datos pendientes para el LRE — ` +
-      faltan
-        .map((x) => `${x.t.nombre || x.t.rut || "trabajador"}: ${x.campos.join(", ")}`)
-        .join(" · ") +
-      ". Edite cada ficha para completarlos; el CSV deja esas celdas vacías.";
-  }
-}
-
-el("btnLreCsv")?.addEventListener("click", () => {
-  showError(el("errLre"), "");
-  emp = empresaActual();
-  if (!isPro(emp)) {
-    return showError(el("errLre"), "El LRE es parte del plan Pro. Escríbanos para activarlo.");
-  }
-  const lista = emp?.trabajadores || [];
-  if (!lista.length) return showError(el("errLre"), "No hay trabajadores en la nómina");
-  const region = Number(pickers.lreRegion?.getValue()) || 0;
-  const comuna = Number(val("lreComuna")) || 0;
-  const mutual = Number(pickers.lreMutual?.getValue()) || 0;
-  if (!region || !comuna) {
-    return showError(el("errLre"), "Indique la región y el código de comuna (Tabla N°3 del manual)");
-  }
-  emp.lre = { region, comuna, mutual };
-  guardarEmpresa(emp);
-  const periodo = pickers.periodo?.getValue() || "";
-  try {
-    const csv = generarLre({
-      trabajadores: lista,
-      contexto: { region, comuna, mutual },
-      indicadores,
-    });
-    triggerDownload(
-      new Blob([codificarAnsi(csv)], { type: "text/csv" }),
-      nombreArchivoLre(emp.rut, periodo),
-    );
-    toastOk("LRE descargado", `${lista.length} trabajador${lista.length === 1 ? "" : "es"} · revíselo antes de subirlo a Mi DT`);
-    refrescarLre();
-  } catch (err) {
-    showError(el("errLre"), err.message);
-  }
-});

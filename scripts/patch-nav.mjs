@@ -3,7 +3,7 @@
  * enlaces de escritorio + botón hamburguesa + cajón inferior en móvil.
  * Se ejecuta una sola vez; es idempotente (no toca páginas ya migradas).
  */
-import { readFileSync, writeFileSync, readdirSync } from "node:fs";
+import { readFileSync, writeFileSync, readdirSync, statSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -46,7 +46,21 @@ ${drawer}
       </div>
     </div>`;
 
-const files = readdirSync(root).filter((f) => f.endsWith(".html"));
+const files = [];
+function walk(dir, base = "") {
+  for (const name of readdirSync(dir)) {
+    const full = join(dir, name);
+    const rel = base ? `${base}/${name}` : name;
+    if (statSync(full).isDirectory()) {
+      if (["node_modules", "api", "scripts", "sql", "ejemplos", "fonts", "img", "css", "js"].includes(name)) continue;
+      walk(full, rel);
+    } else if (name.endsWith(".html")) {
+      files.push(rel);
+    }
+  }
+}
+walk(root);
+
 let changed = 0;
 
 for (const f of files) {

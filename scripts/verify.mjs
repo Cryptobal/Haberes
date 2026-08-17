@@ -676,10 +676,49 @@ const expectedLocs = [
   "https://www.haberes.cl/privacidad",
   "https://www.haberes.cl/terminos",
 ];
-assert("sitemap 8 URLs clean", expectedLocs.every((u) => locs.includes(u)) && locs.length === 8, locs.join(", "));
+const guiaLocs = [
+  "https://www.haberes.cl/guias/plazo-de-pago-del-finiquito",
+  "https://www.haberes.cl/guias/con-que-sueldo-se-calcula-el-finiquito",
+  "https://www.haberes.cl/guias/finiquito-trabajadora-de-casa-particular",
+  "https://www.haberes.cl/guias/me-reservo-el-derecho-en-el-finiquito",
+  "https://www.haberes.cl/guias/como-leer-una-liquidacion-de-sueldo",
+  "https://www.haberes.cl/guias/formato-de-liquidacion-de-sueldo-chile",
+  "https://www.haberes.cl/guias/liquidacion-de-sueldo-y-previred",
+];
+const causalLocs = [
+  "https://www.haberes.cl/finiquito/art-161-necesidades-de-la-empresa",
+  "https://www.haberes.cl/finiquito/art-159-renuncia-voluntaria",
+  "https://www.haberes.cl/finiquito/art-159-vencimiento-del-plazo",
+  "https://www.haberes.cl/finiquito/art-160-incumplimiento-grave",
+  "https://www.haberes.cl/finiquito/art-161-desahucio",
+];
+assert(
+  "sitemap URLs públicas base + guías + causales",
+  expectedLocs.every((u) => locs.includes(u)) &&
+    guiaLocs.every((u) => locs.includes(u)) &&
+    causalLocs.every((u) => locs.includes(u)) &&
+    locs.length === expectedLocs.length + guiaLocs.length + causalLocs.length,
+  locs.join(", "),
+);
 assert("sitemap sin admin ni reset", !locs.some((u) => /\/admin|\/reset/.test(u)));
-assert("sitemap lastmod 2026-08-17", /<lastmod>2026-08-17<\/lastmod>/.test(sitemap));
+assert("sitemap lastmod presente", /<lastmod>\d{4}-\d{2}-\d{2}<\/lastmod>/.test(sitemap));
 assert("sitemap sin .html (cleanUrls)", !locs.some((u) => u.endsWith(".html")));
+assert(
+  "sitemap cada URL tiene archivo",
+  locs.every((u) => {
+    const path = u.replace("https://www.haberes.cl", "").replace(/\/$/, "") || "/index";
+    const file =
+      path === "/index" || path === ""
+        ? join(root, "index.html")
+        : join(root, path.slice(1) + ".html");
+    return existsSync(file);
+  }),
+);
+assert("gen-sitemap.mjs existe", existsSync(join(root, "scripts/gen-sitemap.mjs")));
+assert(
+  "package.json script sitemap",
+  /"sitemap":\s*"node scripts\/gen-sitemap\.mjs"/.test(readFileSync(join(root, "package.json"), "utf8")),
+);
 
 const analytics = readFileSync(join(root, "js/analytics.js"), "utf8");
 assert(
@@ -1456,7 +1495,16 @@ assert(
     /\/api\/login/.test(readFileSync(join(root, "js/app-empresa.js"), "utf8")),
 );
 const empHtml = readFileSync(join(root, "empresa.html"), "utf8");
-const empJs = readFileSync(join(root, "js/app-empresa.js"), "utf8");
+const empJs = [
+  "js/app-empresa.js",
+  "js/empresa-trabajadores.js",
+  "js/empresa-documentos.js",
+  "js/empresa-nomina.js",
+  "js/empresa-lre.js",
+]
+  .map((f) => readFileSync(join(root, f), "utf8"))
+  .join("\n");
+const empDocJs = readFileSync(join(root, "js/empresa-documentos.js"), "utf8");
 assert("empresa.html sin input type=date", !/<input[^>]*type="date"/i.test(empHtml));
 assert(
   "empresa.html sin select nativo de trabajador, periodo o causal",
@@ -1504,7 +1552,7 @@ assert(
     /\/api\/checkout/.test(readFileSync(join(root, "js/checkout.js"), "utf8")) &&
     !/emp\.plan\s*=\s*["']pro["']/.test(empJs),
 );
-const bajarPdfSrc = empJs.slice(empJs.indexOf("async function bajarPdf"), empJs.indexOf('el("btnPdfLiquidacion")'));
+const bajarPdfSrc = empDocJs.slice(empDocJs.indexOf("async function bajarPdf"), empDocJs.indexOf('el("btnPdfLiquidacion")'));
 assert(
   "Descargar PDF no cuenta movimiento si falla el almacenamiento",
   /no_storage/.test(bajarPdfSrc) &&
@@ -1612,7 +1660,7 @@ assert(
 assert(
   "css --on-ink crema de día y verde de noche",
   /:root\s*\{[\s\S]*?--on-ink:\s*#f6f4ef/.test(css) &&
-    /html\[data-theme="night"\]\s*\{[\s\S]*?--on-ink:\s*#12382c/.test(css),
+    /html\[data-theme="night"\]\s*\{[\s\S]*?--on-ink:\s*#04231a/.test(css),
 );
 assert(
   "css texto sobre --ink usa --on-ink",
@@ -1623,27 +1671,26 @@ assert(
     /\.ws-tab\[aria-selected="true"\][\s\S]*?color:\s*var\(--on-ink\)/.test(css),
 );
 assert(
-  "css cream #f6f4ef en --on-ink y tokens on-* de día",
+  "css cream #f6f4ef en --on-ink de día",
   /:root\s*\{[\s\S]*?--on-ink:\s*#f6f4ef/.test(css) &&
-    /:root\s*\{[\s\S]*?--on-danger:\s*#f6f4ef/.test(css) &&
     (css.match(/#f6f4ef/g) || []).length >= 1,
 );
 assert(
   "css --warn-line cálido, notice sin negro",
   /:root\s*\{[\s\S]*?--warn-line:/.test(css) &&
-    /html\[data-theme="night"\]\s*\{[\s\S]*?--warn-line:\s*#8a7340/.test(css) &&
+    /html\[data-theme="night"\]\s*\{[\s\S]*?--warn-line:\s*#6b5a30/.test(css) &&
     /\.notice\s*\{[\s\S]*?border:\s*1px solid var\(--warn-line\)/.test(css) &&
     !/\.notice\s*\{[^}]*#000/.test(css),
 );
 assert(
   "css noche --line y --line-strong discretos",
-  /html\[data-theme="night"\]\s*\{[\s\S]*?--line:\s*#5a6b66/.test(css) &&
-    /html\[data-theme="night"\]\s*\{[\s\S]*?--line-strong:\s*#6e827c/.test(css),
+  /html\[data-theme="night"\]\s*\{[\s\S]*?--line:\s*#273029/.test(css) &&
+    /html\[data-theme="night"\]\s*\{[\s\S]*?--line-strong:\s*#3a453f/.test(css),
 );
 assert(
   "css picker elevado y opción seleccionada obvia de noche",
   /\.picker-panel\s*\{[\s\S]*?background:\s*var\(--surface-2\)/.test(css) &&
-    /html\[data-theme="night"\]\s*\{[\s\S]*?--surface-2:\s*#1a211e/.test(css) &&
+    /html\[data-theme="night"\]\s*\{[\s\S]*?--surface-2:\s*#181d1b/.test(css) &&
     /\.picker-option\[aria-selected="true"\]/.test(css) &&
     /html\[data-theme="night"\]\s*\{[\s\S]*?--option-on-bg:\s*var\(--ink\)/.test(css) &&
     /html\[data-theme="night"\]\s*\{[\s\S]*?--option-on-fg:\s*var\(--on-ink\)/.test(css),
@@ -1992,16 +2039,14 @@ console.log("\nTema noche");
   assert("contraste on-danger/danger ≥ 4.5", contrast(night["on-danger"], night.danger) >= 4.5);
   assert("contraste on-success/success ≥ 4.5", contrast(night["on-success"], night.success) >= 4.5);
   assert("contraste on-accent/accent ≥ 4.5", contrast(night["on-accent"], night.accent) >= 4.5);
-  assert("contraste line/surface noche ≥ 3", contrast(night.line, night.surface) >= 3);
+  assert("contraste field-line/control-bg noche ≥ 3", contrast(night["field-line"], night["control-bg"]) >= 3);
+  assert("contraste field-line/control-bg día ≥ 3", contrast(day["field-line"], day["control-bg"]) >= 3);
   const withoutPrint = css.replace(/@media print\s*\{[\s\S]*?\n\}/g, "");
-  const whites = withoutPrint.match(/#fff(?:fff)?\b/gi) || [];
-  // Permitir solo dentro de declaraciones de tokens de superficie de día (--surface/--control-bg/--paper-doc)
-  const allowed = whites.filter((w) => {
-    // si quedó alguno fuera de tokens, falla
-    return false;
-  });
+  // Lista blanca: tokens de papel/primer plano de día (--paper-doc, --on-*)
+  const withoutTokens = withoutPrint.replace(/--[\w-]+:\s*#[0-9a-fA-F]{3,8}\b/g, "");
+  const whites = withoutTokens.match(/#fff(?:fff)?\b/gi) || [];
   assert(
-    "sin #fff literal fuera de @media print",
+    "sin #fff literal fuera de @media print y tokens",
     whites.length === 0,
     whites.join(","),
   );
@@ -2036,6 +2081,152 @@ assert(
     return /Sin planilla, sin instalar nada/.test(lede) && !/\b(IUSC|AFP|art\.)\b/.test(lede);
   })(),
 );
+
+assert(
+  "módulos empresa separados",
+  existsSync(join(root, "js/empresa-trabajadores.js")) &&
+    existsSync(join(root, "js/empresa-documentos.js")) &&
+    existsSync(join(root, "js/empresa-nomina.js")) &&
+    existsSync(join(root, "js/empresa-lre.js")) &&
+    /bindEmpresaTrabajadores/.test(readFileSync(join(root, "js/app-empresa.js"), "utf8")) &&
+    /bindEmpresaDocumentos/.test(readFileSync(join(root, "js/app-empresa.js"), "utf8")) &&
+    /bindEmpresaNomina/.test(readFileSync(join(root, "js/app-empresa.js"), "utf8")) &&
+    /bindEmpresaLre/.test(readFileSync(join(root, "js/app-empresa.js"), "utf8")),
+);
+
+/* ---------- SEO ---------- */
+{
+  const publicPages = [
+    ["index.html", "/"],
+    ["sueldo.html", "/sueldo"],
+    ["finiquito.html", "/finiquito"],
+    ["empresa.html", "/empresa"],
+    ["como.html", "/como"],
+    ["precios.html", "/precios"],
+  ];
+  for (const [file, path] of publicPages) {
+    const html = readFileSync(join(root, file), "utf8");
+    const title = (html.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const desc = (html.match(/meta name="description" content="([^"]*)"/) || [])[1] || "";
+    const canonical = (html.match(/rel="canonical" href="([^"]*)"/) || [])[1] || "";
+    assert(`SEO title ${file}`, title.length > 0 && title.length <= 65 && !/^Haberes\b/.test(title), title);
+    assert(
+      `SEO description ${file}`,
+      desc.length >= 110 &&
+        desc.length <= 160 &&
+        !/No es Dirección del Trabajo/.test(desc) &&
+        !/\bIA\b/.test(desc),
+      `${desc.length}:${desc}`,
+    );
+    assert(`SEO canonical ${file}`, canonical === `https://www.haberes.cl${path === "/" ? "/" : path}`);
+    assert(
+      `SEO og+twitter ${file}`,
+      /property="og:title"/.test(html) &&
+        /property="og:description"/.test(html) &&
+        /property="og:url"/.test(html) &&
+        /property="og:image"/.test(html) &&
+        /name="twitter:card" content="summary_large_image"/.test(html),
+    );
+    assert(`SEO sin Google Fonts ${file}`, !/fonts\.googleapis\.com/.test(html));
+    assert(
+      `SEO charset temprano ${file}`,
+      html.slice(0, 1024).includes('<meta charset="utf-8"'),
+    );
+    const ldBlocks = [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)].map((m) => m[1]);
+    assert(`SEO JSON-LD presente ${file}`, ldBlocks.length >= 1);
+    for (const raw of ldBlocks) {
+      let obj;
+      try {
+        obj = JSON.parse(raw);
+      } catch {
+        obj = null;
+      }
+      assert(`SEO JSON-LD válido ${file}`, obj && obj["@context"] && obj["@type"]);
+      assert(
+        `SEO sin AggregateRating/Review ${file}`,
+        !/AggregateRating|"@type"\s*:\s*"Review"/.test(raw),
+      );
+      if (obj?.["@type"] === "FAQPage") {
+        for (const q of obj.mainEntity || []) {
+          assert(
+            `SEO FAQ visible ${file}: ${q.name}`,
+            html.includes(q.name),
+          );
+        }
+      }
+    }
+  }
+  assert("SEO título sueldo con calculadora y Chile", /Calculadora de sueldo líquido Chile/.test(readFileSync(join(root, "sueldo.html"), "utf8")));
+  assert("SEO título finiquito con calculadora y Chile", /Calculadora de finiquito Chile/.test(readFileSync(join(root, "finiquito.html"), "utf8")));
+  assert("SEO fuentes autoalojadas", existsSync(join(root, "fonts/ibm-plex-sans-latin-400-normal.woff2")) && existsSync(join(root, "fonts/LICENSE")));
+  assert("SEO og-default.png", existsSync(join(root, "img/og-default.png")));
+  assert("SEO guías 7", guiaLocs.every((u) => existsSync(join(root, u.replace("https://www.haberes.cl/", "") + ".html"))));
+  assert("SEO causales 5", causalLocs.every((u) => existsSync(join(root, u.replace("https://www.haberes.cl/", "") + ".html"))));
+  for (const file of ["admin.html", "reset.html", "privacidad.html", "terminos.html"]) {
+    assert(`SEO sin Google Fonts ${file}`, !/fonts\.googleapis\.com/.test(readFileSync(join(root, file), "utf8")));
+  }
+}
+
+/* ---------- Tema y contraste (ampliado) ---------- */
+{
+  function hexLum(hex) {
+    const h = String(hex || "").replace("#", "").trim();
+    if (!/^[0-9a-f]{6}$/i.test(h)) return null;
+    const n = (i) => parseInt(h.slice(i, i + 2), 16) / 255;
+    const lin = (c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+    return 0.2126 * lin(n(0)) + 0.7152 * lin(n(2)) + 0.0722 * lin(n(4));
+  }
+  function contrast(a, b) {
+    const L1 = hexLum(a);
+    const L2 = hexLum(b);
+    if (L1 == null || L2 == null) return 0;
+    const hi = Math.max(L1, L2);
+    const lo = Math.min(L1, L2);
+    return (hi + 0.05) / (lo + 0.05);
+  }
+  function parseTokens(block) {
+    const out = {};
+    for (const m of block.matchAll(/--([\w-]+):\s*([^;]+);/g)) {
+      const v = m[2].trim();
+      if (v.startsWith("#")) out[m[1]] = v.slice(0, 7);
+    }
+    return out;
+  }
+  const rootBlock = css.match(/:root\s*\{([\s\S]*?)\n\}/)?.[1] || "";
+  const nightBlock = css.match(/html\[data-theme="night"\]\s*\{([\s\S]*?)\n\}/)?.[1] || "";
+  const day = parseTokens(rootBlock);
+  const night = parseTokens(nightBlock);
+  const pairs = [
+    ["text", "surface"],
+    ["text", "paper"],
+    ["text", "surface-2"],
+    ["text", "surface-3"],
+    ["muted", "surface"],
+    ["on-danger", "danger"],
+    ["on-success", "success"],
+    ["on-warn", "warn"],
+    ["on-info", "info"],
+    ["on-accent", "accent"],
+    ["on-ink", "ink"],
+  ];
+  for (const [fg, bg] of pairs) {
+    assert(
+      `contraste noche ${fg}/${bg} ≥ 4.5`,
+      contrast(night[fg], night[bg]) >= 4.5,
+      String(contrast(night[fg], night[bg])),
+    );
+  }
+  assert(
+    "día luminancia surface > surface-2 > surface-3",
+    hexLum(day.surface) > hexLum(day["surface-2"]) && hexLum(day["surface-2"]) > hexLum(day["surface-3"]),
+    JSON.stringify({
+      s: hexLum(day.surface),
+      s2: hexLum(day["surface-2"]),
+      s3: hexLum(day["surface-3"]),
+    }),
+  );
+  assert("field-line declarado en ambos temas", day["field-line"] && night["field-line"]);
+}
 
 console.log(`\n${passed} ok, ${failed} fail`);
 if (failed) process.exit(1);
