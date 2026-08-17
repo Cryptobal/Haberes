@@ -813,8 +813,9 @@ assert(
 
 console.log("\nCheckout Mercado Pago");
 const MP_TOKEN_KEYS = [
-  "Mp:access_token",
+  "mp_access_token",
   "mp_access",
+  "Mp:access_token",
   "MP_ACCESS_TOKEN",
   "MERCADOPAGO_ACCESS_TOKEN",
   "MP_ACCESS_TOKEN_PROD",
@@ -857,9 +858,9 @@ assert("Pro cobra 17838 CLP", PRO_AMOUNT_CLP === 17838, String(PRO_AMOUNT_CLP));
 assert("hasMp false sin token", hasMp() === false);
 assert("mpAccessToken vacío sin env", mpAccessToken() === "");
 assert(
-  "MP_TOKEN_ENV: Mp:access_token y mp_access primero",
-  MP_TOKEN_ENV[0] === "Mp:access_token" &&
-    MP_TOKEN_ENV[1] === "mp_access" &&
+  "MP_TOKEN_ENV: mp_access_token primero",
+  MP_TOKEN_ENV[0] === "mp_access_token" &&
+    MP_TOKEN_ENV.includes("mp_access") &&
     MP_TOKEN_ENV.includes("MP_ACCESS_TOKEN") &&
     MP_TOKEN_ENV.includes("MERCADOPAGO_ACCESS_TOKEN") &&
     MP_TOKEN_ENV.includes("MP_ACCESS_TOKEN_PROD") &&
@@ -867,11 +868,11 @@ assert(
 );
 
 process.env.MP_ACCESS_TOKEN = "unit-mp-canonical";
-process.env["Mp:access_token"] = "unit-mp-colon";
-assert("Mp:access_token gana al canónico", mpAccessToken() === "unit-mp-colon");
-delete process.env["Mp:access_token"];
-process.env.mp_access = "unit-mp-lower";
-assert("mp_access gana si no hay Mp:access_token", mpAccessToken() === "unit-mp-lower");
+process.env.mp_access_token = "unit-mp-vercel";
+assert("mp_access_token gana al canónico", mpAccessToken() === "unit-mp-vercel");
+delete process.env.mp_access_token;
+process.env.mp_access = "unit-mp-short-alias";
+assert("mp_access funciona si no hay mp_access_token", mpAccessToken() === "unit-mp-short-alias");
 delete process.env.mp_access;
 delete process.env.MP_ACCESS_TOKEN;
 process.env.MP_ACCESS = "unit-mp-short";
@@ -1533,8 +1534,7 @@ const mpSrc = readFileSync(join(root, "api/_mp.js"), "utf8") + readFileSync(join
 assert("MP no imprime secretos", !/console\.(log|info|debug|warn|error)/.test(mpSrc));
 assert(
   "MP acepta alias de token y secreto",
-  /Mp:access_token/.test(mpSrc) &&
-    /mp_access/.test(mpSrc) &&
+  /mp_access_token/.test(mpSrc) &&
     /MERCADOPAGO_ACCESS_TOKEN/.test(mpSrc) &&
     /MP_ACCESS_TOKEN_PROD/.test(mpSrc) &&
     /MERCADOPAGO_WEBHOOK_SECRET/.test(mpSrc) &&
