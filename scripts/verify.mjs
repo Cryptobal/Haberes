@@ -667,7 +667,9 @@ const profile = (await import("../api/profile.js")).default;
 const logoApi = (await import("../api/logo.js")).default;
 const documento = (await import("../api/documento.js")).default;
 const adminLogin = (await import("../api/admin-login.js")).default;
-const movimiento = (await import("../api/movimiento.js")).default;
+const movimientoMod = await import("../api/movimiento.js");
+const movimiento = movimientoMod.default;
+const { applyMovimientos } = movimientoMod;
 
 const regRes = mockRes();
 await register(mockReq("POST", { rut: "12.345.678-5", email: "a@b.cl", razonSocial: "SpA", password: "tenchars!!" }, "203.0.113.21"), regRes);
@@ -745,6 +747,55 @@ assert(
   "movimiento 501 sin DATABASE_URL",
   movRes._out.statusCode === 501 && movRes._out.body?.reason === "no_backend",
   JSON.stringify(movRes._out.body),
+);
+
+function mockMovClient(existingKeys = []) {
+  const { periodoMes } = movimientoMod;
+  const periodo = periodoMes();
+  const rows = existingKeys.map((key) => ["id", "co1", "liquidacion", key, periodo]);
+  let inserts = 0;
+  return {
+    get inserts() {
+      return inserts;
+    },
+    async query(sql, params = []) {
+      if (/SELECT COUNT/.test(sql)) return { rows: [{ n: rows.length }] };
+      if (/SELECT 1 FROM movimientos/.test(sql)) {
+        const found = rows.some(
+          (r) => r[1] === params[0] && r[4] === params[1] && r[2] === params[2] && r[3] === params[3],
+        );
+        return { rowCount: found ? 1 : 0, rows: found ? [{}] : [] };
+      }
+      if (/INSERT INTO movimientos/.test(sql)) {
+        inserts += 1;
+        rows.push(params);
+        return { rowCount: 1 };
+      }
+      return { rows: [], rowCount: 0 };
+    },
+  };
+}
+const dryClient = mockMovClient();
+const dry = await applyMovimientos(dryClient, { id: "co1", plan: "gratis" }, {
+  tipo: "liquidacion",
+  keys: ["a"],
+  commit: false,
+});
+assert(
+  "applyMovimientos dry-run no inserta",
+  dry.status === 200 && dry.body?.ok === true && dryClient.inserts === 0,
+  JSON.stringify({ status: dry.status, inserts: dryClient.inserts }),
+);
+const commitClient = mockMovClient();
+const committed = await applyMovimientos(commitClient, { id: "co1", plan: "gratis" }, {
+  tipo: "liquidacion",
+  keys: ["a"],
+  commit: true,
+});
+assert(
+  "applyMovimientos commit inserta una vez",
+  committed.status === 200 && committed.body?.movimientosMes === 1 && commitClient.inserts === 1,
+  JSON.stringify(committed.body),
 );
 
 const prevAdminE = process.env.ADMIN_EMAILS;
@@ -910,6 +961,24 @@ assert(
   /registrarMovimientosRemoto/.test(empJs) &&
     /xlsxPagoMasivo/.test(empJs) &&
     /\/api\/movimiento/.test(readFileSync(join(root, "js/plan.js"), "utf8")),
+);
+const bajarPdfSrc = empJs.slice(empJs.indexOf("async function bajarPdf"), empJs.indexOf('el("btnPdfLiquidacion")'));
+assert(
+  "Descargar PDF no cuenta movimiento si falla el almacenamiento",
+  /no_storage/.test(bajarPdfSrc) &&
+    /el almacenamiento no está configurado/.test(bajarPdfSrc) &&
+    bajarPdfSrc.indexOf("apiDownloadPdf") < bajarPdfSrc.indexOf("consumirMovimientos") &&
+    bajarPdfSrc.indexOf("if (!blob)") < bajarPdfSrc.indexOf("consumirMovimientos") &&
+    bajarPdfSrc.indexOf("consumirMovimientos") > bajarPdfSrc.indexOf("return;"),
+);
+const docSrc = readFileSync(join(root, "api/documento.js"), "utf8");
+assert(
+  "documento no_storage antes de insertar movimientos",
+  /if \(!hasR2\(\)\) return noStorage/.test(docSrc) &&
+    docSrc.indexOf("if (!hasR2()) return noStorage(res)") < docSrc.indexOf("commit: true") &&
+    docSrc.indexOf("await r2Put") < docSrc.indexOf("commit: true") &&
+    docSrc.indexOf("commit: false") < docSrc.indexOf("await r2Put") &&
+    docSrc.indexOf("commit: false") > docSrc.indexOf("if (!hasR2()) return noStorage(res)"),
 );
 assert("app-empresa editar y eliminar trabajador", /deleteTrabajador/.test(empJs) && /updateTrabajador/.test(empJs));
 assert("app-empresa CSV upsert por RUT", /upsertTrabajadores/.test(empJs));
