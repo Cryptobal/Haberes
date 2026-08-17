@@ -283,7 +283,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             </div>
             <p class="hint">
               Un archivo nuevo actualiza por RUT (no duplica). Columnas: nombre, rut, cargo, sueldo_base, afp,
-              salud, plan_isapre, contrato, horas_extras, colacion, movilizacion, gratificacion, email, banco,
+              salud, plan_isapre, contrato, fecha_ingreso, horas_extras, colacion, movilizacion, gratificacion, email, banco,
               tipo_cuenta, nro_cuenta, y bonos nombrados <code>bono_1_nombre</code>, <code>bono_1_monto</code>,
               <code>bono_1_imponible</code> (si/no). La carga masiva CSV/XLSX es Pro. Los trabajadores de esta
               lista viven en este navegador.
@@ -342,6 +342,11 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                 </div>
               </div>
               <div class="row">
+                <div class="field">
+                  <span class="lbl">Fecha de ingreso</span>
+                  <div id="altaFechaIngreso"></div>
+                  <p class="hint">La usa el Libro de Remuneraciones (LRE). Se guarda al elegirla.</p>
+                </div>
                 <div class="field">
                   <label for="altaHoras">Horas extras (cantidad)</label>
                   <input id="altaHoras" inputmode="decimal" min="0" value="0" />
@@ -498,6 +503,37 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
               <div class="btn-row u-mt-3">
                 <button class="btn btn-ghost" type="button" id="btnPagoXlsx">Descargar XLSX</button>
                 <button class="btn btn-ghost" type="button" id="btnPagoEjemplo">Ejemplo vacío</button>
+              </div>
+
+              <hr class="sep" />
+              <h3>Libro de Remuneraciones (LRE) <span class="badge badge-pro">Pro</span></h3>
+              <p class="hint">
+                CSV con las 147 columnas del formato oficial de la Dirección del Trabajo, para subir
+                en Mi DT. Es un borrador: los aportes del empleador (mutual, SIS, reforma) van en 0
+                para que los complete su contador, y usa 30 días trabajados por persona.
+                <a href="https://static-content.api.dirtrab.cl/dt-docs/lre/lre_instrucciones_de_carga.pdf"
+                  target="_blank" rel="noopener">Manual oficial</a>.
+              </p>
+              <div class="row u-mt-3">
+                <div class="field">
+                  <span class="lbl">Región de prestación</span>
+                  <div id="lreRegionPick"></div>
+                </div>
+                <div class="field">
+                  <label for="lreComuna">Código comuna (Tabla N°3)</label>
+                  <input id="lreComuna" inputmode="numeric" min="1101" list="lreComunas"
+                    placeholder="13101" />
+                  <datalist id="lreComunas"></datalist>
+                </div>
+              </div>
+              <div class="field">
+                <span class="lbl">Mutual (ley 16.744)</span>
+                <div id="lreMutualPick"></div>
+              </div>
+              <p class="hint" id="lreFaltantes" hidden></p>
+              <p class="error" id="errLre" hidden></p>
+              <div class="btn-row u-mt-3">
+                <button class="btn btn-ghost" type="button" id="btnLreCsv">Descargar LRE (CSV)</button>
               </div>
             </div>
 

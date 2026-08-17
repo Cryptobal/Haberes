@@ -36,6 +36,18 @@ import {
   valorHoraExtra,
 } from "../js/sueldo.js";
 import { dvRut, validarRut } from "../js/format.js";
+import {
+  LRE_AFP,
+  LRE_COLUMNAS,
+  LRE_REGIONES,
+  LRE_SALUD,
+  codificarAnsi,
+  codigoJornada,
+  fechaParaLre,
+  generarLre,
+  nombreArchivoLre,
+  rutParaLre,
+} from "../js/lre.js";
 import { fallbackIndicadores } from "../js/indicadores.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -1323,6 +1335,98 @@ for (const p of files) {
   }
 }
 if (!leaked) ok("sin tokens Mercado Pago ni código OPAI");
+
+
+console.log("\nLibro de Remuneraciones Electrónico (formato DT v8.0, marzo 2023)");
+{
+  const idxDe = (cod) => LRE_COLUMNAS.findIndex(([c]) => c === cod);
+  assert("LRE: 147 columnas", LRE_COLUMNAS.length === 147, String(LRE_COLUMNAS.length));
+  assert("LRE: abre con Rut trabajador (1101)", LRE_COLUMNAS[0][0] === 1101);
+  assert("LRE: cierra con total indemnizaciones no tributables (5565)", LRE_COLUMNAS[146][0] === 5565);
+  assert("LRE: categorías en bloque (identificación 40, haberes 49, descuentos 37)",
+    idxDe(2101) === 40 && idxDe(3141) === 89 && idxDe(4151) === 126 && idxDe(5201) === 132);
+  assert("LRE: orden del anexo en no imponibles (2311 tras 2305; 2347 entre 2309 y 2310)",
+    idxDe(2311) === idxDe(2305) + 1 && idxDe(2347) === idxDe(2309) + 1 && idxDe(2310) === idxDe(2347) + 1);
+
+  assert("LRE Tabla 9: códigos AFP",
+    LRE_AFP.provida === 6 && LRE_AFP.planvital === 11 && LRE_AFP.cuprum === 13 &&
+      LRE_AFP.habitat === 14 && LRE_AFP.uno === 19 && LRE_AFP.capital === 31 && LRE_AFP.modelo === 103);
+  assert("LRE Tabla 11: Fonasa 102 e isapres abiertas",
+    LRE_SALUD.fonasa.codigo === 102 && LRE_SALUD.cruzblanca.codigo === 1 &&
+      LRE_SALUD.banmedica.codigo === 3 && LRE_SALUD.colmena.codigo === 4 &&
+      LRE_SALUD.consalud.codigo === 9 && LRE_SALUD.vidatres.codigo === 12 &&
+      LRE_SALUD.nuevamasvida.codigo === 43 && LRE_SALUD.esencial.codigo === 44);
+  assert("LRE Tabla 2: 16 regiones, 13 Metropolitana, 16 Ñuble",
+    LRE_REGIONES.length === 16 &&
+      LRE_REGIONES.find(([c]) => c === 13)[1] === "Metropolitana" &&
+      LRE_REGIONES.find(([c]) => c === 16)[1] === "Ñuble");
+  assert("LRE Tabla 6: jornada 42 h ordinaria (101), 28 h parcial art. 40 bis (201)",
+    codigoJornada(42) === 101 && codigoJornada(30) === 101 && codigoJornada(28) === 201 && codigoJornada(20) === 201);
+
+  assert("LRE: RUT sin puntos, con guion, sin cero inicial",
+    rutParaLre("12.345.678-5") === "12345678-5" && rutParaLre("06.876.543-2") === "6876543-2" && rutParaLre("basura") === "");
+  assert("LRE: fecha dd/mm/aaaa", fechaParaLre("2023-03-01") === "01/03/2023" && fechaParaLre("") === "");
+  assert("LRE: nombre de archivo rutempleador_aaaamm.csv",
+    nombreArchivoLre("76.086.428-5", "2026-08") === "76086428-5_202608.csv");
+
+  const trabajador = {
+    nombre: "Ana",
+    rut: "12.345.678-5",
+    sueldoBase: 1000000,
+    afp: "modelo",
+    salud: "fonasa",
+    contrato: "indefinido",
+    fechaIngreso: "2023-03-01",
+    gratificacionArt50: true,
+    colacion: 50000,
+    movilizacion: 40000,
+  };
+  const calc = calcularSueldo(trabajador, fallbackIndicadores());
+  const csvLre = generarLre({
+    trabajadores: [trabajador],
+    contexto: { region: 13, comuna: 13101, mutual: 1 },
+    indicadores: fallbackIndicadores(),
+  });
+  const [encabezado, fila] = csvLre.split("\r\n");
+  const cols = encabezado.split(";");
+  const vals = fila.split(";");
+  const en = (cod) => vals[cols.findIndex((c) => c.endsWith(`(${cod})`))];
+  const num = (cod) => Number(en(cod) || 0);
+
+  assert("LRE: encabezado y fila con 147 campos", cols.length === 147 && vals.length === 147);
+  assert("LRE: encabezado Nombre(código)", cols[0] === "Rut trabajador(1101)" && cols[146] === "Total indemnizaciones no tributables(5565)");
+  assert("LRE: CRLF y cierre de línea", csvLre.includes("\r\n") && csvLre.endsWith("\r\n"));
+  assert("LRE: opcional sin dato queda vacío, no cero", en("2103") === "" && en("1116") === "");
+  assert("LRE: identificación (rut, fecha, región, comuna, AFP Modelo 103, Fonasa 102)",
+    en("1101") === "12345678-5" && en("1102") === "01/03/2023" && en("1105") === "13" &&
+      en("1106") === "13101" && en("1141") === "103" && en("1143") === "102");
+  assert("LRE: montos idénticos al cálculo de la liquidación",
+    num("2101") === calc.sueldoBase && num("2106") === calc.gratificacion &&
+      num("3141") === calc.afp.monto && num("3143") === calc.salud.legal &&
+      num("3151") === calc.cesantia.monto && num("3161") === calc.iusc && num("5501") === calc.liquido);
+  assert("LRE: total haberes cuadra con sus subcategorías (5201 = 5210+5220+5230+5240)",
+    num("5201") === num("5210") + num("5220") + num("5230") + num("5240") && num("5201") === calc.totalHaberes);
+  assert("LRE: total descuentos cuadra (5301 = 5361+5341+5302)",
+    num("5301") === num("5361") + num("5341") + num("5302") && num("5301") === calc.totalDescuentos);
+  assert("LRE: aportes del empleador en 0 (borrador honesto, sin tasas inventadas)",
+    en("4152") === "0" && en("4155") === "0" && en("5410") === "0");
+
+  const bytes = codificarAnsi(csvLre);
+  assert("LRE: codificación ANSI (bytes ≤ 255, ó = 243, fuera de Latin-1 degrada a ?)",
+    Math.max(...bytes) <= 255 && codificarAnsi("ó")[0] === 243 && codificarAnsi("€")[0] === 0x3f);
+
+  const csvConIngreso = parseTrabajadoresCsv(
+    "nombre,rut,salud,fecha_ingreso\nAna,12.345.678-5,banmedica,01/03/2023\nLuis,9.876.543-3,fonasa,2025-01-15\n",
+  );
+  assert("CSV: fecha_ingreso acepta dd/mm/aaaa y aaaa-mm-dd",
+    csvConIngreso[0].fechaIngreso === "2023-03-01" && csvConIngreso[1].fechaIngreso === "2025-01-15");
+  assert("CSV: salud reconoce isapre específica para el LRE", csvConIngreso[0].salud === "banmedica");
+
+  const html = readFileSync(join(root, "empresa.html"), "utf8");
+  assert("empresa.html: panel LRE con descarga y manual oficial",
+    html.includes("btnLreCsv") && html.includes("Libro de Remuneraciones") && html.includes("dt-docs/lre"));
+  assert("empresa.html: ficha con fecha de ingreso (selector propio)", html.includes("altaFechaIngreso"));
+}
 
 assert("disclaimer constante presente", DISCLAIMER.includes("Dirección del Trabajo") && DISCLAIMER.includes("Previred"));
 assert("disclaimer finiquito Inspección", DISCLAIMER_FINIQUITO.includes("Inspección del Trabajo"));

@@ -53,7 +53,25 @@ function mapAfp(v) {
 
 function mapSalud(v) {
   const k = String(v || "fonasa").trim().toLowerCase();
+  if (k.includes("banm")) return "banmedica";
+  if (k.includes("colmena")) return "colmena";
+  if (k.includes("consalud")) return "consalud";
+  if (k.includes("cruz")) return "cruzblanca";
+  if (k.includes("vida")) return "vidatres";
+  if (k.includes("masvida")) return "nuevamasvida";
+  if (k.includes("esencial")) return "esencial";
   return k.includes("isapre") ? "isapre" : "fonasa";
+}
+
+// Acepta aaaa-mm-dd o dd/mm/aaaa y devuelve ISO; cualquier otra cosa, vacío.
+function parseFechaIso(v) {
+  const t = String(v || "").trim();
+  let m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(t);
+  if (m) return t;
+  m = /^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/.exec(t);
+  if (!m) return "";
+  const p2 = (n) => String(n).padStart(2, "0");
+  return `${m[3]}-${p2(m[2])}-${p2(m[1])}`;
 }
 
 function mapContrato(v) {
@@ -133,6 +151,7 @@ export function parseTrabajadoresCsv(text) {
       salud: mapSalud(rec.salud),
       isaprePactado: parseNumber(rec.plan_isapre || rec.isapre || rec.pactado || 0),
       contrato: mapContrato(rec.contrato || rec.tipo_contrato),
+      fechaIngreso: parseFechaIso(rec.fecha_ingreso || rec.fecha_inicio || rec.ingreso),
       horasExtras: parseNumber(rec.horas_extras || rec.he || 0),
       bonos: 0,
       haberesExtra,
@@ -150,7 +169,7 @@ export function parseTrabajadoresCsv(text) {
   return rows;
 }
 
-export const CSV_EJEMPLO = `nombre,rut,cargo,sueldo_base,afp,salud,plan_isapre,contrato,horas_extras,colacion,movilizacion,gratificacion,email,banco,tipo_cuenta,nro_cuenta,bono_1_nombre,bono_1_monto,bono_1_imponible,bono_2_nombre,bono_2_monto,bono_2_imponible
-Ana Pérez,12.345.678-5,Administradora,1000000,modelo,fonasa,0,indefinido,0,50000,40000,no,ana@empresa.cl,001,corriente,12345678,Bono producción,80000,si,Colación extra,15000,no
-Luis Soto,9.876.543-3,Operario,800000,habitat,fonasa,0,plazo_fijo,8,40000,35000,si,luis@empresa.cl,012,vista,11111111,Bono asistencia,30000,si,Movilización extra,12000,no
+export const CSV_EJEMPLO = `nombre,rut,cargo,sueldo_base,afp,salud,plan_isapre,contrato,fecha_ingreso,horas_extras,colacion,movilizacion,gratificacion,email,banco,tipo_cuenta,nro_cuenta,bono_1_nombre,bono_1_monto,bono_1_imponible,bono_2_nombre,bono_2_monto,bono_2_imponible
+Ana Pérez,12.345.678-5,Administradora,1000000,modelo,fonasa,0,indefinido,01/03/2023,0,50000,40000,no,ana@empresa.cl,001,corriente,12345678,Bono producción,80000,si,Colación extra,15000,no
+Luis Soto,9.876.543-3,Operario,800000,habitat,banmedica,45000,plazo_fijo,15/01/2025,8,40000,35000,si,luis@empresa.cl,012,vista,11111111,Bono asistencia,30000,si,Movilización extra,12000,no
 `;
