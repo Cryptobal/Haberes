@@ -112,16 +112,22 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             <li>Descarga de plantillas XLSX para pago masivo (Banco de Chile Office Banking, Scotiabank, BancoEstado, Santander): para copiar en el portal del banco, no es el archivo oficial del banco.</li>
             <li>Sin tope de 5 movimientos.</li>
           </ul>
+          <div class="btn-row u-mt-4">
+            <button type="button" class="btn btn-wrap" id="btnPasarPro">Pasar a Pro</button>
+          </div>
+          <p class="ok" id="proState" hidden>Ya es Pro</p>
+          <p class="hint">Cobro vía Mercado Pago. $14.990 + IVA / mes (IVA 19 % Chile). Cada pago aprobado activa Pro por 31 días; para renovar, pulse de nuevo Pasar a Pro.</p>
         </article>
       </div>
 
       <div class="prose">
         <h2>Cómo pasar a Pro</h2>
         <p>
-          No hay cobro con tarjeta en el sitio. Si quiere Pro, escriba a
-          <a href="mailto:contacto@lx3.ai">contacto@lx3.ai</a>.
+          Pulse <strong>Pasar a Pro</strong>. Si ya está en su empresa, se abre el cobro de Mercado Pago.
+          Si no, primero cree o entre a su cuenta y luego continúa el pago. El plan no se activa solo
+          porque vuelva del cobro: espera la confirmación de Mercado Pago (puede tardar unos segundos).
         </p>
-        <p><a class="btn" href="/empresa">Crear cuenta gratis</a></p>
+        <p><a class="btn btn-ghost" href="/empresa">Crear cuenta gratis</a></p>
       </div>
     </div>
   </main>
@@ -149,6 +155,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       </div>
     </div>
   </footer>
-  <script type="module" src="js/app-home.js"></script>
+  <script type="module" src="js/app-precios.js"></script>
 </body>
 </html>

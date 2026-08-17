@@ -14,6 +14,7 @@ import { clp, formatRut, validarRut } from "./format.js";
 import { getIndicadores } from "./indicadores.js";
 import { BANCOS_CL, TIPO_CUENTA_OPTS, glosaSueldo, xlsxPagoEjemplo, xlsxPagoMasivo } from "./pago.js";
 import { createPicker } from "./picker.js";
+import { startProCheckout, consumeCheckoutIntent, rememberCheckoutIntent } from "./checkout.js";
 import {
   GRATIS_LIMITE,
   MSG_CARGA_PRO,
@@ -28,6 +29,7 @@ import {
   puedePagoMasivo,
   registrarMovimientosLocal,
   registrarMovimientosRemoto,
+  syncPlanRemoto,
   textoCupo,
   workerKey,
 } from "./plan.js";
@@ -539,11 +541,24 @@ function renderCupo() {
   const box = el("empQuota");
   const bar = el("empQuotaBar");
   const badge = el("empPlanBadge");
+  const cta = el("btnPasarPro");
+  const state = el("empProState");
   if (el("empPlan")) el("empPlan").textContent = textoCupo(emp);
   const pro = isPro(emp);
   if (badge) {
     badge.textContent = pro ? "Pro" : "Gratis";
     badge.className = pro ? "badge badge-pro" : "badge";
+  }
+  if (cta) cta.hidden = pro;
+  if (state) {
+    state.hidden = !pro;
+    if (pro) {
+      const until = emp?.planUntil ? new Date(emp.planUntil) : null;
+      state.textContent =
+        until && Number.isFinite(until.getTime())
+          ? `Ya es Pro · hasta ${until.toLocaleDateString("es-CL")}`
+          : "Ya es Pro";
+    }
   }
   if (!box || !bar) return;
   const usados = usadosMes(emp);
@@ -661,6 +676,7 @@ async function bootSession() {
         ensureLocalEmpresa(data.company);
         aplicarPlanServidor(empresaActual(), {
           plan: data.company.plan,
+          planUntil: data.company.planUntil,
           movimientosMes: data.movimientosMes,
         });
       } catch {
@@ -671,10 +687,54 @@ async function bootSession() {
     if (local?.remote && !local.claveHash) clearSession();
   }
   refresh();
+  if (new URLSearchParams(location.search).get("checkout") === "1") rememberCheckoutIntent();
+  await handlePagoReturn();
+  stripPagoQuery();
   if (remoteOk) {
     await loadLogo();
     await loadFirma();
   }
+  await maybeContinueCheckout();
+}
+
+function stripPagoQuery() {
+  const params = new URLSearchParams(location.search);
+  if (!params.has("pago") && params.get("checkout") !== "1") return;
+  params.delete("pago");
+  const next = params.toString();
+  history.replaceState({}, "", next ? `/empresa?${next}` : "/empresa");
+}
+
+async function handlePagoReturn() {
+  const pago = new URLSearchParams(location.search).get("pago");
+  if (!pago) return;
+  if (pago === "ok" || pago === "pending") {
+    await syncPlanRemoto();
+    refresh();
+    toastInfo(
+      pago === "ok" ? "Pago recibido" : "Pago en revisión",
+      "Pro se activa cuando Mercado Pago confirma (puede tardar unos segundos).",
+    );
+  } else if (pago === "fail") {
+    toastError("No se completó el pago", "Puede intentarlo de nuevo desde Pasar a Pro.");
+  }
+}
+
+async function maybeContinueCheckout() {
+  if (new URLSearchParams(location.search).get("checkout") === "1") rememberCheckoutIntent();
+  if (!remoteOk || isPro(empresaActual())) return;
+  if (!consumeCheckoutIntent()) return;
+  const params = new URLSearchParams(location.search);
+  if (params.has("checkout")) {
+    params.delete("checkout");
+    const next = params.toString();
+    history.replaceState({}, "", next ? `/empresa?${next}` : "/empresa");
+  }
+  await startProCheckout({
+    onError(msg) {
+      toastError("No se pudo iniciar el pago", msg);
+    },
+  });
 }
 
 bootSession();
@@ -705,13 +765,18 @@ el("formRegistro")?.addEventListener("submit", async (ev) => {
       } else {
         remoteOk = true;
         ensureLocalEmpresa(data.company);
-        aplicarPlanServidor(empresaActual(), { plan: data.company.plan, movimientosMes: data.movimientosMes });
+        aplicarPlanServidor(empresaActual(), {
+          plan: data.company.plan,
+          planUntil: data.company.planUntil,
+          movimientosMes: data.movimientosMes,
+        });
       }
       refresh();
       toastOk(
         "Cuenta creada",
         remoteOk ? "Complete el perfil y suba su logo." : "Guardada solo en este navegador.",
       );
+      if (remoteOk) await maybeContinueCheckout();
     } catch (err) {
       showError(el("errAuth"), err.message);
       toastError("No se pudo crear la cuenta", err.message);
@@ -735,19 +800,37 @@ el("formEntrar")?.addEventListener("submit", async (ev) => {
       } else {
         remoteOk = true;
         ensureLocalEmpresa(data.company);
-        aplicarPlanServidor(empresaActual(), { plan: data.company.plan, movimientosMes: data.movimientosMes });
+        aplicarPlanServidor(empresaActual(), {
+          plan: data.company.plan,
+          planUntil: data.company.planUntil,
+          movimientosMes: data.movimientosMes,
+        });
       }
       refresh();
       toastOk(`Hola, ${empresaActual()?.razonSocial || "empresa"}`);
       if (remoteOk) {
         await loadLogo();
         await loadFirma();
+        await maybeContinueCheckout();
       }
     } catch (err) {
       showError(el("errAuth"), err.message);
       toastError("No se pudo entrar", err.message);
     }
   }, "Entrando…");
+});
+
+el("btnPasarPro")?.addEventListener("click", async (ev) => {
+  await withBusy(
+    ev.currentTarget,
+    () =>
+      startProCheckout({
+        onError(msg) {
+          toastError("No se pudo iniciar el pago", msg);
+        },
+      }),
+    "Abriendo Mercado Pago…",
+  );
 });
 
 el("btnSalir")?.addEventListener("click", async () => {

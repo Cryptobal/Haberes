@@ -103,7 +103,7 @@ export async function entrarEmpresa({ rut, clave }) {
   return emp;
 }
 
-export function ensureLocalEmpresa({ rut, email, razonSocial, giro, direccion, hasLogo, hasFirma, plan }) {
+export function ensureLocalEmpresa({ rut, email, razonSocial, giro, direccion, hasLogo, hasFirma, plan, planUntil }) {
   const id = normalizeRut(rut);
   if (!id) throw new Error("RUT inválido");
   const db = loadDb();
@@ -120,6 +120,7 @@ export function ensureLocalEmpresa({ rut, email, razonSocial, giro, direccion, h
     claveHash: prev.claveHash || "",
     trabajadores: prev.trabajadores || [],
     plan: plan === "pro" || plan === "gratis" ? plan : prev.plan || "gratis",
+    planUntil: planUntil === undefined ? prev.planUntil || null : planUntil,
     movimientos: prev.movimientos || {},
     createdAt: prev.createdAt || new Date().toISOString(),
     remote: true,

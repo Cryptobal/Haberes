@@ -1,6 +1,7 @@
 import {
   allowRate,
   companyPublic,
+  expireStaleProPlan,
   hasDatabaseUrl,
   insertSession,
   json,
@@ -33,7 +34,7 @@ export default async function handler(req, res) {
     const result = await withDb(async (client) => {
       const found = await client.query(
         `SELECT id, rut, email, razon_social, password_hash, giro, direccion, logo_key, logo_content_type,
-                firma_key, firma_content_type, disabled_at, plan
+                firma_key, firma_content_type, disabled_at, plan, plan_until, mp_payment_id, mp_preapproval_id
          FROM companies
          WHERE rut = $1
          LIMIT 1`,
@@ -47,11 +48,12 @@ export default async function handler(req, res) {
       if (row.disabled_at) {
         return { status: 403, payload: { ok: false, reason: "disabled" } };
       }
-      const session = await insertSession(client, row.id);
+      const fresh = await expireStaleProPlan(client, row);
+      const session = await insertSession(client, fresh.id);
       return {
         status: 200,
         token: session.token,
-        payload: { ok: true, company: companyPublic(row) },
+        payload: { ok: true, company: companyPublic(fresh) },
       };
     });
 

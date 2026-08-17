@@ -6,20 +6,25 @@ export const PLAN_PRO = "pro";
 export const GRATIS_LIMITE = 5;
 
 export const MSG_LIMITE =
-  "Ya usó 5 movimientos este mes. El sexto (y la carga masiva) son del plan Pro: $14.990 + IVA / mes. Escríbanos a contacto@lx3.ai.";
+  "Ya usó 5 movimientos este mes. El sexto (y la carga masiva) son del plan Pro: $14.990 + IVA / mes.";
 export const MSG_UNO_A_UNO =
   "En Gratis se emite de a uno. Para varios trabajadores a la vez necesita Pro ($14.990 + IVA / mes).";
 export const MSG_CARGA_PRO =
-  "La carga masiva CSV/XLSX es del plan Pro ($14.990 + IVA / mes). En Gratis agregue trabajadores uno por uno. Escríbanos a contacto@lx3.ai.";
+  "La carga masiva CSV/XLSX es del plan Pro ($14.990 + IVA / mes). En Gratis agregue trabajadores uno por uno.";
 export const MSG_PAGO_PRO =
-  "Las plantillas XLSX de pago masivo son del plan Pro ($14.990 + IVA / mes). Escríbanos a contacto@lx3.ai.";
+  "Las plantillas XLSX de pago masivo son del plan Pro ($14.990 + IVA / mes).";
 
 function monthKey(d = new Date()) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
 export function isPro(emp) {
-  return String(emp?.plan || PLAN_GRATIS).toLowerCase() === PLAN_PRO;
+  if (String(emp?.plan || PLAN_GRATIS).toLowerCase() !== PLAN_PRO) return false;
+  if (emp.planUntil) {
+    const t = Date.parse(emp.planUntil);
+    if (Number.isFinite(t) && t < Date.now()) return false;
+  }
+  return true;
 }
 
 export function movimientosDelMes(emp) {
@@ -81,6 +86,8 @@ export function registrarMovimientosLocal(emp, { tipo, keys }) {
 export function aplicarPlanServidor(emp, data) {
   if (!emp || !data) return emp;
   if (data.plan === PLAN_PRO || data.plan === PLAN_GRATIS) emp.plan = data.plan;
+  if (data.planUntil != null) emp.planUntil = data.planUntil;
+  else if (data.plan === PLAN_GRATIS) emp.planUntil = null;
   if (Number.isFinite(Number(data.movimientosMes))) {
     const mes = monthKey();
     const n = Number(data.movimientosMes);
@@ -102,7 +109,13 @@ export async function syncPlanRemoto() {
   const { status, data } = await apiGet("/api/me");
   if (isNoBackend(status, data) || !data?.ok) return { remote: false, data };
   const emp = empresaActual();
-  if (emp) aplicarPlanServidor(emp, { plan: data.company?.plan, movimientosMes: data.movimientosMes });
+  if (emp) {
+    aplicarPlanServidor(emp, {
+      plan: data.company?.plan,
+      planUntil: data.company?.planUntil,
+      movimientosMes: data.movimientosMes,
+    });
+  }
   return { remote: true, data };
 }
 

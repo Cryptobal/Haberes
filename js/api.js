@@ -126,5 +126,11 @@ export function authErrorMessage(data, status) {
   if (reason === "uno_a_uno") {
     return "En Gratis se emite de a uno. Para varios a la vez necesita Pro.";
   }
+  if (reason === "mp_unavailable") {
+    return "El cobro con Mercado Pago no está configurado. Escríbanos a contacto@lx3.ai.";
+  }
+  if (reason === "mp_error") {
+    return "No se pudo abrir el cobro de Mercado Pago. Inténtelo de nuevo en un momento.";
+  }
   return "No se pudo completar la solicitud.";
 }

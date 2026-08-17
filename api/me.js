@@ -34,11 +34,12 @@ export default async function handler(req, res) {
     });
     if (!connected) return noBackend(res);
     if (!result?.row) return json(res, 401, { ok: false, reason: "unauthorized" });
+    const company = companyPublic(result.row);
     return json(res, 200, {
       ok: true,
-      company: companyPublic(result.row),
+      company,
       movimientosMes: result.movimientosMes,
-      limite: String(result.row.plan || "gratis").toLowerCase() === "pro" ? null : 5,
+      limite: company.plan === "pro" ? null : 5,
       storage: hasR2(),
     });
   } catch {
