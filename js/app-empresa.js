@@ -1072,7 +1072,12 @@ async function bajarPdf(tipo, errId, extra) {
   showError(el(errId), "");
   const rows = workersForEmit();
   if (!rows.length) return showError(el(errId), "Seleccione uno o más trabajadores");
-  if (!(await consumirMovimientos(tipo, rows, errId))) return;
+  emp = empresaActual();
+  const gate = puedeEmitir(emp, { tipo, keys: rows.map(workerKey) });
+  if (!gate.ok) {
+    showError(el(errId), gate.message || MSG_LIMITE);
+    return;
+  }
   const { status, data, blob } = await apiDownloadPdf("/api/documento", {
     tipo,
     uf: indicadores.uf,
@@ -1095,6 +1100,7 @@ async function bajarPdf(tipo, errId, extra) {
     showError(el(errId), authErrorMessage(data, status));
     return;
   }
+  await consumirMovimientos(tipo, rows, errId);
   const many = rows.length > 1;
   triggerDownload(
     blob,
