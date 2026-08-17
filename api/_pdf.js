@@ -1,10 +1,26 @@
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
-import { DISCLAIMER, DISCLAIMER_FINIQUITO } from "../js/constants.js";
+import { DISCLAIMER, DISCLAIMER_FINIQUITO, resumirTextoLegal } from "../js/constants.js";
 import { clp, fechaLarga, formatRut } from "../js/format.js";
 
+export const PDF_LAYOUT = {
+  page: [595.28, 841.89],
+  margin: 48,
+  logoMaxH: 56,
+  logoMaxW: 140,
+  firmaMaxH: 48,
+  firmaMaxW: 160,
+  gapAfterDescuentos: 16,
+  gapBeforeFirmas: 40,
+  barH: 28,
+  hairline: 0.6,
+};
+
+const MARGIN = PDF_LAYOUT.margin;
 const INK = rgb(18 / 255, 56 / 255, 44 / 255);
 const MUTED = rgb(94 / 255, 104 / 255, 100 / 255);
 const TEXT = rgb(26 / 255, 29 / 255, 28 / 255);
+const RULE = rgb(216 / 255, 212 / 255, 204 / 255);
+const WHITE = rgb(1, 1, 1);
 
 function latin1(s) {
   return String(s ?? "").replace(/[^\x20-\x7E\xA0-\xFF]/g, " ");
@@ -45,52 +61,36 @@ async function embedLogo(pdf, bytes, contentType) {
   return null;
 }
 
-function drawEmployerFirma(page, { font, empresa, firma, x, y, width }) {
-  let top = y;
-  if (firma) {
-    const maxH = 36;
-    const maxW = Math.min(140, width);
-    const scale = Math.min(maxW / firma.width, maxH / firma.height);
-    const w = firma.width * scale;
-    const h = firma.height * scale;
-    page.drawImage(firma, { x, y: y + 8, width: w, height: h });
-    top = y + 8 + h;
-  }
-  page.drawLine({
-    start: { x, y },
-    end: { x: x + width, y },
-    thickness: 0.8,
-    color: INK,
-  });
-  page.drawText(latin1("Empleador / representante legal"), {
-    x,
-    y: y - 14,
-    size: 9,
-    font,
-    color: MUTED,
-  });
-  if (empresa?.razonSocial) {
-    page.drawText(latin1(empresa.razonSocial), { x, y: y - 26, size: 9, font, color: TEXT });
-  }
-  return top;
+function contentWidth(page) {
+  return page.getWidth() - MARGIN * 2;
 }
 
-async function letterhead(page, { font, fontBold, empresa, logo }, y) {
-  const margin = 48;
+function drawAmount(page, font, amount, right, y, size, color) {
+  const amt = money(amount);
+  page.drawText(amt, {
+    x: right - font.widthOfTextAtSize(amt, size),
+    y,
+    size,
+    font,
+    color,
+  });
+}
+
+function letterhead(page, { font, fontBold, empresa, logo }, y) {
   const width = page.getWidth();
-  let left = margin;
+  let left = MARGIN;
+  let logoBottom = y;
   if (logo) {
-    const maxH = 48;
-    const maxW = 120;
-    const scale = Math.min(maxW / logo.width, maxH / logo.height);
+    const scale = Math.min(PDF_LAYOUT.logoMaxW / logo.width, PDF_LAYOUT.logoMaxH / logo.height);
     const w = logo.width * scale;
     const h = logo.height * scale;
-    page.drawImage(logo, { x: margin, y: y - h, width: w, height: h });
-    left = margin + w + 14;
+    page.drawImage(logo, { x: MARGIN, y: y - h, width: w, height: h });
+    left = MARGIN + w + 14;
+    logoBottom = y - h;
   }
   const name = latin1(empresa?.razonSocial || "Empleador");
-  page.drawText(name, { x: left, y: y - 14, size: 14, font: fontBold, color: INK });
-  let cy = y - 30;
+  page.drawText(name, { x: left, y: y - 14, size: 13, font: fontBold, color: INK });
+  let cy = y - 28;
   const lines = [
     `RUT ${formatRut(empresa?.rut || "—")}`,
     empresa?.giro ? String(empresa.giro) : "",
@@ -100,11 +100,11 @@ async function letterhead(page, { font, fontBold, empresa, logo }, y) {
     page.drawText(latin1(line), { x: left, y: cy, size: 9, font, color: MUTED });
     cy -= 12;
   }
-  const bottom = Math.min(cy, y - (logo ? 52 : 44));
+  const bottom = Math.min(cy, logoBottom) - 10;
   page.drawLine({
-    start: { x: margin, y: bottom },
-    end: { x: width - margin, y: bottom },
-    thickness: 1.4,
+    start: { x: MARGIN, y: bottom },
+    end: { x: width - MARGIN, y: bottom },
+    thickness: PDF_LAYOUT.hairline,
     color: INK,
   });
   return bottom - 18;
@@ -120,61 +120,183 @@ function drawParagraph(page, font, text, { x, y, size, maxWidth, lineHeight, col
 }
 
 function ensureSpace(doc, page, font, y, need = 80) {
-  if (y > need) return { page, y };
-  const next = doc.addPage([595.28, 841.89]);
-  return { page: next, y: next.getHeight() - 48 };
+  if (y > need + 8) return { page, y };
+  const next = doc.addPage(PDF_LAYOUT.page);
+  return { page: next, y: next.getHeight() - MARGIN };
 }
 
-function drawRows(doc, page, { font, fontBold, rows, y, totalLabel, total }) {
-  const margin = 48;
-  const width = page.getWidth();
-  const right = width - margin;
+function drawField(page, { font, fontBold, label, value, x, y, width }) {
+  page.drawText(latin1(label), { x, y, size: 8, font, color: MUTED });
+  const lines = wrap(fontBold, String(value || "—"), 10, width);
+  page.drawText(lines[0], { x, y: y - 12, size: 10, font: fontBold, color: TEXT });
+  return lines.length > 1 ? 12 * (lines.length - 1) : 0;
+}
+
+function drawWorkerGrid(page, { font, fontBold, trabajador, calc, y }) {
+  const gap = 20;
+  const colW = (contentWidth(page) - gap) / 2;
+  const contrato = calc.contrato === "plazo_fijo" ? "Plazo fijo" : "Indefinido";
+  const dias = `${calc.dias?.diasTrabajados ?? 30} de ${calc.dias?.diasBase ?? 30}`;
+  const cells = [
+    ["Trabajador", trabajador?.nombre || "—"],
+    ["RUT", formatRut(trabajador?.rut || "—")],
+    ["Cargo", trabajador?.cargo || "—"],
+    ["Contrato", contrato],
+    ["Días trabajados", dias],
+  ];
+  if ((calc.dias?.diasLicencia || 0) > 0) {
+    const n = calc.dias.diasLicencia;
+    cells.push(["Licencia médica", `${n} día${n === 1 ? "" : "s"}`]);
+  }
+  if ((calc.dias?.diasVacaciones || 0) > 0) {
+    const n = calc.dias.diasVacaciones;
+    cells.push(["Feriado legal", `${n} día${n === 1 ? "" : "s"}`]);
+  }
+
+  let cy = y;
+  for (let i = 0; i < cells.length; i += 2) {
+    const extraL = drawField(page, {
+      font,
+      fontBold,
+      label: cells[i][0],
+      value: cells[i][1],
+      x: MARGIN,
+      y: cy,
+      width: colW,
+    });
+    let extraR = 0;
+    if (cells[i + 1]) {
+      extraR = drawField(page, {
+        font,
+        fontBold,
+        label: cells[i + 1][0],
+        value: cells[i + 1][1],
+        x: MARGIN + colW + gap,
+        y: cy,
+        width: colW,
+      });
+    }
+    cy -= 26 + Math.max(extraL, extraR);
+  }
+  return cy;
+}
+
+function drawTable(doc, page, { font, fontBold, title, rows, totalLabel, total, y }) {
+  const right = page.getWidth() - MARGIN;
+  const labelMax = right - MARGIN - 120;
   let cur = page;
   let cy = y;
+
+  ({ page: cur, y: cy } = ensureSpace(doc, cur, font, cy, 40));
+  cur.drawText(latin1(title), { x: MARGIN, y: cy, size: 10, font: fontBold, color: INK });
+  cy -= 8;
+  cur.drawLine({
+    start: { x: MARGIN, y: cy },
+    end: { x: right, y: cy },
+    thickness: 0.8,
+    color: INK,
+  });
+  cy -= 14;
+
   for (const row of rows) {
-    ({ page: cur, y: cy } = ensureSpace(doc, cur, font, cy, 36));
-    const labelLines = wrap(font, row.label, 10, right - margin - 120);
-    cur.drawText(labelLines[0] || "", { x: margin, y: cy, size: 10, font, color: TEXT });
-    const amt = money(row.monto);
-    cur.drawText(amt, {
-      x: right - font.widthOfTextAtSize(amt, 10),
-      y: cy,
-      size: 10,
-      font,
-      color: TEXT,
-    });
+    const labelLines = wrap(font, row.label, 10, labelMax);
+    const rowNeed = 12 * labelLines.length + 10;
+    ({ page: cur, y: cy } = ensureSpace(doc, cur, font, cy, rowNeed));
+    cur.drawText(labelLines[0] || "", { x: MARGIN, y: cy, size: 10, font, color: TEXT });
+    drawAmount(cur, font, row.monto, right, cy, 10, TEXT);
     cy -= 12;
     for (const extra of labelLines.slice(1)) {
-      cur.drawText(extra, { x: margin, y: cy, size: 10, font, color: TEXT });
+      cur.drawText(extra, { x: MARGIN, y: cy, size: 10, font, color: TEXT });
       cy -= 12;
     }
     cur.drawLine({
-      start: { x: margin, y: cy + 6 },
+      start: { x: MARGIN, y: cy + 6 },
       end: { x: right, y: cy + 6 },
-      thickness: 0.3,
-      color: rgb(0.87, 0.85, 0.8),
+      thickness: 0.35,
+      color: RULE,
     });
     cy -= 4;
   }
-  ({ page: cur, y: cy } = ensureSpace(doc, cur, font, cy, 28));
-  cur.drawText(latin1(totalLabel), { x: margin, y: cy, size: 11, font: fontBold, color: INK });
-  const tot = money(total);
-  cur.drawText(tot, {
-    x: right - fontBold.widthOfTextAtSize(tot, 11),
-    y: cy,
-    size: 11,
-    font: fontBold,
+
+  ({ page: cur, y: cy } = ensureSpace(doc, cur, font, cy, 22));
+  cur.drawText(latin1(totalLabel), { x: MARGIN, y: cy, size: 10, font: fontBold, color: INK });
+  drawAmount(cur, fontBold, total, right, cy, 10, INK);
+  cy -= 6;
+  cur.drawLine({
+    start: { x: MARGIN, y: cy },
+    end: { x: right, y: cy },
+    thickness: 0.8,
     color: INK,
   });
-  return { page: cur, y: cy - 18 };
+  return { page: cur, y: cy };
+}
+
+function drawLiquidoBar(page, { fontBold, label, amount, y }) {
+  const barH = PDF_LAYOUT.barH;
+  const barBottom = y - barH;
+  const width = contentWidth(page);
+  page.drawRectangle({
+    x: MARGIN,
+    y: barBottom,
+    width,
+    height: barH,
+    color: INK,
+  });
+  const size = 11;
+  const cap = size * 0.72;
+  const textY = barBottom + (barH - cap) / 2;
+  page.drawText(latin1(label), {
+    x: MARGIN + 12,
+    y: textY,
+    size,
+    font: fontBold,
+    color: WHITE,
+  });
+  const amt = money(amount);
+  page.drawText(amt, {
+    x: MARGIN + width - 12 - fontBold.widthOfTextAtSize(amt, size),
+    y: textY,
+    size,
+    font: fontBold,
+    color: WHITE,
+  });
+  return barBottom;
+}
+
+/**
+ * Línea de firma primero. La imagen queda encima, apoyada en la línea, sin cruzarla.
+ * @returns espacio usado bajo la línea
+ */
+function drawSignColumn(page, { font, caption, name, firma, x, y, width }) {
+  if (firma) {
+    const scale = Math.min(PDF_LAYOUT.firmaMaxW / firma.width, PDF_LAYOUT.firmaMaxH / firma.height);
+    const w = Math.min(firma.width * scale, width);
+    const h = firma.height * (w / firma.width);
+    page.drawImage(firma, {
+      x: x + Math.max(0, (width - w) / 2),
+      y: y + 3,
+      width: w,
+      height: h,
+    });
+  }
+  page.drawLine({
+    start: { x, y },
+    end: { x: x + width, y },
+    thickness: 0.8,
+    color: INK,
+  });
+  page.drawText(latin1(caption), { x, y: y - 13, size: 8, font, color: MUTED });
+  if (name) {
+    const lines = wrap(font, name, 9, width);
+    page.drawText(lines[0], { x, y: y - 25, size: 9, font, color: TEXT });
+  }
 }
 
 function drawDisclaimer(page, font, y, extra = "") {
-  const margin = 48;
-  const maxWidth = page.getWidth() - margin * 2;
+  const maxWidth = contentWidth(page);
   const text = extra ? `${extra} ${DISCLAIMER}` : DISCLAIMER;
   return drawParagraph(page, font, text, {
-    x: margin,
+    x: MARGIN,
     y,
     size: 8,
     maxWidth,
@@ -196,121 +318,80 @@ export async function buildLiquidacionPdf({
   const pdf = await PDFDocument.create();
   const font = await pdf.embedFont(StandardFonts.Helvetica);
   const fontBold = await pdf.embedFont(StandardFonts.HelveticaBold);
-  const page0 = pdf.addPage([595.28, 841.89]);
+  const page0 = pdf.addPage(PDF_LAYOUT.page);
   const logo = await embedLogo(pdf, logoBytes, logoType);
   const firma = await embedLogo(pdf, firmaBytes, firmaType);
   let page = page0;
-  let y = await letterhead(page, { font, fontBold, empresa, logo }, page.getHeight() - 40);
-  const margin = 48;
-  const maxWidth = page.getWidth() - margin * 2;
+  let y = letterhead(page, { font, fontBold, empresa, logo }, page.getHeight() - MARGIN);
 
-  page.drawText(latin1("LIQUIDACIÓN DE SUELDO"), { x: margin, y, size: 12, font: fontBold, color: INK });
+  page.drawText(latin1("LIQUIDACIÓN DE SUELDO"), { x: MARGIN, y, size: 12, font: fontBold, color: INK });
   const per = latin1(periodo || fechaLarga());
   page.drawText(per, {
-    x: page.getWidth() - margin - font.widthOfTextAtSize(per, 10),
+    x: page.getWidth() - MARGIN - font.widthOfTextAtSize(per, 10),
     y,
     size: 10,
     font,
     color: MUTED,
   });
-  y -= 20;
+  y -= 22;
 
-  y = drawParagraph(
-    page,
-    font,
-    `Trabajador: ${trabajador?.nombre || "—"}  RUT: ${formatRut(trabajador?.rut || "—")}  Cargo: ${
-      trabajador?.cargo || "—"
-    }  Contrato: ${calc.contrato === "plazo_fijo" ? "Plazo fijo" : "Indefinido"}`,
-    { x: margin, y, size: 10, maxWidth, lineHeight: 13 },
-  );
-  y -= 2;
-  const diasTxt = `Días trabajados: ${calc.dias?.diasTrabajados ?? 30} de ${calc.dias?.diasBase ?? 30}`;
-  const extrasDias = [
-    (calc.dias?.diasLicencia || 0) > 0 ? `Licencia médica: ${calc.dias.diasLicencia} días` : "",
-    (calc.dias?.diasVacaciones || 0) > 0 ? `Feriado legal: ${calc.dias.diasVacaciones} días` : "",
-  ]
-    .filter(Boolean)
-    .join("  ");
-  y = drawParagraph(page, font, extrasDias ? `${diasTxt}  ${extrasDias}` : diasTxt, {
-    x: margin,
-    y,
-    size: 10,
-    maxWidth,
-    lineHeight: 13,
-  });
+  y = drawWorkerGrid(page, { font, fontBold, trabajador, calc, y });
   if (calc.leyendaLicencia) {
     y = drawParagraph(page, font, calc.leyendaLicencia, {
-      x: margin,
-      y,
+      x: MARGIN,
+      y: y + 4,
       size: 8,
-      maxWidth,
+      maxWidth: contentWidth(page),
       lineHeight: 11,
       color: MUTED,
     });
   }
-  y -= 8;
+  y -= 12;
 
-  page.drawText("Haberes", { x: margin, y, size: 10, font: fontBold, color: INK });
-  y -= 16;
-  ({ page, y } = drawRows(pdf, page, {
+  ({ page, y } = drawTable(pdf, page, {
     font,
     fontBold,
+    title: "Haberes",
     rows: calc.haberes || [],
-    y,
     totalLabel: "Total haberes",
     total: calc.totalHaberes,
+    y,
   }));
-  page.drawText("Descuentos", { x: margin, y, size: 10, font: fontBold, color: INK });
   y -= 16;
-  ({ page, y } = drawRows(pdf, page, {
+  ({ page, y } = drawTable(pdf, page, {
     font,
     fontBold,
+    title: "Descuentos",
     rows: calc.descuentos || [],
-    y,
     totalLabel: "Total descuentos",
     total: calc.totalDescuentos,
+    y,
   }));
-  ({ page, y } = ensureSpace(pdf, page, font, y, 40));
-  page.drawRectangle({
-    x: margin,
-    y: y - 8,
-    width: page.getWidth() - margin * 2,
-    height: 28,
-    color: INK,
-  });
-  page.drawText(latin1("Líquido a pago"), {
-    x: margin + 10,
-    y: y + 2,
-    size: 11,
-    font: fontBold,
-    color: rgb(1, 1, 1),
-  });
-  const liq = money(calc.liquido);
-  page.drawText(liq, {
-    x: page.getWidth() - margin - 10 - fontBold.widthOfTextAtSize(liq, 11),
-    y: y + 2,
-    size: 11,
-    font: fontBold,
-    color: rgb(1, 1, 1),
-  });
-  y -= 36;
-  ({ page, y } = ensureSpace(pdf, page, font, y, 90));
-  const colW = (page.getWidth() - 48 * 2 - 24) / 2;
-  page.drawLine({
-    start: { x: 48, y },
-    end: { x: 48 + colW, y },
-    thickness: 0.8,
-    color: INK,
-  });
-  page.drawText(latin1("Trabajador"), { x: 48, y: y - 14, size: 9, font, color: MUTED });
-  if (trabajador?.nombre) {
-    page.drawText(latin1(trabajador.nombre), { x: 48, y: y - 26, size: 9, font, color: TEXT });
-  }
-  drawEmployerFirma(page, {
+
+  const gapBar = PDF_LAYOUT.gapAfterDescuentos;
+  ({ page, y } = ensureSpace(pdf, page, font, y, gapBar + PDF_LAYOUT.barH + 8));
+  y -= gapBar;
+  y = drawLiquidoBar(page, { fontBold, label: "Líquido a pago", amount: calc.liquido, y });
+
+  const colGap = 24;
+  const colW = (contentWidth(page) - colGap) / 2;
+  const firmaNeed = PDF_LAYOUT.gapBeforeFirmas + PDF_LAYOUT.firmaMaxH + 36;
+  ({ page, y } = ensureSpace(pdf, page, font, y, firmaNeed));
+  y -= PDF_LAYOUT.gapBeforeFirmas + (firma ? PDF_LAYOUT.firmaMaxH : 8);
+  drawSignColumn(page, {
     font,
-    empresa,
+    caption: "Trabajador",
+    name: trabajador?.nombre || "",
+    x: MARGIN,
+    y,
+    width: colW,
+  });
+  drawSignColumn(page, {
+    font,
+    caption: "Empleador / representante legal",
+    name: empresa?.razonSocial || "",
     firma,
-    x: 48 + colW + 24,
+    x: MARGIN + colW + colGap,
     y,
     width: colW,
   });
@@ -333,53 +414,55 @@ export async function buildFiniquitoPdf({
   const pdf = await PDFDocument.create();
   const font = await pdf.embedFont(StandardFonts.Helvetica);
   const fontBold = await pdf.embedFont(StandardFonts.HelveticaBold);
-  const page0 = pdf.addPage([595.28, 841.89]);
+  const page0 = pdf.addPage(PDF_LAYOUT.page);
   const logo = await embedLogo(pdf, logoBytes, logoType);
   const firma = await embedLogo(pdf, firmaBytes, firmaType);
   let page = page0;
-  let y = await letterhead(page, { font, fontBold, empresa, logo }, page.getHeight() - 40);
-  const margin = 48;
-  const maxWidth = page.getWidth() - margin * 2;
+  let y = letterhead(page, { font, fontBold, empresa, logo }, page.getHeight() - MARGIN);
+  const maxWidth = contentWidth(page);
 
-  page.drawText("CARTA DE FINIQUITO", {
-    x: (page.getWidth() - fontBold.widthOfTextAtSize("CARTA DE FINIQUITO", 13)) / 2,
+  const title = "CARTA DE FINIQUITO";
+  page.drawText(title, {
+    x: (page.getWidth() - fontBold.widthOfTextAtSize(title, 13)) / 2,
     y,
     size: 13,
     font: fontBold,
     color: INK,
   });
-  y -= 22;
+  y -= 24;
 
   y = drawParagraph(page, font, `En ${ciudad}, a ${fechaLarga()}.`, {
-    x: margin,
+    x: MARGIN,
     y,
     size: 11,
     maxWidth,
-    lineHeight: 14,
+    lineHeight: 15,
   });
-  y -= 6;
+  y -= 8;
 
   const giro = empresa?.giro ? `, giro ${empresa.giro}` : "";
   const dir = empresa?.direccion ? `, domicilio en ${empresa.direccion}` : "";
-  const causalLabel = fin.causalLabel || fin.causal?.label || `articulo ${fin.articulo} del Codigo del Trabajo`;
+  const causalLabel = fin.causalLabel || fin.causal?.label || `artículo ${fin.articulo} del Código del Trabajo`;
   y = drawParagraph(
     page,
     font,
     `Entre ${empresa?.razonSocial || "el empleador"}, RUT ${formatRut(empresa?.rut || "—")}${giro}${dir}, y ${
       trabajador?.nombre || "el trabajador"
-    }, RUT ${formatRut(trabajador?.rut || "—")}, se deja constancia del termino del contrato de trabajo al amparo de ${causalLabel}.`,
-    { x: margin, y, size: 11, maxWidth, lineHeight: 14 },
+    }, RUT ${formatRut(trabajador?.rut || "—")}, se deja constancia del término del contrato de trabajo al amparo de ${causalLabel}.`,
+    { x: MARGIN, y, size: 11, maxWidth, lineHeight: 15 },
   );
   y -= 8;
 
-  if (fin.textoLegal) {
-    ({ page, y } = ensureSpace(pdf, page, font, y, 90));
-    y = drawParagraph(page, font, fin.textoLegal, {
-      x: margin,
+  const legal = resumirTextoLegal(fin.textoLegal || fin.causal?.textoLegal || "", causalLabel);
+  const partiesAlready = `al amparo de ${causalLabel}`;
+  if (legal && !partiesAlready.includes(legal) && legal !== `El término se funda en ${causalLabel}.`) {
+    ({ page, y } = ensureSpace(pdf, page, font, y, 48));
+    y = drawParagraph(page, font, legal, {
+      x: MARGIN,
       y,
       size: 10,
       maxWidth,
-      lineHeight: 13,
+      lineHeight: 14,
     });
     y -= 8;
   }
@@ -387,80 +470,76 @@ export async function buildFiniquitoPdf({
   y = drawParagraph(
     page,
     font,
-    `El trabajador presto servicios en el cargo de ${trabajador?.cargo || "—"}${
+    `El trabajador prestó servicios en el cargo de ${trabajador?.cargo || "—"}${
       trabajador?.ingreso ? ` desde el ${trabajador.ingreso}` : ""
     }${trabajador?.termino ? ` hasta el ${trabajador.termino}` : ""}.`,
-    { x: margin, y, size: 11, maxWidth, lineHeight: 14 },
+    { x: MARGIN, y, size: 11, maxWidth, lineHeight: 15 },
   );
-  y -= 6;
+  y -= 10;
   y = drawParagraph(page, font, "Las partes reconocen las siguientes partidas (montos en pesos chilenos):", {
-    x: margin,
+    x: MARGIN,
     y,
     size: 11,
     maxWidth,
-    lineHeight: 14,
+    lineHeight: 15,
   });
-  y -= 6;
+  y -= 10;
 
-  const partidas = Array.isArray(fin.partidas) && fin.partidas.length
-    ? fin.partidas
-    : [];
-  ({ page, y } = drawRows(pdf, page, {
+  const partidas = Array.isArray(fin.partidas) && fin.partidas.length ? fin.partidas : [];
+  ({ page, y } = drawTable(pdf, page, {
     font,
     fontBold,
+    title: "Partidas",
     rows: partidas,
-    y,
-    totalLabel: "Total estimado",
+    totalLabel: "Total",
     total: fin.total,
+    y,
   }));
 
   ({ page, y } = ensureSpace(pdf, page, font, y, 70));
+  y -= 14;
   y = drawParagraph(
     page,
     font,
-    "El trabajador declara recibir a su entera satisfaccion las sumas que correspondan una vez pagadas, sin que este texto sustituya el pago efectivo ni la revision de cotizaciones previsionales.",
-    { x: margin, y, size: 11, maxWidth, lineHeight: 14 },
+    "El trabajador declara recibir a su entera satisfacción las sumas que correspondan una vez pagadas, sin que este texto sustituya el pago efectivo ni la revisión de cotizaciones previsionales.",
+    { x: MARGIN, y, size: 11, maxWidth, lineHeight: 15 },
   );
-  y -= 36;
 
-  const col = (page.getWidth() - margin * 2 - 24) / 2;
-  ({ page, y } = ensureSpace(pdf, page, font, y, 90));
-  drawEmployerFirma(page, { font, empresa, firma, x: margin, y, width: col });
-  page.drawLine({
-    start: { x: margin + col + 24, y },
-    end: { x: margin + col + 24 + col, y },
-    thickness: 0.8,
-    color: INK,
-  });
-  page.drawText(latin1("Trabajador"), {
-    x: margin + col + 24,
-    y: y - 14,
-    size: 9,
+  const colGap = 24;
+  const colW = (contentWidth(page) - colGap) / 2;
+  const signNeed = 36 + PDF_LAYOUT.firmaMaxH + 40 + 40;
+  ({ page, y } = ensureSpace(pdf, page, font, y, signNeed));
+  y -= 36 + (firma ? PDF_LAYOUT.firmaMaxH : 8);
+  drawSignColumn(page, {
     font,
-    color: MUTED,
+    caption: "Empleador / representante legal",
+    name: empresa?.razonSocial || "",
+    firma,
+    x: MARGIN,
+    y,
+    width: colW,
   });
-  if (trabajador?.nombre) {
-    page.drawText(latin1(trabajador.nombre), {
-      x: margin + col + 24,
-      y: y - 26,
-      size: 9,
-      font,
-      color: TEXT,
-    });
-  }
-  y -= 56;
-  ({ page, y } = ensureSpace(pdf, page, font, y, 70));
+  drawSignColumn(page, {
+    font,
+    caption: "Trabajador",
+    name: trabajador?.nombre || "",
+    x: MARGIN + colW + colGap,
+    y,
+    width: colW,
+  });
+  y -= 52;
+  ({ page, y } = ensureSpace(pdf, page, font, y, 50));
   for (let i = 0; i < 2; i += 1) {
-    const x = margin + i * (col + 24);
-    page.drawLine({
-      start: { x, y },
-      end: { x: x + col, y },
-      thickness: 0.8,
-      color: INK,
+    drawSignColumn(page, {
+      font,
+      caption: "Testigo",
+      name: "",
+      x: MARGIN + i * (colW + colGap),
+      y,
+      width: colW,
     });
-    page.drawText("Testigo", { x, y: y - 14, size: 9, font, color: MUTED });
   }
-  y -= 48;
+  y -= 44;
   ({ page, y } = ensureSpace(pdf, page, font, y, 60));
   drawDisclaimer(page, font, y, DISCLAIMER_FINIQUITO);
   return Buffer.from(await pdf.save());

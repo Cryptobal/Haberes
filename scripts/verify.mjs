@@ -3,7 +3,7 @@
  * Verificación de cifras oficiales y de la estructura del sitio Haberes.
  * Ejecutar: node scripts/verify.mjs
  */
-import { readFileSync, existsSync } from "node:fs";
+import { readFileSync, existsSync, readdirSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -16,8 +16,10 @@ import {
   GRATIFICACION_TOPE,
   IMM,
   IUSC_TRAMOS,
+  TEXTO_LEGAL_MAX,
   TOPE_AFP_SALUD_UF,
   TOPE_CESANTIA_UF,
+  resumirTextoLegal,
 } from "../js/constants.js";
 import { CAUSALES, causalPorId } from "../js/causales.js";
 import { parseNovedadesCsv, parseTrabajadoresCsv } from "../js/csv.js";
@@ -631,11 +633,15 @@ const htmlFiles = [
 for (const f of htmlFiles) {
   const html = readFileSync(join(root, f), "utf8");
   assert(
-    `${f} disclaimer IA / no DT / no Previred`,
-    /inteligencia artificial|estimaci[oó]n/i.test(html) &&
+    `${f} disclaimer legal / no DT / no Previred`,
+    /Documento generado por Haberes/.test(html) &&
       /Direcci[oó]n del Trabajo/i.test(html) &&
       /Previred/i.test(html) &&
-      /asesor[ií]a legal/i.test(html),
+      /asesor[ií]a legal/i.test(html) &&
+      !/inteligencia artificial/i.test(html) &&
+      !/generada por IA/i.test(html) &&
+      !/Estimaci[oó]n con IA/i.test(html) &&
+      !/estimaci[oó]n de software/i.test(html),
   );
   assert(`${f} canonical haberes.cl`, /rel="canonical" href="https:\/\/www\.haberes\.cl/.test(html));
   assert(`${f} og:url`, /property="og:url" content="https:\/\/www\.haberes\.cl/.test(html));
@@ -1871,7 +1877,7 @@ assert(
     !/No hay cobro ni pasarela/.test(readFileSync(join(root, "privacidad.html"), "utf8")),
 );
 assert(
-  "términos: IA, no DT, carta no reemplaza Inspección / ministro de fe",
+  "términos: no DT, carta no reemplaza Inspección / ministro de fe",
   /ministro de fe/.test(readFileSync(join(root, "terminos.html"), "utf8")) &&
     /Inspecci[oó]n del Trabajo/.test(readFileSync(join(root, "terminos.html"), "utf8")) &&
     /Mercado Pago/.test(readFileSync(join(root, "terminos.html"), "utf8")),
@@ -1884,7 +1890,6 @@ assert(
 );
 
 console.log("\nHigiene");
-const { readdirSync, statSync } = await import("node:fs");
 function listFiles(dir, acc = []) {
   for (const name of readdirSync(dir)) {
     if (name === ".git" || name === "node_modules") continue;
@@ -2207,8 +2212,178 @@ console.log("\nNovedades por planilla");
   assert("RUT duplicado invalida archivo", Boolean(dup.error) && /duplicado/i.test(dup.error));
 }
 
-assert("disclaimer constante presente", DISCLAIMER.includes("Dirección del Trabajo") && DISCLAIMER.includes("Previred"));
-assert("disclaimer finiquito Inspección", DISCLAIMER_FINIQUITO.includes("Inspección del Trabajo"));
+assert(
+  "disclaimer constante presente",
+  DISCLAIMER.includes("Documento generado por Haberes") &&
+    DISCLAIMER.includes("Dirección del Trabajo") &&
+    DISCLAIMER.includes("Previred") &&
+    !/inteligencia artificial|generada por IA|estimaci[oó]n de software/i.test(DISCLAIMER),
+);
+assert(
+  "disclaimer finiquito Inspección",
+  DISCLAIMER_FINIQUITO.includes("Inspección del Trabajo") &&
+    /pago efectivo/i.test(DISCLAIMER_FINIQUITO) &&
+    !/inteligencia artificial|generada por IA|estimaci[oó]n de software/i.test(DISCLAIMER_FINIQUITO),
+);
+
+console.log("\nProducto público sin IA");
+{
+  const banned = /inteligencia artificial|generada por IA|Estimaci[oó]n con IA|estimaci[oó]n de software/i;
+  const skipNames = new Set(["verify.mjs"]);
+  function walk(dir, acc = []) {
+    for (const name of readdirSync(dir)) {
+      if (name === ".git" || name === "node_modules") continue;
+      const p = join(dir, name);
+      if (statSync(p).isDirectory()) walk(p, acc);
+      else acc.push(p);
+    }
+    return acc;
+  }
+  let hit = "";
+  for (const p of walk(root)) {
+    if (skipNames.has(p.split("/").pop())) continue;
+    if (!/\.(html|js|mjs|md|xml|txt|css)$/.test(p)) continue;
+    const text = readFileSync(p, "utf8");
+    if (banned.test(text)) {
+      hit = p.replace(root + "/", "");
+      break;
+    }
+  }
+  assert("repo público sin frases de IA", !hit, hit);
+}
+
+console.log("\nPDF liquidación y finiquito");
+{
+  const { inflateSync } = await import("node:zlib");
+  function pdfText(buf) {
+    const raw = Buffer.from(buf).toString("latin1");
+    const parts = [];
+    const re = /stream\r?\n([\s\S]*?)\r?\nendstream/g;
+    let m;
+    while ((m = re.exec(raw))) {
+      let content = m[1];
+      try {
+        content = inflateSync(Buffer.from(m[1], "latin1")).toString("latin1");
+      } catch {
+        /* uncompressed */
+      }
+      for (const hx of content.matchAll(/<([0-9A-Fa-f]+)>/g)) {
+        parts.push(Buffer.from(hx[1], "hex").toString("latin1"));
+      }
+    }
+    return parts.join("\n");
+  }
+  const { buildLiquidacionPdf, buildFiniquitoPdf, PDF_LAYOUT } = await import("../api/_pdf.js");
+  const { liquidacionHtml, cartaFiniquitoHtml } = await import("../js/print.js");
+  assert("márgenes PDF ≥ 48pt", PDF_LAYOUT.margin >= 48);
+  assert("logo máx ~56pt", PDF_LAYOUT.logoMaxH === 56);
+  assert("firma máx ~48pt", PDF_LAYOUT.firmaMaxH === 48);
+  assert("hueco líquido ≥ 16pt", PDF_LAYOUT.gapAfterDescuentos >= 16);
+  assert("hueco firmas ≥ 40pt", PDF_LAYOUT.gapBeforeFirmas >= 40);
+
+  const muro =
+    "Artículo 161 del Código del Trabajo: el empleador podrá poner término al contrato invocando necesidades de la empresa. ".repeat(
+      8,
+    );
+  assert("texto legal corto se conserva", resumirTextoLegal("Mutuo acuerdo.", "Art. 159") === "Mutuo acuerdo.");
+  assert(
+    "texto legal largo se resume",
+    resumirTextoLegal(muro, "Art. 161 — Necesidades de la empresa").includes("Art. 161") &&
+      resumirTextoLegal(muro, "Art. 161 — Necesidades de la empresa").length < TEXTO_LEGAL_MAX,
+  );
+
+  const calc = calcularSueldo(
+    {
+      sueldoBase: 1_000_000,
+      afp: "modelo",
+      salud: "fonasa",
+      contrato: "indefinido",
+      colacion: 40000,
+      cargo: "Administrativa",
+    },
+    { uf: FALLBACK_UF },
+  );
+  const empresa = {
+    razonSocial: "Gard SpA",
+    rut: "76.123.456-0",
+    giro: "Servicios de seguridad",
+    direccion: "Santiago",
+  };
+  const trabajador = { nombre: "Ana Pérez", rut: "12.345.678-5", cargo: "Administrativa" };
+  const png1 = Buffer.from(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+    "base64",
+  );
+  const liqPdf = await buildLiquidacionPdf({
+    empresa,
+    trabajador,
+    periodo: "Agosto 2026",
+    calc,
+    logoBytes: png1,
+    logoType: "image/png",
+    firmaBytes: png1,
+    firmaType: "image/png",
+  });
+  const liqText = pdfText(liqPdf);
+  assert("PDF liquidación no vacío", liqPdf.length > 800);
+  assert("PDF liquidación título", /LIQUIDACI/.test(liqText));
+  assert("PDF liquidación trabajador en bloque", /Trabajador/.test(liqText) && /Administrativa/.test(liqText));
+  assert("PDF liquidación tablas", /Haberes/.test(liqText) && /Descuentos/.test(liqText) && /L/.test(liqText));
+  assert("PDF liquidación sin IA", !bannedPdf(liqText));
+  assert("PDF liquidación disclaimer Haberes", /Haberes/.test(liqText) && /Previred/.test(liqText));
+
+  const full = calcularFiniquitoCompleto(
+    {
+      causal: "161-necesidades",
+      ingreso: "2020-01-15",
+      termino: "2023-08-20",
+      remuneracion: 1_000_000,
+      diasMes: 20,
+      gratificacionArt50: true,
+      diasFeriadoPendiente: 5,
+      diasFeriadoProporcional: 10,
+      avisoPrevio: false,
+    },
+    { uf: FALLBACK_UF },
+  );
+  const finPdf = await buildFiniquitoPdf({
+    empresa,
+    trabajador: { ...trabajador, ingreso: "2020-01-15", termino: "2023-08-20" },
+    fin: full,
+    ciudad: "Santiago",
+    logoBytes: png1,
+    logoType: "image/png",
+    firmaBytes: png1,
+    firmaType: "image/png",
+  });
+  const finText = pdfText(finPdf);
+  assert("PDF finiquito no vacío", finPdf.length > 800);
+  assert("PDF finiquito título", /CARTA DE FINIQUITO/.test(finText));
+  assert("PDF finiquito Total, no estimado", /Total/.test(finText) && !/Total estimado/.test(finText));
+  assert("PDF finiquito sin muro art. 163", !/tope de 330 d/.test(finText));
+  assert("PDF finiquito sin IA", !bannedPdf(finText));
+  assert("PDF finiquito Inspección o pago efectivo", /Inspecci|pago efectivo/.test(finText));
+
+  const prevLiq = liquidacionHtml({ empresa, trabajador, periodo: "Agosto 2026", calc });
+  const prevFin = cartaFiniquitoHtml({
+    empresa,
+    trabajador: { ...trabajador, ingreso: "15-01-2020", termino: "20-08-2023" },
+    fin: full,
+  });
+  assert("preview liquidación grilla 2 columnas", /grid-template-columns: 1fr 1fr/.test(prevLiq) && /Trabajador/.test(prevLiq));
+  assert("preview líquido con aire", /margin-top: 16px/.test(prevLiq) && /Líquido a pago/.test(prevLiq));
+  assert("preview firma sobre la línea", /firma-line/.test(prevLiq) && /max-height: 48px/.test(prevLiq));
+  assert("preview finiquito Total", /<td>Total<\/td>/.test(prevFin) && !/Total estimado/.test(prevFin));
+  assert("preview finiquito sin muro 330", !/tope de 330 d/.test(prevFin));
+  assert(
+    "preview sin IA",
+    !bannedPdf(prevLiq) && !bannedPdf(prevFin) && /Documento generado por Haberes/.test(prevLiq),
+  );
+}
+
+function bannedPdf(text) {
+  return /inteligencia artificial|generada por IA|Estimaci[oó]n con IA|estimaci[oó]n de software/i.test(text);
+}
 
 console.log("\nInstituciones financieras");
 {

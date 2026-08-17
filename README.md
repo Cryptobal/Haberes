@@ -2,7 +2,7 @@
 
 Sitio estático para estimar **sueldo líquido**, **finiquito** y **liquidaciones** de pymes en Chile.
 
-Estimación generada por inteligencia artificial. **No** es un cálculo de la Dirección del Trabajo ni de Previred. **No** constituye asesoría legal.
+Documento generado por Haberes. **No** es un cálculo de la Dirección del Trabajo ni de Previred. **No** constituye asesoría legal.
 
 ## Uso local
 
