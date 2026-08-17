@@ -44,9 +44,11 @@ function recalc() {
 }
 
 wireNav();
+const causalFromUrl = new URLSearchParams(location.search).get("causal");
+const causalInicial = causalPorId(causalFromUrl)?.id || "161-necesidades";
 causalPick = createPicker(el("pickCausal"), {
   options: opcionesCausalPicker(),
-  value: "161-necesidades",
+  value: causalInicial,
   searchable: true,
   placeholder: "Causal",
   onChange: recalc,

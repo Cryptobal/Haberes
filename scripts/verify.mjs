@@ -1456,7 +1456,16 @@ assert(
     /\/api\/login/.test(readFileSync(join(root, "js/app-empresa.js"), "utf8")),
 );
 const empHtml = readFileSync(join(root, "empresa.html"), "utf8");
-const empJs = readFileSync(join(root, "js/app-empresa.js"), "utf8");
+const empJs = [
+  "js/app-empresa.js",
+  "js/empresa-trabajadores.js",
+  "js/empresa-documentos.js",
+  "js/empresa-nomina.js",
+  "js/empresa-lre.js",
+]
+  .map((f) => readFileSync(join(root, f), "utf8"))
+  .join("\n");
+const empDocJs = readFileSync(join(root, "js/empresa-documentos.js"), "utf8");
 assert("empresa.html sin input type=date", !/<input[^>]*type="date"/i.test(empHtml));
 assert(
   "empresa.html sin select nativo de trabajador, periodo o causal",
@@ -1504,7 +1513,7 @@ assert(
     /\/api\/checkout/.test(readFileSync(join(root, "js/checkout.js"), "utf8")) &&
     !/emp\.plan\s*=\s*["']pro["']/.test(empJs),
 );
-const bajarPdfSrc = empJs.slice(empJs.indexOf("async function bajarPdf"), empJs.indexOf('el("btnPdfLiquidacion")'));
+const bajarPdfSrc = empDocJs.slice(empDocJs.indexOf("async function bajarPdf"), empDocJs.indexOf('el("btnPdfLiquidacion")'));
 assert(
   "Descargar PDF no cuenta movimiento si falla el almacenamiento",
   /no_storage/.test(bajarPdfSrc) &&
