@@ -798,7 +798,7 @@ assert("robots Disallow /docs", /Disallow:\s*\/docs/.test(robots));
 assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots));
 assert("robots Sitemap", /Sitemap:\s*https:\/\/www\.haberes\.cl\/sitemap\.xml/.test(robots));
 
-const { seoPaths, GUIDE_SLUGS, CAUSAL_PAGES, BASE_PATHS } = await import("../content/registry.js");
+const { seoPaths, GUIDE_SLUGS, CAUSAL_PAGES, BASE_PATHS, lastmodForPath } = await import("../content/registry.js");
 const { buildSitemapXml } = await import("../api/_sitemap.js");
 const sitemap = buildSitemapXml();
 const locs = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
@@ -859,6 +859,17 @@ assert(
 );
 assert("sitemap sin admin ni reset", !locs.some((u) => /\/admin|\/reset/.test(u)));
 assert("sitemap lastmod presente", /<lastmod>\d{4}-\d{2}-\d{2}<\/lastmod>/.test(sitemap));
+assert(
+  "sitemap lastmod por URL (guías espesadas 2026-08-18)",
+  lastmodForPath("/guias/liquidacion-de-sueldo") === "2026-08-18" &&
+    lastmodForPath("/guias/finiquito") === "2026-08-18" &&
+    lastmodForPath("/guias/impuesto-unico") === "2026-08-18" &&
+    lastmodForPath("/guias/carta-aviso-termino-contrato") === "2026-08-18" &&
+    lastmodForPath("/guias") === "2026-08-18" &&
+    /<loc>https:\/\/www\.haberes\.cl\/guias\/liquidacion-de-sueldo<\/loc>\s*<lastmod>2026-08-18<\/lastmod>/.test(sitemap) &&
+    /<loc>https:\/\/www\.haberes\.cl\/guias<\/loc>\s*<lastmod>2026-08-18<\/lastmod>/.test(sitemap),
+);
+assert("sin ruta /blog ni /noticias", !existsSync(join(root, "blog.html")) && !existsSync(join(root, "noticias.html")));
 assert("sitemap sin .html (cleanUrls)", !locs.some((u) => u.endsWith(".html")));
 assert(
   "sitemap cada URL tiene archivo",
@@ -1150,8 +1161,22 @@ try {
     guiasBare.status === 200 &&
       /Guías de liquidación y finiquito/.test(guiasBare.text) &&
       /href="\/guias\/liquidacion-de-sueldo"/.test(guiasBare.text) &&
-      /href="\/guias\/finiquito"/.test(guiasBare.text),
+      /href="\/guias\/finiquito"/.test(guiasBare.text) &&
+      /Últimas actualizaciones/.test(guiasBare.text),
   );
+  for (const p of [
+    "/guias/liquidacion-de-sueldo",
+    "/guias/finiquito",
+    "/guias/impuesto-unico",
+    "/guias/carta-aviso-termino-contrato",
+  ]) {
+    const r = await hitLocal(p);
+    assert(`GET ${p} 200`, r.status === 200 && /<h1>/i.test(r.text) && /text\/html/i.test(r.type));
+  }
+  const noBlog = await hitLocal("/blog");
+  const noNews = await hitLocal("/noticias");
+  assert("GET /blog 404", noBlog.status === 404);
+  assert("GET /noticias 404", noNews.status === 404);
   writeFileSync(join(root, "sitemap.xml"), "<urlset>STATIC-LEFTOVER</urlset>");
   try {
     const afterLeftover = await hitLocal("/sitemap.xml");
@@ -4193,6 +4218,7 @@ assert(
   }
   {
     const plazoHtml = readFileSync(join(root, "guias/plazo-de-pago-del-finiquito.html"), "utf8");
+    const finiGuideHtml = readFileSync(join(root, "guias/finiquito.html"), "utf8");
     assert(
       "SEO plazo finiquito 10 días hábiles art. 177",
       /10 d[ií]as h[aá]biles/i.test(plazoHtml) &&
@@ -4200,6 +4226,71 @@ assert(
         /dt\.gob\.cl/.test(plazoHtml) &&
         !/al momento del t[eé]rmino de la relaci[oó]n laboral/i.test(plazoHtml),
     );
+    assert(
+      "SEO guía finiquito 10 días hábiles art. 177",
+      /10 d[ií]as h[aá]biles/i.test(finiGuideHtml) &&
+        /177/.test(finiGuideHtml) &&
+        /dt\.gob\.cl/.test(finiGuideHtml) &&
+        !/al momento del t[eé]rmino de la relaci[oó]n laboral/i.test(finiGuideHtml),
+    );
+  }
+  {
+    const thick = [
+      ["guias/liquidacion-de-sueldo.html", "/sueldo", /54/, /dt\.gob\.cl/],
+      ["guias/finiquito.html", "/finiquito", /177/, /dt\.gob\.cl/],
+      ["guias/impuesto-unico.html", "/sueldo", /13,5 UTM/, /sii\.cl/],
+      ["guias/carta-aviso-termino-contrato.html", "/finiquito", /162/, /dt\.gob\.cl/],
+    ];
+    function visibleWords(html) {
+      const main = html.match(/<main\b[\s\S]*?<\/main>/i)?.[0] || html;
+      const text = main
+        .replace(/<script\b[\s\S]*?<\/script>/gi, " ")
+        .replace(/<style\b[\s\S]*?<\/style>/gi, " ")
+        .replace(/<[^>]+>/g, " ")
+        .replace(/&[a-z]+;/gi, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+      return text.split(" ").filter(Boolean).length;
+    }
+    for (const [file, calc, law, source] of thick) {
+      const html = readFileSync(join(root, file), "utf8");
+      const title = (html.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+      const words = visibleWords(html);
+      assert(`SEO ${file} 800–1400 palabras`, words >= 800 && words <= 1400, `${file}: ${words}`);
+      assert(`SEO ${file} sin calculadora en title`, /./.test(title) && !/calculadora/i.test(title), title);
+      assert(`SEO ${file} sin branding de IA`, !/\bIA\b/.test(html) && !/inteligencia artificial/i.test(html));
+      assert(`SEO ${file} enlaza ${calc}`, html.includes(`href="${calc}"`));
+      assert(`SEO ${file} cita norma`, law.test(html));
+      assert(`SEO ${file} cita fuente oficial`, source.test(html));
+      assert(`SEO ${file} tiene FAQ visible`, /<h2>Preguntas frecuentes<\/h2>/.test(html));
+      assert(`SEO ${file} tiene fecha`, /<time datetime="2026-08-18">/.test(html));
+    }
+  }
+  {
+    const files = [
+      "index.html",
+      "sueldo.html",
+      "finiquito.html",
+      "empresa.html",
+      "precios.html",
+      "como.html",
+      "guias.html",
+      ...GUIDE_SLUGS.map((s) => `guias/${s}.html`),
+      ...CAUSAL_PAGES.map((p) => `finiquito/${p.slug}.html`),
+    ];
+    const seenTitle = new Map();
+    const seenH1 = new Map();
+    for (const file of files) {
+      const html = readFileSync(join(root, file), "utf8");
+      const title = (html.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+      const h1 = (html.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+      assert(`SEO title no vacío ${file}`, title.length > 8);
+      assert(`SEO H1 no vacío ${file}`, h1.length > 3);
+      assert(`SEO title único ${file}`, !seenTitle.has(title), `duplicado con ${seenTitle.get(title)}: ${title}`);
+      assert(`SEO H1 único ${file}`, !seenH1.has(h1), `duplicado con ${seenH1.get(h1)}: ${h1}`);
+      seenTitle.set(title, file);
+      seenH1.set(h1, file);
+    }
   }
   {
     const hub = readFileSync(join(root, "guias.html"), "utf8");
@@ -4212,6 +4303,13 @@ assert(
         /<h2>Finiquito<\/h2>/.test(hub) &&
         /href="\/sueldo"/.test(hub) &&
         /href="\/finiquito"/.test(hub),
+    );
+    assert(
+      "SEO hub tiene últimas con fecha",
+      /<h2>Últimas actualizaciones<\/h2>/.test(hub) &&
+        /<ol class="guide-latest">/.test(hub) &&
+        /datetime="2026-08-18"/.test(hub) &&
+        !/href="\/blog"/.test(hub),
     );
     assert("SEO hub en sitemap", locs.includes("https://www.haberes.cl/guias"));
     assert(

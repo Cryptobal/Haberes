@@ -10,12 +10,12 @@ Aquí se comprueba lo que solo se ve en un navegador real:
 Genera capturas en /tmp/shots.
 """
 
-import functools
-import http.server
 import os
-import socketserver
+import subprocess
 import sys
-import threading
+import time
+import urllib.error
+import urllib.request
 
 from playwright.sync_api import sync_playwright
 
@@ -24,18 +24,71 @@ PORT = 8099
 BASE = f"http://127.0.0.1:{PORT}"
 
 
-class Quiet(http.server.SimpleHTTPRequestHandler):
-    def log_message(self, *args):
-        pass
-
-
 def serve():
-    """Servidor estático propio: el test no depende de un proceso externo."""
-    handler = functools.partial(Quiet, directory=ROOT)
-    socketserver.TCPServer.allow_reuse_address = True
-    httpd = socketserver.TCPServer(("127.0.0.1", PORT), handler)
-    threading.Thread(target=httpd.serve_forever, daemon=True).start()
-    return httpd
+    """Mismo servidor que npm start (cleanUrls + sitemap), en el puerto 8099."""
+    env = os.environ.copy()
+    env["PORT"] = str(PORT)
+    env["HOST"] = "127.0.0.1"
+    proc = subprocess.Popen(
+        ["node", os.path.join(ROOT, "scripts/serve.mjs")],
+        cwd=ROOT,
+        env=env,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    deadline = time.time() + 10
+    while time.time() < deadline:
+        if proc.poll() is not None:
+            raise RuntimeError("scripts/serve.mjs salió antes de escuchar")
+        try:
+            urllib.request.urlopen(BASE + "/", timeout=0.4)
+            return proc
+        except Exception:
+            time.sleep(0.1)
+    proc.terminate()
+    raise RuntimeError("scripts/serve.mjs no respondió en http://127.0.0.1:8099")
+
+
+def check_http():
+    """Sitemap y las cuatro guías espesadas deben responder como en Vercel."""
+    cases = [
+        ("/sitemap.xml", 200, "xml"),
+        ("/sitemap", 200, "xml"),
+        ("/api/sitemap", 200, "xml"),
+        ("/guias/liquidacion-de-sueldo", 200, "html"),
+        ("/guias/finiquito", 200, "html"),
+        ("/guias/impuesto-unico", 200, "html"),
+        ("/guias/carta-aviso-termino-contrato", 200, "html"),
+        ("/blog", 404, None),
+        ("/noticias", 404, None),
+    ]
+    for path, expected, kind in cases:
+        req = urllib.request.Request(BASE + path, headers={"User-Agent": "curl/8.0"})
+        try:
+            with urllib.request.urlopen(req, timeout=8) as res:
+                status = res.status
+                ctype = res.headers.get("Content-Type") or ""
+                disp = res.headers.get("Content-Disposition") or ""
+                body = res.read()
+        except urllib.error.HTTPError as e:
+            status = e.code
+            ctype = e.headers.get("Content-Type") or ""
+            disp = e.headers.get("Content-Disposition") or ""
+            body = e.read()
+        if status != expected:
+            note(f"{path} status {status} (esperado {expected})")
+            continue
+        if kind == "xml":
+            if "text/xml" not in ctype.lower():
+                note(f"{path} content-type {ctype!r}")
+            if disp:
+                note(f"{path} content-disposition {disp!r}")
+            if b"<urlset" not in body:
+                note(f"{path} sin urlset")
+        if kind == "html" and b"<h1" not in body:
+            note(f"{path} HTML incompleto")
+
+
 SHOTS = "/tmp/shots"
 PAGES = [
     ("index.html", "inicio"),
@@ -43,10 +96,15 @@ PAGES = [
     ("finiquito.html", "finiquito"),
     ("empresa.html", "empresa"),
     ("precios.html", "precios"),
-      ("como.html", "como"),
+    ("como.html", "como"),
     ("privacidad.html", "privacidad"),
     ("terminos.html", "terminos"),
     ("admin.html", "admin"),
+    ("guias.html", "guias"),
+    ("guias/liquidacion-de-sueldo.html", "guia-liquidacion"),
+    ("guias/finiquito.html", "guia-finiquito"),
+    ("guias/impuesto-unico.html", "guia-impuesto"),
+    ("guias/carta-aviso-termino-contrato.html", "guia-carta"),
 ]
 MOBILE = {"width": 360, "height": 780}
 DESKTOP = {"width": 1280, "height": 900}
@@ -396,9 +454,15 @@ def run():
 
 httpd = serve()
 try:
+    check_http()
     run()
 finally:
-    httpd.shutdown()
+    httpd.terminate()
+    try:
+        httpd.wait(timeout=5)
+    except subprocess.TimeoutExpired:
+        httpd.kill()
+        httpd.wait(timeout=3)
 
 print("\n" + "=" * 60)
 if problems:
