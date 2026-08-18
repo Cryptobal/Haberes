@@ -1,5 +1,5 @@
 /** URLs públicas de haberes.cl. Sin /admin ni /reset. */
-import { seoPaths } from "../content/registry.js";
+import { lastmodForPath, seoPaths } from "../content/registry.js";
 
 export const ORIGIN = "https://www.haberes.cl";
 
@@ -19,16 +19,18 @@ export function sitemapLocs() {
   return SITEMAP_PATHS.map((path) => (path === "/" ? `${ORIGIN}/` : `${ORIGIN}${path}`));
 }
 
-export function buildSitemapXml(lastmod = new Date().toISOString().slice(0, 10)) {
+export function buildSitemapXml(lastmod) {
   try {
-    const day = String(lastmod).slice(0, 10);
+    const forced = lastmod ? String(lastmod).slice(0, 10) : "";
     const urls = sitemapLocs()
-      .map(
-        (loc) => `  <url>
+      .map((loc) => {
+        const path = loc === `${ORIGIN}/` ? "/" : loc.slice(ORIGIN.length) || "/";
+        const day = forced || lastmodForPath(path);
+        return `  <url>
     <loc>${loc}</loc>
     <lastmod>${day}</lastmod>
-  </url>`,
-      )
+  </url>`;
+      })
       .join("\n");
     return `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">

@@ -1768,9 +1768,38 @@ input:disabled {
   margin-top: var(--s-5);
 }
 
-.prose ul {
+.prose ul,
+.prose ol {
   color: var(--muted);
   padding-left: var(--s-5);
+}
+
+.guide-meta {
+  color: var(--faint);
+  font-size: var(--t-sm);
+  margin: 0 0 var(--s-4);
+}
+
+.guide-latest {
+  list-style: none;
+  padding-left: 0;
+  margin: 0 0 var(--s-6);
+}
+
+.guide-latest li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--s-2) var(--s-3);
+  padding: var(--s-3) 0;
+  border-bottom: 1px solid var(--line-hair);
+}
+
+.guide-latest time {
+  color: var(--faint);
+  font-size: var(--t-sm);
+  min-width: 6.75rem;
+  flex: 0 0 auto;
 }
 
 .prose .lede {
