@@ -81,7 +81,9 @@ function namedHaberes(input) {
 export function calcularFiniquito(input = {}, indicadores = {}) {
   const articulo = String(input.articulo || articuloDesdeCausal(input.causal) || "161");
   const remuneracion = Number(input.remuneracion) || 0;
-  const diasFeriado = Number(input.diasFeriado) || 0;
+  const diasFeriadoPendiente = Number(input.diasFeriadoPendiente) || 0;
+  const diasFeriadoProporcional =
+    Number(input.diasFeriadoProporcional ?? input.diasFeriado) || 0;
   const avisoPrevio = Boolean(input.avisoPrevio);
   const uf = Number(indicadores.uf) || FALLBACK_UF;
   const topeMensual = TOPE_AFP_SALUD_UF * uf;
@@ -96,7 +98,9 @@ export function calcularFiniquito(input = {}, indicadores = {}) {
 
   const ias = conIas ? roundPeso(anios * baseIas) : 0;
   const aviso = conIas && !avisoPrevio ? roundPeso(baseIas) : 0;
-  const feriado = feriadoProporcional(diasFeriado, remuneracion);
+  const feriadoPendiente = feriadoProporcional(diasFeriadoPendiente, remuneracion);
+  const feriadoProp = feriadoProporcional(diasFeriadoProporcional, remuneracion);
+  const feriado = feriadoPendiente + feriadoProp;
   const otros = roundPeso(input.otros || 0);
   const total = ias + aviso + feriado + otros;
 
@@ -109,8 +113,12 @@ export function calcularFiniquito(input = {}, indicadores = {}) {
     ias,
     aviso,
     avisoPrevio,
+    feriadoPendiente,
+    feriadoProporcional: feriadoProp,
     feriado,
-    diasFeriado,
+    diasFeriadoPendiente,
+    diasFeriadoProporcional,
+    diasFeriado: diasFeriadoProporcional,
     otros,
     total,
     uf,

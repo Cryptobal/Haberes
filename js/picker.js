@@ -307,4 +307,332 @@ export function createPicker(root, opts = {}) {
   };
 }
 
+const MESES_CAL = [
+  "enero",
+  "febrero",
+  "marzo",
+  "abril",
+  "mayo",
+  "junio",
+  "julio",
+  "agosto",
+  "septiembre",
+  "octubre",
+  "noviembre",
+  "diciembre",
+];
+const DOW_CAL = ["L", "M", "X", "J", "V", "S", "D"];
+
+function pad2(n) {
+  return String(n).padStart(2, "0");
+}
+
+function parseIsoDate(raw) {
+  const m = String(raw || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return null;
+  const y = Number(m[1]);
+  const mo = Number(m[2]);
+  const d = Number(m[3]);
+  const dt = new Date(`${m[1]}-${m[2]}-${m[3]}T12:00:00`);
+  if (Number.isNaN(dt.getTime()) || dt.getMonth() + 1 !== mo) return null;
+  return { y, mo, d };
+}
+
+function clampDay(y, mo, d) {
+  const last = new Date(y, mo, 0).getDate();
+  return Math.min(Math.max(1, d), last);
+}
+
+function toIso(y, mo, d) {
+  const day = clampDay(y, mo, d);
+  return `${y}-${pad2(mo)}-${pad2(day)}`;
+}
+
+function formatDateEs(iso) {
+  const p = parseIsoDate(iso);
+  if (!p) return "";
+  return `${p.d} de ${MESES_CAL[p.mo - 1]} de ${p.y}`;
+}
+
+function yearBounds() {
+  const now = new Date();
+  return { min: 1980, max: now.getFullYear() + 1 };
+}
+
+/**
+ * Fecha como un solo campo legible («15 de enero de 2020»).
+ * El panel es calendario (popover en escritorio, hoja inferior en móvil).
+ * No usa <input type="date"> ni un modal que tape el formulario.
+ */
+export function createDateField(root, { value, onChange, title, placeholder } = {}) {
+  if (!root) return null;
+  wireDocumentOnce();
+  const now = new Date();
+  const parsed = parseIsoDate(value);
+  let y = parsed ? parsed.y : now.getFullYear();
+  let mo = parsed ? parsed.mo : now.getMonth() + 1;
+  let d = parsed ? parsed.d : now.getDate();
+  let viewY = y;
+  let viewMo = mo;
+  let mode = "days";
+  const bounds = yearBounds();
+  const sheetTitle = title || placeholder || "Fecha";
+  const emptyLabel = placeholder || "Elija una fecha";
+
+  root.classList.add("picker", "date-field");
+  root.classList.remove("is-open");
+  root.innerHTML = `
+    <button type="button" class="picker-trigger" aria-haspopup="dialog" aria-expanded="false">
+      <span class="picker-value"></span>
+    </button>
+    <div class="picker-panel date-cal-panel" hidden role="dialog">
+      <div class="picker-sheet-head">
+        <div class="picker-sheet-grab" aria-hidden="true"></div>
+        <p class="picker-sheet-title">${esc(sheetTitle)}</p>
+      </div>
+      <div class="date-cal-toolbar">
+        <button type="button" class="date-cal-nav" data-cal-prev aria-label="Anterior">‹</button>
+        <button type="button" class="date-cal-caption" data-cal-caption></button>
+        <button type="button" class="date-cal-nav" data-cal-next aria-label="Siguiente">›</button>
+      </div>
+      <div class="date-cal-body" data-cal-body></div>
+    </div>
+  `;
+
+  const trigger = root.querySelector(".picker-trigger");
+  const valueEl = root.querySelector(".picker-value");
+  const panel = root.querySelector(".picker-panel");
+  const captionBtn = root.querySelector("[data-cal-caption]");
+  const body = root.querySelector("[data-cal-body]");
+  let backdrop = null;
+
+  function iso() {
+    return toIso(y, mo, d);
+  }
+
+  function renderValue() {
+    const label = formatDateEs(iso());
+    valueEl.textContent = label || emptyLabel;
+    valueEl.classList.toggle("is-placeholder", !label);
+    trigger.setAttribute("aria-label", label ? `${sheetTitle}: ${label}` : sheetTitle);
+  }
+
+  function isOpen() {
+    return !panel.hidden;
+  }
+
+  function mountBackdrop() {
+    if (backdrop || !isSheet()) return;
+    backdrop = document.createElement("div");
+    backdrop.className = "picker-backdrop";
+    backdrop.addEventListener("pointerdown", () => close());
+    document.body.appendChild(backdrop);
+    lockScroll();
+  }
+
+  function unmountBackdrop() {
+    if (!backdrop) return;
+    backdrop.remove();
+    backdrop = null;
+    unlockScroll();
+  }
+
+  function close() {
+    if (panel.hidden && !root.classList.contains("is-open")) return;
+    panel.hidden = true;
+    root.classList.remove("is-open");
+    trigger.setAttribute("aria-expanded", "false");
+    unmountBackdrop();
+    openClosers.delete(close);
+    mode = "days";
+  }
+
+  function open() {
+    closeAllPickers(close);
+    viewY = y;
+    viewMo = mo;
+    mode = "days";
+    mountBackdrop();
+    panel.hidden = false;
+    root.classList.add("is-open");
+    trigger.setAttribute("aria-expanded", "true");
+    renderCal();
+    openClosers.add(close);
+  }
+
+  close.root = root;
+
+  function shiftView(delta) {
+    if (mode === "years") {
+      viewY += delta * 12;
+    } else if (mode === "months") {
+      viewY += delta;
+    } else {
+      viewMo += delta;
+      if (viewMo < 1) {
+        viewMo = 12;
+        viewY -= 1;
+      } else if (viewMo > 12) {
+        viewMo = 1;
+        viewY += 1;
+      }
+    }
+    viewY = Math.min(bounds.max, Math.max(bounds.min, viewY));
+    renderCal();
+  }
+
+  function pickDay(ny, nmo, nd) {
+    y = ny;
+    mo = nmo;
+    d = clampDay(ny, nmo, nd);
+    renderValue();
+    onChange?.(iso());
+    close();
+    trigger.focus();
+  }
+
+  function renderCal() {
+    if (mode === "years") {
+      captionBtn.textContent = `${viewY} – ${viewY + 11}`;
+      let html = `<div class="date-cal-years">`;
+      for (let i = 0; i < 12; i += 1) {
+        const yr = viewY + i;
+        const on = yr === y;
+        const disabled = yr < bounds.min || yr > bounds.max;
+        html += `<button type="button" class="date-cal-cell${on ? " is-on" : ""}" data-cal-year="${yr}" ${
+          disabled ? "disabled" : ""
+        }>${yr}</button>`;
+      }
+      html += `</div>`;
+      body.innerHTML = html;
+      return;
+    }
+    if (mode === "months") {
+      captionBtn.textContent = String(viewY);
+      let html = `<div class="date-cal-months">`;
+      for (let i = 0; i < 12; i += 1) {
+        const on = viewY === y && i + 1 === mo;
+        html += `<button type="button" class="date-cal-cell${on ? " is-on" : ""}" data-cal-month="${i + 1}">${esc(
+          MESES_CAL[i],
+        )}</button>`;
+      }
+      html += `</div>`;
+      body.innerHTML = html;
+      return;
+    }
+
+    captionBtn.textContent = `${MESES_CAL[viewMo - 1]} ${viewY}`;
+    const first = new Date(viewY, viewMo - 1, 1);
+    const start = (first.getDay() + 6) % 7;
+    const dim = new Date(viewY, viewMo, 0).getDate();
+    const prevDim = new Date(viewY, viewMo - 1, 0).getDate();
+    const today = new Date();
+    let html = `<div class="date-cal-grid" role="grid" aria-label="${esc(MESES_CAL[viewMo - 1])} ${viewY}">`;
+    html += DOW_CAL.map((d0) => `<span class="date-cal-dow">${d0}</span>`).join("");
+    for (let i = 0; i < 42; i += 1) {
+      let cellY = viewY;
+      let cellMo = viewMo;
+      let cellD;
+      let muted = false;
+      if (i < start) {
+        cellD = prevDim - start + i + 1;
+        cellMo = viewMo - 1;
+        if (cellMo < 1) {
+          cellMo = 12;
+          cellY -= 1;
+        }
+        muted = true;
+      } else if (i - start + 1 > dim) {
+        cellD = i - start - dim + 1;
+        cellMo = viewMo + 1;
+        if (cellMo > 12) {
+          cellMo = 1;
+          cellY += 1;
+        }
+        muted = true;
+      } else {
+        cellD = i - start + 1;
+      }
+      const on = cellY === y && cellMo === mo && cellD === d;
+      const isToday =
+        cellY === today.getFullYear() && cellMo === today.getMonth() + 1 && cellD === today.getDate();
+      html += `<button type="button" class="date-cal-day${muted ? " is-muted" : ""}${on ? " is-on" : ""}${
+        isToday ? " is-today" : ""
+      }" data-cal-y="${cellY}" data-cal-m="${cellMo}" data-cal-d="${cellD}" aria-selected="${on}">${cellD}</button>`;
+    }
+    html += `</div>`;
+    body.innerHTML = html;
+  }
+
+  root.addEventListener("pointerdown", (ev) => ev.stopPropagation());
+
+  trigger.addEventListener("click", (ev) => {
+    ev.stopPropagation();
+    if (isOpen()) close();
+    else open();
+  });
+
+  root.querySelector("[data-cal-prev]").addEventListener("click", () => shiftView(-1));
+  root.querySelector("[data-cal-next]").addEventListener("click", () => shiftView(1));
+  captionBtn.addEventListener("click", () => {
+    if (mode === "days") mode = "months";
+    else if (mode === "months") mode = "years";
+    else mode = "days";
+    renderCal();
+  });
+
+  body.addEventListener("click", (ev) => {
+    const yearBtn = ev.target.closest("[data-cal-year]");
+    if (yearBtn) {
+      viewY = Number(yearBtn.dataset.calYear);
+      mode = "months";
+      renderCal();
+      return;
+    }
+    const monthBtn = ev.target.closest("[data-cal-month]");
+    if (monthBtn) {
+      viewMo = Number(monthBtn.dataset.calMonth);
+      mode = "days";
+      renderCal();
+      return;
+    }
+    const dayBtn = ev.target.closest("[data-cal-d]");
+    if (!dayBtn) return;
+    pickDay(Number(dayBtn.dataset.calY), Number(dayBtn.dataset.calM), Number(dayBtn.dataset.calD));
+  });
+
+  root.addEventListener("keydown", (ev) => {
+    if (!isOpen()) {
+      if (ev.key === "ArrowDown" || ev.key === "Enter" || ev.key === " ") {
+        if (document.activeElement === trigger) {
+          ev.preventDefault();
+          open();
+        }
+      }
+      return;
+    }
+    if (ev.key === "Tab") close();
+  });
+
+  renderValue();
+  close();
+
+  return {
+    getValue: iso,
+    setValue(next) {
+      const p = parseIsoDate(next);
+      if (!p) return;
+      y = p.y;
+      mo = p.mo;
+      d = p.d;
+      viewY = y;
+      viewMo = mo;
+      renderValue();
+      if (isOpen()) renderCal();
+    },
+    close,
+    open,
+  };
+}
+
 export { closeAllPickers };

@@ -13,7 +13,7 @@ import {
   trapFocus,
   unlockScroll,
 } from "./overlay.js";
-import { createPicker } from "./picker.js";
+import { createDateField } from "./picker.js";
 import { wireThemeToggle } from "./theme.js";
 
 export {
@@ -337,78 +337,6 @@ export function periodoItems(months = 36) {
   return items;
 }
 
-export function createDateFields(root, { value, onChange } = {}) {
-  if (!root) return null;
-  root.classList.add("date-selects");
-  root.innerHTML = `<div data-pick-d></div><div data-pick-m></div><div data-pick-y></div>`;
-  const now = new Date();
-  const m = String(value || "").match(/^(\d{4})-(\d{2})-(\d{2})/);
-  let y = m ? m[1] : String(now.getFullYear());
-  let mo = m ? m[2] : pad2(now.getMonth() + 1);
-  let d = m ? m[3] : pad2(now.getDate());
-
-  const days = Array.from({ length: 31 }, (_, i) => ({ value: pad2(i + 1), label: String(i + 1) }));
-  const months = MESES_ES.map((nombre, i) => ({ value: pad2(i + 1), label: nombre }));
-  const years = [];
-  const end = now.getFullYear() + 1;
-  for (let yr = end; yr >= 1980; yr -= 1) years.push({ value: String(yr), label: String(yr) });
-
-  function iso() {
-    const dt = new Date(`${y}-${mo}-${d}T12:00:00`);
-    if (Number.isNaN(dt.getTime())) return "";
-    if (dt.getMonth() + 1 !== Number(mo)) return "";
-    return `${y}-${mo}-${d}`;
-  }
-
-  function emit() {
-    onChange?.(iso());
-  }
-
-  const pd = createPicker(root.querySelector("[data-pick-d]"), {
-    options: days,
-    value: d,
-    searchable: false,
-    placeholder: "Día",
-    title: "Día",
-    onChange: (v) => {
-      d = v;
-      emit();
-    },
-  });
-  const pm = createPicker(root.querySelector("[data-pick-m]"), {
-    options: months,
-    value: mo,
-    searchable: true,
-    placeholder: "Mes",
-    title: "Mes",
-    onChange: (v) => {
-      mo = v;
-      emit();
-    },
-  });
-  const py = createPicker(root.querySelector("[data-pick-y]"), {
-    options: years,
-    value: y,
-    searchable: true,
-    placeholder: "Año",
-    title: "Año",
-    onChange: (v) => {
-      y = v;
-      emit();
-    },
-  });
-
-  return {
-    getValue: iso,
-    setValue(next) {
-      const mm = String(next || "").match(/^(\d{4})-(\d{2})-(\d{2})/);
-      if (!mm) return;
-      y = mm[1];
-      mo = mm[2];
-      d = mm[3];
-      pd.setValue(d);
-      pm.setValue(mo);
-      py.setValue(y);
-    },
-  };
+export function createDateFields(root, opts = {}) {
+  return createDateField(root, opts);
 }

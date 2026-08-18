@@ -51,6 +51,7 @@ function mountFiniquito(root) {
       ${field("Fecha término", "termino", 'type="date" value="2026-03-01"')}
       ${field("Días feriado pendiente", "ferPend", 'type="number" min="0" value="5"')}
       ${field("Días feriado proporcional", "ferProp", 'type="number" min="0" value="7"')}
+      ${field("Otros haberes", "otros", 'type="text" inputmode="numeric" value="0"')}
       <label class="seo-calc__check"><input type="checkbox" name="grat" checked /> Gratificación art. 50</label>
       <label class="seo-calc__check"><input type="checkbox" name="aviso" /> Hubo aviso previo de 30 días</label>
       <p class="seo-calc__result" data-out>—</p>
@@ -72,6 +73,7 @@ function mountFiniquito(root) {
         termino: form.termino.value,
         diasFeriadoPendiente: Number(form.ferPend.value) || 0,
         diasFeriadoProporcional: Number(form.ferProp.value) || 0,
+        otros: num(form.otros),
         diasMes: 0,
         avisoPrevio: form.aviso.checked,
         causal,

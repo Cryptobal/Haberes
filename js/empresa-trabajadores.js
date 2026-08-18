@@ -339,11 +339,13 @@ export function bindEmpresaTrabajadores(ctx) {
     if (!rows.length) {
       n.textContent = "Ningún trabajador seleccionado.";
       fillHaberesEditor(null);
+      ctx.syncFinResumen?.();
       return;
     }
     if (rows.length === 1) n.textContent = `Seleccionado: ${rows[0].nombre}.`;
     else n.textContent = `${rows.length} seleccionados. Vista previa del primero (${rows[0].nombre}); el resto se lista abajo.`;
     fillHaberesEditor(rows[0]);
+    ctx.syncFinResumen?.();
   }
 
   function workerActionsHtml(t) {

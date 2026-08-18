@@ -1,5 +1,6 @@
 import { apiDownloadPdf, authErrorMessage, triggerDownload } from "./api.js";
 import { causalPorId } from "./causales.js";
+import { clp } from "./format.js";
 import { calcularFiniquitoCompleto } from "./finiquito.js";
 import {
   MSG_LIMITE,
@@ -20,11 +21,90 @@ export function bindEmpresaDocumentos(ctx) {
     const c = causalPorId(ctx.pickers.causal?.getValue());
     const nota = el("finCausalNota");
     const wrap = el("wrapAviso");
-    if (!nota || !c) return;
-    nota.textContent = c.aplicaIas
-      ? "Esta causal puede incluir IAS (si el contrato lleva un año o más) e indemnización sustitutiva de aviso si no hubo aviso de 30 días. Tope 11 años y 90 UF."
-      : "Esta causal no da derecho a IAS ni a indemnización sustitutiva de aviso. Sí se estiman remuneración del mes, gratificación, feriado y otros haberes.";
-    if (wrap) wrap.hidden = !c.aplicaAviso;
+    if (nota && c) {
+      nota.textContent = c.aplicaIas
+        ? "Esta causal puede incluir IAS (si el contrato lleva un año o más) e indemnización sustitutiva de aviso si no hubo aviso de 30 días. Tope 11 años y 90 UF."
+        : "Esta causal no da derecho a IAS ni a indemnización sustitutiva de aviso. Sí se estiman remuneración del mes, gratificación, feriado y otros haberes.";
+    }
+    if (wrap) wrap.hidden = !c?.aplicaAviso;
+    syncFinResumen();
+  }
+
+  const RESUMEN_KEYS = [
+    ["remuneracionMes", "Remuneración del mes"],
+    ["feriadoPendiente", "Feriado pendiente"],
+    ["feriadoProporcional", "Feriado proporcional"],
+    ["ias", "IAS"],
+    ["aviso", "Aviso"],
+    ["otros", "Otros haberes"],
+  ];
+
+  function finInputFromSelection() {
+    const rows = typeof ctx.selectedWorkers === "function" ? ctx.selectedWorkers() : [];
+    const t = rows[0];
+    if (!t) return null;
+    const extra = typeof ctx.readHaberesEditor === "function" ? ctx.readHaberesEditor(t) : t;
+    return {
+      ...t,
+      ...extra,
+      causal: ctx.pickers.causal?.getValue(),
+      remuneracion: extra?.sueldoBase ?? t.sueldoBase,
+      ingreso: ctx.dateIngreso?.getValue() || extra?.fechaIngreso || t.fechaIngreso || "",
+      termino: ctx.dateTermino?.getValue() || extra?.fechaTermino || t.fechaTermino || "",
+      diasMes: numVal("finDiasMes"),
+      avisoPrevio: Boolean(el("finAviso")?.checked),
+      diasFeriadoPendiente: numVal("finFeriadoPend"),
+      diasFeriadoProporcional: numVal("finFeriadoProp"),
+      otros: numVal("finOtros"),
+    };
+  }
+
+  function syncFinResumen() {
+    const host = el("finOutPartidas");
+    const totalEl = el("finOutTotal");
+    const nota = el("finResumenNota");
+    if (!host || !totalEl) return;
+    const input = finInputFromSelection();
+    if (!input) {
+      totalEl.textContent = clp(0);
+      host.innerHTML = "";
+      if (nota) {
+        nota.textContent =
+          "Seleccione un trabajador para ver feriado pendiente, proporcional, otros haberes e indemnizaciones.";
+      }
+      return;
+    }
+    try {
+      const fin = calcularFiniquitoCompleto(input, ctx.indicadores);
+      totalEl.textContent = clp(fin.total);
+      const byKey = new Map((fin.partidas || []).map((p) => [p.key, p]));
+      const rows = [];
+      for (const [key, label] of RESUMEN_KEYS) {
+        rows.push({ key, label, monto: byKey.get(key)?.monto || 0 });
+      }
+      for (const p of fin.partidas || []) {
+        if (RESUMEN_KEYS.some(([k]) => k === p.key)) continue;
+        if (!p.monto) continue;
+        rows.push({ key: p.key, label: p.label, monto: p.monto });
+      }
+      host.innerHTML = rows
+        .map(
+          (p) =>
+            `<div><span>${String(p.label)
+              .replace(/&/g, "&amp;")
+              .replace(/</g, "&lt;")}</span><strong>${clp(p.monto)}</strong></div>`,
+        )
+        .join("");
+      if (nota) {
+        nota.textContent = input.ingreso && input.termino
+          ? "Feriado pendiente, proporcional y otros haberes entran al total. Colación, movilización y gratificación salen de la ficha del trabajador."
+          : "Indique ingreso y término para calcular años de servicio.";
+      }
+    } catch (err) {
+      totalEl.textContent = clp(0);
+      host.innerHTML = "";
+      if (nota) nota.textContent = err.message || "No se pudo estimar el finiquito.";
+    }
   }
 
   function empresaParaDoc() {
@@ -294,8 +374,13 @@ export function bindEmpresaDocumentos(ctx) {
     document.querySelector(".ws-tabs")?.scrollIntoView({ behavior: "smooth", block: "start" });
   });
 
+  const cartaPanel = el("finOtros")?.closest(".panel");
+  cartaPanel?.addEventListener("input", syncFinResumen);
+  cartaPanel?.addEventListener("change", syncFinResumen);
+
   return {
     syncCausalNota,
+    syncFinResumen,
     empresaParaDoc,
     abrirPreview,
     workersForEmit,
