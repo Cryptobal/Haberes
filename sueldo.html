@@ -7,9 +7,7 @@
   (function () {
     try {
       var t = localStorage.getItem("haberes:theme");
-      if (t !== "day" && t !== "night") {
-        t = window.matchMedia("(prefers-color-scheme: dark)").matches ? "night" : "day";
-      }
+      if (t !== "day" && t !== "night") t = "day";
       document.documentElement.setAttribute("data-theme", t);
     } catch (e) {}
   })();
@@ -111,7 +109,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       </div>
       <div class="nav-actions">
         <button type="button" class="theme-toggle" data-theme-toggle aria-label="Cambiar a modo noche" aria-pressed="false">
-          <span data-theme-label>Día</span>
+          <svg class="ic-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.64 5.64l1.41 1.41M16.95 16.95l1.41 1.41M18.36 5.64l-1.41 1.41M7.05 16.95l-1.41 1.41"/></svg>
+          <svg class="ic-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 14.35A8.4 8.4 0 1 1 9.65 3 6.6 6.6 0 0 0 21 14.35z"/></svg>
         </button>
         <a class="btn btn-sm nav-cta" href="/empresa">Entrar</a>
         <button type="button" class="nav-burger" data-nav-burger aria-expanded="false" aria-controls="navDrawer" aria-label="Abrir menú">

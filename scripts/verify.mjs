@@ -43,7 +43,7 @@ import {
   tasaAfp,
   valorHoraExtra,
 } from "../js/sueldo.js";
-import { dvRut, validarRut } from "../js/format.js";
+import { clp, dvRut, validarRut } from "../js/format.js";
 import {
   LRE_AFP,
   LRE_COLUMNAS,
@@ -157,6 +157,25 @@ assert(
 
 assert("Gratificación 25 % con tope", gratificacionArt50(1_000_000) === 219115);
 assert("Gratificación bajo tope", gratificacionArt50(100_000) === 25000);
+
+const homeCtrl = calcularSueldo(
+  {
+    sueldoBase: 1_200_000,
+    afp: "modelo",
+    salud: "fonasa",
+    contrato: "indefinido",
+    gratificacionArt50: true,
+  },
+  { uf: FALLBACK_UF },
+);
+assert("control 1.200.000 gratificación 219115", homeCtrl.gratificacion === 219115, String(homeCtrl.gratificacion));
+assert("control 1.200.000 imponible 1419115", homeCtrl.imponible === 1_419_115, String(homeCtrl.imponible));
+assert("control 1.200.000 AFP 150142", homeCtrl.afp.monto === 150142, String(homeCtrl.afp.monto));
+assert("control 1.200.000 salud 99338", homeCtrl.salud.monto === 99338, String(homeCtrl.salud.monto));
+assert("control 1.200.000 cesantía 8515", homeCtrl.cesantia.monto === 8515, String(homeCtrl.cesantia.monto));
+assert("control 1.200.000 base 1161120", homeCtrl.baseTributable === 1_161_120, String(homeCtrl.baseTributable));
+assert("control 1.200.000 IUSC 7754", homeCtrl.iusc === 7754, String(homeCtrl.iusc));
+assert("control 1.200.000 líquido 1153366", homeCtrl.liquido === 1_153_366, String(homeCtrl.liquido));
 
 const topeAfp = calcularSueldo(
   { sueldoBase: 10_000_000, afp: "modelo", salud: "fonasa", contrato: "indefinido" },
@@ -676,6 +695,8 @@ for (const f of htmlFiles) {
     `${f} tema día/noche`,
     /haberes:theme/.test(html) && /data-theme-toggle/.test(html),
   );
+  assert(`${f} toggle sol/luna`, /ic-sun/.test(html) && /ic-moon/.test(html));
+  assert(`${f} sin prefers-color-scheme`, !/prefers-color-scheme/.test(html));
   assert(
     `${f} hamburguesa y cajón`,
     /data-nav-burger/.test(html) &&
@@ -3433,6 +3454,105 @@ assert(
     }),
   );
   assert("field-line declarado en ambos temas", day["field-line"] && night["field-line"]);
+}
+
+{
+  console.log("\nTema e inicio");
+  function listHtml(dir, acc = []) {
+    for (const name of readdirSync(dir)) {
+      if (name === "node_modules" || name === ".git") continue;
+      const p = join(dir, name);
+      if (statSync(p).isDirectory()) listHtml(p, acc);
+      else if (name.endsWith(".html")) acc.push(p);
+    }
+    return acc;
+  }
+  const pages = listHtml(root);
+  assert("48 páginas HTML", pages.length === 48, String(pages.length));
+  for (const file of pages) {
+    const html = readFileSync(file, "utf8");
+    const rel = file.slice(root.length + 1);
+    assert(`${rel} sin prefers-color-scheme`, !/prefers-color-scheme/.test(html));
+    assert(`${rel} ic-sun e ic-moon`, /class="ic-sun"/.test(html) && /class="ic-moon"/.test(html));
+  }
+  const themeSrc = readFileSync(join(root, "js/theme.js"), "utf8");
+  assert("js/theme.js sin prefers-color-scheme", !/prefers-color-scheme/.test(themeSrc));
+  assert("js/theme.js preferred día", /function preferred\(\) \{\s*return "day";/.test(themeSrc));
+
+  const home = readFileSync(join(root, "index.html"), "utf8");
+  const demoCalc = calcularSueldo(
+    {
+      sueldoBase: 1_200_553,
+      afp: "modelo",
+      salud: "fonasa",
+      contrato: "indefinido",
+      gratificacionArt50: true,
+    },
+    { uf: FALLBACK_UF },
+  );
+  assert(
+    "index demo montos estáticos",
+    home.includes(clp(demoCalc.liquido)) &&
+      home.includes(clp(demoCalc.gratificacion)) &&
+      home.includes(clp(demoCalc.imponible)) &&
+      home.includes(clp(demoCalc.afp.monto)) &&
+      home.includes(clp(demoCalc.salud.monto)) &&
+      home.includes(clp(demoCalc.cesantia.monto)) &&
+      home.includes(clp(demoCalc.baseTributable)) &&
+      home.includes(clp(demoCalc.iusc)) &&
+      !/<output[^>]*>\s*[—\-]\s*</.test(home) &&
+      !/<strong data-demo="[^"]+">\s*<\/strong>/.test(home),
+  );
+  assert("index un solo h1", (home.match(/<h1[\s>]/g) || []).length === 1);
+  assert(
+    "index slider IMM 553553 paso 1000 inicial 1200553",
+    /id="homeBruto"[\s\S]*?min="553553"/.test(home) &&
+      /id="homeBruto"[\s\S]*?step="1000"/.test(home) &&
+      /id="homeBruto"[\s\S]*?value="1200553"/.test(home),
+  );
+  const faqLd = [...home.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)]
+    .map((m) => {
+      try {
+        return JSON.parse(m[1]);
+      } catch {
+        return null;
+      }
+    })
+    .find((o) => o && o["@type"] === "FAQPage");
+  const summaries = [...home.matchAll(/<summary>([\s\S]*?)<\/summary>/g)].map((m) =>
+    m[1].replace(/<[^>]+>/g, "").trim(),
+  );
+  const names = (faqLd?.mainEntity || []).map((q) => q.name);
+  assert(
+    "index FAQPage mainEntity = details",
+    names.length === 5 &&
+      summaries.length === 5 &&
+      names.every((n) => summaries.includes(n)) &&
+      summaries.every((n) => names.includes(n)),
+    JSON.stringify({ names, summaries }),
+  );
+  assert(
+    "app-home.js importa calcularSueldo",
+    /import\s*\{[^}]*calcularSueldo[^}]*\}\s*from\s*["']\.\/sueldo\.js["']/.test(
+      readFileSync(join(root, "js/app-home.js"), "utf8"),
+    ),
+  );
+  for (const f of [
+    "ibm-plex-serif-latin-600-normal.woff2",
+    "ibm-plex-serif-latin-700-normal.woff2",
+    "ibm-plex-mono-latin-400-normal.woff2",
+    "ibm-plex-mono-latin-500-normal.woff2",
+  ]) {
+    assert(`fuente ${f}`, existsSync(join(root, "fonts", f)));
+  }
+  const reveal = css.match(/(?:^|\n)\s*(?:\.reveal|\[data-reveal\])[^{]*\{[\s\S]*?\}/);
+  if (reveal) {
+    const hides = /opacity:\s*0|visibility:\s*hidden|display:\s*none/.test(reveal[0]);
+    const jsScoped = /html\.js|\.js\s/.test(reveal[0]);
+    assert("reveal no oculta secciones fuera de .js", !hides || jsScoped);
+  } else {
+    assert("reveal no oculta secciones fuera de .js", true);
+  }
 }
 
 console.log(`\n${passed} ok, ${failed} fail`);
