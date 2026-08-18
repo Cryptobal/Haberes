@@ -13,12 +13,13 @@ function esc(s) {
 wireNav();
 mountIndicadores();
 
-const TABS = ["suscripciones", "producto", "trafico"];
+const TABS = ["suscripciones", "producto", "trafico", "outbound"];
 let companies = [];
 let summary = null;
 let filter = "todas";
 let productoCache = {};
 let traficoCache = {};
+let outboundCache = {};
 
 function panel(logged) {
   el("adminAuth").hidden = logged;
@@ -43,6 +44,7 @@ function setTab(name) {
   }
   if (tab === "producto") loadProducto();
   if (tab === "trafico") loadTrafico();
+  if (tab === "outbound") loadOutbound();
 }
 
 function statusLabel(status) {
@@ -266,6 +268,79 @@ function renderTrafico(data) {
     <p class="hint">Últimos ${esc(data.periodDays)} días (${esc(data.range?.startDate || "")} → ${esc(data.range?.endDate || "")}).${data.cached ? " Cifras en caché breve." : ""}</p>`;
 }
 
+function estadoOutboundLabel(estado) {
+  if (estado === "sent") return "Enviado";
+  if (estado === "delivered") return "Entregado";
+  if (estado === "bounced") return "Rebote";
+  if (estado === "complained") return "Queja";
+  return "Desconocido";
+}
+
+function estadoOutboundClass(estado) {
+  if (estado === "delivered") return "badge badge-ok";
+  if (estado === "bounced" || estado === "complained") return "badge badge-warn";
+  return "badge";
+}
+
+function pctEntrega(rate) {
+  const n = Number(rate);
+  if (!Number.isFinite(n) || n < 0) return "0 %";
+  return `${Math.round(n * 1000) / 10} %`.replace(".0 %", " %");
+}
+
+function renderOutbound(data) {
+  const box = el("adminOutbound");
+  if (!data) {
+    box.innerHTML = `<p class="empty">Cargando…</p>`;
+    return;
+  }
+  const s = data.summary || {};
+  const rows = data.sends || [];
+  const table = rows.length
+    ? `<div class="table-wrap"><table class="table">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Empresa</th>
+            <th>Correo</th>
+            <th>Estado</th>
+            <th>Baja</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows
+            .map((row) => {
+              const fecha = row.createdAt ? new Date(row.createdAt).toLocaleDateString("es-CL") : "—";
+              return `<tr>
+                <td>${esc(fecha)}</td>
+                <td>${esc(row.empresa || "—")}</td>
+                <td>${esc(row.email || "—")}</td>
+                <td><span class="${estadoOutboundClass(row.estado)}">${esc(estadoOutboundLabel(row.estado))}</span></td>
+                <td>${row.baja ? "Sí" : "No"}</td>
+              </tr>`;
+            })
+            .join("")}
+        </tbody>
+      </table></div>`
+    : `<p class="empty">No hay envíos outbound en este período.</p>`;
+  const refreshHint = data.resend?.refresh
+    ? " Si hay clave de correo, el estado se actualiza desde Resend para envíos pendientes."
+    : " Sin clave de correo se muestra solo el estado guardado.";
+  box.innerHTML = `
+    <div class="admin-strip admin-strip-4">
+      <div><strong>${esc(s.enviados || 0)}</strong><span>Enviados</span></div>
+      <div><strong>${esc(s.entregados || 0)}</strong><span>Entregados</span></div>
+      <div><strong>${esc(s.rebotes || 0)}</strong><span>Rebotes</span></div>
+      <div><strong>${esc(s.bajas || 0)}</strong><span>Bajas</span></div>
+      <div><strong>${esc(pctEntrega(s.tasaEntrega))}</strong><span>Tasa de entrega</span></div>
+      <div><strong>${esc(s.altasMismoCorreo || 0)}</strong><span>Altas con mismo correo</span></div>
+      <div><strong>sin dato</strong><span>Aperturas</span></div>
+      <div><strong>sin dato</strong><span>Clics</span></div>
+    </div>
+    <p class="hint">Período: últimos ${esc(data.periodDays)} días. La tasa es entregados / enviados. Las altas son cuentas Haberes cuyo correo coincide con un envío; no se atribuye desde GA4.${refreshHint}</p>
+    ${table}`;
+}
+
 async function loadCompanies() {
   showError(el("errEmpresas"), "");
   const { status, data } = await apiGet("/api/admin-companies");
@@ -320,6 +395,24 @@ async function loadTrafico() {
   renderTrafico(data);
 }
 
+async function loadOutbound() {
+  const period = document.querySelector("#outboundPeriodo input:checked")?.value || "30";
+  if (outboundCache[period]) {
+    renderOutbound(outboundCache[period]);
+    return;
+  }
+  showError(el("errOutbound"), "");
+  renderOutbound(null);
+  const { status, data } = await apiGet(`/api/admin-outbound?period=${encodeURIComponent(period)}`);
+  if (!data?.ok) {
+    showError(el("errOutbound"), authErrorMessage(data, status));
+    el("adminOutbound").innerHTML = "";
+    return;
+  }
+  outboundCache[period] = data;
+  renderOutbound(data);
+}
+
 async function boot() {
   const { status, data } = await apiGet("/api/admin-me");
   if (data?.ok && data.admin) {
@@ -356,6 +449,7 @@ el("formAdmin")?.addEventListener("submit", async (ev) => {
   el("adminMeta").textContent = data.admin?.email || "";
   productoCache = {};
   traficoCache = {};
+  outboundCache = {};
   setTab("suscripciones");
   await loadCompanies();
 });
@@ -367,6 +461,7 @@ el("btnAdminSalir")?.addEventListener("click", async () => {
   summary = null;
   productoCache = {};
   traficoCache = {};
+  outboundCache = {};
   el("formAdmin")?.reset();
 });
 
@@ -386,6 +481,11 @@ el("productoPeriodo")?.addEventListener("change", () => {
 el("traficoPeriodo")?.addEventListener("change", () => {
   traficoCache = {};
   loadTrafico();
+});
+
+el("outboundPeriodo")?.addEventListener("change", () => {
+  outboundCache = {};
+  loadOutbound();
 });
 
 el("tablaEmpresas")?.addEventListener("click", async (ev) => {

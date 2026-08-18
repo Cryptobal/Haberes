@@ -106,6 +106,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           <button type="button" class="ws-tab" data-tab="suscripciones" role="tab" aria-selected="true" aria-controls="tab-suscripciones" id="tabBtnSuscripciones">Suscripciones</button>
           <button type="button" class="ws-tab" data-tab="producto" role="tab" aria-selected="false" aria-controls="tab-producto" id="tabBtnProducto">Producto</button>
           <button type="button" class="ws-tab" data-tab="trafico" role="tab" aria-selected="false" aria-controls="tab-trafico" id="tabBtnTrafico">Tráfico (GA4)</button>
+          <button type="button" class="ws-tab" data-tab="outbound" role="tab" aria-selected="false" aria-controls="tab-outbound" id="tabBtnOutbound">Outbound</button>
         </div>
 
         <section id="tab-suscripciones" class="panel" data-tab-panel="suscripciones" role="tabpanel" aria-labelledby="tabBtnSuscripciones">
@@ -143,6 +144,17 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           </div>
           <p class="error" id="errTrafico" hidden></p>
           <div id="adminTrafico"></div>
+        </section>
+
+        <section id="tab-outbound" class="panel" data-tab-panel="outbound" role="tabpanel" aria-labelledby="tabBtnOutbound" hidden>
+          <h2>Outbound</h2>
+          <p class="hint">Envíos de outreach registrados en Haberes. No hay tasa de apertura ni de clics: esos datos no se guardan. Vacío es cero, no un estimado.</p>
+          <div class="seg" id="outboundPeriodo">
+            <label><input type="radio" name="outboundPeriodo" value="7" /><span>7 días</span></label>
+            <label><input type="radio" name="outboundPeriodo" value="30" checked /><span>30 días</span></label>
+          </div>
+          <p class="error" id="errOutbound" hidden></p>
+          <div id="adminOutbound"></div>
         </section>
       </section>
     </div>
