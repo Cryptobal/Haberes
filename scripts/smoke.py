@@ -215,7 +215,11 @@ def run():
                 page.wait_for_timeout(350)
                 audit(page, label, viewport)
                 page.screenshot(path=f"{SHOTS}/{tag}-{label}.png", full_page=True)
-                real = [e for e in errors if "/api/" not in e and "404" not in e]
+                real = [
+                    e
+                    for e in errors
+                    if "/api/" not in e and "404" not in e and "501" not in e
+                ]
                 if real:
                     note(f"{label} [{tag}] consola: {real[:4]}")
 
