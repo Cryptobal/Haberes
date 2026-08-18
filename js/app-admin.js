@@ -276,6 +276,7 @@ async function loadCompanies() {
   companies = data.companies || [];
   summary = { ...(data.summary || {}), listed: data.listed };
   renderResumen(data.summary, data.listed);
+  renderCompanies(companies);
 }
 
 async function loadProducto() {
