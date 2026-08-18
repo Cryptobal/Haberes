@@ -41,7 +41,7 @@ export const DEFAULT_LASTMOD = "2026-08-17";
 export const GUIDES = [
   { slug: "liquidacion-de-sueldo", group: "liquidacion", calc: "/sueldo", updated: "2026-08-18" },
   { slug: "impuesto-unico", group: "liquidacion", calc: "/sueldo", updated: "2026-08-18" },
-  { slug: "gratificacion-legal", group: "liquidacion", calc: "/sueldo", updated: "2026-08-17" },
+  { slug: "gratificacion-legal", group: "liquidacion", calc: "/sueldo", updated: "2026-08-18" },
   { slug: "horas-extras", group: "liquidacion", calc: "/sueldo", updated: "2026-08-17" },
   { slug: "semana-corrida", group: "liquidacion", calc: "/sueldo", updated: "2026-08-17" },
   { slug: "como-leer-una-liquidacion-de-sueldo", group: "liquidacion", calc: "/sueldo", updated: "2026-08-17" },

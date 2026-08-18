@@ -865,8 +865,10 @@ assert(
     lastmodForPath("/guias/finiquito") === "2026-08-18" &&
     lastmodForPath("/guias/impuesto-unico") === "2026-08-18" &&
     lastmodForPath("/guias/carta-aviso-termino-contrato") === "2026-08-18" &&
+    lastmodForPath("/guias/gratificacion-legal") === "2026-08-18" &&
     lastmodForPath("/guias") === "2026-08-18" &&
     /<loc>https:\/\/www\.haberes\.cl\/guias\/liquidacion-de-sueldo<\/loc>\s*<lastmod>2026-08-18<\/lastmod>/.test(sitemap) &&
+    /<loc>https:\/\/www\.haberes\.cl\/guias\/gratificacion-legal<\/loc>\s*<lastmod>2026-08-18<\/lastmod>/.test(sitemap) &&
     /<loc>https:\/\/www\.haberes\.cl\/guias<\/loc>\s*<lastmod>2026-08-18<\/lastmod>/.test(sitemap),
 );
 assert("sin ruta /blog ni /noticias", !existsSync(join(root, "blog.html")) && !existsSync(join(root, "noticias.html")));
@@ -1169,6 +1171,7 @@ try {
     "/guias/finiquito",
     "/guias/impuesto-unico",
     "/guias/carta-aviso-termino-contrato",
+    "/guias/gratificacion-legal",
   ]) {
     const r = await hitLocal(p);
     assert(`GET ${p} 200`, r.status === 200 && /<h1>/i.test(r.text) && /text\/html/i.test(r.type));
@@ -4240,6 +4243,7 @@ assert(
       ["guias/finiquito.html", "/finiquito", /177/, /dt\.gob\.cl/],
       ["guias/impuesto-unico.html", "/sueldo", /13,5 UTM/, /sii\.cl/],
       ["guias/carta-aviso-termino-contrato.html", "/finiquito", /162/, /dt\.gob\.cl/],
+      ["guias/gratificacion-legal.html", "/sueldo", /artículo 47/, /dt\.gob\.cl/],
     ];
     function visibleWords(html) {
       const main = html.match(/<main\b[\s\S]*?<\/main>/i)?.[0] || html;
@@ -4256,7 +4260,8 @@ assert(
       const html = readFileSync(join(root, file), "utf8");
       const title = (html.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
       const words = visibleWords(html);
-      assert(`SEO ${file} 800–1400 palabras`, words >= 800 && words <= 1400, `${file}: ${words}`);
+      const minWords = file.includes("gratificacion-legal") ? 900 : 800;
+      assert(`SEO ${file} ${minWords}–1400 palabras`, words >= minWords && words <= 1400, `${file}: ${words}`);
       assert(`SEO ${file} sin calculadora en title`, /./.test(title) && !/calculadora/i.test(title), title);
       assert(`SEO ${file} sin branding de IA`, !/\bIA\b/.test(html) && !/inteligencia artificial/i.test(html));
       assert(`SEO ${file} enlaza ${calc}`, html.includes(`href="${calc}"`));

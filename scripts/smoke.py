@@ -50,7 +50,7 @@ def serve():
 
 
 def check_http():
-    """Sitemap y las cuatro guías espesadas deben responder como en Vercel."""
+    """Sitemap y las guías espesadas deben responder como en Vercel."""
     cases = [
         ("/sitemap.xml", 200, "xml"),
         ("/sitemap", 200, "xml"),
@@ -59,6 +59,7 @@ def check_http():
         ("/guias/finiquito", 200, "html"),
         ("/guias/impuesto-unico", 200, "html"),
         ("/guias/carta-aviso-termino-contrato", 200, "html"),
+        ("/guias/gratificacion-legal", 200, "html"),
         ("/blog", 404, None),
         ("/noticias", 404, None),
     ]
@@ -105,6 +106,7 @@ PAGES = [
     ("guias/finiquito.html", "guia-finiquito"),
     ("guias/impuesto-unico.html", "guia-impuesto"),
     ("guias/carta-aviso-termino-contrato.html", "guia-carta"),
+    ("guias/gratificacion-legal.html", "guia-gratificacion"),
 ]
 MOBILE = {"width": 360, "height": 780}
 DESKTOP = {"width": 1280, "height": 900}

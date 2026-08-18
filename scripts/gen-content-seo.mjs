@@ -742,7 +742,7 @@ function hubLatest(items, limit = 6) {
         No hay un blog aparte: este índice es el flujo de publicación.
       </p>
       <h2>Últimas actualizaciones</h2>
-      <p>Las cuatro piezas de dinero más leídas se reescriben aquí, con fecha a la vista.</p>
+      <p>Las piezas de dinero más leídas se reescriben aquí, con fecha a la vista.</p>
       ${hubLatest(guideIndex)}
       <h2>Liquidación de sueldo</h2>
       <p>Qué es el comprobante de remuneraciones, descuentos legales e impuesto único. Para estimar el líquido use <a href="/sueldo">/sueldo</a>.</p>
