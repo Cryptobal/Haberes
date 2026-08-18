@@ -27,7 +27,7 @@ En las pymes se mezclan tres relojes. Conviene nombrarlos aparte:
 - **Carta de aviso de tres o seis días hábiles** (artículo 162): plazo para comunicar por escrito ciertas causales del 159 y las del 160, con copia a la Inspección del Trabajo.
 - **Diez días hábiles para otorgar el finiquito y poner el pago a disposición** (artículo 177), contados desde la **separación**. Lo confirma la [Dirección del Trabajo](https://www.dt.gob.cl/portal/1628/w3-article-60613.html).
 
-El error clásico —decir que el finiquito «se paga al momento del término de la relación laboral»— no es el texto vigente del artículo 177. La norma habla de diez días hábiles desde la separación. El desarrollo de ese plazo está en [¿cuánto tiempo tiene el empleador para pagar el finiquito?](/guias/plazo-de-pago-del-finiquito).
+El error clásico —decir que se paga el mismo día de la separación— no es el texto vigente del artículo 177. La norma habla de diez días hábiles desde esa fecha. El desarrollo de ese plazo está en [¿cuánto tiempo tiene el empleador para pagar el finiquito?](/guias/plazo-de-pago-del-finiquito).
 
 ## Qué dice el artículo 177 (forma y pago)
 
