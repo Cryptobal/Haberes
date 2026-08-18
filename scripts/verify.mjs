@@ -2699,7 +2699,8 @@ assert(
     /Pagar con Flow/.test(preciosHtml) &&
     /suscripci[oó]n mensual/i.test(preciosHtml) &&
     /class="compare"/.test(preciosHtml) &&
-    /webhook/i.test(preciosHtml) &&
+    /confirmaci[oó]n del pago/i.test(preciosHtml) &&
+    !/webhook/i.test(preciosHtml) &&
     !/31 d[ií]as/i.test(preciosHtml) &&
     !/pulse de nuevo/i.test(preciosHtml) &&
     !/No hay cobro con tarjeta/i.test(preciosHtml) &&
