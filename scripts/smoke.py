@@ -226,6 +226,33 @@ def run():
                         note("el velo no cerró #navDrawer a 390px")
         ctx390.close()
 
+        print("[interacción] fecha de finiquito como calendario")
+        page.goto(f"{BASE}/finiquito.html", wait_until="networkidle")
+        page.wait_for_timeout(400)
+        ingreso = page.locator("#pickIngreso .picker-trigger")
+        if ingreso.count() == 0:
+            note("no se encontró el campo de fecha de ingreso en /finiquito")
+        else:
+            txt = (ingreso.text_content() or "").lower()
+            if "enero" not in txt:
+                note(f"la fecha de ingreso no muestra el mes completo: {txt!r}")
+            if page.locator("#pickIngreso [data-pick-m]").count():
+                note("el finiquito público sigue usando tres selects de fecha")
+            ingreso.click()
+            page.wait_for_timeout(400)
+            cal = page.locator("#pickIngreso .date-cal-grid")
+            if cal.count() == 0 or not cal.is_visible():
+                note("el calendario de ingreso no se abrió")
+            else:
+                caption = (page.locator("#pickIngreso .date-cal-caption").text_content() or "").lower()
+                if "enero" not in caption:
+                    note(f"el calendario no muestra el mes en el título: {caption!r}")
+                page.screenshot(path=f"{SHOTS}/movil-finiquito-calendario.png")
+            page.keyboard.press("Escape")
+            page.wait_for_timeout(250)
+            if page.locator("#pickIngreso.is-open").count():
+                note("Escape no cerró el calendario de ingreso")
+
         print("[interacción] picker como hoja inferior")
         page.goto(f"{BASE}/sueldo.html", wait_until="networkidle")
         page.wait_for_timeout(400)

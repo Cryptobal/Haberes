@@ -17,7 +17,8 @@ function leer() {
     termino: terminoPick?.getValue() || "",
     remuneracion: numVal("remuneracion"),
     avisoPrevio: el("avisoPrevio")?.checked,
-    diasFeriado: numVal("diasFeriado"),
+    diasFeriadoPendiente: numVal("diasFeriadoPend"),
+    diasFeriadoProporcional: numVal("diasFeriado"),
     otros: numVal("otros"),
   };
 }
@@ -26,16 +27,18 @@ function render(fin) {
   el("outTotal").textContent = clp(fin.total);
   el("outIas").textContent = clp(fin.ias);
   el("outAviso").textContent = clp(fin.aviso);
-  el("outFeriado").textContent = clp(fin.feriado);
+  el("outFeriadoPend").textContent = clp(fin.feriadoPendiente);
+  el("outFeriado").textContent = clp(fin.feriadoProporcional);
+  el("outOtros").textContent = clp(fin.otros);
   el("outAnios").textContent = String(fin.anios);
   const nota = el("notaArticulo");
   const causal = causalPorId(causalPick?.getValue());
   if (causal?.aplicaIas) {
     nota.textContent =
-      `${causal.label}. Incluye indemnización por años de servicio (tope 11) e indemnización sustitutiva de aviso si no hubo aviso previo. Esta calculadora pública no desglosa remuneración del mes ni feriado pendiente: eso está en Para mi empresa.`;
+      `${causal.label}. Incluye indemnización por años de servicio (tope 11) e indemnización sustitutiva de aviso si no hubo aviso previo. Remuneración del mes, gratificación, colación y movilización se desglosan en Para mi empresa.`;
   } else if (causal) {
     nota.textContent =
-      `${causal.label}. No corresponde IAS ni aviso previo. Sí se estima feriado proporcional. El finiquito completo (letras, membrete y todas las partidas) está en Para mi empresa.`;
+      `${causal.label}. No corresponde IAS ni aviso previo. Sí se estiman feriado pendiente, feriado proporcional y otros haberes. El finiquito completo (letras, membrete y todas las partidas) está en Para mi empresa.`;
   }
 }
 
@@ -53,8 +56,16 @@ causalPick = createPicker(el("pickCausal"), {
   placeholder: "Causal",
   onChange: recalc,
 });
-ingresoPick = createDateFields(el("pickIngreso"), { value: "2020-01-15", onChange: recalc });
-terminoPick = createDateFields(el("pickTermino"), { value: "2023-08-20", onChange: recalc });
+ingresoPick = createDateFields(el("pickIngreso"), {
+  value: "2020-01-15",
+  title: "Fecha de ingreso",
+  onChange: recalc,
+});
+terminoPick = createDateFields(el("pickTermino"), {
+  value: "2023-08-20",
+  title: "Fecha de término",
+  onChange: recalc,
+});
 
 document.getElementById("formFiniquito")?.addEventListener("input", recalc);
 document.getElementById("formFiniquito")?.addEventListener("change", recalc);

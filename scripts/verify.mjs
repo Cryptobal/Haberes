@@ -255,6 +255,28 @@ const f161 = calcularFiniquito(
 assert("Art. 161 incluye IAS y aviso", f161.ias === 4_000_000 && f161.aviso === 1_000_000);
 assert("Feriado 10 días * rem/30", f161.feriado === Math.round((10 * 1_000_000) / 30));
 
+const f161fer = calcularFiniquito(
+  {
+    articulo: "161",
+    ingreso: "2020-01-15",
+    termino: "2023-08-20",
+    remuneracion: 1_000_000,
+    avisoPrevio: true,
+    diasFeriadoPendiente: 5,
+    diasFeriadoProporcional: 10,
+    otros: 50_000,
+  },
+  { uf: FALLBACK_UF },
+);
+assert(
+  "Público desglosa feriado pendiente, proporcional y otros",
+  f161fer.feriadoPendiente === Math.round((5 * 1_000_000) / 30) &&
+    f161fer.feriadoProporcional === Math.round((10 * 1_000_000) / 30) &&
+    f161fer.feriado === f161fer.feriadoPendiente + f161fer.feriadoProporcional &&
+    f161fer.otros === 50_000 &&
+    f161fer.aviso === 0,
+);
+
 const f161aviso = calcularFiniquito(
   { articulo: "161", anios: 2, remuneracion: 1_000_000, avisoPrevio: true, diasFeriado: 0 },
   { uf: FALLBACK_UF },
@@ -2368,14 +2390,29 @@ assert(
     /display:\s*none\s*!important/.test(readFileSync(join(root, "css/app.css"), "utf8")),
 );
 assert(
-  "css paneles día/mes/año con min-width, sin display flex en el bloque base",
-  /\.date-selects\s+\.picker-panel\s*\{[^}]*min-width:\s*max\(100%,\s*12\.5rem\)/.test(
+  "css panel calendario con min-width, sin display flex en el bloque base",
+  /\.date-field\s+\.picker-panel\s*\{[^}]*min-width:\s*max\(100%,\s*18\.5rem\)/.test(
     readFileSync(join(root, "css/app.css"), "utf8"),
   ) &&
-    !/\.date-selects\s+\.picker-panel\s*\{[^}]*display:\s*flex/.test(
+    !/\.date-field\s+\.picker-panel\s*\{[^}]*display:\s*flex/.test(
       readFileSync(join(root, "css/app.css"), "utf8"),
     ),
 );
+assert(
+  "fecha como calendario, no tres selects",
+  /createDateField/.test(readFileSync(join(root, "js/picker.js"), "utf8")) &&
+    /date-cal-grid/.test(readFileSync(join(root, "js/picker.js"), "utf8")) &&
+    /createDateField/.test(readFileSync(join(root, "js/ui.js"), "utf8")) &&
+    !/data-pick-d/.test(readFileSync(join(root, "js/ui.js"), "utf8")),
+);
+assert(
+  "finiquito público desglosa feriado pendiente, proporcional y otros",
+  /id="diasFeriadoPend"/.test(readFileSync(join(root, "finiquito.html"), "utf8")) &&
+    /id="outFeriadoPend"/.test(readFileSync(join(root, "finiquito.html"), "utf8")) &&
+    /id="outOtros"/.test(readFileSync(join(root, "finiquito.html"), "utf8")) &&
+    /diasFeriadoPendiente/.test(readFileSync(join(root, "js/app-finiquito.js"), "utf8")),
+);
+assert("empresa.html resumen de finiquito", /id="finResumen"/.test(empHtml) && /id="finOutPartidas"/.test(empHtml));
 assert("admin.html noindex", /noindex/.test(readFileSync(join(root, "admin.html"), "utf8")));
 assert(
   "admin sin hashes en la UI",

@@ -368,10 +368,10 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                   <div id="altaFechaTermino"></div>
                   <p class="hint">Opcional. Si deja el cargo a mitad de mes, ajusta los días trabajados.</p>
                 </div>
-                <div class="field">
-                  <label for="altaJornada">Jornada semanal</label>
-                  <input id="altaJornada" inputmode="numeric" min="1" value="42" />
-                </div>
+              </div>
+              <div class="field">
+                <label for="altaJornada">Jornada semanal</label>
+                <input id="altaJornada" inputmode="numeric" min="1" value="42" />
               </div>
               <div class="row">
                 <div class="field">
@@ -689,6 +689,12 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                 <input id="finAviso" type="checkbox" />
                 Hubo aviso previo de 30 días (art. 161)
               </label>
+              <div class="fin-resumen" id="finResumen">
+                <p class="metric-label">Total estimado</p>
+                <p class="metric" id="finOutTotal">$ 0</p>
+                <div class="mini" id="finOutPartidas"></div>
+                <p class="hint" id="finResumenNota">Seleccione un trabajador para ver feriado pendiente, proporcional, otros haberes e indemnizaciones.</p>
+              </div>
               <p class="hint">
                 La carta incluye membrete, causal con su texto legal y firmas de empleador, trabajador y dos
                 testigos. No reemplaza la Inspección del Trabajo ni al ministro de fe.

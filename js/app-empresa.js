@@ -294,6 +294,7 @@ ctx.actualizarAvisoArt58 = trabajadoresApi.actualizarAvisoArt58;
 
 const documentosApi = bindEmpresaDocumentos(ctx);
 ctx.workersForEmit = documentosApi.workersForEmit;
+ctx.syncFinResumen = documentosApi.syncFinResumen;
 
 const lreApi = bindEmpresaLre(ctx);
 
@@ -395,19 +396,27 @@ function initPickers() {
     onChange: documentosApi.syncCausalNota,
   });
   dateAltaIngreso = createDateFields(el("altaFechaIngreso"), {
+    title: "Fecha de ingreso",
     onChange: () => {
       altaIngresoTocada = true;
     },
   });
   dateAltaTermino = createDateFields(el("altaFechaTermino"), {
+    title: "Fecha de término",
     onChange: () => {
       altaTerminoTocada = true;
     },
   });
-  dateIngreso = createDateFields(el("finIngreso"), { value: "2020-01-15" });
+  dateIngreso = createDateFields(el("finIngreso"), {
+    value: "2020-01-15",
+    title: "Fecha de ingreso",
+    onChange: documentosApi.syncFinResumen,
+  });
   dateTermino = createDateFields(el("finTermino"), {
+    title: "Fecha de término",
     onChange: (iso) => {
       if (iso && el("finDiasMes")) el("finDiasMes").value = String(diasDelMesHasta(iso));
+      documentosApi.syncFinResumen();
     },
   });
 }
@@ -415,6 +424,7 @@ function initPickers() {
 wireNav();
 initPickers();
 documentosApi.syncCausalNota();
+documentosApi.syncFinResumen();
 nominaApi.syncNominaAviso();
 
 initEnvioDocumentos({
@@ -449,9 +459,11 @@ document.querySelectorAll("[data-auth-modo]").forEach((input) => {
 
 mountIndicadores().then((ind) => {
   if (ind) indicadores = ind;
+  documentosApi.syncFinResumen();
 });
 getIndicadores().then((ind) => {
   indicadores = ind;
+  documentosApi.syncFinResumen();
 });
 
 async function refreshPayProviders() {

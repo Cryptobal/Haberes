@@ -139,7 +139,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <div class="wrap">
       <p class="kicker">Calculadora</p>
       <h1>Calculadora de finiquito Chile 2026</h1>
-      <p class="lede">Indemnización por años de servicio, aviso previo y feriado proporcional. Para imprimir la carta con firmas use Para mi empresa.</p>
+      <p class="lede">Indemnización por años de servicio, aviso previo, feriado pendiente, feriado proporcional y otros haberes. Para imprimir la carta con firmas use Para mi empresa.</p>
       <p class="notice">
         Documento generado por Haberes. No es un cálculo de la Dirección del Trabajo ni de Previred.
         No constituye asesoría legal. No reemplaza la ratificación ante la Inspección del Trabajo.
@@ -151,15 +151,13 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             <span class="lbl">Causal</span>
             <div id="pickCausal"></div>
           </div>
-          <div class="row">
-            <div class="field">
-              <span class="lbl">Fecha de ingreso</span>
-              <div id="pickIngreso"></div>
-            </div>
-            <div class="field">
-              <span class="lbl">Fecha de término</span>
-              <div id="pickTermino"></div>
-            </div>
+          <div class="field">
+            <span class="lbl">Fecha de ingreso</span>
+            <div id="pickIngreso"></div>
+          </div>
+          <div class="field">
+            <span class="lbl">Fecha de término</span>
+            <div id="pickTermino"></div>
           </div>
           <div class="field">
             <label for="remuneracion">Remuneración mensual para el cálculo</label>
@@ -167,13 +165,17 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           </div>
           <div class="row">
             <div class="field">
-              <label for="diasFeriado">Días de feriado proporcional</label>
-              <input id="diasFeriado" type="number" min="0" step="0.5" value="10" />
+              <label for="diasFeriadoPend">Feriado pendiente (días vencidos no tomados)</label>
+              <input id="diasFeriadoPend" type="number" min="0" step="0.5" value="0" />
             </div>
             <div class="field">
-              <label for="otros">Otros haberes</label>
-              <input id="otros" type="number" min="0" step="1" value="0" />
+              <label for="diasFeriado">Feriado proporcional (días)</label>
+              <input id="diasFeriado" type="number" min="0" step="0.5" value="10" />
             </div>
+          </div>
+          <div class="field">
+            <label for="otros">Otros haberes</label>
+            <input id="otros" type="number" min="0" step="1" value="0" />
           </div>
           <label class="check">
             <input id="avisoPrevio" type="checkbox" />
@@ -189,9 +191,11 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             <div><span>Años (tope 11)</span><strong id="outAnios">0</strong></div>
             <div><span>IAS</span><strong id="outIas">$ 0</strong></div>
             <div><span>Aviso</span><strong id="outAviso">$ 0</strong></div>
-            <div><span>Feriado</span><strong id="outFeriado">$ 0</strong></div>
+            <div><span>Feriado pendiente</span><strong id="outFeriadoPend">$ 0</strong></div>
+            <div><span>Feriado proporcional</span><strong id="outFeriado">$ 0</strong></div>
+            <div><span>Otros haberes</span><strong id="outOtros">$ 0</strong></div>
           </div>
-          <p class="hint">IAS = años (fracción &gt; 6 meses suma 1) × min(remuneración, 90 UF), tope 11 años. Feriado = días × rem / 30.</p>
+          <p class="hint">IAS = años (fracción &gt; 6 meses suma 1) × min(remuneración, 90 UF), tope 11 años. Feriado pendiente y proporcional = días × rem / 30.</p>
         </aside>
       </div>
 

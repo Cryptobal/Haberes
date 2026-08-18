@@ -1840,11 +1840,132 @@ input:disabled {
   justify-self: stretch;
 }
 
-/* 4.18 Fecha */
-.date-selects {
+/* 4.18 Fecha: un campo con calendario, no tres selects apretados */
+.date-field {
+  min-width: 0;
+}
+
+.fin-resumen {
+  margin: var(--s-4) 0 0;
+  padding: var(--s-4);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+}
+
+.fin-resumen .metric-label,
+.fin-resumen .metric {
+  margin-bottom: var(--s-2);
+}
+
+.fin-resumen .mini {
+  margin-bottom: var(--s-2);
+}
+
+.date-field .picker-panel {
+  right: auto;
+  min-width: max(100%, 18.5rem);
+  width: min(22rem, 100vw - 2rem);
+  max-height: min(28rem, 80svh);
+}
+
+.date-cal-toolbar {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: var(--touch) minmax(0, 1fr) var(--touch);
   gap: var(--s-2);
+  align-items: center;
+}
+
+.date-cal-nav,
+.date-cal-caption,
+.date-cal-cell,
+.date-cal-day {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+  border-radius: var(--r-sm);
+  min-height: var(--touch);
+  transition: background var(--dur-1) var(--ease);
+}
+
+.date-cal-nav {
+  display: grid;
+  place-items: center;
+  font-size: 1.35rem;
+  line-height: 1;
+  color: var(--ink);
+}
+
+.date-cal-caption {
+  font-weight: 650;
+  color: var(--ink);
+  text-transform: capitalize;
+  padding: 0 var(--s-2);
+}
+
+.date-cal-nav:hover,
+.date-cal-caption:hover,
+.date-cal-cell:hover,
+.date-cal-day:hover {
+  background: color-mix(in srgb, var(--ink) 8%, transparent);
+}
+
+.date-cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 2px;
+}
+
+.date-cal-dow {
+  text-align: center;
+  font-size: var(--t-xs);
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+  padding: var(--s-1) 0;
+}
+
+.date-cal-day {
+  font-variant-numeric: tabular-nums;
+  font-size: var(--t-sm);
+  min-height: 36px;
+}
+
+.date-cal-day.is-muted {
+  color: var(--faint);
+}
+
+.date-cal-day.is-today:not(.is-on) {
+  box-shadow: inset 0 0 0 1px var(--line-strong);
+}
+
+.date-cal-months,
+.date-cal-years {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--s-2);
+}
+
+.date-cal-cell {
+  font-size: var(--t-sm);
+  font-weight: 550;
+  text-transform: capitalize;
+  padding: var(--s-2);
+}
+
+.date-cal-day.is-on,
+.date-cal-cell.is-on {
+  background: var(--option-on-bg);
+  color: var(--option-on-fg);
+  font-weight: 650;
+}
+
+.date-cal-cell:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 
 /* 4.19 Cambio de tema */
@@ -2143,20 +2264,6 @@ html[data-theme="night"] .theme-toggle .ic-moon {
   display: none;
   flex-direction: column;
   gap: var(--s-2);
-}
-
-/* Día/mes/año: el panel no hereda el ancho del trigger (~59px en «Agosto»). */
-.date-selects .picker-panel {
-  right: auto;
-  min-width: max(100%, 12.5rem);
-}
-
-.date-selects .picker-list {
-  overflow-x: hidden;
-}
-
-.date-selects .picker-option {
-  white-space: nowrap;
 }
 
 .picker.is-open .picker-panel,
@@ -2592,10 +2699,6 @@ body[data-dialog-open] .toaster {
     padding: var(--s-6);
   }
 
-  .date-selects {
-    grid-template-columns: 84px minmax(0, 1fr) 104px;
-  }
-
   .modal {
     align-items: center;
     padding: var(--s-5);
@@ -2785,6 +2888,13 @@ body[data-dialog-open] .toaster {
 
   .picker-option {
     min-height: 48px;
+  }
+
+  .date-cal-day,
+  .date-cal-cell,
+  .date-cal-nav,
+  .date-cal-caption {
+    min-height: var(--touch);
   }
 }
 
