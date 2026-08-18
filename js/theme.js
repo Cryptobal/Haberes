@@ -1,11 +1,7 @@
 const KEY = "haberes:theme";
 
 function preferred() {
-  try {
-    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "night" : "day";
-  } catch {
-    return "day";
-  }
+  return "day";
 }
 
 export function currentTheme() {

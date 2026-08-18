@@ -7,9 +7,7 @@
   (function () {
     try {
       var t = localStorage.getItem("haberes:theme");
-      if (t !== "day" && t !== "night") {
-        t = window.matchMedia("(prefers-color-scheme: dark)").matches ? "night" : "day";
-      }
+      if (t !== "day" && t !== "night") t = "day";
       document.documentElement.setAttribute("data-theme", t);
     } catch (e) {}
   })();
@@ -37,6 +35,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   <meta name="twitter:image" content="https://www.haberes.cl/img/og-default.png" />
   <link rel="icon" href="favicon.ico" sizes="32x32" />
   <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="preload" href="fonts/ibm-plex-serif-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href="css/app.css" />
   <!-- GA4: para activarlo, asigne un ID G-… a window.HABERES_GA4 antes de este script. Vacío = sin peticiones. -->
   <script src="js/analytics.js" defer></script>
@@ -79,6 +78,22 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
         "@type": "Answer",
         "text": "Es el documento para firmar, no el trámite. No reemplaza la ratificación ante la Inspección del Trabajo ni ante un ministro de fe."
       }
+    },
+    {
+      "@type": "Question",
+      "name": "¿Necesito una cuenta para calcular el sueldo?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. Puede estimar el sueldo líquido y el finiquito sin registrarse. La cuenta de empresa sirve para emitir PDF con logo, firma y envío al correo del trabajador."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "¿Cuánto cuesta Haberes?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Gratis incluye 5 movimientos al mes, sin tarjeta. Pro cuesta $14.990 + IVA al mes, sin tope mensual, con carga masiva y nómina bancaria."
+      }
     }
   ]
 }
@@ -103,7 +118,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       </div>
       <div class="nav-actions">
         <button type="button" class="theme-toggle" data-theme-toggle aria-label="Cambiar a modo noche" aria-pressed="false">
-          <span data-theme-label>Día</span>
+          <svg class="ic-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.64 5.64l1.41 1.41M16.95 16.95l1.41 1.41M18.36 5.64l-1.41 1.41M7.05 16.95l-1.41 1.41"/></svg>
+          <svg class="ic-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 14.35A8.4 8.4 0 1 1 9.65 3 6.6 6.6 0 0 0 21 14.35z"/></svg>
         </button>
         <a class="btn btn-sm nav-cta" href="/empresa">Entrar</a>
         <button type="button" class="nav-burger" data-nav-burger aria-expanded="false" aria-controls="navDrawer" aria-label="Abrir menú">
@@ -128,27 +144,96 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       </div>
     </div>
 
-  <main>
+  <main class="home">
     <div class="wrap">
-      <section class="hero">
-        <p class="kicker">Haberes</p>
-        <h1>Liquidaciones y finiquitos listos en minutos.</h1>
-        <p class="lede">
-          Calcule el sueldo líquido y emita liquidaciones y finiquitos con el formato chileno.
-          Sin planilla, sin instalar nada.
-        </p>
-        <div class="actions">
-          <a class="btn btn-lg" href="/empresa">Crear cuenta gratis</a>
-          <a class="btn btn-lg btn-ghost" href="/sueldo">Calcular sueldo líquido</a>
+      <section class="home-hero" aria-label="Inicio">
+        <div class="hero">
+          <p class="kicker">Haberes</p>
+          <h1>Liquidaciones y finiquitos listos en minutos.</h1>
+          <p class="lede">
+            Calcule el sueldo líquido y emita liquidaciones y finiquitos con el formato chileno.
+            Sin planilla, sin instalar nada.
+          </p>
+          <div class="actions">
+            <a class="btn btn-lg" href="/empresa">Crear cuenta gratis</a>
+            <a class="btn btn-lg btn-ghost" href="/sueldo">Calcular sueldo líquido</a>
+          </div>
+          <p class="hint">Sin tarjeta. Gratis incluye 5 movimientos al mes.</p>
         </div>
-        <p class="hint">Sin tarjeta. Gratis incluye 5 movimientos al mes.</p>
+
+        <aside class="home-demo" aria-labelledby="demo-title">
+          <div class="home-demo-head">
+            <div>
+              <h2 id="demo-title">Liquidación de ejemplo</h2>
+              <p id="homePeriodo">Agosto 2026</p>
+            </div>
+            <div>
+              <span class="lbl">Líquido a pagar</span>
+              <output id="homeLiquido" class="home-demo-liquido" for="homeBruto" aria-live="polite">$1.153.800</output>
+            </div>
+          </div>
+
+          <div class="home-demo-fields">
+            <div class="field">
+              <div class="home-demo-bruto">
+                <label for="homeBruto">Sueldo base</label>
+                <output id="homeBrutoOut" for="homeBruto">$1.200.553</output>
+              </div>
+              <input
+                id="homeBruto"
+                type="range"
+                min="553553"
+                max="8000553"
+                step="1000"
+                value="1200553"
+              />
+            </div>
+            <div class="field">
+              <label for="homeAfp">AFP</label>
+              <select id="homeAfp">
+                <option value="uno">Uno</option>
+                <option value="modelo" selected>Modelo</option>
+                <option value="planvital">PlanVital</option>
+                <option value="habitat">Habitat</option>
+                <option value="capital">Capital</option>
+                <option value="cuprum">Cuprum</option>
+                <option value="provida">Provida</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="homeSalud">Salud</label>
+              <select id="homeSalud">
+                <option value="fonasa" selected>Fonasa</option>
+                <option value="isapre">Isapre</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="homeContrato">Contrato</label>
+              <select id="homeContrato">
+                <option value="indefinido" selected>Indefinido</option>
+                <option value="plazo_fijo">Plazo fijo</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="home-demo-rows">
+            <div class="home-demo-row"><span>Gratificación legal</span><strong data-demo="gratificacion">$219.115</strong></div>
+            <div class="home-demo-row"><span>Imponible</span><strong data-demo="imponible">$1.419.668</strong></div>
+            <div class="home-demo-row"><span>AFP</span><strong data-demo="afp">$150.201</strong></div>
+            <div class="home-demo-row"><span>Salud</span><strong data-demo="salud">$99.377</strong></div>
+            <div class="home-demo-row"><span>Cesantía</span><strong data-demo="cesantia">$8.518</strong></div>
+            <div class="home-demo-row"><span>Base tributaria</span><strong data-demo="base">$1.161.572</strong></div>
+            <div class="home-demo-row"><span>Impuesto único</span><strong data-demo="iusc">$7.772</strong></div>
+          </div>
+          <p class="home-demo-note" id="homeUfNota">Cálculo con UF 40.854,01 (valor de respaldo).</p>
+        </aside>
       </section>
 
-      <ol class="steps steps-hero" aria-label="Cómo usar Haberes">
-        <li>Cargue su nómina (o calcule un sueldo suelto).</li>
-        <li>Revise haberes, descuentos y el líquido.</li>
-        <li>Emita la liquidación o la carta de finiquito.</li>
-      </ol>
+      <ul class="home-trust" aria-label="Por qué usar Haberes">
+        <li>Sin tarjeta para empezar. Gratis incluye 5 movimientos al mes.</li>
+        <li>El PDF sale con el membrete de su empresa, no con el nuestro.</li>
+        <li>UF y UTM se leen al día, con un valor de respaldo si fallan.</li>
+      </ul>
 
       <section class="cards" aria-label="Qué resuelve Haberes">
         <a class="card card-link" href="/sueldo">
@@ -171,16 +256,15 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         </a>
       </section>
 
-      <section class="panel" aria-labelledby="incluye-calc">
-        <h2 id="incluye-calc">Qué incluye el cálculo</h2>
-        <p class="hint u-mb-0">
-          Cotizaciones AFP (Circular 2414), Fonasa o Isapre, seguro de cesantía, impuesto único (IUSC),
-          gratificación art. 50 y asignaciones no imponibles del art. 41 del Código del Trabajo.
-        </p>
-      </section>
+      <h2 class="u-mt-6">Tres pasos</h2>
+      <ol class="steps" aria-label="Cómo usar Haberes">
+        <li>Cargue su nómina (o calcule un sueldo suelto).</li>
+        <li>Revise haberes, descuentos y el líquido.</li>
+        <li>Emita la liquidación o la carta de finiquito.</li>
+      </ol>
 
-      <section class="panel" aria-labelledby="incluye">
-        <h2 id="incluye">Qué trae cada documento</h2>
+      <section class="panel u-mt-6" aria-labelledby="incluye">
+        <h2 id="incluye">Documentos</h2>
         <p class="hint u-mb-0">
           El PDF sale con el membrete de su empresa, no con el nuestro.
         </p>
@@ -205,13 +289,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           </div>
         </div>
       </section>
-
-      <h2 class="u-mt-6">Cómo funciona</h2>
-      <ol class="steps">
-        <li>Use sueldo líquido o finiquito sin cuenta. El resultado se actualiza mientras escribe.</li>
-        <li>UF y UTM se leen de mindicador.cl con caché de 12 horas. Si el valor sale de rango, se usa el de respaldo.</li>
-        <li>Cree su cuenta de empresa, cargue la nómina y emita. Vista previa y PDF en la misma página.</li>
-      </ol>
 
       <section class="panel u-mt-6" aria-labelledby="planes">
         <h2 id="planes">Planes</h2>
@@ -259,29 +336,57 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         </ul>
       </section>
 
-      <section class="prose" aria-labelledby="faq">
+      <section class="u-mt-6" aria-labelledby="faq">
         <h2 id="faq">Preguntas frecuentes</h2>
-        <h3>¿Esto reemplaza a mi contador?</h3>
-        <p>
-          No. Haberes calcula y arma el documento; su contador valida y responde por la declaración.
-          El objetivo es que llegue a esa conversación con los números ya hechos.
-        </p>
-        <h3>¿Dónde quedan los datos de mis trabajadores?</h3>
-        <p>
-          La nómina del mes vive en este navegador. La cuenta de empresa, el logo y la firma viven en el
-          servidor cuando está configurado. Puede leer el detalle en <a href="/privacidad">privacidad</a>.
-        </p>
-        <h3>¿Sirve la carta de finiquito ante la Inspección del Trabajo?</h3>
-        <p>
-          Es el documento para firmar, no el trámite. No reemplaza la ratificación ante la Inspección del
-          Trabajo ni ante un ministro de fe.
-        </p>
+        <div class="home-faq">
+          <details>
+            <summary>¿Esto reemplaza a mi contador?</summary>
+            <p>
+              No. Haberes calcula y arma el documento; su contador valida y responde por la declaración.
+              El objetivo es que llegue a esa conversación con los números ya hechos.
+            </p>
+          </details>
+          <details>
+            <summary>¿Dónde quedan los datos de mis trabajadores?</summary>
+            <p>
+              La nómina del mes vive en este navegador. La cuenta de empresa, el logo y la firma viven en el
+              servidor cuando está configurado. Puede leer el detalle en <a href="/privacidad">privacidad</a>.
+            </p>
+          </details>
+          <details>
+            <summary>¿Sirve la carta de finiquito ante la Inspección del Trabajo?</summary>
+            <p>
+              Es el documento para firmar, no el trámite. No reemplaza la ratificación ante la Inspección del
+              Trabajo ni ante un ministro de fe.
+            </p>
+          </details>
+          <details>
+            <summary>¿Necesito una cuenta para calcular el sueldo?</summary>
+            <p>
+              No. Puede estimar el sueldo líquido y el finiquito sin registrarse. La cuenta de empresa sirve
+              para emitir PDF con logo, firma y envío al correo del trabajador.
+            </p>
+          </details>
+          <details>
+            <summary>¿Cuánto cuesta Haberes?</summary>
+            <p>
+              Gratis incluye 5 movimientos al mes, sin tarjeta. Pro cuesta $14.990 + IVA al mes, sin tope
+              mensual, con carga masiva y nómina bancaria.
+            </p>
+          </details>
+        </div>
       </section>
 
-      <p class="notice u-mt-6">
-        Documento generado por Haberes. No es un cálculo de la Dirección del Trabajo ni de Previred.
-        No constituye asesoría legal ni previsional. Verifique con su contador o en los canales oficiales.
-      </p>
+      <section class="panel home-cta u-mt-6" aria-labelledby="cta-final">
+        <h2 id="cta-final">Empiece esta semana</h2>
+        <p class="hint">
+          Cree la cuenta de empresa o calcule un sueldo suelto. Gratis incluye 5 movimientos al mes.
+        </p>
+        <div class="actions">
+          <a class="btn btn-lg" href="/empresa">Crear cuenta gratis</a>
+          <a class="btn btn-lg btn-ghost" href="/sueldo">Calcular sueldo líquido</a>
+        </div>
+      </section>
     </div>
   </main>
 

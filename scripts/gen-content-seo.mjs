@@ -29,9 +29,7 @@ const THEME_SCRIPT = `  <script>
   (function () {
     try {
       var t = localStorage.getItem("haberes:theme");
-      if (t !== "day" && t !== "night") {
-        t = window.matchMedia("(prefers-color-scheme: dark)").matches ? "night" : "day";
-      }
+      if (t !== "day" && t !== "night") t = "day";
       document.documentElement.setAttribute("data-theme", t);
     } catch (e) {}
   })();
