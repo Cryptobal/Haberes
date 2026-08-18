@@ -33,26 +33,44 @@ export const CAUSAL_PAGES = [
  * 16 guías en content/guias/{slug}.md.
  * group: índice /guias (liquidación vs finiquito).
  * calc: calculadora canónica (no canibalizar titles/H1 de esas URLs).
- * @type {{ slug: string, group: "liquidacion" | "finiquito", calc: "/sueldo" | "/finiquito" }[]}
+ * updated: lastmod ISO (YYYY-MM-DD) para sitemap y el bloque «últimas» del hub.
+ * @type {{ slug: string, group: "liquidacion" | "finiquito", calc: "/sueldo" | "/finiquito", updated: string }[]}
  */
+export const DEFAULT_LASTMOD = "2026-08-17";
+
 export const GUIDES = [
-  { slug: "liquidacion-de-sueldo", group: "liquidacion", calc: "/sueldo" },
-  { slug: "impuesto-unico", group: "liquidacion", calc: "/sueldo" },
-  { slug: "gratificacion-legal", group: "liquidacion", calc: "/sueldo" },
-  { slug: "horas-extras", group: "liquidacion", calc: "/sueldo" },
-  { slug: "semana-corrida", group: "liquidacion", calc: "/sueldo" },
-  { slug: "como-leer-una-liquidacion-de-sueldo", group: "liquidacion", calc: "/sueldo" },
-  { slug: "formato-de-liquidacion-de-sueldo-chile", group: "liquidacion", calc: "/sueldo" },
-  { slug: "liquidacion-de-sueldo-y-previred", group: "liquidacion", calc: "/sueldo" },
-  { slug: "finiquito", group: "finiquito", calc: "/finiquito" },
-  { slug: "indemnizacion-por-anos-de-servicio", group: "finiquito", calc: "/finiquito" },
-  { slug: "vacaciones-proporcionales", group: "finiquito", calc: "/finiquito" },
-  { slug: "carta-aviso-termino-contrato", group: "finiquito", calc: "/finiquito" },
-  { slug: "plazo-de-pago-del-finiquito", group: "finiquito", calc: "/finiquito" },
-  { slug: "con-que-sueldo-se-calcula-el-finiquito", group: "finiquito", calc: "/finiquito" },
-  { slug: "finiquito-trabajadora-de-casa-particular", group: "finiquito", calc: "/finiquito" },
-  { slug: "me-reservo-el-derecho-en-el-finiquito", group: "finiquito", calc: "/finiquito" },
+  { slug: "liquidacion-de-sueldo", group: "liquidacion", calc: "/sueldo", updated: "2026-08-18" },
+  { slug: "impuesto-unico", group: "liquidacion", calc: "/sueldo", updated: "2026-08-18" },
+  { slug: "gratificacion-legal", group: "liquidacion", calc: "/sueldo", updated: "2026-08-17" },
+  { slug: "horas-extras", group: "liquidacion", calc: "/sueldo", updated: "2026-08-17" },
+  { slug: "semana-corrida", group: "liquidacion", calc: "/sueldo", updated: "2026-08-17" },
+  { slug: "como-leer-una-liquidacion-de-sueldo", group: "liquidacion", calc: "/sueldo", updated: "2026-08-17" },
+  { slug: "formato-de-liquidacion-de-sueldo-chile", group: "liquidacion", calc: "/sueldo", updated: "2026-08-17" },
+  { slug: "liquidacion-de-sueldo-y-previred", group: "liquidacion", calc: "/sueldo", updated: "2026-08-17" },
+  { slug: "finiquito", group: "finiquito", calc: "/finiquito", updated: "2026-08-18" },
+  { slug: "indemnizacion-por-anos-de-servicio", group: "finiquito", calc: "/finiquito", updated: "2026-08-17" },
+  { slug: "vacaciones-proporcionales", group: "finiquito", calc: "/finiquito", updated: "2026-08-17" },
+  { slug: "carta-aviso-termino-contrato", group: "finiquito", calc: "/finiquito", updated: "2026-08-18" },
+  { slug: "plazo-de-pago-del-finiquito", group: "finiquito", calc: "/finiquito", updated: "2026-08-17" },
+  { slug: "con-que-sueldo-se-calcula-el-finiquito", group: "finiquito", calc: "/finiquito", updated: "2026-08-17" },
+  { slug: "finiquito-trabajadora-de-casa-particular", group: "finiquito", calc: "/finiquito", updated: "2026-08-17" },
+  { slug: "me-reservo-el-derecho-en-el-finiquito", group: "finiquito", calc: "/finiquito", updated: "2026-08-17" },
 ];
+
+/** lastmod de rutas base que sí cambiaron después del lote SEO inicial. */
+export const PATH_LASTMOD = {
+  "/guias": "2026-08-18",
+  "/privacidad": "2026-08-18",
+  "/terminos": "2026-08-18",
+};
+
+export function lastmodForPath(path) {
+  const p = path === "" ? "/" : path;
+  if (PATH_LASTMOD[p]) return PATH_LASTMOD[p];
+  const guide = GUIDES.find((g) => `/guias/${g.slug}` === p);
+  if (guide?.updated) return guide.updated;
+  return DEFAULT_LASTMOD;
+}
 
 /** Guías en content/guias/{slug}.md (orden de sitemap vía seoPaths). */
 export const GUIDE_SLUGS = GUIDES.map((g) => g.slug);
