@@ -124,6 +124,23 @@ ALTER TABLE companies ADD COLUMN IF NOT EXISTS flow_subscription_id TEXT;
 ALTER TABLE companies ADD COLUMN IF NOT EXISTS flow_plan_id TEXT;
 `;
 
+const INLINE_SCHEMA_009 = `
+CREATE TABLE IF NOT EXISTS outbound_sends (
+  id TEXT PRIMARY KEY,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  empresa TEXT,
+  email TEXT NOT NULL,
+  rubro TEXT,
+  resend_id TEXT,
+  lote DATE,
+  estado TEXT NOT NULL DEFAULT 'unknown',
+  baja BOOLEAN NOT NULL DEFAULT FALSE,
+  responded BOOLEAN,
+  utm_content TEXT
+);
+`;
+
 let schemaReady = false;
 let dummyHashPromise = null;
 const rateHits = new Map();
@@ -350,6 +367,7 @@ async function ensureSchema() {
     await client.query(loadSchemaFile("006.sql", INLINE_SCHEMA_006));
     await client.query(loadSchemaFile("007.sql", INLINE_SCHEMA_007));
     await client.query(loadSchemaFile("008.sql", INLINE_SCHEMA_008));
+    await client.query(loadSchemaFile("009.sql", INLINE_SCHEMA_009));
     schemaReady = true;
     return true;
   } finally {
