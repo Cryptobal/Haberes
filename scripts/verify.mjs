@@ -674,6 +674,10 @@ assert(
   /^\s*sitemap\.xml\s*$/m.test(vercelIgnore),
 );
 assert(
+  ".vercelignore excluye docs/ (memo interno fuera del deploy)",
+  /^\s*docs\/\s*$/m.test(vercelIgnore),
+);
+assert(
   ".gitignore excluye /sitemap.xml",
   /^\s*\/sitemap\.xml\s*$/m.test(readFileSync(join(root, ".gitignore"), "utf8")),
 );
@@ -787,6 +791,7 @@ assert("robots User-agent *", /User-agent:\s*\*/i.test(robots));
 assert("robots Allow /", /Allow:\s*\//.test(robots));
 assert("robots Disallow /admin", /Disallow:\s*\/admin/.test(robots));
 assert("robots Disallow /api", /Disallow:\s*\/api/.test(robots));
+assert("robots Disallow /docs", /Disallow:\s*\/docs/.test(robots));
 assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots));
 assert("robots Sitemap", /Sitemap:\s*https:\/\/www\.haberes\.cl\/sitemap\.xml/.test(robots));
 
@@ -816,6 +821,17 @@ assert(
   CAUSAL_PAGES.every((p) => existsSync(join(root, "content/causales", `${p.slug}.md`))),
 );
 assert("docs/seo-map.md existe", existsSync(join(root, "docs/seo-map.md")));
+assert(
+  "memo interno de operación existe y no es página pública",
+  existsSync(join(root, "docs/INTERNO-USO-DE-IA.md")) &&
+    !existsSync(join(root, "ia.html")) &&
+    !existsSync(join(root, "etica.html")) &&
+    !existsSync(join(root, "gobernanza.html")),
+);
+assert(
+  "sitemap sin /docs ni páginas de IA",
+  !locs.some((u) => /\/docs|\/ia\b|\/etica|\/gobernanza/.test(u)),
+);
 assert(
   "páginas SEO tienen calculadora embebida o CTA empresa",
   GUIDE_SLUGS.every((s) => {
@@ -1115,6 +1131,10 @@ try {
   const svgHit = await hitLocal("/favicon.svg");
   assert("GET /favicon.ico 200", icoHit.status === 200 && /icon/.test(icoHit.type) && icoHit.buf.length > 16);
   assert("GET /favicon.svg 200", svgHit.status === 200 && /svg/.test(svgHit.type));
+  const docsMemo = await hitLocal("/docs/INTERNO-USO-DE-IA.md");
+  const docsSeo = await hitLocal("/docs/seo-map.md");
+  assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
+  assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
   for (const p of ["/sueldo/", "/finiquito/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
@@ -3179,20 +3199,44 @@ assert(
   /newPassword/.test(readFileSync(join(root, "js/app-reset.js"), "utf8")) &&
     /\/api\/reset-confirm/.test(readFileSync(join(root, "js/app-reset.js"), "utf8")),
 );
+const privacidadHtml = readFileSync(join(root, "privacidad.html"), "utf8");
 assert(
-  "privacidad: local + mindicador + cobro Mercado Pago + no venta",
-  /localStorage|este navegador/i.test(readFileSync(join(root, "privacidad.html"), "utf8")) &&
-    /mindicador\.cl/.test(readFileSync(join(root, "privacidad.html"), "utf8")) &&
-    /Mercado Pago/.test(readFileSync(join(root, "privacidad.html"), "utf8")) &&
-    /Flow/.test(readFileSync(join(root, "privacidad.html"), "utf8")) &&
-    /No vendemos datos personales/.test(readFileSync(join(root, "privacidad.html"), "utf8")) &&
-    !/No hay cobro ni pasarela/.test(readFileSync(join(root, "privacidad.html"), "utf8")),
+  "privacidad: stack real + Ley 21.719 + no venta",
+  /localStorage|este navegador/i.test(privacidadHtml) &&
+    /mindicador\.cl/.test(privacidadHtml) &&
+    /Mercado Pago/.test(privacidadHtml) &&
+    /Flow/.test(privacidadHtml) &&
+    /No vendemos datos personales/.test(privacidadHtml) &&
+    /Ley 21\.719/.test(privacidadHtml) &&
+    /1 de diciembre de 2026/.test(privacidadHtml) &&
+    /contacto@lx3\.ai/.test(privacidadHtml) &&
+    /Neon/.test(privacidadHtml) &&
+    /GTM-PCR596Z2/.test(privacidadHtml) &&
+    /portabilidad/.test(privacidadHtml) &&
+    /envios/.test(privacidadHtml) &&
+    /siguen en este navegador/.test(privacidadHtml) &&
+    !/No hay cobro ni pasarela/.test(privacidadHtml) &&
+    !/hoy no se cobra/.test(privacidadHtml) &&
+    !/GA4 solo se carga/.test(privacidadHtml) &&
+    !/no se envía nada a Google/.test(privacidadHtml),
+);
+const terminosHtml = readFileSync(join(root, "terminos.html"), "utf8");
+assert(
+  "términos: planes actuales + carta no reemplaza Inspección / ministro de fe",
+  /ministro de fe/.test(terminosHtml) &&
+    /Inspecci[oó]n del Trabajo/.test(terminosHtml) &&
+    /Mercado Pago/.test(terminosHtml) &&
+    /5 documentos/.test(terminosHtml) &&
+    /14\.990/.test(terminosHtml) &&
+    /suscripci[oó]n mensual/.test(terminosHtml) &&
+    !/hoy no se cobra/.test(terminosHtml),
 );
 assert(
-  "términos: no DT, carta no reemplaza Inspección / ministro de fe",
-  /ministro de fe/.test(readFileSync(join(root, "terminos.html"), "utf8")) &&
-    /Inspecci[oó]n del Trabajo/.test(readFileSync(join(root, "terminos.html"), "utf8")) &&
-    /Mercado Pago/.test(readFileSync(join(root, "terminos.html"), "utf8")),
+  "páginas públicas no enlazan memo interno ni /ia /etica",
+  htmlFiles.every((f) => {
+    const html = readFileSync(join(root, f), "utf8");
+    return !/INTERNO-USO-DE-IA|href="\/ia"|href="\/etica"|href="\/gobernanza"/.test(html);
+  }),
 );
 
 const cartaHint = readFileSync(join(root, "js/print.js"), "utf8") + readFileSync(join(root, "empresa.html"), "utf8");
