@@ -44,6 +44,7 @@ PAGES = [
     ("empresa.html", "empresa"),
     ("precios.html", "precios"),
     ("como.html", "como"),
+    ("admin.html", "admin"),
 ]
 MOBILE = {"width": 360, "height": 780}
 DESKTOP = {"width": 1280, "height": 900}
@@ -178,6 +179,28 @@ def run():
         page.wait_for_timeout(350)
         if not page.is_hidden("[data-nav-drawer]"):
             note("el cajón no se cerró con Escape")
+
+        print("[interacción] hamburguesa en /admin")
+        page.goto(f"{BASE}/admin.html", wait_until="networkidle")
+        page.wait_for_timeout(300)
+        if page.locator("#adminAuth").count() == 0:
+            note("admin no mostró el acceso")
+        if page.locator('[data-tab="suscripciones"]').count() == 0:
+            note("admin no trae la pestaña Suscripciones")
+        page.click("[data-nav-burger]")
+        page.wait_for_timeout(400)
+        drawer_admin = page.locator("#navDrawer")
+        if drawer_admin.get_attribute("hidden") is not None:
+            note("el cajón de /admin sigue hidden tras el clic")
+        else:
+            panel_admin = page.locator("#navDrawer .nav-drawer-panel")
+            box_a = panel_admin.bounding_box()
+            vp_a = page.viewport_size
+            if box_a and box_a["y"] + box_a["height"] < vp_a["height"] * 0.7:
+                note(f"el cajón de /admin quedó atrapado en la cabecera: {box_a}")
+            page.screenshot(path=f"{SHOTS}/movil-admin-drawer.png")
+            page.keyboard.press("Escape")
+            page.wait_for_timeout(300)
 
         print("[interacción] hamburguesa 390px")
         ctx390 = browser.new_context(viewport={"width": 390, "height": 844}, device_scale_factor=2)

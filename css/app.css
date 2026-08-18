@@ -3088,3 +3088,62 @@ body[data-dialog-open] .toaster {
 .nomina-campos label { font-size: var(--t-sm); display: inline-flex; gap: var(--s-2); align-items: center; }
 .steps-hero { margin: var(--s-6) 0; }
 .cards-flush { margin-bottom: 0; }
+
+/* Administración */
+.admin-strip {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s-2);
+  margin: 0 0 var(--s-4);
+}
+.admin-strip > div {
+  background: var(--surface-2);
+  border: 1px solid var(--line-hair);
+  border-radius: var(--r-sm);
+  padding: var(--s-3);
+}
+.admin-strip strong {
+  display: block;
+  font-variant-numeric: tabular-nums;
+  font-size: var(--t-md);
+  font-weight: 600;
+  color: var(--text);
+}
+.admin-strip span {
+  font-size: var(--t-xs);
+  color: var(--muted);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-weight: 550;
+}
+.admin-strip-note {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+.admin-filters {
+  margin: 0 0 var(--s-4);
+}
+.admin-pay-ids {
+  font-variant-numeric: tabular-nums;
+  word-break: break-word;
+  font-size: var(--t-xs);
+  color: var(--muted);
+  max-width: 16rem;
+}
+.admin-excep summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: var(--t-sm);
+  font-weight: 550;
+}
+.admin-excep .hint {
+  margin-top: var(--s-2);
+}
+@media (min-width: 900px) {
+  .admin-strip {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+  .admin-strip-4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}

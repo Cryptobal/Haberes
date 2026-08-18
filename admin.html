@@ -101,12 +101,49 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           <p class="hint" id="adminMeta"></p>
           <button class="btn btn-ghost" type="button" id="btnAdminSalir">Cerrar sesión</button>
         </div>
-        <div class="panel">
-          <h2>Empresas</h2>
-          <p class="hint">No se muestran hashes, tokens ni claves de archivos. Puede deshabilitar una cuenta o marcarla Pro o Gratis. El cobro de Pro lo confirman los webhooks de Mercado Pago o Flow.</p>
+
+        <div class="ws-tabs" role="tablist" aria-label="Áreas de operación">
+          <button type="button" class="ws-tab" data-tab="suscripciones" role="tab" aria-selected="true" aria-controls="tab-suscripciones" id="tabBtnSuscripciones">Suscripciones</button>
+          <button type="button" class="ws-tab" data-tab="producto" role="tab" aria-selected="false" aria-controls="tab-producto" id="tabBtnProducto">Producto</button>
+          <button type="button" class="ws-tab" data-tab="trafico" role="tab" aria-selected="false" aria-controls="tab-trafico" id="tabBtnTrafico">Tráfico (GA4)</button>
+        </div>
+
+        <section id="tab-suscripciones" class="panel" data-tab-panel="suscripciones" role="tabpanel" aria-labelledby="tabBtnSuscripciones">
+          <h2>Suscripciones</h2>
+          <p class="hint">El plan vigente lo confirman Mercado Pago o Flow. No se muestran hashes, tokens ni claves. Marcar Pro o Gratis y deshabilitar es una excepción de emergencia.</p>
+          <div class="admin-strip" id="adminResumen"></div>
+          <div class="ws-tabs admin-filters" role="tablist" aria-label="Filtro de empresas" id="adminFiltros">
+            <button type="button" class="ws-tab" data-filter="todas" aria-selected="true">Todas</button>
+            <button type="button" class="ws-tab" data-filter="pro" aria-selected="false">Pro</button>
+            <button type="button" class="ws-tab" data-filter="gratis" aria-selected="false">Gratis</button>
+            <button type="button" class="ws-tab" data-filter="vencidas" aria-selected="false">Vencidas</button>
+            <button type="button" class="ws-tab" data-filter="cobro_fallido" aria-selected="false">Cobro fallido</button>
+          </div>
           <p class="error" id="errEmpresas" hidden></p>
           <div class="table-wrap" id="tablaEmpresas"></div>
-        </div>
+        </section>
+
+        <section id="tab-producto" class="panel" data-tab-panel="producto" role="tabpanel" aria-labelledby="tabBtnProducto" hidden>
+          <h2>Producto</h2>
+          <p class="hint">Cifras de la base propia: altas, documentos, movimientos y envíos. Si un dato no está en las tablas, se indica «sin dato».</p>
+          <div class="seg" id="productoPeriodo">
+            <label><input type="radio" name="productoPeriodo" value="7" /><span>7 días</span></label>
+            <label><input type="radio" name="productoPeriodo" value="30" checked /><span>30 días</span></label>
+          </div>
+          <p class="error" id="errProducto" hidden></p>
+          <div id="adminProducto"></div>
+        </section>
+
+        <section id="tab-trafico" class="panel" data-tab-panel="trafico" role="tabpanel" aria-labelledby="tabBtnTrafico" hidden>
+          <h2>Tráfico (GA4)</h2>
+          <p class="hint">Lee la API de datos de Google Analytics 4. No hay contador propio ni geolocalización en Haberes.</p>
+          <div class="seg" id="traficoPeriodo">
+            <label><input type="radio" name="traficoPeriodo" value="7" /><span>7 días</span></label>
+            <label><input type="radio" name="traficoPeriodo" value="28" checked /><span>28 días</span></label>
+          </div>
+          <p class="error" id="errTrafico" hidden></p>
+          <div id="adminTrafico"></div>
+        </section>
       </section>
     </div>
   </main>
