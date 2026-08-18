@@ -462,7 +462,76 @@ main {
 }
 
 .nav-actions .nav-cta {
+  display: inline-flex;
+}
+
+.nav-actions .nav-login,
+.nav-actions .nav-salir {
   display: none;
+}
+
+.nav-account {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-height: 40px;
+  padding: 2px var(--s-2) 2px 2px;
+  border-radius: var(--r-full);
+  text-decoration: none;
+  color: var(--ink);
+  background: color-mix(in srgb, var(--ink) 7%, transparent);
+  max-width: 14rem;
+}
+
+.nav-account-name {
+  display: none;
+  font-size: var(--t-sm);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 8.5rem;
+}
+
+.nav-avatar {
+  position: relative;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--r-full);
+  background: var(--ink);
+  color: var(--on-ink);
+  display: grid;
+  place-items: center;
+  font-size: 0.625rem;
+  font-weight: 700;
+  overflow: hidden;
+  flex: 0 0 auto;
+}
+
+.nav-avatar img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.nav-avatar img[src=""] {
+  display: none;
+}
+
+.nav-drawer-account {
+  margin-bottom: var(--s-3);
+}
+
+.nav-drawer-account .nav-account {
+  max-width: none;
+  width: 100%;
+}
+
+.nav-drawer-account .nav-account-name {
+  display: inline;
+  max-width: none;
 }
 
 .nav-burger {
@@ -1550,6 +1619,25 @@ input:disabled {
   background: var(--danger);
 }
 
+.paywall {
+  display: grid;
+  gap: var(--s-3);
+  padding: var(--s-4);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.paywall p {
+  margin: 0;
+  color: var(--text);
+}
+
+.paywall .hint {
+  color: var(--muted);
+}
+
 /* 4.11 Pasos */
 .steps {
   display: grid;
@@ -1587,6 +1675,48 @@ input:disabled {
 }
 
 /* 4.12 Precios */
+.compare-wrap {
+  margin-top: var(--s-6);
+}
+
+.compare {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--t-base);
+}
+
+.compare th,
+.compare td {
+  padding: var(--s-3) var(--s-3);
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+  color: var(--text);
+  vertical-align: top;
+}
+
+.compare th {
+  color: var(--ink);
+  font-weight: 650;
+}
+
+.compare td:first-child,
+.compare th:first-child {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.compare .is-yes {
+  color: var(--ink);
+}
+
+.compare caption {
+  caption-side: top;
+  text-align: left;
+  font-weight: 650;
+  color: var(--ink);
+  margin-bottom: var(--s-3);
+}
+
 .price {
   font-size: 1.75rem;
   font-weight: 650;
@@ -2774,8 +2904,14 @@ body[data-dialog-open] .toaster {
     display: none;
   }
 
-  .nav-actions .nav-cta {
+  .nav-actions .nav-cta,
+  .nav-actions .nav-login,
+  .nav-actions .nav-salir {
     display: inline-flex;
+  }
+
+  .nav-account-name {
+    display: inline;
   }
 
   .cards {

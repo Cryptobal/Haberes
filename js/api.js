@@ -121,7 +121,7 @@ export function authErrorMessage(data, status) {
     return "No se pudo conectar con la cuenta en este momento.";
   }
   if (reason === "limite_gratis") {
-    return "Ya usó 5 movimientos este mes. Para seguir necesita Pro ($14.990 + IVA / mes).";
+    return "Ya usó 5 documentos este mes. Para seguir necesita Pro ($14.990 + IVA / mes).";
   }
   if (reason === "uno_a_uno") {
     return "En Gratis se emite de a uno. Para varios a la vez necesita Pro.";
@@ -129,14 +129,14 @@ export function authErrorMessage(data, status) {
   if (reason === "mp_unavailable") {
     return "El cobro con Mercado Pago no está configurado. Escríbanos a contacto@lx3.ai.";
   }
-  if (reason === "mp_error") {
-    return "No se pudo abrir el cobro de Mercado Pago. Inténtelo de nuevo en un momento.";
+  if (reason === "mp_error" || reason === "mp_subscription_unavailable") {
+    return "No se pudo abrir la suscripción mensual de Mercado Pago. Inténtelo de nuevo o escriba a contacto@lx3.ai.";
   }
   if (reason === "flow_unavailable") {
     return "El cobro con Flow no está configurado. Escríbanos a contacto@lx3.ai.";
   }
-  if (reason === "flow_error") {
-    return "No se pudo abrir el cobro de Flow. Inténtelo de nuevo en un momento.";
+  if (reason === "flow_error" || reason === "flow_subscription_unavailable") {
+    return "No se pudo abrir la suscripción mensual de Flow. Inténtelo de nuevo o escriba a contacto@lx3.ai.";
   }
   if (reason === "payment_unavailable") {
     return "El cobro de Pro no está configurado. Escríbanos a contacto@lx3.ai.";

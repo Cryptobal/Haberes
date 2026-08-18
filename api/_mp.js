@@ -1,5 +1,5 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
-import { publicOrigin } from "./_lib.js";
+import { publicOrigin, sendPlanDowngradeEmail } from "./_lib.js";
 
 export const PRO_NET_CLP = 14990;
 export const PRO_IVA_RATE = 0.19;
@@ -140,8 +140,8 @@ function preferencePayload(company) {
     items: [
       {
         id: "haberes-pro-mes",
-        title: "Haberes Pro (1 mes)",
-        description: "Plan Pro: carga masiva, plantillas de pago y movimientos sin tope. $14.990 + IVA.",
+        title: "Haberes Pro",
+        description: "Plan Pro mensual: documentos sin tope, carga masiva y nómina. $14.990 + IVA.",
         quantity: 1,
         unit_price: PRO_AMOUNT_CLP,
         currency_id: "CLP",
@@ -164,7 +164,7 @@ function preferencePayload(company) {
 function preapprovalPayload(company) {
   const urls = checkoutUrls();
   return {
-    reason: "Haberes Pro",
+    reason: "Haberes Pro mensual",
     external_reference: String(company?.id || ""),
     payer_email: String(company?.email || "").trim(),
     auto_recurring: {
@@ -208,7 +208,20 @@ export async function createProCheckout(company, { fetchImpl = fetch } = {}) {
   if (!hasMp()) return { ok: false, reason: "mp_unavailable" };
   const sub = await createPreapproval(company, { fetchImpl });
   if (sub.ok) return sub;
-  return createPreference(company, { fetchImpl });
+  return { ok: false, reason: "mp_subscription_unavailable", status: sub.status };
+}
+
+async function notifyDowngrade(row, notify) {
+  if (!row) return;
+  try {
+    if (typeof notify === "function") {
+      await notify(row);
+      return;
+    }
+    await sendPlanDowngradeEmail({ to: row.email, razonSocial: row.razon_social });
+  } catch {
+    /* el correo es opcional */
+  }
 }
 
 function addDays(from, days) {
@@ -217,7 +230,14 @@ function addDays(from, days) {
   return d;
 }
 
-export async function applyFetchedPayment(client, payment) {
+function paymentLooksRecurring(payment) {
+  const poi = String(payment?.point_of_interaction?.type || "").toLowerCase();
+  if (poi.includes("subscription")) return true;
+  if (payment?.metadata?.preapproval_id || payment?.preapproval_id) return true;
+  return false;
+}
+
+export async function applyFetchedPayment(client, payment, deps = {}) {
   const companyId = String(payment?.external_reference || "").trim();
   const paymentId = String(payment?.id || "").trim();
   const status = String(payment?.status || "").toLowerCase();
@@ -231,13 +251,23 @@ export async function applyFetchedPayment(client, payment) {
       return { applied: false, reason: "amount" };
     }
     const found = await client.query(
-      `SELECT id, plan, mp_payment_id, plan_until FROM companies WHERE id = $1 LIMIT 1`,
+      `SELECT id, plan, mp_payment_id, mp_preapproval_id, plan_until FROM companies WHERE id = $1 LIMIT 1`,
       [companyId],
     );
     const row = found.rows[0];
     if (!row) return { applied: false, reason: "not_found" };
     if (String(row.mp_payment_id || "") === paymentId && String(row.plan || "").toLowerCase() === "pro") {
       return { applied: true, reason: "idempotent", plan: "pro" };
+    }
+    const recurring = Boolean(row.mp_preapproval_id) || paymentLooksRecurring(payment);
+    if (recurring) {
+      await client.query(
+        `UPDATE companies
+         SET plan = 'pro', mp_payment_id = $2, plan_until = NULL, updated_at = NOW()
+         WHERE id = $1`,
+        [companyId, paymentId],
+      );
+      return { applied: true, plan: "pro" };
     }
     const now = new Date();
     const currentUntil = row.plan_until ? new Date(row.plan_until) : null;
@@ -253,27 +283,31 @@ export async function applyFetchedPayment(client, payment) {
     return { applied: true, plan: "pro", until: until.toISOString() };
   }
 
-  if (status === "refunded" || status === "cancelled" || status === "charged_back") {
+  if (status === "refunded" || status === "cancelled" || status === "charged_back" || status === "rejected") {
     const updated = await client.query(
       `UPDATE companies
        SET plan = 'gratis', plan_until = NULL, updated_at = NOW()
-       WHERE id = $1 AND mp_payment_id = $2
-       RETURNING id`,
+       WHERE id = $1 AND (mp_payment_id = $2 OR mp_preapproval_id IS NOT NULL)
+       RETURNING id, email, razon_social`,
       [companyId, paymentId],
     );
-    return { applied: updated.rowCount > 0, plan: "gratis" };
+    if (updated.rowCount > 0) {
+      await notifyDowngrade(updated.rows[0], deps.notify);
+      return { applied: true, plan: "gratis" };
+    }
+    return { applied: false, plan: "gratis" };
   }
 
   return { applied: false, reason: "ignored" };
 }
 
-export async function applyFetchedPreapproval(client, preapproval) {
+export async function applyFetchedPreapproval(client, preapproval, deps = {}) {
   const companyId = String(preapproval?.external_reference || "").trim();
   const preId = String(preapproval?.id || "").trim();
   const status = String(preapproval?.status || "").toLowerCase();
   if (!client || !companyId || !preId) return { applied: false, reason: "invalid" };
 
-  if (status === "authorized") {
+  if (status === "authorized" || status === "approved") {
     await client.query(
       `UPDATE companies
        SET plan = 'pro', mp_preapproval_id = $2, plan_until = NULL, updated_at = NOW()
@@ -283,15 +317,19 @@ export async function applyFetchedPreapproval(client, preapproval) {
     return { applied: true, plan: "pro" };
   }
 
-  if (status === "cancelled" || status === "paused" || status === "expired") {
+  if (status === "cancelled" || status === "paused" || status === "expired" || status === "rejected") {
     const updated = await client.query(
       `UPDATE companies
-       SET plan = 'gratis', updated_at = NOW()
+       SET plan = 'gratis', plan_until = NULL, updated_at = NOW()
        WHERE id = $1 AND mp_preapproval_id = $2
-       RETURNING id`,
+       RETURNING id, email, razon_social`,
       [companyId, preId],
     );
-    return { applied: updated.rowCount > 0, plan: "gratis" };
+    if (updated.rowCount > 0) {
+      await notifyDowngrade(updated.rows[0], deps.notify);
+      return { applied: true, plan: "gratis" };
+    }
+    return { applied: false, plan: "gratis" };
   }
 
   return { applied: false, reason: "ignored" };

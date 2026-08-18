@@ -8,7 +8,8 @@ import {
   readSessionToken,
   requireCompany,
 } from "./_lib.js";
-import { createFlowOrder, hasFlow } from "./_flow.js";
+import { createFlowCheckout, hasFlow } from "./_flow.js";
+import { withDb } from "./_lib.js";
 import { createProCheckout, hasMp } from "./_mp.js";
 
 export function configuredProviders() {
@@ -47,17 +48,35 @@ export async function handleCheckout(req, res, deps = {}) {
   const mpOn = deps.hasMp || hasMp;
   const flowOn = deps.hasFlow || hasFlow;
   const createMp = deps.createMp || createProCheckout;
-  const createFlow = deps.createFlow || createFlowOrder;
+  const createFlow = deps.createFlow || createFlowCheckout;
+  const persist = deps.persistFlowIds || persistFlowIds;
 
   if (provider === "flow") {
     if (!flowOn()) return json(res, 501, { ok: false, reason: "flow_unavailable" });
     try {
       const created = await createFlow(company, { req, fetchImpl: deps.fetchImpl });
       if (!created.ok || !created.init_point) {
-        const status = created.reason === "flow_unavailable" ? 501 : 502;
+        const status =
+          created.reason === "flow_unavailable"
+            ? 501
+            : created.reason === "flow_subscription_unavailable"
+              ? 502
+              : 502;
         return json(res, status, { ok: false, reason: created.reason || "flow_error" });
       }
-      return json(res, 200, { ok: true, init_point: created.init_point, provider: "flow" });
+      if (created.customerId || created.planId) {
+        const saved = await persist(company.id, {
+          customerId: created.customerId,
+          planId: created.planId,
+        });
+        if (!saved) return json(res, 502, { ok: false, reason: "flow_error" });
+      }
+      return json(res, 200, {
+        ok: true,
+        init_point: created.init_point,
+        provider: "flow",
+        kind: created.kind || "flow_subscription",
+      });
     } catch {
       return json(res, 502, { ok: false, reason: "flow_error" });
     }
@@ -67,12 +86,43 @@ export async function handleCheckout(req, res, deps = {}) {
   try {
     const created = await createMp(company, { fetchImpl: deps.fetchImpl });
     if (!created.ok || !created.init_point) {
-      const status = created.reason === "mp_unavailable" ? 501 : 502;
+      const status =
+        created.reason === "mp_unavailable"
+          ? 501
+          : created.reason === "mp_subscription_unavailable"
+            ? 502
+            : 502;
       return json(res, status, { ok: false, reason: created.reason || "mp_error" });
     }
-    return json(res, 200, { ok: true, init_point: created.init_point, provider: "mp" });
+    return json(res, 200, {
+      ok: true,
+      init_point: created.init_point,
+      provider: "mp",
+      kind: created.kind || "preapproval",
+    });
   } catch {
     return json(res, 502, { ok: false, reason: "mp_error" });
+  }
+}
+
+export async function persistFlowIds(companyId, { customerId, planId }) {
+  const id = String(companyId || "").trim();
+  if (!id) return false;
+  try {
+    const ok = await withDb(async (client) => {
+      await client.query(
+        `UPDATE companies
+         SET flow_customer_id = COALESCE($2, flow_customer_id),
+             flow_plan_id = COALESCE($3, flow_plan_id),
+             updated_at = NOW()
+         WHERE id = $1`,
+        [id, customerId || null, planId || null],
+      );
+      return true;
+    });
+    return Boolean(ok);
+  } catch {
+    return false;
   }
 }
 

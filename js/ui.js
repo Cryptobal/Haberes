@@ -1,6 +1,8 @@
+import { apiGet, apiPost } from "./api.js";
 import { DISCLAIMER } from "./constants.js";
 import { clp, fechaLarga, ufFmt } from "./format.js";
 import { getIndicadores } from "./indicadores.js";
+import { isPro } from "./plan.js";
 import {
   alertDialog,
   confirmDialog,
@@ -14,6 +16,7 @@ import {
   unlockScroll,
 } from "./overlay.js";
 import { createDateField } from "./picker.js";
+import { clearSession, empresaActual, ensureLocalEmpresa } from "./storage.js";
 import { wireThemeToggle } from "./theme.js";
 
 export {
@@ -123,8 +126,19 @@ function wireDrawer() {
     drawerClosed(drawer) ? open() : close();
   });
   drawer.querySelector("[data-nav-scrim]")?.addEventListener("click", close);
-  drawer.querySelectorAll("a").forEach((a) => a.addEventListener("click", close));
-  drawer.querySelector("[data-nav-close]")?.addEventListener("click", close);
+  bindDrawerLinks = () => {
+    drawer.querySelectorAll("a").forEach((a) => {
+      if (a.dataset.navCloseWired === "1") return;
+      a.dataset.navCloseWired = "1";
+      a.addEventListener("click", close);
+    });
+    const closeBtn = drawer.querySelector("[data-nav-close]");
+    if (closeBtn && closeBtn.dataset.navCloseWired !== "1") {
+      closeBtn.dataset.navCloseWired = "1";
+      closeBtn.addEventListener("click", close);
+    }
+  };
+  bindDrawerLinks();
   document.addEventListener("keydown", (ev) => {
     if (ev.key === "Escape" && !drawerClosed(drawer)) close();
   });
@@ -133,7 +147,141 @@ function wireDrawer() {
   });
 }
 
+function companyInitials(name) {
+  const parts = String(name || "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+  if (!parts.length) return "E";
+  const a = parts[0][0] || "E";
+  const b = parts.length > 1 ? parts[1][0] : parts[0][1] || "";
+  return `${a}${b}`.toUpperCase();
+}
+
+function escapeAttr(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;");
+}
+
+function accountChipHtml(emp) {
+  const pro = isPro(emp);
+  const initials = companyInitials(emp.razonSocial);
+  const logo = emp.hasLogo ? `<img src="/api/logo" alt="" />` : "";
+  return `<a class="nav-account" href="/empresa" data-nav title="${escapeAttr(emp.razonSocial || "Empresa")}">
+      <span class="nav-avatar">${logo}<span>${initials}</span></span>
+      <span class="nav-account-name">${escapeAttr(emp.razonSocial || "Empresa")}</span>
+      <span class="badge ${pro ? "badge-pro" : ""}">${pro ? "Pro" : "Gratis"}</span>
+    </a>`;
+}
+
+function paintLoggedOutNav() {
+  /* El HTML estático ya es el chrome desconectado. */
+}
+
+function paintLoggedInNav(emp) {
+  const links = document.querySelector(".nav-links");
+  if (links) {
+    links.innerHTML = `
+        <a href="/como" data-nav>Cómo</a>
+        <a href="/precios" data-nav>Precios</a>
+        <a href="/empresa" data-nav>Mi empresa</a>`;
+  }
+  const actions = document.querySelector(".nav-actions");
+  if (actions) {
+    const theme = actions.querySelector("[data-theme-toggle]");
+    const burger = actions.querySelector("[data-nav-burger]");
+    const extras = document.createElement("div");
+    extras.innerHTML = `${accountChipHtml(emp)}
+        <button type="button" class="btn btn-ghost btn-sm nav-salir" data-nav-salir>Salir</button>`;
+    actions.querySelectorAll(".nav-login, .nav-cta, .nav-account, .nav-salir").forEach((n) => n.remove());
+    if (theme) theme.after(...extras.childNodes);
+    else if (burger) actions.insertBefore(extras, burger);
+    else actions.append(...extras.childNodes);
+  }
+  const panel = document.querySelector(".nav-drawer-panel");
+  if (panel) {
+    const grab = panel.querySelector(".nav-drawer-grab");
+    const foot = panel.querySelector(".nav-drawer-foot");
+    panel.querySelectorAll("a[data-nav], .nav-drawer-account").forEach((n) => n.remove());
+    const mid = document.createElement("div");
+    mid.innerHTML = `
+        <div class="nav-drawer-account">${accountChipHtml(emp)}</div>
+        <a href="/como" data-nav>Cómo</a>
+        <a href="/precios" data-nav>Precios</a>
+        <a href="/empresa" data-nav>Mi empresa</a>
+        <a href="/sueldo" data-nav>Sueldo líquido</a>
+        <a href="/finiquito" data-nav>Finiquito</a>`;
+    const anchor = foot || null;
+    for (const node of [...mid.childNodes]) {
+      panel.insertBefore(node, anchor);
+    }
+    if (foot) {
+      foot.innerHTML = `
+          <button type="button" class="btn" data-nav-salir>Salir</button>
+          <button type="button" class="btn btn-ghost" data-nav-close>Cerrar</button>`;
+    }
+    if (grab && grab.parentElement !== panel) panel.prepend(grab);
+  }
+}
+
+async function salirEmpresa() {
+  const ok = await confirmDialog({
+    title: "Cerrar sesión",
+    text: "La nómina de este mes queda guardada en este navegador. ¿Cerrar sesión?",
+    okLabel: "Cerrar sesión",
+    danger: false,
+  });
+  if (!ok) return;
+  await apiPost("/api/logout", {});
+  clearSession();
+  location.reload();
+}
+
+function bindSalir() {
+  document.querySelectorAll("[data-nav-salir]").forEach((btn) => {
+    if (btn.dataset.wired === "1") return;
+    btn.dataset.wired = "1";
+    btn.addEventListener("click", (ev) => {
+      ev.preventDefault();
+      salirEmpresa();
+    });
+  });
+}
+
+function hydrateAccountNav() {
+  const emp = empresaActual();
+  if (emp) paintLoggedInNav(emp);
+  else paintLoggedOutNav();
+  bindSalir();
+  refreshNavFromServer();
+}
+
+async function refreshNavFromServer() {
+  try {
+    const { data } = await apiGet("/api/me");
+    if (!data?.ok || !data.company) return;
+    ensureLocalEmpresa(data.company);
+    const emp = empresaActual();
+    if (!emp) return;
+    paintLoggedInNav(emp);
+    markCurrent(document);
+    bindSalir();
+    bindDrawerLinks();
+  } catch {
+    /* sin servidor la cabecera sigue con la sesión local */
+  }
+}
+
+let bindDrawerLinks = () => {};
+
 export function wireNav() {
+  try {
+    hydrateAccountNav();
+  } catch {
+    /* ignore */
+  }
   try {
     markCurrent(document);
   } catch {

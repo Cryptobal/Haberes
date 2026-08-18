@@ -118,6 +118,12 @@ ALTER TABLE companies ADD COLUMN IF NOT EXISTS flow_order TEXT;
 ALTER TABLE companies ADD COLUMN IF NOT EXISTS flow_commerce_order TEXT;
 `;
 
+const INLINE_SCHEMA_008 = `
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS flow_customer_id TEXT;
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS flow_subscription_id TEXT;
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS flow_plan_id TEXT;
+`;
+
 let schemaReady = false;
 let dummyHashPromise = null;
 const rateHits = new Map();
@@ -343,6 +349,7 @@ async function ensureSchema() {
     await client.query(loadSchemaFile("005.sql", INLINE_SCHEMA_005));
     await client.query(loadSchemaFile("006.sql", INLINE_SCHEMA_006));
     await client.query(loadSchemaFile("007.sql", INLINE_SCHEMA_007));
+    await client.query(loadSchemaFile("008.sql", INLINE_SCHEMA_008));
     schemaReady = true;
     return true;
   } finally {
@@ -455,7 +462,8 @@ export async function loadSessionCompany(client, token) {
   const found = await client.query(
     `SELECT c.id, c.rut, c.email, c.razon_social, c.giro, c.direccion, c.logo_key, c.logo_content_type,
             c.firma_key, c.firma_content_type, c.disabled_at, c.plan, c.plan_until, c.mp_payment_id,
-            c.mp_preapproval_id, s.id AS session_id
+            c.mp_preapproval_id, c.flow_customer_id, c.flow_subscription_id, c.flow_plan_id,
+            s.id AS session_id
      FROM sessions s
      JOIN companies c ON c.id = s.company_id
      WHERE s.token_hash = $1 AND s.expires_at > NOW()
@@ -534,6 +542,37 @@ export async function sendResetEmail({ to, token }) {
     }),
   });
   return res.ok;
+}
+
+/** Avisa que Pro pasó a Gratis. Best-effort: sin RESEND_API_KEY no hace nada. */
+export async function sendPlanDowngradeEmail({ to, razonSocial }) {
+  const apiKey = String(process.env.RESEND_API_KEY || "").trim();
+  const dest = String(to || "").trim();
+  if (!apiKey || !dest) return false;
+  const nombre = String(razonSocial || "").trim();
+  const saludo = nombre ? `Hola, ${nombre}.` : "Hola.";
+  try {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: resendFrom(),
+        to: [dest],
+        subject: "Su plan Haberes volvió a Gratis",
+        text:
+          `${saludo}\n\n` +
+          "No se pudo renovar Haberes Pro (cobro rechazado, anulado o reembolsado). " +
+          "La cuenta quedó en plan Gratis: 5 documentos al mes, de a uno.\n\n" +
+          `Para reactivar Pro: ${publicOrigin()}/precios\n`,
+      }),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
 }
 
 /**
