@@ -3003,6 +3003,11 @@ assert(
   /GA4 no está conectado/.test(adminJs) && /no se muestran visitas inventadas/i.test(adminJs),
 );
 assert("admin excepción de plan", /excepci[oó]n/i.test(adminHtml) && /override de emergencia/i.test(adminJs));
+assert(
+  "admin pinta empresas tras cargar",
+  /renderResumen\(data\.summary,\s*data\.listed\)/.test(adminJs) &&
+    /renderCompanies\(companies\)/.test(adminJs),
+);
 assert("cookie admin haberes_admin", /haberes_admin/.test(readFileSync(join(root, "api/_admin.js"), "utf8")));
 assert(
   "admin sin clave por defecto",
