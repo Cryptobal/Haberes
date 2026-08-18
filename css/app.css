@@ -52,6 +52,42 @@
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
+@font-face {
+  font-family: "IBM Plex Serif";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("../fonts/ibm-plex-serif-latin-600-normal.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "IBM Plex Serif";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("../fonts/ibm-plex-serif-latin-700-normal.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../fonts/ibm-plex-mono-latin-400-normal.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("../fonts/ibm-plex-mono-latin-500-normal.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
 :root {
   color-scheme: light;
 
@@ -132,6 +168,8 @@
 
   /* Tipografía */
   --font: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-serif: "IBM Plex Serif", "IBM Plex Sans", Georgia, serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", monospace;
   --t-xs: 0.75rem;
   --t-sm: 0.8125rem;
   --t-base: 0.9375rem;
@@ -226,6 +264,8 @@ html[data-theme="night"] {
 html {
   scroll-behavior: smooth;
   -webkit-text-size-adjust: 100%;
+  background: var(--paper);
+  color: var(--text);
 }
 
 /* El atributo hidden debe ganar a cualquier display del componente.
@@ -268,7 +308,7 @@ a:hover {
   color: var(--ink-2);
 }
 
-:where(a, button, input, textarea, [tabindex]):focus-visible {
+:where(a, button, input, textarea, select, [tabindex]):focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
   border-radius: var(--r-xs);
@@ -898,6 +938,7 @@ label,
 
 input,
 textarea,
+select,
 .picker-trigger,
 .picker-search {
   width: 100%;
@@ -933,17 +974,34 @@ input[type="radio"] {
   accent-color: var(--ink);
 }
 
+input[type="range"] {
+  width: 100%;
+  min-height: var(--touch);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  accent-color: var(--ink);
+  box-shadow: none;
+}
+
 input[type="file"] {
   display: none;
 }
 
 input:focus,
 textarea:focus,
+select:focus,
 .picker-trigger:focus,
 .picker-search:focus {
   outline: none;
   border-color: var(--accent);
   box-shadow: var(--ring);
+}
+
+input[type="range"]:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 input:disabled {
@@ -1792,24 +1850,242 @@ input:disabled {
 /* 4.19 Cambio de tema */
 .theme-toggle {
   appearance: none;
+  position: relative;
   display: inline-grid;
   place-items: center;
+  width: var(--touch);
+  height: var(--touch);
   min-height: var(--touch);
   min-width: var(--touch);
-  padding: 0 var(--s-3);
+  padding: 0;
   border: 1px solid var(--line);
-  border-radius: var(--r-sm);
+  border-radius: var(--r-full);
   background: var(--surface);
   cursor: pointer;
-  font: inherit;
-  font-size: var(--t-sm);
-  font-weight: 550;
   color: var(--ink);
   transition: background var(--dur-1) var(--ease);
 }
 
 .theme-toggle:hover {
   background: color-mix(in srgb, var(--ink) 8%, var(--surface));
+}
+
+.theme-toggle:focus-visible {
+  border-radius: var(--r-full);
+}
+
+.theme-toggle .ic-sun,
+.theme-toggle .ic-moon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 20px;
+  height: 20px;
+  max-width: none;
+  margin: -10px 0 0 -10px;
+  transition:
+    opacity var(--dur-2) var(--ease),
+    transform var(--dur-2) var(--ease);
+}
+
+.theme-toggle .ic-sun {
+  opacity: 1;
+  transform: rotate(0deg);
+}
+
+.theme-toggle .ic-moon {
+  opacity: 0;
+  transform: rotate(-90deg);
+}
+
+html[data-theme="night"] .theme-toggle .ic-sun {
+  opacity: 0;
+  transform: rotate(90deg);
+}
+
+html[data-theme="night"] .theme-toggle .ic-moon {
+  opacity: 1;
+  transform: rotate(0deg);
+}
+
+/* 4.19b Inicio */
+.home h1,
+.home h2 {
+  font-family: var(--font-serif);
+}
+
+.home h1 {
+  font-weight: 700;
+}
+
+.home h2 {
+  font-weight: 600;
+}
+
+.home-hero {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--s-6);
+  padding: var(--s-6) 0 var(--s-4);
+}
+
+.home-hero .hero {
+  max-width: none;
+  padding: 0;
+}
+
+.home-demo {
+  min-width: 0;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-xl);
+  box-shadow: var(--e-2);
+  padding: var(--s-5);
+}
+
+.home-demo h2 {
+  font-size: var(--t-lg);
+  margin-bottom: var(--s-1);
+}
+
+.home-demo-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--s-2);
+  margin-bottom: var(--s-4);
+}
+
+.home-demo-head p {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--t-sm);
+}
+
+.home-demo-liquido {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: var(--t-2xl);
+  font-weight: 500;
+  color: var(--ink);
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+
+.home-demo-fields {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--s-3);
+  margin-bottom: var(--s-4);
+}
+
+.home-demo-fields .field {
+  margin-bottom: 0;
+}
+
+.home-demo-bruto {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s-3);
+  align-items: baseline;
+}
+
+.home-demo-bruto output {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+.home-demo-rows {
+  display: grid;
+  gap: var(--s-2);
+  margin: 0 0 var(--s-4);
+}
+
+.home-demo-row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s-3);
+  min-width: 0;
+  font-size: var(--t-sm);
+}
+
+.home-demo-row span {
+  color: var(--muted);
+  min-width: 0;
+}
+
+.home-demo-row strong {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  flex: 0 0 auto;
+}
+
+.home-demo-note {
+  margin: 0;
+  font-size: var(--t-xs);
+  color: var(--faint);
+}
+
+.home-trust {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--s-3);
+  margin: var(--s-8) 0;
+  padding: 0;
+  list-style: none;
+}
+
+.home-trust li {
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  padding: var(--s-4);
+  color: var(--text);
+  font-size: var(--t-sm);
+  font-weight: 500;
+}
+
+.home-faq {
+  display: grid;
+  gap: var(--s-2);
+}
+
+.home-faq details {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  padding: 0 var(--s-4);
+}
+
+.home-faq summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--ink);
+  min-height: var(--touch);
+  display: flex;
+  align-items: center;
+  list-style: none;
+}
+
+.home-faq summary::-webkit-details-marker {
+  display: none;
+}
+
+.home-faq details p {
+  margin: 0 0 var(--s-4);
+  color: var(--muted);
+}
+
+.home-cta {
+  text-align: center;
+}
+
+.home-cta .actions {
+  justify-content: center;
 }
 
 /* 4.20 Selector custom (picker) */
@@ -2293,6 +2569,11 @@ body[data-dialog-open] .toaster {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+
+  .theme-toggle .ic-sun,
+  .theme-toggle .ic-moon {
+    transition: none;
+  }
 }
 
 /* ---------- 7. PUNTOS DE QUIEBRE ---------- */
@@ -2419,6 +2700,25 @@ body[data-dialog-open] .toaster {
 
   .hero {
     padding: var(--s-10) 0 var(--s-6);
+  }
+
+  .home-hero {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: var(--s-8);
+    align-items: start;
+    padding: var(--s-10) 0 var(--s-6);
+  }
+
+  .home-trust {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .home-demo-fields {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .home-demo-fields .field:first-child {
+    grid-column: 1 / -1;
   }
 
   .only-mobile {
