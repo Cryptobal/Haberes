@@ -61,10 +61,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <span class="brand-mark">H</span> Haberes
       </a>
       <div class="nav-links">
-        <a href="/sueldo" data-nav>Sueldo líquido</a>
-        <a href="/finiquito" data-nav>Finiquito</a>
-        <a href="/empresa" data-nav>Para mi empresa</a>
-        <a href="/como" data-nav>Cómo funciona</a>
+        <a href="/como" data-nav>Cómo</a>
         <a href="/precios" data-nav>Precios</a>
       </div>
       <div class="nav-actions">
@@ -72,7 +69,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           <svg class="ic-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.64 5.64l1.41 1.41M16.95 16.95l1.41 1.41M18.36 5.64l-1.41 1.41M7.05 16.95l-1.41 1.41"/></svg>
           <svg class="ic-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 14.35A8.4 8.4 0 1 1 9.65 3 6.6 6.6 0 0 0 21 14.35z"/></svg>
         </button>
-        <a class="btn btn-sm nav-cta" href="/empresa">Entrar</a>
+        <a class="btn btn-ghost btn-sm nav-login" href="/empresa">Entrar</a>
+        <a class="btn btn-sm nav-cta" href="/empresa?registro=1">Empezar gratis</a>
         <button type="button" class="nav-burger" data-nav-burger aria-expanded="false" aria-controls="navDrawer" aria-label="Abrir menú">
           <i aria-hidden="true"></i>
         </button>
@@ -83,13 +81,12 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <div class="nav-drawer-scrim" data-nav-scrim></div>
       <div class="nav-drawer-panel" role="dialog" aria-modal="true" aria-label="Menú de navegación">
         <div class="nav-drawer-grab" aria-hidden="true"></div>
+        <a href="/como" data-nav>Cómo</a>
+        <a href="/precios" data-nav>Precios</a>
         <a href="/sueldo" data-nav>Sueldo líquido</a>
         <a href="/finiquito" data-nav>Finiquito</a>
-        <a href="/empresa" data-nav>Para mi empresa</a>
-        <a href="/como" data-nav>Cómo funciona</a>
-        <a href="/precios" data-nav>Precios</a>
         <div class="nav-drawer-foot">
-          <a class="btn" href="/empresa">Entrar a mi empresa</a>
+          <a class="btn" href="/empresa?registro=1">Empezar gratis</a>
           <button type="button" class="btn btn-ghost" data-nav-close>Cerrar</button>
         </div>
       </div>
@@ -99,7 +96,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <div class="wrap">
       <p class="kicker">Chile · pymes</p>
       <h1>Precios</h1>
-      <p class="lede">Todo el mundo se registra sin pagar. Sueldo líquido y finiquito sin cuenta siguen abiertos. En empresa hay dos planes.</p>
+      <p class="lede">Dos planes. Se registra gratis, sin tarjeta. Sueldo líquido y finiquito sin cuenta siguen abiertos. Pro es un cobro mensual automático.</p>
       <p class="notice">
         Documento generado por Haberes. No es un cálculo de la Dirección del Trabajo ni de Previred.
         No constituye asesoría legal ni previsional.
@@ -109,39 +106,84 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <article class="card">
           <h3>Gratis</h3>
           <p class="price">$ 0</p>
-          <ul>
-            <li>5 movimientos al mes, uno por uno.</li>
-            <li>Un movimiento = una liquidación o un finiquito (carta/PDF).</li>
-            <li>Sin carga masiva CSV/XLSX.</li>
-            <li>Sin plantillas de pago bancario.</li>
-          </ul>
+          <p class="hint">Para probar con su propia nómina, de a un documento.</p>
         </article>
         <article class="card">
           <h3>Pro</h3>
           <p class="price">$14.990 <span class="price-iva">+ IVA / mes</span></p>
-          <ul>
-            <li>Carga masiva (CSV/XLSX).</li>
-            <li>Descarga de nómina bancaria por perfiles (CSV, Excel o texto) y perfil personalizable; las plantillas no verificadas se etiquetan como tales.</li>
-            <li>Envío masivo de liquidaciones y finiquitos al correo de cada trabajador (un PDF por persona).</li>
-            <li>Sin tope de 5 movimientos.</li>
-          </ul>
+          <p class="hint">$17.838 CLP al mes, cobro automático con Mercado Pago o Flow.</p>
           <div class="btn-row u-mt-4">
             <button type="button" class="btn btn-wrap" id="btnPasarPro" hidden>Pagar con Mercado Pago</button>
             <button type="button" class="btn btn-wrap" id="btnPasarProFlow" hidden>Pagar con Flow</button>
           </div>
           <p class="ok" id="proState" hidden>Ya es Pro</p>
-          <p class="hint">Cobro vía Mercado Pago o Flow. $14.990 + IVA / mes (IVA 19 % Chile). Cada pago aprobado activa Pro por 31 días; para renovar, pulse de nuevo el cobro.</p>
         </article>
       </div>
 
+      <div class="table-scroll compare-wrap">
+        <table class="compare">
+          <caption>Qué incluye cada plan</caption>
+          <thead>
+            <tr>
+              <th scope="col">En la cuenta empresa</th>
+              <th scope="col">Gratis</th>
+              <th scope="col">Pro</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row">Precio</th>
+              <td>$ 0</td>
+              <td class="is-yes">$14.990 + IVA / mes</td>
+            </tr>
+            <tr>
+              <th scope="row">Documentos al mes</th>
+              <td>5, de a uno</td>
+              <td class="is-yes">Sin tope</td>
+            </tr>
+            <tr>
+              <th scope="row">Qué es un documento</th>
+              <td>Una liquidación o un finiquito (carta/PDF)</td>
+              <td>Una liquidación o un finiquito (carta/PDF)</td>
+            </tr>
+            <tr>
+              <th scope="row">Perfil, logo y firma</th>
+              <td class="is-yes">Sí</td>
+              <td class="is-yes">Sí</td>
+            </tr>
+            <tr>
+              <th scope="row">Carga masiva CSV/XLSX</th>
+              <td>No</td>
+              <td class="is-yes">Sí</td>
+            </tr>
+            <tr>
+              <th scope="row">Plantillas de pago bancario</th>
+              <td>No</td>
+              <td class="is-yes">Sí</td>
+            </tr>
+            <tr>
+              <th scope="row">Envío masivo de PDF por correo</th>
+              <td>No</td>
+              <td class="is-yes">Sí</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
       <div class="prose">
+        <h2>Cómo se cobra Pro</h2>
+        <p>
+          Pro es una <strong>suscripción mensual</strong>. Mercado Pago o Flow vuelven a cobrar $14.990 + IVA
+          ($17.838 CLP) cada mes, sin que tenga que pulsar de nuevo. Si un cobro falla, o si se anula o se
+          reembolsa, la cuenta vuelve a Gratis.
+        </p>
         <h2>Cómo pasar a Pro</h2>
         <p>
-          Pulse <strong>Pagar con Mercado Pago</strong> o <strong>Pagar con Flow</strong>. Si ya está en su empresa, se abre el cobro.
-          Si no, primero cree o entre a su cuenta y luego continúa el pago. El plan no se activa solo
-          porque vuelva del cobro: espera la confirmación del pago (puede tardar unos segundos).
+          Cree la cuenta gratis. Pague solo si quiere Pro: pulse <strong>Pagar con Mercado Pago</strong> o
+          <strong>Pagar con Flow</strong>. Si aún no entró, primero registra o entra y después continúa el cobro.
+          El plan no se activa solo porque vuelva del checkout: espera la confirmación del pago (puede tardar unos segundos).
         </p>
-        <p><a class="btn btn-ghost" href="/empresa">Crear cuenta gratis</a></p>
+        <p><a class="btn btn-ghost" href="/empresa?registro=1">Crear cuenta gratis</a></p>
       </div>
     </div>
   </main>

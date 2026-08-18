@@ -6,13 +6,13 @@ export const PLAN_PRO = "pro";
 export const GRATIS_LIMITE = 5;
 
 export const MSG_LIMITE =
-  "Ya usó 5 movimientos este mes. El sexto (y la carga masiva) son del plan Pro: $14.990 + IVA / mes.";
+  "Ya usó 5 documentos este mes. El sexto (y la carga masiva) son del plan Pro: $14.990 + IVA / mes, cobro automático.";
 export const MSG_UNO_A_UNO =
   "En Gratis se emite de a uno. Para varios trabajadores a la vez necesita Pro ($14.990 + IVA / mes).";
 export const MSG_CARGA_PRO =
   "La carga masiva CSV/XLSX es del plan Pro ($14.990 + IVA / mes). En Gratis agregue trabajadores uno por uno.";
 export const MSG_PAGO_PRO =
-  "Las plantillas XLSX de pago masivo son del plan Pro ($14.990 + IVA / mes).";
+  "Las plantillas de pago bancario son del plan Pro ($14.990 + IVA / mes).";
 
 function monthKey(d = new Date()) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
@@ -130,7 +130,7 @@ export async function registrarMovimientosRemoto({ tipo, keys }) {
 }
 
 export function textoCupo(emp) {
-  if (isPro(emp)) return "Plan Pro · sin tope de movimientos este mes.";
+  if (isPro(emp)) return "Plan Pro · documentos sin tope este mes.";
   const n = usadosMes(emp);
-  return `Plan Gratis · ${n} de ${GRATIS_LIMITE} movimientos este mes.`;
+  return `Plan Gratis · ${n} de ${GRATIS_LIMITE} documentos este mes.`;
 }

@@ -10,15 +10,19 @@ import { fileURLToPath } from "node:url";
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 
 const LINKS = [
-  ["/sueldo", "Sueldo líquido"],
-  ["/finiquito", "Finiquito"],
-  ["/empresa", "Para mi empresa"],
-  ["/como", "Cómo funciona"],
+  ["/como", "Cómo"],
   ["/precios", "Precios"],
 ];
 
+const DRAWER_LINKS = [
+  ["/como", "Cómo"],
+  ["/precios", "Precios"],
+  ["/sueldo", "Sueldo líquido"],
+  ["/finiquito", "Finiquito"],
+];
+
 const desktop = LINKS.map(([h, t]) => `        <a href="${h}" data-nav>${t}</a>`).join("\n");
-const drawer = LINKS.map(([h, t]) => `        <a href="${h}" data-nav>${t}</a>`).join("\n");
+const drawer = DRAWER_LINKS.map(([h, t]) => `        <a href="${h}" data-nav>${t}</a>`).join("\n");
 
 const BLOCK = `      <div class="nav-links">
 ${desktop}
@@ -28,7 +32,8 @@ ${desktop}
           <svg class="ic-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.64 5.64l1.41 1.41M16.95 16.95l1.41 1.41M18.36 5.64l-1.41 1.41M7.05 16.95l-1.41 1.41"/></svg>
           <svg class="ic-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 14.35A8.4 8.4 0 1 1 9.65 3 6.6 6.6 0 0 0 21 14.35z"/></svg>
         </button>
-        <a class="btn btn-sm nav-cta" href="/empresa">Entrar</a>
+        <a class="btn btn-ghost btn-sm nav-login" href="/empresa">Entrar</a>
+        <a class="btn btn-sm nav-cta" href="/empresa?registro=1">Empezar gratis</a>
         <button type="button" class="nav-burger" data-nav-burger aria-expanded="false" aria-controls="navDrawer" aria-label="Abrir menú">
           <i aria-hidden="true"></i>
         </button>
@@ -41,7 +46,7 @@ ${desktop}
         <div class="nav-drawer-grab" aria-hidden="true"></div>
 ${drawer}
         <div class="nav-drawer-foot">
-          <a class="btn" href="/empresa">Entrar a mi empresa</a>
+          <a class="btn" href="/empresa?registro=1">Empezar gratis</a>
           <button type="button" class="btn btn-ghost" data-nav-close>Cerrar</button>
         </div>
       </div>
@@ -67,7 +72,7 @@ let changed = 0;
 for (const f of files) {
   const path = join(root, f);
   const html = readFileSync(path, "utf8");
-  if (html.includes("data-nav-drawer")) continue;
+  if (html.includes("Empezar gratis") && html.includes('href="/como" data-nav>Cómo</a>')) continue;
   const next = html.replace(
     /( {6}<div class="nav-links">[\s\S]*?<\/div>\n {4}<\/nav>)/,
     BLOCK,

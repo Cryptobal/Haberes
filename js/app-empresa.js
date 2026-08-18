@@ -52,6 +52,7 @@ import {
   mountIndicadores,
   numVal,
   periodoItems,
+  refreshAccountNav,
   showError,
   toastError,
   toastInfo,
@@ -189,11 +190,14 @@ function fillPerfil() {
 
 let payProviders = [];
 
-function renderPayButtons(pro) {
+function renderPayButtons(pro, atLimit) {
   const mpBtn = el("btnPasarPro");
   const flowBtn = el("btnPasarProFlow");
-  if (mpBtn) mpBtn.hidden = Boolean(pro) || !payProviders.includes("mp");
-  if (flowBtn) flowBtn.hidden = Boolean(pro) || !payProviders.includes("flow");
+  const wall = el("empPaywall");
+  const show = !pro && atLimit;
+  if (wall) wall.hidden = !show;
+  if (mpBtn) mpBtn.hidden = !show || !payProviders.includes("mp");
+  if (flowBtn) flowBtn.hidden = !show || !payProviders.includes("flow");
 }
 
 /** Medidor de cupo: barra + insignia. En Pro no hay tope, así que la barra va llena en verde. */
@@ -204,11 +208,13 @@ function renderCupo() {
   const state = el("empProState");
   if (el("empPlan")) el("empPlan").textContent = textoCupo(emp);
   const pro = isPro(emp);
+  const usados = usadosMes(emp);
+  const atLimit = !pro && usados >= GRATIS_LIMITE;
+  renderPayButtons(pro, atLimit);
   if (badge) {
     badge.textContent = pro ? "Pro" : "Gratis";
     badge.className = pro ? "badge badge-pro" : "badge";
   }
-  renderPayButtons(pro);
   if (state) {
     state.hidden = !pro;
     if (pro) {
@@ -220,10 +226,11 @@ function renderCupo() {
     }
   }
   if (!box || !bar) return;
-  const usados = usadosMes(emp);
+  const link = el("empPlanLink");
+  if (link) link.hidden = Boolean(pro);
   const pct = pro ? 100 : Math.min(100, Math.round((usados / GRATIS_LIMITE) * 100));
   bar.style.width = `${pct}%`;
-  box.classList.toggle("is-full", !pro && usados >= GRATIS_LIMITE);
+  box.classList.toggle("is-full", atLimit);
   const meter = box.querySelector('[role="progressbar"]');
   if (meter) {
     meter.setAttribute("aria-valuemax", pro ? "100" : String(GRATIS_LIMITE));
@@ -302,6 +309,11 @@ function refresh() {
   emp = empresaActual();
   const logged = Boolean(emp);
   panel(logged);
+  try {
+    refreshAccountNav();
+  } catch {
+    /* la cabecera no debe tumbar el workspace */
+  }
   if (!logged) return;
   el("empNombre").textContent = emp.razonSocial || "Empresa";
   el("empMeta").textContent = `${formatRut(emp.rut)} · ${emp.email}`;
@@ -457,6 +469,14 @@ document.querySelectorAll("[data-auth-modo]").forEach((input) => {
   });
 });
 
+if (new URLSearchParams(location.search).get("registro") === "1") {
+  const radio = document.querySelector('[data-auth-modo][value="registro"]');
+  if (radio) {
+    radio.checked = true;
+    setAuthMode("registro");
+  }
+}
+
 mountIndicadores().then((ind) => {
   if (ind) indicadores = ind;
   documentosApi.syncFinResumen();
@@ -523,10 +543,10 @@ async function handlePagoReturn() {
     refresh();
     toastInfo(
       pago === "ok" ? "Pago recibido" : "Pago en revisión",
-      "Pro se activa cuando Mercado Pago o Flow confirman (puede tardar unos segundos).",
+      "Pro se activa cuando Mercado Pago o Flow confirman la suscripción mensual (puede tardar unos segundos).",
     );
   } else if (pago === "fail") {
-    toastError("No se completó el pago", "Puede intentarlo de nuevo desde Pagar con Mercado Pago o Flow.");
+    toastError("No se completó el pago", "Puede intentarlo de nuevo en Precios o en el aviso de los 5 documentos.");
   }
 }
 

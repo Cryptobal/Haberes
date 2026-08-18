@@ -603,6 +603,7 @@ const required = [
   "sql/004.sql",
   "sql/005.sql",
   "sql/007.sql",
+  "sql/008.sql",
   "como.html",
   "precios.html",
   "admin.html",
@@ -733,6 +734,15 @@ for (const f of htmlFiles) {
     `${f} cajón fuera de .site-header`,
     Boolean(header) && !/data-nav-drawer/.test(header[0]) && /data-nav-drawer/.test(html),
   );
+  assert(
+    `${f} chrome Cómo, Precios y Empezar gratis`,
+    /href="\/como"/.test(header[0]) &&
+      /href="\/precios"/.test(header[0]) &&
+      /Empezar gratis/.test(header[0]) &&
+      !/Para mi empresa/.test(header[0]) &&
+      !/Pagar con Mercado Pago/.test(header[0]) &&
+      !/Pagar con Flow/.test(header[0]),
+  );
   assert(`${f} script de app con módulos`, /type="module"[^>]*js\/app-/.test(html));
   assert(`${f} favicon.svg`, /favicon\.svg" type="image\/svg\+xml"/.test(html));
   assert(`${f} favicon.ico`, /favicon\.ico" sizes="32x32"/.test(html));
@@ -753,6 +763,10 @@ for (const f of appEntries) {
 }
 const uiSrc = readFileSync(join(root, "js/ui.js"), "utf8");
 assert("ui.js define wireDrawer", /function wireDrawer/.test(uiSrc) && /export function wireNav/.test(uiSrc));
+assert(
+  "ui.js hidrata cuenta en la cabecera",
+  /hydrateAccountNav/.test(uiSrc) && /refreshAccountNav/.test(uiSrc) && /data-nav-salir/.test(uiSrc),
+);
 assert("ui.js monta el cajón en document.body", /document\.body\.append\(\s*drawer\s*\)/.test(uiSrc));
 assert(
   "ui.js abre/cierra con el atributo hidden",
@@ -1353,6 +1367,7 @@ const {
   mpAccessToken,
   verifyMpSignature,
   applyFetchedPayment,
+  applyFetchedPreapproval,
   createProCheckout,
 } = await import("../api/_mp.js");
 const checkoutMod = await import("../api/checkout.js");
@@ -1415,6 +1430,28 @@ assert("hasMp true con alias", hasMp() === true);
 const fakeFetch = async (url) => {
   const u = String(url);
   if (u.includes("/preapproval") && !u.includes("/checkout/")) {
+    return {
+      ok: true,
+      status: 201,
+      json: async () => ({ init_point: "https://www.mercadopago.cl/subscriptions/checkout?preapproval_id=unit" }),
+    };
+  }
+  if (u.includes("/checkout/preferences")) {
+    throw new Error("preference fallback must not run");
+  }
+  throw new Error("live MP blocked in verify");
+};
+const created = await createProCheckout({ id: "co-unit", email: "pyme@example.cl" }, { fetchImpl: fakeFetch });
+assert(
+  "checkout mock init_point de preapproval sin API viva",
+  created.ok === true &&
+    created.kind === "preapproval" &&
+    String(created.init_point).includes("mercadopago.cl"),
+  JSON.stringify(created),
+);
+const fakeFetchFailSub = async (url) => {
+  const u = String(url);
+  if (u.includes("/preapproval") && !u.includes("/checkout/")) {
     return { ok: false, status: 400, json: async () => ({ message: "no_sub" }) };
   }
   if (u.includes("/checkout/preferences")) {
@@ -1426,11 +1463,14 @@ const fakeFetch = async (url) => {
   }
   throw new Error("live MP blocked in verify");
 };
-const created = await createProCheckout({ id: "co-unit", email: "pyme@example.cl" }, { fetchImpl: fakeFetch });
+const createdFail = await createProCheckout(
+  { id: "co-unit", email: "pyme@example.cl" },
+  { fetchImpl: fakeFetchFailSub },
+);
 assert(
-  "checkout mock init_point sin API viva",
-  created.ok === true && String(created.init_point).includes("mercadopago.cl"),
-  JSON.stringify(created),
+  "checkout no cae en cobro de 31 días si falla la suscripción",
+  createdFail.ok === false && createdFail.reason === "mp_subscription_unavailable",
+  JSON.stringify(createdFail),
 );
 delete process.env.MP_ACCESS_TOKEN;
 
@@ -1618,6 +1658,60 @@ assert(
   JSON.stringify(refunded),
 );
 
+function mockPreClient(row) {
+  const state = { row: { ...row }, sql: [], notified: 0 };
+  return {
+    state,
+    async query(sql, params = []) {
+      state.sql.push(sql);
+      if (/SET plan = 'pro'/.test(sql) && /mp_preapproval_id/.test(sql)) {
+        state.row = { ...state.row, plan: "pro", mp_preapproval_id: params[1], plan_until: null };
+        return { rowCount: 1 };
+      }
+      if (/SET plan = 'gratis'/.test(sql) && /mp_preapproval_id/.test(sql)) {
+        if (state.row && String(state.row.mp_preapproval_id) === String(params[1])) {
+          state.row = { ...state.row, plan: "gratis", plan_until: null };
+          return { rowCount: 1, rows: [{ id: state.row.id, email: "pyme@example.cl", razon_social: "Pyme" }] };
+        }
+        return { rowCount: 0, rows: [] };
+      }
+      return { rows: [], rowCount: 0 };
+    },
+  };
+}
+const preClient = mockPreClient({ id: "co1", plan: "gratis", mp_preapproval_id: null, plan_until: "2099-01-01T00:00:00Z" });
+let preNotified = 0;
+const authorized = await applyFetchedPreapproval(preClient, {
+  id: "pre-1",
+  status: "authorized",
+  external_reference: "co1",
+});
+assert(
+  "preapproval autorizado activa Pro sin plan_until",
+  authorized.applied &&
+    authorized.plan === "pro" &&
+    preClient.state.row.plan === "pro" &&
+    preClient.state.row.plan_until == null,
+  JSON.stringify(authorized),
+);
+const cancelledPre = await applyFetchedPreapproval(
+  preClient,
+  { id: "pre-1", status: "cancelled", external_reference: "co1" },
+  {
+    notify: async () => {
+      preNotified += 1;
+    },
+  },
+);
+assert(
+  "preapproval cancelado vuelve a Gratis y avisa",
+  cancelledPre.applied &&
+    cancelledPre.plan === "gratis" &&
+    preClient.state.row.plan === "gratis" &&
+    preNotified === 1,
+  JSON.stringify({ cancelledPre, preNotified }),
+);
+
 const hookGet = mockRes();
 await mpWebhook({ method: "GET", headers: {} }, hookGet);
 assert("webhook GET 200", hookGet._out.statusCode === 200 && hookGet._out.body?.ok === true);
@@ -1669,7 +1763,11 @@ const {
   flowRedirectUrl,
   companyIdFromStatus,
   applyFetchedFlowStatus,
+  applyFetchedFlowInvoice,
+  applyFlowCardRegistered,
+  createFlowCheckout,
   createFlowOrder,
+  FLOW_PLAN_ID,
   readFlowToken,
 } = await import("../api/_flow.js");
 const { default: flowWebhook, handleFlowWebhook } = await import("../api/flow-webhook.js");
@@ -1779,10 +1877,75 @@ const flowCreated = await createFlowOrder(
   { fetchImpl: fakeFlowFetch },
 );
 assert(
-  "checkout Flow mock init_point sin API viva",
+  "checkout Flow one-shot mock init_point sin API viva",
   flowCreated.ok === true &&
     String(flowCreated.init_point) === "https://www.flow.cl/app/web/pay.php?token=unit-flow-token",
   JSON.stringify(flowCreated),
+);
+
+const flowHits = [];
+const fakeFlowSubFetch = async (url, opts) => {
+  const u = String(url);
+  const body = String(opts?.body || "");
+  flowHits.push(u);
+  if (u.includes("/plans/get")) {
+    return { ok: false, status: 400, json: async () => ({ code: 404 }) };
+  }
+  if (u.includes("/plans/create")) {
+    if (!body.includes("periods_number=0") || !body.includes("interval=3") || !body.includes("amount=17838")) {
+      throw new Error("plan must be monthly 17838 indefinite");
+    }
+    return { ok: true, status: 200, json: async () => ({ planId: FLOW_PLAN_ID }) };
+  }
+  if (u.includes("/customer/create")) {
+    return { ok: true, status: 200, json: async () => ({ customerId: "cus_unit" }) };
+  }
+  if (u.includes("/customer/register")) {
+    return {
+      ok: true,
+      status: 200,
+      json: async () => ({ url: "https://www.flow.cl/app/web/pay.php", token: "unit-reg-token" }),
+    };
+  }
+  if (u.includes("/payment/create")) throw new Error("subscription path must not fall back to payment/create");
+  throw new Error(`live Flow blocked in verify: ${u}`);
+};
+const flowSub = await createFlowCheckout(
+  {
+    id: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+    email: "pyme@example.cl",
+    razon_social: "Pyme SpA",
+  },
+  { fetchImpl: fakeFlowSubFetch },
+);
+assert(
+  "checkout Flow suscripción plan+cliente+tarjeta",
+  flowSub.ok === true &&
+    flowSub.kind === "flow_subscription" &&
+    flowSub.customerId === "cus_unit" &&
+    String(flowSub.init_point) === "https://www.flow.cl/app/web/pay.php?token=unit-reg-token",
+  JSON.stringify(flowSub),
+);
+const fakeFlowSubFail = async (url) => {
+  const u = String(url);
+  if (u.includes("/plans/")) return { ok: false, status: 400, json: async () => ({ message: "no_plans" }) };
+  if (u.includes("/payment/create")) {
+    return {
+      ok: true,
+      status: 200,
+      json: async () => ({ url: "https://www.flow.cl/app/web/pay.php", token: "should-not" }),
+    };
+  }
+  throw new Error("live Flow blocked in verify");
+};
+const flowSubFail = await createFlowCheckout(
+  { id: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", email: "pyme@example.cl", razon_social: "Pyme" },
+  { fetchImpl: fakeFlowSubFail },
+);
+assert(
+  "checkout Flow no vende un mes suelto si falla el plan",
+  flowSubFail.ok === false && flowSubFail.reason === "flow_subscription_unavailable",
+  JSON.stringify(flowSubFail),
 );
 
 const flowProv = mockRes();
@@ -1873,6 +2036,7 @@ await handleFlowWebhook(
     applyStatus: async () => {
       flowApplyHits += 10;
     },
+    getRegisterStatus: async () => ({ ok: false, data: null }),
   },
 );
 assert(
@@ -1915,6 +2079,7 @@ await handleFlowWebhook(
     applyStatus: async (_client, status) => {
       flowAppliedPlan = Number(status.status) === 2 ? "pro" : "gratis";
     },
+    getRegisterStatus: async () => ({ ok: false, data: null }),
     withDb: async (fn) => fn({}),
   },
 );
@@ -2014,6 +2179,91 @@ assert(
   "Flow anulado del cobro activo vuelve a Gratis",
   flowCanceled.applied && flowCanceled.plan === "gratis" && flowClient.state.row.plan === "gratis",
   JSON.stringify(flowCanceled),
+);
+
+function mockFlowSubClient(row) {
+  const state = { row: { ...row }, sql: [] };
+  return {
+    state,
+    async query(sql, params = []) {
+      state.sql.push(sql);
+      if (/FROM companies WHERE flow_customer_id/.test(sql) || /FROM companies WHERE flow_subscription_id/.test(sql) || /FROM companies WHERE id =/.test(sql)) {
+        return { rows: state.row ? [state.row] : [] };
+      }
+      if (/SET plan = 'pro'/.test(sql) && /flow_customer_id/.test(sql)) {
+        state.row = {
+          ...state.row,
+          plan: "pro",
+          plan_until: null,
+          flow_customer_id: params[1] || state.row.flow_customer_id,
+          flow_subscription_id: params[2] || state.row.flow_subscription_id,
+          flow_plan_id: params[3] || state.row.flow_plan_id,
+        };
+        return { rowCount: 1 };
+      }
+      if (/SET plan = 'gratis'/.test(sql)) {
+        state.row = { ...state.row, plan: "gratis", plan_until: null };
+        return { rowCount: 1, rows: [{ id: state.row.id, email: "pyme@example.cl", razon_social: "Pyme" }] };
+      }
+      if (/SELECT \* FROM companies/.test(sql)) {
+        return { rows: state.row ? [state.row] : [] };
+      }
+      return { rows: state.row ? [state.row] : [], rowCount: 0 };
+    },
+  };
+}
+const flowSubClient = mockFlowSubClient({
+  id: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+  plan: "gratis",
+  flow_customer_id: "cus_unit",
+  flow_subscription_id: null,
+  flow_plan_id: FLOW_PLAN_ID,
+  email: "pyme@example.cl",
+  razon_social: "Pyme",
+});
+const cardReg = await applyFlowCardRegistered(
+  flowSubClient,
+  { customerId: "cus_unit", status: "1" },
+  {
+    fetchImpl: async (url) => {
+      if (String(url).includes("/subscription/create")) {
+        return { ok: true, status: 200, json: async () => ({ subscriptionId: "sus_unit" }) };
+      }
+      throw new Error("unexpected Flow call");
+    },
+  },
+);
+assert(
+  "registro de tarjeta Flow crea suscripción y activa Pro",
+  cardReg.applied &&
+    cardReg.plan === "pro" &&
+    flowSubClient.state.row.plan === "pro" &&
+    flowSubClient.state.row.flow_subscription_id === "sus_unit" &&
+    flowSubClient.state.row.plan_until == null,
+  JSON.stringify(cardReg),
+);
+const invPaid = await applyFetchedFlowInvoice(flowSubClient, {
+  customerId: "cus_unit",
+  subscriptionId: "sus_unit",
+  status: 1,
+  currency: "CLP",
+  amount: 17838,
+});
+assert("invoice Flow pagado renueva Pro", invPaid.applied && invPaid.plan === "pro", JSON.stringify(invPaid));
+let flowMail = 0;
+const invFail = await applyFetchedFlowInvoice(
+  flowSubClient,
+  { customerId: "cus_unit", subscriptionId: "sus_unit", status: 2, currency: "CLP", amount: 17838 },
+  {
+    notify: async () => {
+      flowMail += 1;
+    },
+  },
+);
+assert(
+  "invoice Flow fallido vuelve a Gratis y avisa",
+  invFail.applied && invFail.plan === "gratis" && flowSubClient.state.row.plan === "gratis" && flowMail === 1,
+  JSON.stringify({ invFail, flowMail }),
 );
 
 const flowHookGet = mockRes();
@@ -2207,6 +2457,7 @@ assert("hashPassword usa argon2", /argon2/i.test(libSrc) && /Argon2id/.test(libS
 assert("schema 004 en _lib", /004\.sql/.test(libSrc) && /INLINE_SCHEMA_004/.test(libSrc));
 assert("schema 005 en _lib", /005\.sql/.test(libSrc) && /INLINE_SCHEMA_005/.test(libSrc));
 assert("schema 007 en _lib", /007\.sql/.test(libSrc) && /INLINE_SCHEMA_007/.test(libSrc));
+assert("schema 008 en _lib", /008\.sql/.test(libSrc) && /INLINE_SCHEMA_008/.test(libSrc));
 
 const sql = readFileSync(join(root, "sql/001.sql"), "utf8");
 assert(
@@ -2265,6 +2516,15 @@ assert(
     /ADD COLUMN IF NOT EXISTS/i.test(sql7),
 );
 assert("sql/007.sql sin secretos", !/postgres(ql)?:\/\//i.test(sql7) && !/DATABASE_URL\s*=/.test(sql7));
+const sql8 = readFileSync(join(root, "sql/008.sql"), "utf8");
+assert(
+  "sql/008.sql suscripción Flow",
+  /flow_customer_id/.test(sql8) &&
+    /flow_subscription_id/.test(sql8) &&
+    /flow_plan_id/.test(sql8) &&
+    /ADD COLUMN IF NOT EXISTS/i.test(sql8),
+);
+assert("sql/008.sql sin secretos", !/postgres(ql)?:\/\//i.test(sql8) && !/DATABASE_URL\s*=/.test(sql8));
 assert("sin schema prisma inventado", !existsSync(join(root, "prisma")));
 assert(
   "empresa.html olvido honesto",
@@ -2325,6 +2585,10 @@ assert(
   /registrarMovimientosRemoto/.test(empJs) &&
     /descargarNomina/.test(empJs) &&
     /\/api\/movimiento/.test(readFileSync(join(root, "js/plan.js"), "utf8")),
+);
+assert(
+  "app-empresa refresca la cabecera al entrar",
+  /refreshAccountNav/.test(empJs),
 );
 assert(
   "app-empresa checkout y retorno de pago",
@@ -2424,17 +2688,23 @@ assert(
   "admin sin clave por defecto",
   !/changeme|admin123|haberes-admin|DEFAULT_PASSWORD/i.test(readFileSync(join(root, "api/_admin.js"), "utf8")),
 );
+const preciosHtml = readFileSync(join(root, "precios.html"), "utf8");
 assert(
-  "precios: Gratis 5 movimientos y Pro 14990 con Mercado Pago",
-  /Gratis/.test(readFileSync(join(root, "precios.html"), "utf8")) &&
-    /14\.990/.test(readFileSync(join(root, "precios.html"), "utf8")) &&
-    /5 movimientos/i.test(readFileSync(join(root, "precios.html"), "utf8")) &&
-    /CSV\/XLSX/.test(readFileSync(join(root, "precios.html"), "utf8")) &&
-    /Pagar con Mercado Pago/.test(readFileSync(join(root, "precios.html"), "utf8")) &&
-    /Mercado Pago/.test(readFileSync(join(root, "precios.html"), "utf8")) &&
-    /Pagar con Flow/.test(readFileSync(join(root, "precios.html"), "utf8")) &&
-    !/No hay cobro con tarjeta/i.test(readFileSync(join(root, "precios.html"), "utf8")) &&
-    !/a[uú]n no se cobra/i.test(readFileSync(join(root, "precios.html"), "utf8")),
+  "precios: Gratis vs Pro mensual automático",
+  /Gratis/.test(preciosHtml) &&
+    /14\.990/.test(preciosHtml) &&
+    /5(, de a uno| documentos)/i.test(preciosHtml) &&
+    /CSV\/XLSX/.test(preciosHtml) &&
+    /Pagar con Mercado Pago/.test(preciosHtml) &&
+    /Pagar con Flow/.test(preciosHtml) &&
+    /suscripci[oó]n mensual/i.test(preciosHtml) &&
+    /class="compare"/.test(preciosHtml) &&
+    /confirmaci[oó]n del pago/i.test(preciosHtml) &&
+    !/webhook/i.test(preciosHtml) &&
+    !/31 d[ií]as/i.test(preciosHtml) &&
+    !/pulse de nuevo/i.test(preciosHtml) &&
+    !/No hay cobro con tarjeta/i.test(preciosHtml) &&
+    !/a[uú]n no se cobra/i.test(preciosHtml),
 );
 const css = readFileSync(join(root, "css/app.css"), "utf8");
 assert(
@@ -2497,9 +2767,11 @@ assert(
 assert("css dos columnas desde 900px", /@media \(min-width: 900px\)/.test(css));
 assert(
   "index y como describen Gratis/Pro",
-  /5 movimientos/i.test(readFileSync(join(root, "index.html"), "utf8")) &&
+  /5 documentos/i.test(readFileSync(join(root, "index.html"), "utf8")) &&
     /14\.990/.test(readFileSync(join(root, "index.html"), "utf8")) &&
-    /5 movimientos/i.test(readFileSync(join(root, "como.html"), "utf8")),
+    /5 documentos/i.test(readFileSync(join(root, "como.html"), "utf8")) &&
+    /Registre su empresa/i.test(readFileSync(join(root, "como.html"), "utf8")) &&
+    /Pase a Pro/i.test(readFileSync(join(root, "como.html"), "utf8")),
 );
 const r2src = readFileSync(join(root, "api/_r2.js"), "utf8");
 assert("R2 sin CORS público", !/Access-Control-Allow-Origin/i.test(r2src) && !/r2\.dev/.test(r2src));
@@ -2532,6 +2804,10 @@ assert(
     /SECRET_KEY/.test(flowSrc) &&
     /payment\/create/.test(flowSrc) &&
     /payment\/getStatus/.test(flowSrc) &&
+    /plans\/create/.test(flowSrc) &&
+    /customer\/create/.test(flowSrc) &&
+    /customer\/register/.test(flowSrc) &&
+    /subscription\/create/.test(flowSrc) &&
     /urlConfirmation/.test(flowSrc),
 );
 assert(

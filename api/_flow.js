@@ -1,6 +1,9 @@
 import { createHmac, randomBytes } from "node:crypto";
-import { publicOrigin } from "./_lib.js";
+import { publicOrigin, sendPlanDowngradeEmail } from "./_lib.js";
 import { PRO_AMOUNT_CLP, PRO_DAYS, header, queryParam } from "./_mp.js";
+
+export const FLOW_PLAN_ID = "haberespro";
+export const FLOW_INTERVAL_MONTHLY = 3;
 
 export const FLOW_API_PROD = "https://www.flow.cl/api";
 export const FLOW_API_SANDBOX = "https://sandbox.flow.cl/api";
@@ -153,25 +156,29 @@ export function flowStatusCode(status) {
   return Number.isFinite(n) ? n : 0;
 }
 
-export function readFlowToken(req) {
-  const q = queryParam(req, "token");
+export function readFlowField(req, name) {
+  const q = queryParam(req, name);
   if (q) return q;
   const body = req?.body;
   if (body && typeof body === "object" && !Buffer.isBuffer(body)) {
-    const raw = body.token;
+    const raw = body[name];
     return String(Array.isArray(raw) ? raw[0] : raw || "").trim();
   }
   if (typeof body === "string" && body.trim()) {
     try {
-      return String(new URLSearchParams(body).get("token") || "").trim();
+      return String(new URLSearchParams(body).get(name) || "").trim();
     } catch {
       return "";
     }
   }
   if (Buffer.isBuffer(body) && body.length) {
-    return String(new URLSearchParams(body.toString("utf8")).get("token") || "").trim();
+    return String(new URLSearchParams(body.toString("utf8")).get(name) || "").trim();
   }
   return "";
+}
+
+export function readFlowToken(req) {
+  return readFlowField(req, "token");
 }
 
 export async function flowRequest(path, params, { method = "POST", fetchImpl = fetch } = {}) {
@@ -239,10 +246,104 @@ export async function createFlowOrder(company, { req, fetchImpl = fetch } = {}) 
   };
 }
 
+export async function ensureFlowPlan({ req, fetchImpl = fetch } = {}) {
+  const existing = await flowRequest("/plans/get", { planId: FLOW_PLAN_ID }, { method: "GET", fetchImpl });
+  if (existing.ok && existing.data?.planId) return { ok: true, planId: FLOW_PLAN_ID };
+  const urls = flowCheckoutUrls(req);
+  const created = await flowRequest(
+    "/plans/create",
+    {
+      planId: FLOW_PLAN_ID,
+      name: "Haberes Pro",
+      currency: "CLP",
+      amount: PRO_AMOUNT_CLP,
+      interval: FLOW_INTERVAL_MONTHLY,
+      interval_count: 1,
+      trial_period_days: 0,
+      periods_number: 0,
+      urlCallback: urls.confirmation,
+    },
+    { method: "POST", fetchImpl },
+  );
+  if (created.ok && created.data?.planId) return { ok: true, planId: String(created.data.planId) };
+  const again = await flowRequest("/plans/get", { planId: FLOW_PLAN_ID }, { method: "GET", fetchImpl });
+  if (again.ok && again.data?.planId) return { ok: true, planId: FLOW_PLAN_ID };
+  return { ok: false, reason: "flow_subscription_unavailable", status: created.status };
+}
+
+export async function ensureFlowCustomer(company, { fetchImpl = fetch } = {}) {
+  const existing = String(company?.flow_customer_id || company?.flowCustomerId || "").trim();
+  if (existing) return { ok: true, customerId: existing };
+  const name = String(company?.razon_social || company?.razonSocial || "Empresa").slice(0, 120);
+  const email = String(company?.email || "").trim();
+  const externalId = String(company?.id || "").trim();
+  if (!name || !email || !externalId) return { ok: false, reason: "invalid_payload" };
+  const created = await flowRequest(
+    "/customer/create",
+    { name, email, externalId },
+    { method: "POST", fetchImpl },
+  );
+  const customerId = String(created.data?.customerId || "").trim();
+  if (created.ok && customerId) return { ok: true, customerId };
+  return { ok: false, reason: "flow_subscription_unavailable", status: created.status };
+}
+
+export async function createFlowCheckout(company, { req, fetchImpl = fetch } = {}) {
+  if (!hasFlow()) return { ok: false, reason: "flow_unavailable" };
+  const email = String(company?.email || "").trim();
+  const companyId = String(company?.id || "").trim();
+  if (!email || !companyId) return { ok: false, reason: "invalid_payload" };
+
+  const plan = await ensureFlowPlan({ req, fetchImpl });
+  if (!plan.ok) return { ok: false, reason: "flow_subscription_unavailable", status: plan.status };
+
+  const customer = await ensureFlowCustomer(company, { fetchImpl });
+  if (!customer.ok) return { ok: false, reason: customer.reason || "flow_subscription_unavailable" };
+
+  const urls = flowCheckoutUrls(req);
+  const registered = await flowRequest(
+    "/customer/register",
+    { customerId: customer.customerId, url_return: urls.confirmation },
+    { method: "POST", fetchImpl },
+  );
+  const token = String(registered.data?.token || "").trim();
+  const url = String(registered.data?.url || "").trim();
+  const init_point = flowRedirectUrl(url, token);
+  if (!registered.ok || !init_point) {
+    return { ok: false, reason: "flow_subscription_unavailable", status: registered.status };
+  }
+  return {
+    ok: true,
+    init_point,
+    token,
+    customerId: customer.customerId,
+    planId: plan.planId,
+    kind: "flow_subscription",
+  };
+}
+
 export async function getPaymentStatus(token, { fetchImpl = fetch } = {}) {
   const t = String(token || "").trim();
   if (!t) return { ok: false, reason: "invalid_payload" };
   return flowRequest("/payment/getStatus", { token: t }, { method: "GET", fetchImpl });
+}
+
+export async function getRegisterStatus(token, { fetchImpl = fetch } = {}) {
+  const t = String(token || "").trim();
+  if (!t) return { ok: false, reason: "invalid_payload" };
+  return flowRequest("/customer/getRegisterStatus", { token: t }, { method: "GET", fetchImpl });
+}
+
+export async function getInvoice(invoiceId, { fetchImpl = fetch } = {}) {
+  const id = String(invoiceId || "").trim();
+  if (!id) return { ok: false, reason: "invalid_payload" };
+  return flowRequest("/invoice/get", { invoiceId: id }, { method: "GET", fetchImpl });
+}
+
+export async function getSubscription(subscriptionId, { fetchImpl = fetch } = {}) {
+  const id = String(subscriptionId || "").trim();
+  if (!id) return { ok: false, reason: "invalid_payload" };
+  return flowRequest("/subscription/get", { subscriptionId: id }, { method: "GET", fetchImpl });
 }
 
 function addDays(from, days) {
@@ -251,7 +352,166 @@ function addDays(from, days) {
   return d;
 }
 
-export async function applyFetchedFlowStatus(client, status, token) {
+async function notifyDowngrade(row, notify) {
+  if (!row) return;
+  try {
+    if (typeof notify === "function") {
+      await notify(row);
+      return;
+    }
+    await sendPlanDowngradeEmail({ to: row.email, razonSocial: row.razon_social });
+  } catch {
+    /* el correo es opcional */
+  }
+}
+
+export function invoiceIsPaid(invoice) {
+  const st = Number(invoice?.status);
+  if (st === 1) return true;
+  return flowStatusCode(invoice?.payment) === FLOW_STATUS_PAID;
+}
+
+export function invoiceIsFailed(invoice) {
+  const st = Number(invoice?.status);
+  if (st === 2) return true;
+  const pay = flowStatusCode(invoice?.payment);
+  return pay === FLOW_STATUS_REJECTED || pay === FLOW_STATUS_CANCELED || pay === FLOW_STATUS_REFUNDED;
+}
+
+export function subscriptionIsActive(sub) {
+  const st = Number(sub?.status);
+  return st === 1;
+}
+
+async function findCompanyByFlow(client, { customerId, subscriptionId, companyId }) {
+  if (companyId) {
+    const found = await client.query(`SELECT * FROM companies WHERE id = $1 LIMIT 1`, [companyId]);
+    if (found.rows[0]) return found.rows[0];
+  }
+  if (subscriptionId) {
+    const found = await client.query(
+      `SELECT * FROM companies WHERE flow_subscription_id = $1 LIMIT 1`,
+      [subscriptionId],
+    );
+    if (found.rows[0]) return found.rows[0];
+  }
+  if (customerId) {
+    const found = await client.query(
+      `SELECT * FROM companies WHERE flow_customer_id = $1 LIMIT 1`,
+      [customerId],
+    );
+    if (found.rows[0]) return found.rows[0];
+  }
+  return null;
+}
+
+export async function activateFlowSubscription(client, row, { customerId, subscriptionId, planId }) {
+  await client.query(
+    `UPDATE companies
+     SET plan = 'pro', plan_until = NULL,
+         flow_customer_id = COALESCE($2, flow_customer_id),
+         flow_subscription_id = COALESCE($3, flow_subscription_id),
+         flow_plan_id = COALESCE($4, flow_plan_id),
+         updated_at = NOW()
+     WHERE id = $1`,
+    [row.id, customerId || null, subscriptionId || null, planId || null],
+  );
+  return { applied: true, plan: "pro" };
+}
+
+export async function applyFlowCardRegistered(client, register, deps = {}) {
+  const customerId = String(register?.customerId || "").trim();
+  const status = String(register?.status ?? "").trim();
+  if (!client || !customerId) return { applied: false, reason: "invalid" };
+  if (status && status !== "1") return { applied: false, reason: "ignored" };
+
+  const row = await findCompanyByFlow(client, { customerId });
+  if (!row) return { applied: false, reason: "not_found" };
+  if (row.flow_subscription_id && String(row.plan || "").toLowerCase() === "pro") {
+    return { applied: true, reason: "idempotent", plan: "pro" };
+  }
+
+  const fetchImpl = deps.fetchImpl || fetch;
+  const planId = String(row.flow_plan_id || FLOW_PLAN_ID).trim();
+  const created = await flowRequest(
+    "/subscription/create",
+    { planId, customerId, periods_number: 0 },
+    { method: "POST", fetchImpl },
+  );
+  const subscriptionId = String(created.data?.subscriptionId || "").trim();
+  if (!created.ok || !subscriptionId) {
+    return { applied: false, reason: "flow_subscription_unavailable" };
+  }
+  return activateFlowSubscription(client, row, { customerId, subscriptionId, planId });
+}
+
+export async function applyFetchedFlowInvoice(client, invoice, deps = {}) {
+  const customerId = String(invoice?.customerId || "").trim();
+  const subscriptionId = String(invoice?.subscriptionId || "").trim();
+  if (!client || (!customerId && !subscriptionId)) return { applied: false, reason: "invalid" };
+
+  const row = await findCompanyByFlow(client, { customerId, subscriptionId });
+  if (!row) return { applied: false, reason: "not_found" };
+
+  if (invoiceIsPaid(invoice)) {
+    const amount = Number(invoice.amount);
+    const currency = String(invoice.currency || "CLP").toUpperCase();
+    if (currency !== "CLP") return { applied: false, reason: "currency" };
+    if (Number.isFinite(amount) && amount + 0.5 < PRO_AMOUNT_CLP) {
+      return { applied: false, reason: "amount" };
+    }
+    return activateFlowSubscription(client, row, { customerId, subscriptionId, planId: row.flow_plan_id });
+  }
+
+  if (invoiceIsFailed(invoice)) {
+    const updated = await client.query(
+      `UPDATE companies
+       SET plan = 'gratis', plan_until = NULL, updated_at = NOW()
+       WHERE id = $1
+       RETURNING id, email, razon_social`,
+      [row.id],
+    );
+    if (updated.rowCount > 0) {
+      await notifyDowngrade(updated.rows[0], deps.notify);
+      return { applied: true, plan: "gratis" };
+    }
+    return { applied: false, plan: "gratis" };
+  }
+
+  return { applied: false, reason: "ignored" };
+}
+
+export async function applyFetchedFlowSubscription(client, subscription, deps = {}) {
+  const customerId = String(subscription?.customerId || "").trim();
+  const subscriptionId = String(subscription?.subscriptionId || "").trim();
+  if (!client || !subscriptionId) return { applied: false, reason: "invalid" };
+
+  const row = await findCompanyByFlow(client, { customerId, subscriptionId });
+  if (!row) return { applied: false, reason: "not_found" };
+
+  if (subscriptionIsActive(subscription)) {
+    return activateFlowSubscription(client, row, {
+      customerId,
+      subscriptionId,
+      planId: subscription.planId || row.flow_plan_id,
+    });
+  }
+
+  const updated = await client.query(
+    `UPDATE companies
+     SET plan = 'gratis', plan_until = NULL, updated_at = NOW()
+     WHERE id = $1
+     RETURNING id, email, razon_social`,
+    [row.id],
+  );
+  if (updated.rowCount > 0) {
+    await notifyDowngrade(updated.rows[0], deps.notify);
+    return { applied: true, plan: "gratis" };
+  }
+  return { applied: false, plan: "gratis" };
+}
+
+export async function applyFetchedFlowStatus(client, status, token, deps = {}) {
   const companyId = companyIdFromStatus(status);
   const flowToken = String(token || "").trim();
   const flowOrder = status?.flowOrder != null ? String(status.flowOrder).trim() : "";
@@ -267,13 +527,23 @@ export async function applyFetchedFlowStatus(client, status, token) {
       return { applied: false, reason: "amount" };
     }
     const found = await client.query(
-      `SELECT id, plan, flow_token, plan_until FROM companies WHERE id = $1 LIMIT 1`,
+      `SELECT id, plan, flow_token, flow_subscription_id, plan_until FROM companies WHERE id = $1 LIMIT 1`,
       [companyId],
     );
     const row = found.rows[0];
     if (!row) return { applied: false, reason: "not_found" };
     if (String(row.flow_token || "") === flowToken && String(row.plan || "").toLowerCase() === "pro") {
       return { applied: true, reason: "idempotent", plan: "pro" };
+    }
+    if (row.flow_subscription_id) {
+      await client.query(
+        `UPDATE companies
+         SET plan = 'pro', flow_token = $2, flow_order = $3, flow_commerce_order = $4,
+             plan_until = NULL, updated_at = NOW()
+         WHERE id = $1`,
+        [companyId, flowToken, flowOrder || null, commerceOrder || null],
+      );
+      return { applied: true, plan: "pro" };
     }
     const now = new Date();
     const currentUntil = row.plan_until ? new Date(row.plan_until) : null;
@@ -294,11 +564,15 @@ export async function applyFetchedFlowStatus(client, status, token) {
     const updated = await client.query(
       `UPDATE companies
        SET plan = 'gratis', plan_until = NULL, updated_at = NOW()
-       WHERE id = $1 AND flow_token = $2
-       RETURNING id`,
+       WHERE id = $1 AND (flow_token = $2 OR flow_subscription_id IS NOT NULL)
+       RETURNING id, email, razon_social`,
       [companyId, flowToken],
     );
-    return { applied: updated.rowCount > 0, plan: "gratis" };
+    if (updated.rowCount > 0) {
+      await notifyDowngrade(updated.rows[0], deps.notify);
+      return { applied: true, plan: "gratis" };
+    }
+    return { applied: false, plan: "gratis" };
   }
 
   return { applied: false, reason: "ignored" };
