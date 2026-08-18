@@ -600,6 +600,8 @@ const required = [
   "api/admin-login.js",
   "api/admin-producto.js",
   "api/admin-trafico.js",
+  "api/_outbound.js",
+  "api/admin-outbound.js",
   "api/movimiento.js",
   "sql/001.sql",
   "sql/002.sql",
@@ -608,6 +610,7 @@ const required = [
   "sql/005.sql",
   "sql/007.sql",
   "sql/008.sql",
+  "sql/009.sql",
   "como.html",
   "precios.html",
   "admin.html",
@@ -2609,6 +2612,140 @@ assert(
     prodRes._out.body?.producto?.checkoutsPaid?.available === false,
   JSON.stringify(prodRes._out.body),
 );
+
+const {
+  summarizeOutbound,
+  countAltasMismoCorreo,
+  normalizeOutboundEstado,
+  parseOutboundPayload,
+  mapResendLastEvent,
+} = await import("../api/_outbound.js");
+const { handleAdminOutbound } = await import("../api/admin-outbound.js");
+const emptyOut = summarizeOutbound([]);
+assert(
+  "outbound 0 filas es cero honesto",
+  emptyOut.enviados === 0 &&
+    emptyOut.entregados === 0 &&
+    emptyOut.rebotes === 0 &&
+    emptyOut.bajas === 0 &&
+    emptyOut.tasaEntrega === 0 &&
+    emptyOut.opens.available === false &&
+    emptyOut.clicks.available === false,
+  JSON.stringify(emptyOut),
+);
+const mixOut = summarizeOutbound([
+  { estado: "delivered", email: "a@b.cl", baja: false },
+  { estado: "delivered", email: "c@d.cl", baja: false },
+  { estado: "bounced", email: "e@f.cl", baja: true },
+  { estado: "sent", email: "g@h.cl", baja: false },
+]);
+assert(
+  "outbound mezcla delivered/bounced",
+  mixOut.enviados === 4 &&
+    mixOut.entregados === 2 &&
+    mixOut.rebotes === 1 &&
+    mixOut.bajas === 1 &&
+    mixOut.tasaEntrega === 0.5,
+  JSON.stringify(mixOut),
+);
+assert(
+  "outbound altas con mismo correo",
+  countAltasMismoCorreo(
+    [{ email: "a@b.cl" }, { email: "A@B.CL" }, { email: "x@y.cl" }],
+    ["a@b.cl", "otro@z.cl"],
+  ) === 1,
+);
+assert("outbound last_event opened cuenta como delivered", normalizeOutboundEstado("opened") === "delivered");
+assert("outbound last_event Resend", mapResendLastEvent({ last_event: "bounced" }) === "bounced");
+assert("outbound payload inválido", parseOutboundPayload({ email: "no" }) === null);
+assert(
+  "outbound payload ok",
+  parseOutboundPayload({ email: "Ops@Pyme.cl", estado: "sent", empresa: "Pyme" })?.email === "ops@pyme.cl",
+);
+
+const outEmpty = mockRes();
+await handleAdminOutbound({ method: "GET", url: "/api/admin-outbound?period=7" }, outEmpty, {
+  requireAdmin: passAdmin,
+  now: nowOps,
+  env: {},
+  withDb: async (fn) =>
+    fn({
+      query: async (sql) => {
+        if (/FROM companies/.test(sql)) return { rows: [] };
+        return { rows: [] };
+      },
+    }),
+});
+assert(
+  "admin-outbound vacío sin inventar aperturas",
+  outEmpty._out.statusCode === 200 &&
+    outEmpty._out.body?.summary?.enviados === 0 &&
+    outEmpty._out.body?.summary?.altasMismoCorreo === 0 &&
+    outEmpty._out.body?.summary?.opens?.available === false &&
+    Array.isArray(outEmpty._out.body?.sends) &&
+    outEmpty._out.body.sends.length === 0,
+  JSON.stringify(outEmpty._out.body),
+);
+const outMix = mockRes();
+await handleAdminOutbound({ method: "GET", url: "/api/admin-outbound?period=30" }, outMix, {
+  requireAdmin: passAdmin,
+  now: nowOps,
+  env: {},
+  withDb: async (fn) =>
+    fn({
+      query: async (sql) => {
+        if (/FROM companies/.test(sql)) return { rows: [{ email: "alta@pyme.cl" }] };
+        return {
+          rows: [
+            { id: "1", created_at: "2026-08-17T00:00:00.000Z", empresa: "Alta", email: "alta@pyme.cl", estado: "delivered", baja: false },
+            { id: "2", created_at: "2026-08-16T00:00:00.000Z", empresa: "Rebote", email: "no@pyme.cl", estado: "bounced", baja: false },
+          ],
+        };
+      },
+    }),
+});
+assert(
+  "admin-outbound agrega delivered/bounced y alta por correo",
+  outMix._out.statusCode === 200 &&
+    outMix._out.body?.summary?.enviados === 2 &&
+    outMix._out.body?.summary?.entregados === 1 &&
+    outMix._out.body?.summary?.rebotes === 1 &&
+    outMix._out.body?.summary?.altasMismoCorreo === 1 &&
+    outMix._out.body?.summary?.opens?.available === false,
+  JSON.stringify(outMix._out.body),
+);
+const outPost = mockRes();
+await handleAdminOutbound(mockReq("POST", { email: "nueva@pyme.cl", estado: "sent", empresa: "Nueva" }), outPost, {
+  requireAdmin: passAdmin,
+  withDb: async (fn) =>
+    fn({
+      query: async () => ({
+        rows: [
+          {
+            id: "n1",
+            created_at: "2026-08-18T00:00:00.000Z",
+            empresa: "Nueva",
+            email: "nueva@pyme.cl",
+            estado: "sent",
+            baja: false,
+            responded: null,
+            lote: "2026-08-18",
+            utm_content: null,
+          },
+        ],
+      }),
+    }),
+});
+assert(
+  "admin-outbound POST registra envío",
+  outPost._out.statusCode === 200 &&
+    outPost._out.body?.send?.email === "nueva@pyme.cl" &&
+    outPost._out.body?.send?.estado === "sent",
+  JSON.stringify(outPost._out.body),
+);
+const out405 = mockRes();
+await handleAdminOutbound(mockReq("PUT", {}), out405, { requireAdmin: passAdmin });
+assert("admin-outbound 405", out405._out.statusCode === 405);
 restoreGa4Env();
 clearGa4Cache();
 
@@ -2758,6 +2895,8 @@ const apiFiles = [
   "api/admin-companies.js",
   "api/admin-producto.js",
   "api/admin-trafico.js",
+  "api/_outbound.js",
+  "api/admin-outbound.js",
   "api/movimiento.js",
   "api/_mp.js",
   "api/checkout.js",
@@ -2783,6 +2922,7 @@ assert("schema 004 en _lib", /004\.sql/.test(libSrc) && /INLINE_SCHEMA_004/.test
 assert("schema 005 en _lib", /005\.sql/.test(libSrc) && /INLINE_SCHEMA_005/.test(libSrc));
 assert("schema 007 en _lib", /007\.sql/.test(libSrc) && /INLINE_SCHEMA_007/.test(libSrc));
 assert("schema 008 en _lib", /008\.sql/.test(libSrc) && /INLINE_SCHEMA_008/.test(libSrc));
+assert("schema 009 en _lib", /009\.sql/.test(libSrc) && /INLINE_SCHEMA_009/.test(libSrc) && /outbound_sends/.test(libSrc));
 
 const sql = readFileSync(join(root, "sql/001.sql"), "utf8");
 assert(
@@ -2850,6 +2990,16 @@ assert(
     /ADD COLUMN IF NOT EXISTS/i.test(sql8),
 );
 assert("sql/008.sql sin secretos", !/postgres(ql)?:\/\//i.test(sql8) && !/DATABASE_URL\s*=/.test(sql8));
+const sql9 = readFileSync(join(root, "sql/009.sql"), "utf8");
+assert(
+  "sql/009.sql outbound_sends",
+  /CREATE TABLE IF NOT EXISTS outbound_sends/.test(sql9) &&
+    /resend_id/.test(sql9) &&
+    /utm_content/.test(sql9) &&
+    /responded/.test(sql9) &&
+    /baja/.test(sql9),
+);
+assert("sql/009.sql sin secretos", !/postgres(ql)?:\/\//i.test(sql9) && !/DATABASE_URL\s*=/.test(sql9) && !/re_/.test(sql9));
 assert("sin schema prisma inventado", !existsSync(join(root, "prisma")));
 assert(
   "empresa.html olvido honesto",
@@ -3006,12 +3156,19 @@ assert("admin.html noindex", /noindex/.test(readFileSync(join(root, "admin.html"
 const adminHtml = readFileSync(join(root, "admin.html"), "utf8");
 const adminJs = readFileSync(join(root, "js/app-admin.js"), "utf8");
 assert(
-  "admin tres pestañas Suscripciones Producto Tráfico",
+  "admin cuatro pestañas incluye Outbound",
   /data-tab="suscripciones"/.test(adminHtml) &&
     /data-tab="producto"/.test(adminHtml) &&
     /data-tab="trafico"/.test(adminHtml) &&
+    /data-tab="outbound"/.test(adminHtml) &&
     /Tráfico \(GA4\)/.test(adminHtml) &&
-    /data-tab-panel="suscripciones"/.test(adminHtml),
+    />Outbound</.test(adminHtml) &&
+    /data-tab-panel="suscripciones"/.test(adminHtml) &&
+    /data-tab-panel="outbound"/.test(adminHtml),
+);
+assert(
+  "admin outbound no inventa aperturas",
+  /sin dato/.test(adminJs) && /Aperturas/.test(adminJs) && !/open.?rate|tasa de apertura/i.test(adminJs),
 );
 assert(
   "admin sin hashes en la UI",

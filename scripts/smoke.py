@@ -189,6 +189,8 @@ def run():
             note("admin no mostró el acceso")
         if page.locator('[data-tab="suscripciones"]').count() == 0:
             note("admin no trae la pestaña Suscripciones")
+        if page.locator('[data-tab="outbound"]').count() == 0:
+            note("admin no trae la pestaña Outbound")
         page.click("[data-nav-burger]")
         page.wait_for_timeout(400)
         drawer_admin = page.locator("#navDrawer")
