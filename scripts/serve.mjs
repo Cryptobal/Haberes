@@ -71,6 +71,9 @@ function resolvePath(urlPath) {
   if (isSitemapPath(cleaned)) {
     return { kind: "sitemap" };
   }
+  if (cleaned === "/docs" || cleaned.startsWith("/docs/")) {
+    return { kind: "missing" };
+  }
   if (cleaned.startsWith("/api/") || cleaned === "/api") {
     return { kind: "api" };
   }

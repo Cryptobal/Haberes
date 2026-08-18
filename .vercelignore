@@ -1,3 +1,6 @@
 # El XML estático dispara 500 en fetches no-browser (GSC/Googlebot).
 # No debe existir sitemap.xml en el deploy: /sitemap.xml lo sirve api/sitemap.js.
 sitemap.xml
+
+# Notas internas (mapa SEO, memo de operación). No publicar en haberes.cl.
+docs/

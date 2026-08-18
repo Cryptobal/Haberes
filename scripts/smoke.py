@@ -43,7 +43,9 @@ PAGES = [
     ("finiquito.html", "finiquito"),
     ("empresa.html", "empresa"),
     ("precios.html", "precios"),
-    ("como.html", "como"),
+      ("como.html", "como"),
+    ("privacidad.html", "privacidad"),
+    ("terminos.html", "terminos"),
     ("admin.html", "admin"),
 ]
 MOBILE = {"width": 360, "height": 780}

@@ -74,6 +74,12 @@ Prosa editorial editable en `content/causales/{slug}.md`.
 - Toda página SEO incluye CTA a `/empresa` (cuenta de empresa).
 - Disclaimer legal (`DISCLAIMER` / `DISCLAIMER_FINIQUITO`) en todo output.
 
+## URLs que no se crean
+
+No publicar `/ia`, `/etica`, `/gobernanza` ni páginas de «exactitud» o sesgo.
+Haberes no se presenta como IA en el sitio. El memo de operación está en
+`docs/INTERNO-USO-DE-IA.md` (fuera del deploy).
+
 ## Cómo regenerar
 
 ```
