@@ -258,6 +258,29 @@ function hydrateAccountNav() {
   refreshNavFromServer();
 }
 
+export function refreshAccountNav() {
+  const emp = empresaActual();
+  if (!emp) return;
+  const chips = document.querySelectorAll(".nav-account");
+  if (chips.length) {
+    const pro = isPro(emp);
+    chips.forEach((chip) => {
+      const badge = chip.querySelector(".badge");
+      if (badge) {
+        badge.textContent = pro ? "Pro" : "Gratis";
+        badge.className = pro ? "badge badge-pro" : "badge";
+      }
+      const name = chip.querySelector(".nav-account-name");
+      if (name) name.textContent = emp.razonSocial || "Empresa";
+    });
+    return;
+  }
+  paintLoggedInNav(emp);
+  markCurrent(document);
+  bindSalir();
+  bindDrawerLinks();
+}
+
 async function refreshNavFromServer() {
   try {
     const { data } = await apiGet("/api/me");

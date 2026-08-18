@@ -763,7 +763,10 @@ for (const f of appEntries) {
 }
 const uiSrc = readFileSync(join(root, "js/ui.js"), "utf8");
 assert("ui.js define wireDrawer", /function wireDrawer/.test(uiSrc) && /export function wireNav/.test(uiSrc));
-assert("ui.js hidrata cuenta en la cabecera", /hydrateAccountNav/.test(uiSrc) && /data-nav-salir/.test(uiSrc));
+assert(
+  "ui.js hidrata cuenta en la cabecera",
+  /hydrateAccountNav/.test(uiSrc) && /refreshAccountNav/.test(uiSrc) && /data-nav-salir/.test(uiSrc),
+);
 assert("ui.js monta el cajón en document.body", /document\.body\.append\(\s*drawer\s*\)/.test(uiSrc));
 assert(
   "ui.js abre/cierra con el atributo hidden",
@@ -2582,6 +2585,10 @@ assert(
   /registrarMovimientosRemoto/.test(empJs) &&
     /descargarNomina/.test(empJs) &&
     /\/api\/movimiento/.test(readFileSync(join(root, "js/plan.js"), "utf8")),
+);
+assert(
+  "app-empresa refresca la cabecera al entrar",
+  /refreshAccountNav/.test(empJs),
 );
 assert(
   "app-empresa checkout y retorno de pago",

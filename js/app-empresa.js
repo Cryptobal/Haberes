@@ -52,6 +52,7 @@ import {
   mountIndicadores,
   numVal,
   periodoItems,
+  refreshAccountNav,
   showError,
   toastError,
   toastInfo,
@@ -308,6 +309,11 @@ function refresh() {
   emp = empresaActual();
   const logged = Boolean(emp);
   panel(logged);
+  try {
+    refreshAccountNav();
+  } catch {
+    /* la cabecera no debe tumbar el workspace */
+  }
   if (!logged) return;
   el("empNombre").textContent = emp.razonSocial || "Empresa";
   el("empMeta").textContent = `${formatRut(emp.rut)} · ${emp.email}`;
