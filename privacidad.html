@@ -13,13 +13,13 @@
   })();
   </script>
   <title>Privacidad — Haberes</title>
-  <meta name="description" content="Los datos de empresa viven en su navegador. Haberes no vende datos personales. Chile." />
+  <meta name="description" content="Qué datos trata Haberes, para qué, con quién y cómo ejercer sus derechos. Ley 21.719. Chile." />
   <link rel="canonical" href="https://www.haberes.cl/privacidad" />
   <meta property="og:type" content="website" />
   <meta property="og:locale" content="es_CL" />
   <meta property="og:site_name" content="Haberes" />
   <meta property="og:title" content="Privacidad — Haberes" />
-  <meta property="og:description" content="Los datos de empresa viven en su navegador. Haberes no vende datos personales. Chile." />
+  <meta property="og:description" content="Qué datos trata Haberes, para qué, con quién y cómo ejercer sus derechos. Ley 21.719. Chile." />
   <meta property="og:url" content="https://www.haberes.cl/privacidad" />
   <meta name="twitter:card" content="summary" />
   <link rel="icon" href="favicon.ico" sizes="32x32" />
@@ -73,63 +73,122 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <div class="wrap">
       <p class="kicker">Chile</p>
       <h1>Privacidad</h1>
-      <p class="lede">Haberes estima sueldos y finiquitos. Las calculadoras públicas son gratis. La cuenta empresa hoy no se cobra.</p>
+      <p class="lede">Haberes estima sueldos y finiquitos para pymes. Aquí decimos qué datos tratamos, para qué y con quién. No es un dictamen jurídico.</p>
       <p class="notice">
         Documento generado por Haberes. No es un cálculo de la Dirección del Trabajo ni de Previred.
         No constituye asesoría legal ni previsional.
       </p>
 
       <div class="prose">
-        <h2>Qué se guarda y dónde</h2>
+        <h2>Ley 21.719</h2>
         <p>
-          Si usa «Para mi empresa» <strong>sin</strong> base de datos configurada, el RUT, el correo, un hash de la clave
-          y los trabajadores quedan en <strong>localStorage de este navegador</strong>. No hay sesión en un servidor.
-          Si limpia el sitio, cambia de computador o usa una ventana privada, esos datos no están en otro lado: no podemos
-          recuperárselos por correo.
+          Aplicamos este estándar de protección de datos. La Ley 21.719 se publicó el 13 de diciembre de 2024
+          y, a partir del 1 de diciembre de 2026, rige en Chile. Esta página describe el tratamiento que hace
+          el producto, no es asesoría legal.
+        </p>
+
+        <h2>Quién es responsable</h2>
+        <p>
+          El responsable del tratamiento es <strong>Haberes</strong> (<a href="https://www.haberes.cl">www.haberes.cl</a>),
+          operado por <a href="https://lx3.ai" rel="noopener noreferrer">lx3.ai</a>.
+          Contacto: <a href="mailto:contacto@lx3.ai">contacto@lx3.ai</a>.
+        </p>
+
+        <h2>Qué datos y de quién</h2>
+        <p>
+          Hay dos titulares distintos. La <strong>cuenta empresa</strong> es de quien se registra:
+          RUT, correo en minúsculas, razón social, giro, dirección y un hash Argon2id de la clave
+          (nunca la clave en claro).
         </p>
         <p>
-          Si el operador configuró Postgres, la cuenta de empresa (RUT, correo en minúsculas, razón social, giro, dirección y un hash
-          Argon2id de la clave) se guarda en esa base. La sesión va en una cookie httpOnly. Los trabajadores de la
-          liquidación siguen en este navegador. El enlace de recuperación, si existe, se guarda solo como hash y caduca
-          a los 30 minutos. El logo y los PDF generados se guardan en un depósito privado (Cloudflare R2): en Postgres
-          queda solo la clave del objeto, nunca los bytes. Esos archivos se sirven únicamente a la empresa autenticada;
-          no hay URL pública del depósito.
+          Los <strong>datos de trabajadores</strong> los carga la empresa (nombre, RUT, cargo, sueldo, AFP, salud,
+          correo, banco y cuenta, fechas de contrato y novedades del mes). Esa empresa decide cargarlos.
+          Haberes los trata para prestar el servicio: calcular, emitir liquidaciones o finiquitos y, si lo piden, enviar el PDF.
+        </p>
+
+        <h2>Dónde se guardan</h2>
+        <p>
+          Sin base de datos, la cuenta y la nómina viven en el <strong>localStorage de este navegador</strong>.
+          No hay sesión en un servidor. Si limpia el sitio o cambia de computador, no podemos recuperárselos por correo.
         </p>
         <p>
-          No enviamos un correo de recuperación salvo que esté configurado el envío. No le diremos que «le enviamos un
-          email» si no es así. La respuesta de «olvidé mi clave» es la misma exista o no la cuenta.
+          Con Postgres (el sitio en producción), la cuenta empresa va a Neon. La sesión es la cookie
+          <code>haberes_session</code> (httpOnly, Secure, SameSite=Lax, 7 días).
+          La nómina y las novedades del mes <strong>siguen en este navegador</strong>: no hay una tabla de trabajadores en el servidor.
         </p>
         <p>
-          Si usa «Enviar por correo» en Documentos y el operador configuró Resend, se genera un PDF por trabajador,
-          se guarda en el depósito privado y se envía al correo del trabajador que usted indicó en la nómina.
-          En Postgres queda un registro en la tabla <code>envios</code> (empresa, tipo de documento, clave del trabajador,
-          correo de destino, periodo, estado y, si hubo éxito, el identificador del proveedor). No se guarda el contenido
-          del PDF ni montos de remuneración en ese registro. El proveedor de correo es un tercero (Resend);
-          el remitente debe ser un dominio verificado en esa cuenta. Sin <code>RESEND_API_KEY</code> la interfaz
-          indica que el envío no está configurado y no finge un envío.
+          Cuando emite o envía un documento, el servidor recibe esos datos solo para armar el PDF.
+          El logo, la firma y los PDF quedan en un depósito privado (Cloudflare R2). En Postgres queda la clave del objeto, no los bytes.
+          Esos archivos se sirven solo a la empresa autenticada; no hay URL pública del depósito.
+        </p>
+        <p>
+          Para el cupo del plan queda un movimiento (empresa, tipo de documento, clave del trabajador —en la práctica el RUT— y periodo).
+          Si usa «Enviar por correo» y Resend está configurado, el PDF se manda al correo que usted puso en la nómina
+          desde una dirección verificada de haberes.cl. En la tabla <code>envios</code> quedan empresa, tipo, clave del trabajador,
+          correo de destino, periodo, estado e identificador del proveedor. No se guardan ahí los bytes del PDF ni montos de remuneración.
+          Sin envío configurado, la interfaz lo dice y no finge un correo.
+        </p>
+        <p>
+          El enlace de recuperación se guarda solo como hash y caduca a los 30 minutos.
+          La respuesta de «olvidé mi clave» es la misma exista o no la cuenta. No decimos que enviamos un correo si no está configurado.
+        </p>
+
+        <h2>Para qué los usamos</h2>
+        <p>
+          Crear y mantener la cuenta, emitir liquidaciones y finiquitos, cobrar el plan Pro, enviar el PDF si lo piden,
+          seguridad (sesión, recuperación de clave, cuentas deshabilitadas) y medición de tráfico del sitio.
+        </p>
+
+        <h2>Encargados y terceros</h2>
+        <p>
+          Para operar usamos Neon (base de datos), Cloudflare R2 (archivos), Resend (correo),
+          Mercado Pago y Flow (cobro), Google Tag Manager / Analytics (medición) y
+          <a href="https://mindicador.cl" rel="noopener noreferrer">mindicador.cl</a> (UF y UTM).
+          No vendemos datos personales.
+        </p>
+
+        <h2>Cuánto tiempo los guardamos</h2>
+        <p>
+          Los datos de la cuenta, los PDF y los registros de envío se conservan mientras la cuenta exista.
+          Si un operador deshabilita la cuenta, no se puede entrar; eso no borra solo los datos.
+          Para eliminarlos, escriba desde el correo de la cuenta. La nómina del navegador se borra si usted la limpia o borra la cuenta local.
+          El enlace de recuperación vale 30 minutos. La cookie de sesión, 7 días.
+        </p>
+
+        <h2>Sus derechos</h2>
+        <p>
+          Puede pedir acceso, rectificación, eliminación, oposición y portabilidad de sus datos.
+          Escríbanos a <a href="mailto:contacto@lx3.ai">contacto@lx3.ai</a> desde el correo de la cuenta.
+          Respondemos en un plazo razonable, en la práctica hasta 30 días.
+          Si la solicitud es sobre datos de un trabajador, normalmente tramitamos con la empresa que los cargó.
+        </p>
+
+        <h2>Cookies y medición</h2>
+        <p>
+          Si entra con cuenta en el servidor, usamos la cookie de sesión. El tema claro/oscuro queda en este navegador.
+          En el sitio público está Google Tag Manager (<code>GTM-PCR596Z2</code>): hay medición de tráfico.
+          Google puede usar cookies propias. No afirmamos que el sitio no mida.
+        </p>
+
+        <h2>Transferencias</h2>
+        <p>
+          Algunos encargados (por ejemplo Google y Resend, y el hosting o la base) operan fuera de Chile.
+          Los usamos solo para las finalidades de esta página.
         </p>
 
         <h2>UF y UTM</h2>
         <p>
-          Consultamos la UF y la UTM a <a href="https://mindicador.cl" rel="noopener noreferrer">mindicador.cl</a>
-          y las guardamos en caché local por 12 horas. Si el valor sale de rango, usamos el respaldo publicado en esta
-          herramienta. No inventamos esos indicadores.
+          Consultamos la UF y la UTM a mindicador.cl y las guardamos en caché local por 12 horas.
+          Si el valor sale de rango, usamos el respaldo publicado en esta herramienta. No inventamos esos indicadores.
         </p>
 
         <h2>Qué no hacemos</h2>
         <p>
-          No vendemos datos personales. El cobro de Pro se hace con Mercado Pago o Flow; Haberes guarda el identificador
-          del pago y la vigencia del plan, no los datos de su tarjeta. No creamos una ficha suya en
-          un servidor para marketing.
+          No vendemos datos personales. El cobro de Pro es con Mercado Pago o Flow: Haberes guarda el identificador
+          del pago o de la suscripción, el plan y su vigencia (<code>plan_until</code>), no los datos de su tarjeta.
         </p>
 
-        <h2>Medición</h2>
-        <p>
-          Google Analytics 4 solo se carga si el sitio tiene configurado un identificador <code>G-…</code> válido.
-          Por defecto ese identificador está vacío y no se envía nada a Google.
-        </p>
-
-        <p>Sitio: <a href="https://www.haberes.cl">www.haberes.cl</a>. Última actualización: 17 de agosto de 2026.</p>
+        <p>Sitio: <a href="https://www.haberes.cl">www.haberes.cl</a>. Última actualización: 18 de agosto de 2026.</p>
       </div>
     </div>
   </main>
