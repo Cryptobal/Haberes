@@ -1,21 +1,12 @@
-import { effectivePlan, json, readJson, withDb } from "./_lib.js";
+import { json, readJson, withDb } from "./_lib.js";
 import { requireAdmin } from "./_admin.js";
+import { companyAdminPublic, summarizeSubscriptions } from "./_admin-ops.js";
 
-function companyAdminPublic(row) {
-  if (!row) return null;
-  return {
-    id: row.id,
-    rut: row.rut,
-    email: row.email,
-    razonSocial: row.razon_social,
-    createdAt: row.created_at,
-    disabled: Boolean(row.disabled_at),
-    plan: effectivePlan(row),
-    planUntil: row.plan_until ? new Date(row.plan_until).toISOString() : null,
-    hasLogo: Boolean(row.has_logo),
-    documentos: Number(row.documentos) || 0,
-  };
-}
+const COMPANY_SELECT = `c.id, c.rut, c.email, c.razon_social, c.created_at, c.disabled_at, c.plan, c.plan_until,
+                  c.mp_payment_id, c.mp_preapproval_id, c.flow_order, c.flow_commerce_order,
+                  c.flow_subscription_id, c.flow_token, c.flow_customer_id,
+                  (c.logo_key IS NOT NULL) AS has_logo,
+                  (SELECT COUNT(*)::int FROM documentos d WHERE d.company_id = c.id) AS documentos`;
 
 export default async function handler(req, res) {
   if (req.method !== "GET" && req.method !== "POST") {
@@ -28,19 +19,22 @@ export default async function handler(req, res) {
 
   if (req.method === "GET") {
     try {
-      const rows = await withDb(async (client) => {
+      const payload = await withDb(async (client) => {
         const found = await client.query(
-          `SELECT c.id, c.rut, c.email, c.razon_social, c.created_at, c.disabled_at, c.plan, c.plan_until,
-                  (c.logo_key IS NOT NULL) AS has_logo,
-                  (SELECT COUNT(*)::int FROM documentos d WHERE d.company_id = c.id) AS documentos
+          `SELECT ${COMPANY_SELECT}
            FROM companies c
            ORDER BY c.created_at DESC
            LIMIT 500`,
         );
-        return found.rows;
+        const plans = await client.query(`SELECT plan, plan_until FROM companies`);
+        return {
+          companies: found.rows.map((row) => companyAdminPublic(row)),
+          summary: summarizeSubscriptions(plans.rows),
+          listed: found.rows.length,
+        };
       });
-      if (!rows) return json(res, 503, { ok: false, reason: "db_unavailable" });
-      return json(res, 200, { ok: true, companies: rows.map(companyAdminPublic) });
+      if (!payload) return json(res, 503, { ok: false, reason: "db_unavailable" });
+      return json(res, 200, { ok: true, ...payload });
     } catch {
       return json(res, 503, { ok: false, reason: "db_unavailable" });
     }
@@ -73,6 +67,8 @@ export default async function handler(req, res) {
              updated_at = NOW()
          WHERE id = $1
          RETURNING id, rut, email, razon_social, created_at, disabled_at, plan, plan_until,
+                   mp_payment_id, mp_preapproval_id, flow_order, flow_commerce_order,
+                   flow_subscription_id, flow_token, flow_customer_id,
                    (logo_key IS NOT NULL) AS has_logo,
                    (SELECT COUNT(*)::int FROM documentos d WHERE d.company_id = companies.id) AS documentos`,
         [id, disabled, plan],
