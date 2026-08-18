@@ -9,15 +9,48 @@ import { fileURLToPath } from "node:url";
 import { calcularFiniquitoCompleto } from "../js/finiquito.js";
 import { FALLBACK_UF, DISCLAIMER, DISCLAIMER_FINIQUITO, IUSC_TRAMOS } from "../js/constants.js";
 import { causalPorId, CAUSALES } from "../js/causales.js";
-import { CAUSAL_PAGES, GUIDE_SLUGS, GUIDES } from "../content/registry.js";
+import { CAUSAL_PAGES, GUIDE_SLUGS, GUIDES, lastmodForPath } from "../content/registry.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const ORIGIN = "https://www.haberes.cl";
 const TODAY = new Date().toISOString().slice(0, 10);
+const MESES = [
+  "enero",
+  "febrero",
+  "marzo",
+  "abril",
+  "mayo",
+  "junio",
+  "julio",
+  "agosto",
+  "septiembre",
+  "octubre",
+  "noviembre",
+  "diciembre",
+];
+const MESES_CORTOS = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sept", "oct", "nov", "dic"];
+
+function isoParts(iso) {
+  const m = String(iso || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return null;
+  return { y: m[1], month: Number(m[2]), d: Number(m[3]) };
+}
+
+function formatDateLong(iso) {
+  const p = isoParts(iso);
+  if (!p) return "";
+  return `${p.d} de ${MESES[p.month - 1]} de ${p.y}`;
+}
+
+function formatDateShort(iso) {
+  const p = isoParts(iso);
+  if (!p) return "";
+  return `${p.d} ${MESES_CORTOS[p.month - 1]} ${p.y}`;
+}
 
 const indexHtml = readFileSync(join(root, "index.html"), "utf8");
 const headerStart = indexHtml.indexOf('<header class="site-header">');
-const mainStart = indexHtml.indexOf("<main>");
+const mainStart = indexHtml.search(/<main[\s>]/);
 if (headerStart < 0 || mainStart < 0 || mainStart <= headerStart) {
   throw new Error("No se pudo extraer cabecera/nav-drawer desde index.html");
 }
@@ -249,6 +282,30 @@ function applyPlaceholders(html, { calc, causal }) {
     .replaceAll("{{iusc-table}}", iuscTableHtml());
 }
 
+function withMetaDate(html, iso) {
+  const label = formatDateLong(iso);
+  if (!iso || !label || html.includes('class="guide-meta"')) return html;
+  const stamp = `<p class="guide-meta"><time datetime="${esc(iso)}">Actualizado el ${esc(label)}</time></p>`;
+  return html.replace(/<\/h1>/, `</h1>\n${stamp}`);
+}
+
+function faqHtml(faq) {
+  if (!Array.isArray(faq) || !faq.length) return "";
+  const items = faq
+    .map((f) => `<h3>${esc(f.q || f.question)}</h3>\n<p>${inlineMd(f.a || f.answer || "")}</p>`)
+    .join("\n");
+  return `<h2>Preguntas frecuentes</h2>\n${items}`;
+}
+
+function appendFaq(html, faq) {
+  const block = faqHtml(faq);
+  if (!block || /Preguntas frecuentes/.test(html)) return html;
+  if (html.includes('class="seo-cta"')) {
+    return html.replace('<aside class="seo-cta"', `${block}\n<aside class="seo-cta"`);
+  }
+  return `${html}\n${block}`;
+}
+
 function head({ title, description, canonical, ogImage = "/img/og-default.png", jsonld, assetPrefix = "../" }) {
   const blocks = Array.isArray(jsonld) ? jsonld : [jsonld];
   const ld = blocks
@@ -471,12 +528,18 @@ for (const slug of GUIDE_SLUGS) {
     { name: meta.h1, href: `/guias/${slug}` },
   ];
 
+  const rec = GUIDES.find((g) => g.slug === slug);
+  const updated = meta.updated || rec?.updated || lastmodForPath(`/guias/${slug}`) || TODAY;
+  const published = meta.published || rec?.published || updated;
+  htmlBody = withMetaDate(htmlBody, updated);
+  htmlBody = appendFaq(htmlBody, meta.faq);
+
   const html = pageShell({
     title: meta.title,
     description: meta.description,
     canonical: `/guias/${slug}`,
     crumbsItems,
-    article: { headline: meta.h1 },
+    article: { headline: meta.h1, datePublished: published, dateModified: updated },
     body: htmlBody,
     faq: meta.faq,
     webApp: {
@@ -486,13 +549,13 @@ for (const slug of GUIDE_SLUGS) {
     },
   });
   writeFileSync(join(root, "guias", `${slug}.html`), html);
-  const rec = GUIDES.find((g) => g.slug === slug);
   guideIndex.push({
     slug,
     title: meta.h1,
     description: meta.description,
     group: rec?.group || "liquidacion",
     calc: rec?.calc || "/sueldo",
+    updated,
   });
   console.log("guia", slug);
 }
@@ -594,7 +657,11 @@ for (const p of CAUSAL_PAGES) {
       { name: "Finiquito", href: "/finiquito" },
       { name: c.short, href: `/finiquito/${p.slug}` },
     ],
-    article: { headline: c.label },
+    article: {
+      headline: c.label,
+      datePublished: lastmodForPath(`/finiquito/${p.slug}`),
+      dateModified: lastmodForPath(`/finiquito/${p.slug}`),
+    },
     body,
     faq: [
       {
@@ -641,19 +708,42 @@ function hubList(items) {
       </ul>`;
 }
 
+function hubLatest(items, limit = 6) {
+  const sorted = [...items].sort((a, b) => {
+    const byDate = String(b.updated || "").localeCompare(String(a.updated || ""));
+    return byDate !== 0 ? byDate : a.slug.localeCompare(b.slug, "es");
+  });
+  return `<ol class="guide-latest">
+        ${sorted
+          .slice(0, limit)
+          .map(
+            (g) =>
+              `<li><time datetime="${esc(g.updated)}">${esc(formatDateShort(g.updated))}</time>
+          <a href="/guias/${g.slug}">${esc(g.title)}</a></li>`,
+          )
+          .join("\n        ")}
+      </ol>`;
+}
+
 {
   const liq = guideIndex.filter((g) => g.group === "liquidacion");
   const fini = guideIndex.filter((g) => g.group === "finiquito");
   if (liq.length + fini.length !== 16) {
     throw new Error(`El hub debe listar 16 guías; hay ${liq.length}+${fini.length}`);
   }
+  const hubUpdated = lastmodForPath("/guias");
   const hubBody = `
       <h1>Guías de liquidación y finiquito en Chile</h1>
+      <p class="guide-meta"><time datetime="${esc(hubUpdated)}">Actualizado el ${esc(formatDateLong(hubUpdated))}</time></p>
       <p class="lede">
         Índice de las ${guideIndex.length} guías de Haberes. Las de liquidación enlazan a la
         <a href="/sueldo">calculadora de sueldo líquido</a>; las de finiquito, a la
         <a href="/finiquito">calculadora de finiquito</a>. El texto es informativo; el cálculo vive en esas URLs.
+        No hay un blog aparte: este índice es el flujo de publicación.
       </p>
+      <h2>Últimas actualizaciones</h2>
+      <p>Las cuatro piezas de dinero más leídas se reescriben aquí, con fecha a la vista.</p>
+      ${hubLatest(guideIndex)}
       <h2>Liquidación de sueldo</h2>
       <p>Qué es el comprobante de remuneraciones, descuentos legales e impuesto único. Para estimar el líquido use <a href="/sueldo">/sueldo</a>.</p>
       ${hubList(liq)}
