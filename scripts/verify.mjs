@@ -595,7 +595,11 @@ const required = [
   "api/storage.js",
   "api/_pdf.js",
   "api/_admin.js",
+  "api/_admin-ops.js",
+  "api/_ga4.js",
   "api/admin-login.js",
+  "api/admin-producto.js",
+  "api/admin-trafico.js",
   "api/movimiento.js",
   "sql/001.sql",
   "sql/002.sql",
@@ -2291,6 +2295,303 @@ else delete process.env.ADMIN_EMAILS;
 if (prevAdminH !== undefined) process.env.ADMIN_PASSWORD_HASH = prevAdminH;
 else delete process.env.ADMIN_PASSWORD_HASH;
 
+const {
+  classifySubscription,
+  paymentProvider,
+  paymentIdsPublic,
+  summarizeSubscriptions,
+  companyAdminPublic,
+  parseProductoPeriod,
+  parseTraficoPeriod,
+  productoFromCounts,
+  PRO_GROSS_CLP,
+} = await import("../api/_admin-ops.js");
+const nowOps = Date.parse("2026-08-18T12:00:00.000Z");
+assert("suscripción Pro abierta", classifySubscription({ plan: "pro", plan_until: null }, nowOps) === "pro_vigente");
+assert(
+  "suscripción Pro vencida",
+  classifySubscription({ plan: "pro", plan_until: "2026-07-01T00:00:00.000Z" }, nowOps) === "vencida",
+);
+assert(
+  "suscripción Gratis expirada sigue vencida",
+  classifySubscription({ plan: "gratis", plan_until: "2026-07-01T00:00:00.000Z" }, nowOps) === "vencida",
+);
+assert("suscripción Gratis", classifySubscription({ plan: "gratis", plan_until: null }, nowOps) === "gratis");
+assert("proveedor MP", paymentProvider({ mp_preapproval_id: "pre_1" }) === "mp");
+assert("proveedor Flow", paymentProvider({ flow_subscription_id: "sus_1" }) === "flow");
+assert(
+  "proveedor ambos",
+  paymentProvider({ mp_payment_id: "pay_1", flow_order: "ord_1" }) === "mp_flow",
+);
+assert("proveedor ninguno", paymentProvider({}) === null);
+const ids = paymentIdsPublic({
+  mp_payment_id: "pay_1",
+  flow_token: "tok_secret",
+  flow_subscription_id: "sus_1",
+  password_hash: "$argon2id$no",
+});
+assert(
+  "ids de cobro sin token ni hash",
+  ids.mpPaymentId === "pay_1" &&
+    ids.flowSubscriptionId === "sus_1" &&
+    ids.flowToken == null &&
+    !JSON.stringify(ids).includes("argon2") &&
+    !JSON.stringify(ids).includes("tok_secret"),
+);
+const pub = companyAdminPublic(
+  {
+    id: "c1",
+    rut: "760864285",
+    email: "pyme@example.cl",
+    razon_social: "Pyme SpA",
+    created_at: "2026-08-01T00:00:00.000Z",
+    disabled_at: null,
+    plan: "pro",
+    plan_until: null,
+    mp_preapproval_id: "pre_1",
+    has_logo: true,
+    documentos: 3,
+    password_hash: "$argon2id$hidden",
+  },
+  nowOps,
+);
+assert(
+  "companyAdminPublic sin secretos y Pro vigente",
+  pub.plan === "pro" &&
+    pub.status === "pro_vigente" &&
+    pub.vigencia.kind === "open" &&
+    pub.provider === "mp" &&
+    !Object.prototype.hasOwnProperty.call(pub, "password_hash") &&
+    JSON.stringify(pub).includes("pyme@example.cl") &&
+    !JSON.stringify(pub).includes("argon2"),
+);
+const sum = summarizeSubscriptions(
+  [
+    { plan: "pro", plan_until: null },
+    { plan: "pro", plan_until: "2026-07-01T00:00:00.000Z" },
+    { plan: "gratis", plan_until: null },
+    { plan: "gratis", plan_until: null },
+  ],
+  nowOps,
+);
+assert(
+  "resumen Pro/Gratis/vencidas y estimado 17838",
+  sum.pro === 1 &&
+    sum.vencidas === 1 &&
+    sum.gratis === 2 &&
+    sum.ingresosEstimadosClp === PRO_GROSS_CLP &&
+    sum.ingresosEstimados.totalClp === 17838 &&
+    sum.cobroFallido.available === false &&
+    sum.proNuevosSemana.available === false &&
+    sum.bajasSemana.available === false,
+  JSON.stringify(sum),
+);
+assert("período producto 7 o 30", parseProductoPeriod("7") === 7 && parseProductoPeriod("99") === 30);
+assert("período tráfico 7 o 28", parseTraficoPeriod("7") === 7 && parseTraficoPeriod("x") === 28);
+const prod = productoFromCounts({ accountsNew: 2, documents: 4, movements: 1, envios: 0 }, 7, "2026-08-11T12:00:00.000Z");
+assert(
+  "producto sin checkout inventado",
+  prod.accountsNew === 2 &&
+    prod.documents === 4 &&
+    prod.checkoutsStarted.available === false &&
+    prod.checkoutsPaid.available === false,
+);
+
+const {
+  ga4Configured,
+  ga4PropertyId,
+  ga4ServiceAccount,
+  parseServiceAccountJson,
+  mapGa4Channel,
+  foldChannels,
+  parseGa4Batch,
+  ga4OperatorError,
+  clearGa4Cache,
+  loadGa4Report,
+  ga4NotConfiguredBody,
+} = await import("../api/_ga4.js");
+const { handleAdminTrafico } = await import("../api/admin-trafico.js");
+const { handleAdminProducto } = await import("../api/admin-producto.js");
+
+const prevGa4 = {
+  GA4_PROPERTY_ID: process.env.GA4_PROPERTY_ID,
+  GOOGLE_ANALYTICS_PROPERTY_ID: process.env.GOOGLE_ANALYTICS_PROPERTY_ID,
+  GA4_SERVICE_ACCOUNT_JSON: process.env.GA4_SERVICE_ACCOUNT_JSON,
+  GOOGLE_APPLICATION_CREDENTIALS_JSON: process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON,
+  GOOGLE_APPLICATION_CREDENTIALS: process.env.GOOGLE_APPLICATION_CREDENTIALS,
+};
+function restoreGa4Env() {
+  for (const [k, v] of Object.entries(prevGa4)) {
+    if (v === undefined) delete process.env[k];
+    else process.env[k] = v;
+  }
+}
+delete process.env.GA4_PROPERTY_ID;
+delete process.env.GOOGLE_ANALYTICS_PROPERTY_ID;
+delete process.env.GA4_SERVICE_ACCOUNT_JSON;
+delete process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
+delete process.env.GOOGLE_APPLICATION_CREDENTIALS;
+clearGa4Cache();
+assert("GA4 no configurado sin env", ga4Configured() === false);
+const missing = await loadGa4Report({ env: {}, fetchImpl: async () => { throw new Error("no fetch"); } });
+assert(
+  "GA4 missing no inventa cifras",
+  missing.connected === false &&
+    missing.reason === "ga4_not_configured" &&
+    missing.sessions == null &&
+    Array.isArray(missing.willShow) &&
+    missing.willShow.includes("sesiones"),
+  JSON.stringify(missing),
+);
+process.env.GOOGLE_ANALYTICS_PROPERTY_ID = "properties/123456";
+process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON = JSON.stringify({
+  client_email: "ga4@example.iam.gserviceaccount.com",
+  private_key: "-----BEGIN PRIVATE KEY-----\nabc\n-----END PRIVATE KEY-----\n",
+});
+assert("GA4 property alias", ga4PropertyId() === "123456");
+assert("GA4 service account alias", ga4ServiceAccount()?.client_email === "ga4@example.iam.gserviceaccount.com");
+assert("GA4 configurado con alias", ga4Configured() === true);
+assert("SA JSON inválido", parseServiceAccountJson("{") === null);
+assert("canal orgánico", mapGa4Channel("Organic Search") === "organic");
+assert("canal pago Display", mapGa4Channel("Display") === "paid");
+assert(
+  "canales agrupados",
+  JSON.stringify(foldChannels([{ name: "Organic Search", sessions: 4 }, { name: "Email", sessions: 1 }])) ===
+    JSON.stringify({ organic: 4, direct: 0, referral: 0, paid: 0, other: 1 }),
+);
+const parsedBatch = parseGa4Batch({
+  reports: [
+    { rows: [{ metricValues: [{ value: "10" }, { value: "7" }] }] },
+    { rows: [{ dimensionValues: [{ value: "Direct" }], metricValues: [{ value: "3" }] }] },
+    { rows: [{ dimensionValues: [{ value: "Santiago" }], metricValues: [{ value: "5" }] }] },
+    { rows: [{ dimensionValues: [{ value: "Chile" }], metricValues: [{ value: "8" }] }] },
+    { rows: [{ dimensionValues: [{ value: "/sueldo" }], metricValues: [{ value: "2" }] }] },
+  ],
+});
+assert(
+  "parse GA4 batch",
+  parsedBatch.sessions === 10 &&
+    parsedBatch.users === 7 &&
+    parsedBatch.channels.direct === 3 &&
+    parsedBatch.cities[0].name === "Santiago" &&
+    parsedBatch.landings[0].name === "/sueldo",
+);
+assert("error GA4 403 en lenguaje operador", /cuenta de servicio/.test(ga4OperatorError({ error: { code: 403, status: "PERMISSION_DENIED" } }, 403)));
+
+const fakeToken = async () => ({ ok: true, token: "ya29.unit" });
+const fakeGa4Ok = async (url, init) => {
+  const u = String(url);
+  if (u.includes("oauth2.googleapis.com")) throw new Error("token path should be injected");
+  if (!u.includes("batchRunReports")) throw new Error(`unexpected ${u}`);
+  const body = JSON.parse(init.body);
+  assert("GA4 pide 7 u 28 días", body.requests[0].dateRanges[0].startDate === "7daysAgo");
+  return {
+    ok: true,
+    status: 200,
+    json: async () => ({
+      reports: [
+        { rows: [{ metricValues: [{ value: "21" }, { value: "11" }] }] },
+        { rows: [{ dimensionValues: [{ value: "Organic Search" }], metricValues: [{ value: "12" }] }] },
+        { rows: [{ dimensionValues: [{ value: "(not set)" }], metricValues: [{ value: "9" }] }] },
+        { rows: [{ dimensionValues: [{ value: "Chile" }], metricValues: [{ value: "21" }] }] },
+        { rows: [{ dimensionValues: [{ value: "/" }], metricValues: [{ value: "6" }] }] },
+      ],
+    }),
+  };
+};
+clearGa4Cache();
+const okReport = await loadGa4Report({
+  env: process.env,
+  periodDays: 7,
+  fetchImpl: fakeGa4Ok,
+  getAccessToken: fakeToken,
+});
+assert(
+  "GA4 informe mockeado",
+  okReport.ok === true &&
+    okReport.connected === true &&
+    okReport.sessions === 21 &&
+    okReport.channels.organic === 12 &&
+    okReport.cities.length === 0 &&
+    okReport.countries[0].name === "Chile",
+  JSON.stringify(okReport),
+);
+
+const fakeGa4Fail = async () => ({
+  ok: false,
+  status: 403,
+  json: async () => ({ error: { code: 403, status: "PERMISSION_DENIED", message: "stack\ntrace" } }),
+});
+clearGa4Cache();
+const failReport = await loadGa4Report({
+  env: process.env,
+  periodDays: 28,
+  fetchImpl: fakeGa4Fail,
+  getAccessToken: fakeToken,
+});
+assert(
+  "GA4 error sin stack",
+  failReport.ok === false &&
+    failReport.connected === true &&
+    /cuenta de servicio/.test(failReport.error) &&
+    !/stack/.test(JSON.stringify(failReport)),
+  JSON.stringify(failReport),
+);
+
+const passAdmin = async () => ({ email: "ops@example.com" });
+const traficoMissing = mockRes();
+clearGa4Cache();
+delete process.env.GA4_PROPERTY_ID;
+delete process.env.GOOGLE_ANALYTICS_PROPERTY_ID;
+delete process.env.GA4_SERVICE_ACCOUNT_JSON;
+delete process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
+await handleAdminTrafico({ method: "GET", url: "/api/admin-trafico?period=7" }, traficoMissing, {
+  requireAdmin: passAdmin,
+  env: {},
+  fetchImpl: async () => { throw new Error("no"); },
+});
+assert(
+  "admin-trafico 200 no conectado",
+  traficoMissing._out.statusCode === 200 &&
+    traficoMissing._out.body?.connected === false &&
+    traficoMissing._out.body?.reason === "ga4_not_configured",
+  JSON.stringify(traficoMissing._out.body),
+);
+const traficoErr = mockRes();
+await handleAdminTrafico({ method: "GET", url: "/api/admin-trafico" }, traficoErr, {
+  requireAdmin: passAdmin,
+  loadGa4Report: async () => ({ ok: false, connected: true, reason: "ga4_error", error: "GA4 rechazó el acceso." }),
+});
+assert(
+  "admin-trafico error de API",
+  traficoErr._out.statusCode === 200 &&
+    traficoErr._out.body?.ok === false &&
+    traficoErr._out.body?.error === "GA4 rechazó el acceso.",
+);
+const trafico405 = mockRes();
+await handleAdminTrafico(mockReq("POST", {}), trafico405, { requireAdmin: passAdmin });
+assert("admin-trafico 405", trafico405._out.statusCode === 405);
+
+const prodRes = mockRes();
+await handleAdminProducto({ method: "GET", url: "/api/admin-producto?period=7" }, prodRes, {
+  requireAdmin: passAdmin,
+  now: nowOps,
+  withDb: async (fn) =>
+    fn({
+      query: async () => ({ rows: [{ n: 3 }] }),
+    }),
+});
+assert(
+  "admin-producto agrega cuentas y omite checkout",
+  prodRes._out.statusCode === 200 &&
+    prodRes._out.body?.producto?.accountsNew === 3 &&
+    prodRes._out.body?.producto?.periodDays === 7 &&
+    prodRes._out.body?.producto?.checkoutsPaid?.available === false,
+  JSON.stringify(prodRes._out.body),
+);
+restoreGa4Env();
+clearGa4Cache();
+
 const R2_ENV_KEYS = [
   "R2_ACCOUNT_ID",
   "CLOUDFLARE_ACCOUNT_ID",
@@ -2429,10 +2730,14 @@ const apiFiles = [
   "api/reset-request.js",
   "api/reset-confirm.js",
   "api/_admin.js",
+  "api/_admin-ops.js",
+  "api/_ga4.js",
   "api/admin-login.js",
   "api/admin-logout.js",
   "api/admin-me.js",
   "api/admin-companies.js",
+  "api/admin-producto.js",
+  "api/admin-trafico.js",
   "api/movimiento.js",
   "api/_mp.js",
   "api/checkout.js",
@@ -2678,15 +2983,46 @@ assert(
 );
 assert("empresa.html resumen de finiquito", /id="finResumen"/.test(empHtml) && /id="finOutPartidas"/.test(empHtml));
 assert("admin.html noindex", /noindex/.test(readFileSync(join(root, "admin.html"), "utf8")));
+const adminHtml = readFileSync(join(root, "admin.html"), "utf8");
+const adminJs = readFileSync(join(root, "js/app-admin.js"), "utf8");
+assert(
+  "admin tres pestañas Suscripciones Producto Tráfico",
+  /data-tab="suscripciones"/.test(adminHtml) &&
+    /data-tab="producto"/.test(adminHtml) &&
+    /data-tab="trafico"/.test(adminHtml) &&
+    /Tráfico \(GA4\)/.test(adminHtml) &&
+    /data-tab-panel="suscripciones"/.test(adminHtml),
+);
 assert(
   "admin sin hashes en la UI",
-  !/\$argon2/i.test(readFileSync(join(root, "admin.html"), "utf8")) &&
-    !/\$argon2/i.test(readFileSync(join(root, "js/app-admin.js"), "utf8")),
+  !/\$argon2/i.test(adminHtml) && !/\$argon2/i.test(adminJs),
 );
+assert("admin no pide claves GA4", !/GA4_SERVICE_ACCOUNT|private_key|BEGIN PRIVATE/i.test(adminHtml));
+assert(
+  "admin no inventa visitas",
+  /GA4 no está conectado/.test(adminJs) && /no se muestran visitas inventadas/i.test(adminJs),
+);
+assert("admin excepción de plan", /excepci[oó]n/i.test(adminHtml) && /override de emergencia/i.test(adminJs));
 assert("cookie admin haberes_admin", /haberes_admin/.test(readFileSync(join(root, "api/_admin.js"), "utf8")));
 assert(
   "admin sin clave por defecto",
   !/changeme|admin123|haberes-admin|DEFAULT_PASSWORD/i.test(readFileSync(join(root, "api/_admin.js"), "utf8")),
+);
+assert(
+  "GA4 aliases de entorno",
+  /GA4_PROPERTY_ID/.test(readFileSync(join(root, "api/_ga4.js"), "utf8")) &&
+    /GOOGLE_ANALYTICS_PROPERTY_ID/.test(readFileSync(join(root, "api/_ga4.js"), "utf8")) &&
+    /GA4_SERVICE_ACCOUNT_JSON/.test(readFileSync(join(root, "api/_ga4.js"), "utf8")) &&
+    /GOOGLE_APPLICATION_CREDENTIALS_JSON/.test(readFileSync(join(root, "api/_ga4.js"), "utf8")),
+);
+assert(
+  "sin tracker casero de visitas",
+  !/geolocation|ipapi|ip-api|pageview.?pixel/i.test(readFileSync(join(root, "api/_ga4.js"), "utf8")) &&
+    !/geolocation|ipapi|pageview.?pixel/i.test(adminJs),
+);
+assert(
+  "admin-companies no selecciona password_hash",
+  !/password_hash/.test(readFileSync(join(root, "api/admin-companies.js"), "utf8")),
 );
 const preciosHtml = readFileSync(join(root, "precios.html"), "utf8");
 assert(
