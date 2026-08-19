@@ -48,7 +48,7 @@ export const GUIDES = [
   { slug: "formato-de-liquidacion-de-sueldo-chile", group: "liquidacion", calc: "/sueldo", updated: "2026-08-17" },
   { slug: "liquidacion-de-sueldo-y-previred", group: "liquidacion", calc: "/sueldo", updated: "2026-08-17" },
   { slug: "finiquito", group: "finiquito", calc: "/finiquito", updated: "2026-08-18" },
-  { slug: "indemnizacion-por-anos-de-servicio", group: "finiquito", calc: "/finiquito", updated: "2026-08-17" },
+  { slug: "indemnizacion-por-anos-de-servicio", group: "finiquito", calc: "/finiquito", updated: "2026-08-19" },
   { slug: "vacaciones-proporcionales", group: "finiquito", calc: "/finiquito", updated: "2026-08-17" },
   { slug: "carta-aviso-termino-contrato", group: "finiquito", calc: "/finiquito", updated: "2026-08-18" },
   { slug: "plazo-de-pago-del-finiquito", group: "finiquito", calc: "/finiquito", updated: "2026-08-17" },
@@ -59,7 +59,7 @@ export const GUIDES = [
 
 /** lastmod de rutas base que sí cambiaron después del lote SEO inicial. */
 export const PATH_LASTMOD = {
-  "/guias": "2026-08-18",
+  "/guias": "2026-08-19",
   "/privacidad": "2026-08-18",
   "/terminos": "2026-08-18",
 };
