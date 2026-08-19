@@ -12,16 +12,18 @@ import {
   parseRazonSocial,
   parseRut,
   readJson,
+  sendSignupAvisoEmail,
   setSessionCookie,
   withDb,
 } from "./_lib.js";
 
-export default async function handler(req, res) {
+export async function handleRegister(req, res, deps = {}) {
   if (req.method !== "POST") {
     res.setHeader?.("Allow", "POST");
     return json(res, 405, { ok: false, reason: "method_not_allowed" });
   }
-  if (!hasDatabaseUrl()) return noBackend(res);
+  const hasDb = deps.hasDatabaseUrl || hasDatabaseUrl;
+  if (!hasDb()) return noBackend(res);
 
   const body = readJson(req);
   const rut = parseRut(body.rut);
@@ -36,11 +38,16 @@ export default async function handler(req, res) {
     });
   }
 
+  const db = deps.withDb || withDb;
+  const hashFn = deps.hashPassword || hashPassword;
+  const sessionFn = deps.insertSession || insertSession;
+  const aviso = deps.sendSignupAvisoEmail || sendSignupAvisoEmail;
+
   try {
-    const result = await withDb(async (client) => {
+    const result = await db(async (client) => {
       await client.query("BEGIN");
       try {
-        const passwordHash = await hashPassword(password);
+        const passwordHash = await hashFn(password);
         const id = newId();
         try {
           await client.query(
@@ -55,7 +62,7 @@ export default async function handler(req, res) {
           }
           throw err;
         }
-        const session = await insertSession(client, id);
+        const session = await sessionFn(client, id);
         await client.query("COMMIT");
         return {
           status: 201,
@@ -78,8 +85,25 @@ export default async function handler(req, res) {
 
     if (!result) return noBackend(res);
     if (result.token) setSessionCookie(res, result.token);
+    if (result.status === 201) {
+      try {
+        await aviso({
+          razonSocial,
+          email,
+          rut,
+          plan: "gratis",
+          companyId: result.payload?.company?.id,
+        });
+      } catch {
+        /* el correo es opcional: el alta no depende de Resend */
+      }
+    }
     return json(res, result.status, result.payload);
   } catch {
     return json(res, 503, { ok: false, reason: "db_unavailable" });
   }
+}
+
+export default async function handler(req, res) {
+  return handleRegister(req, res);
 }

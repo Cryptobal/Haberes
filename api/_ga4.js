@@ -23,9 +23,17 @@ function firstNonEmpty(env, names) {
 }
 
 export function ga4PropertyId(env = process.env) {
-  const raw = firstNonEmpty(env, ["GA4_PROPERTY_ID", "GOOGLE_ANALYTICS_PROPERTY_ID"]);
+  const raw = firstNonEmpty(env, [
+    "GA4_PROPERTY_ID",
+    "GOOGLE_ANALYTICS_PROPERTY_ID",
+    "GA4_PROPERTY",
+    "ANALYTICS_PROPERTY_ID",
+  ]);
   if (!raw) return "";
-  return raw.replace(/^properties\//i, "").trim();
+  const id = raw.replace(/^properties\//i, "").trim();
+  // Un contenedor GTM no es el ID numérico de la Data API.
+  if (!id || /^GTM-/i.test(id)) return "";
+  return id;
 }
 
 export function parseServiceAccountJson(raw) {
@@ -48,7 +56,12 @@ export function parseServiceAccountJson(raw) {
 
 export function ga4ServiceAccount(env = process.env, io = {}) {
   const readFile = io.readFileSync || readFileSync;
-  const jsonFirst = firstNonEmpty(env, ["GA4_SERVICE_ACCOUNT_JSON", "GOOGLE_APPLICATION_CREDENTIALS_JSON"]);
+  const jsonFirst = firstNonEmpty(env, [
+    "GA4_SERVICE_ACCOUNT_JSON",
+    "GOOGLE_APPLICATION_CREDENTIALS_JSON",
+    "GOOGLE_SERVICE_ACCOUNT_JSON",
+    "GCLOUD_SERVICE_ACCOUNT_JSON",
+  ]);
   if (jsonFirst) return parseServiceAccountJson(jsonFirst);
 
   const adc = firstNonEmpty(env, ["GOOGLE_APPLICATION_CREDENTIALS"]);
@@ -268,7 +281,7 @@ export function ga4NotConfiguredBody() {
     reason: "ga4_not_configured",
     willShow: GA4_WILL_SHOW,
     howTo:
-      "En Vercel, agregue el ID de la propiedad GA4 y el JSON de una cuenta de servicio con permiso de lectura. No suba esas claves al repositorio.",
+      "En Vercel, agregue GA4_PROPERTY_ID (ID numérico de la propiedad de datos; no el contenedor GTM) y GA4_SERVICE_ACCOUNT_JSON (JSON de una cuenta de servicio con permiso de lectura). No suba esas claves al repositorio.",
   };
 }
 
