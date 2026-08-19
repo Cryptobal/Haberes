@@ -190,6 +190,43 @@ def run():
     with sync_playwright() as p:
         browser = p.chromium.launch()
 
+        print("[marca] isotype en inicio y tema noche")
+        mark_ctx = browser.new_context(viewport=DESKTOP, device_scale_factor=2)
+        mark_page = mark_ctx.new_page()
+        mark_page.goto(f"{BASE}/", wait_until="networkidle")
+        mark_page.wait_for_timeout(250)
+        mark_info = mark_page.evaluate(
+            """() => {
+              const mark = document.querySelector('.brand-mark');
+              const svg = mark && mark.querySelector('svg');
+              const rects = svg ? svg.querySelectorAll('rect').length : 0;
+              const day = getComputedStyle(mark || document.body).color;
+              document.documentElement.setAttribute('data-theme', 'night');
+              const night = getComputedStyle(mark || document.body).color;
+              const paper = getComputedStyle(document.documentElement).getPropertyValue('--paper').trim();
+              const ink = getComputedStyle(document.documentElement).getPropertyValue('--ink').trim();
+              return {
+                hasSvg: Boolean(svg),
+                rects,
+                day,
+                night,
+                paper,
+                ink,
+                letterH: mark ? (mark.textContent || '').trim() : '',
+              };
+            }"""
+        )
+        if not mark_info or not mark_info["hasSvg"] or mark_info["rects"] != 11:
+            note(f"inicio sin isotype SVG de 11 rects: {mark_info}")
+        if mark_info and mark_info["letterH"]:
+            note(f"brand-mark aún muestra texto: {mark_info['letterH']!r}")
+        if mark_info and mark_info["ink"].lower() != "#6fe3b4":
+            note(f"noche --ink no es el mint de marca: {mark_info['ink']!r}")
+        if mark_info and "111, 227, 180" not in mark_info["night"]:
+            note(f"marca de noche no toma currentColor mint: {mark_info['night']!r}")
+        mark_page.screenshot(path=f"{SHOTS}/escritorio-inicio-noche-marca.png")
+        mark_ctx.close()
+
         for viewport, tag in ((MOBILE, "movil"), (DESKTOP, "escritorio")):
             ctx = browser.new_context(viewport=viewport, device_scale_factor=2)
             page = ctx.new_page()

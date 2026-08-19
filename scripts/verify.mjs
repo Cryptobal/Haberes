@@ -904,6 +904,22 @@ assert(
     faviconIco[3] === 0 &&
     faviconIco.length > 16,
 );
+const faviconSvg = readFileSync(join(root, "favicon.svg"), "utf8");
+assert(
+  "favicon.svg tile 32×32 rx 8",
+  /viewBox="0 0 32 32"/.test(faviconSvg) && /rx="8"/.test(faviconSvg),
+);
+assert(
+  "favicon.svg geometría de dos columnas, no texto",
+  (faviconSvg.match(/<rect /g) || []).length >= 11 &&
+    !/<text[\s>]/.test(faviconSvg) &&
+    !/<image[\s>]/.test(faviconSvg) &&
+    !/data:image\//.test(faviconSvg),
+);
+assert(
+  "favicon.svg colores tile crema",
+  /#12382c/.test(faviconSvg) && /#f6f4ef/.test(faviconSvg),
+);
 
 console.log("\nGuías: disclaimer según tema");
 function noticeDisclaimer(html) {
@@ -4333,7 +4349,17 @@ assert(
       /"@type": "FAQPage"/.test(readFileSync(join(root, "finiquito.html"), "utf8")),
   );
   assert("SEO fuentes autoalojadas", existsSync(join(root, "fonts/ibm-plex-sans-latin-400-normal.woff2")) && existsSync(join(root, "fonts/LICENSE")));
-  assert("SEO og-default.png", existsSync(join(root, "img/og-default.png")));
+  {
+  const og = readFileSync(join(root, "img/og-default.png"));
+  assert(
+    "SEO og-default.png 1200×630",
+    og[0] === 0x89 &&
+      og[1] === 0x50 &&
+      og.readUInt32BE(16) === 1200 &&
+      og.readUInt32BE(20) === 630 &&
+      og.length > 8_000,
+  );
+}
   assert(
     "SEO guías del registro tienen HTML",
     GUIDE_SLUGS.every((s) => existsSync(join(root, "guias", `${s}.html`))),
@@ -4412,6 +4438,16 @@ assert(
     }),
   );
   assert("field-line declarado en ambos temas", day["field-line"] && night["field-line"]);
+  assert(
+    "contraste día ink/paper (marca) ≥ 4.5",
+    contrast(day.ink, day.paper) >= 4.5,
+    String(contrast(day.ink, day.paper)),
+  );
+  assert(
+    "contraste noche ink/paper (marca) ≥ 4.5",
+    contrast(night.ink, night.paper) >= 4.5,
+    String(contrast(night.ink, night.paper)),
+  );
 }
 
 {
@@ -4432,10 +4468,26 @@ assert(
     const rel = file.slice(root.length + 1);
     assert(`${rel} sin prefers-color-scheme`, !/prefers-color-scheme/.test(html));
     assert(`${rel} ic-sun e ic-moon`, /class="ic-sun"/.test(html) && /class="ic-moon"/.test(html));
+    const mark = html.match(/<span class="brand-mark"[^>]*>[\s\S]*?<\/span>/);
+    assert(
+      `${rel} brand-mark isotype SVG`,
+      Boolean(mark) &&
+        /<svg[\s\S]*viewBox="0 0 32 32"[\s\S]*fill="currentColor"/.test(mark[0]) &&
+        (mark[0].match(/<rect /g) || []).length === 11 &&
+        !/<text[\s>]/.test(mark[0]) &&
+        !/<span class="brand-mark">H<\/span>/.test(html),
+    );
   }
   const themeSrc = readFileSync(join(root, "js/theme.js"), "utf8");
   assert("js/theme.js sin prefers-color-scheme", !/prefers-color-scheme/.test(themeSrc));
   assert("js/theme.js preferred día", /function preferred\(\) \{\s*return "day";/.test(themeSrc));
+
+  assert(
+    "css brand-mark hereda --ink, sin tile",
+    /\.brand-mark\s*\{[\s\S]*?color:\s*inherit/.test(css) &&
+      /\.brand-mark svg\s*\{/.test(css) &&
+      !/\.brand-mark\s*\{[^}]*background:\s*var\(--ink\)/.test(css),
+  );
 
   const home = readFileSync(join(root, "index.html"), "utf8");
   const demoCalc = calcularSueldo(
