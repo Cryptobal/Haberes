@@ -9,7 +9,9 @@
     "check": "node scripts/verify.mjs && python3 scripts/smoke.py",
     "ejemplos": "node scripts/gen-ejemplos.mjs",
     "content": "node scripts/gen-content-seo.mjs",
-    "sitemap": "node scripts/gen-sitemap.mjs"
+    "sitemap": "node scripts/gen-sitemap.mjs",
+    "favicon": "node scripts/gen-favicon.mjs",
+    "og": "node scripts/gen-og-default.mjs"
   },
   "dependencies": {
     "pdf-lib": "^1.17.1",
