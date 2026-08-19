@@ -535,8 +535,71 @@ export function mailConfigured() {
   return Boolean(String(process.env.RESEND_API_KEY || "").trim());
 }
 
-function resendFrom() {
-  return String(process.env.RESEND_FROM || "").trim() || "Haberes <noreply@haberes.cl>";
+export function resendFrom(env = process.env) {
+  return String(env?.RESEND_FROM || "").trim() || "Haberes <noreply@haberes.cl>";
+}
+
+const DEFAULT_SIGNUP_AVISO_EMAIL = "carlos.irigoyen@gmail.com";
+
+/** Destino del aviso de alta: ADMIN_AVISO_EMAIL, SIGNUP_AVISO_EMAIL o el buzón de operación. */
+export function signupAvisoTo(env = process.env) {
+  const admin = String(env?.ADMIN_AVISO_EMAIL || "").trim();
+  if (admin) return admin;
+  const signup = String(env?.SIGNUP_AVISO_EMAIL || "").trim();
+  if (signup) return signup;
+  return DEFAULT_SIGNUP_AVISO_EMAIL;
+}
+
+/**
+ * Avisa a operación que una empresa se registró. Best-effort: sin RESEND_API_KEY o si fetch falla, no lanza.
+ * @returns {Promise<boolean>}
+ */
+export async function sendSignupAvisoEmail({
+  razonSocial,
+  email,
+  rut,
+  plan,
+  companyId,
+  env,
+  fetchImpl,
+} = {}) {
+  const e = env || process.env;
+  const apiKey = String(e.RESEND_API_KEY || "").trim();
+  const to = signupAvisoTo(e);
+  if (!apiKey || !to) return false;
+  const nombre = String(razonSocial || "").trim();
+  const correo = String(email || "").trim();
+  const rutTxt = String(rut || "").trim();
+  const planTxt = String(plan || "gratis").trim() || "gratis";
+  const adminUrl = `${publicOrigin()}/admin`;
+  const headers = {
+    Authorization: `Bearer ${apiKey}`,
+    "Content-Type": "application/json",
+  };
+  const idKey = String(companyId || "").trim();
+  if (idKey) headers["Idempotency-Key"] = `haberes-signup-${idKey}`.slice(0, 256);
+  const doFetch = fetchImpl || fetch;
+  try {
+    const res = await doFetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        from: resendFrom(e),
+        to: [to],
+        subject: `Nueva empresa en Haberes: ${nombre}`,
+        text:
+          "Se registró una empresa nueva en Haberes.\n\n" +
+          `Razón social: ${nombre}\n` +
+          `Correo: ${correo}\n` +
+          `RUT: ${rutTxt}\n` +
+          `Plan: ${planTxt}\n\n` +
+          `Admin: ${adminUrl}\n`,
+      }),
+    });
+    return Boolean(res?.ok);
+  } catch {
+    return false;
+  }
 }
 
 export async function sendResetEmail({ to, token }) {

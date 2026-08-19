@@ -1223,6 +1223,8 @@ const {
   rateLimit,
   SESSION_COOKIE,
   TOKEN_TTL_MS,
+  sendSignupAvisoEmail,
+  signupAvisoTo,
 } = await import("../api/_lib.js");
 
 assert("clave mínima 10", MIN_PASSWORD_LENGTH === 10, String(MIN_PASSWORD_LENGTH));
@@ -1245,7 +1247,9 @@ for (let i = 0; i < 5; i += 1) {
 }
 assert("rateLimit bloquea el 6º", rateLimit(rlKey) === false);
 
-const register = (await import("../api/register.js")).default;
+const registerMod = await import("../api/register.js");
+const register = registerMod.default;
+const { handleRegister } = registerMod;
 const login = (await import("../api/login.js")).default;
 const resetRequest = (await import("../api/reset-request.js")).default;
 const resetConfirm = (await import("../api/reset-confirm.js")).default;
@@ -1265,6 +1269,185 @@ assert(
   regRes._out.statusCode === 501 && regRes._out.body?.reason === "no_backend",
   JSON.stringify(regRes._out.body),
 );
+
+const altaBody = { rut: "12.345.678-5", email: "a@b.cl", razonSocial: "SpA", password: "tenchars!!" };
+function registerTestDeps({ conflict = false, mailer } = {}) {
+  const calls = [];
+  return {
+    calls,
+    deps: {
+      hasDatabaseUrl: () => true,
+      hashPassword: async () => "hash",
+      insertSession: async () => ({ token: "tok", expiresAt: new Date() }),
+      sendSignupAvisoEmail:
+        mailer ||
+        (async (payload) => {
+          calls.push(payload);
+          return true;
+        }),
+      withDb: async (fn) =>
+        fn({
+          async query(sql) {
+            if (sql === "BEGIN" || sql === "COMMIT") return {};
+            if (/ROLLBACK/.test(sql)) return {};
+            if (/INSERT INTO companies/.test(sql) && conflict) {
+              const err = Object.assign(new Error("duplicate"), { code: "23505" });
+              throw err;
+            }
+            return { rowCount: 1, rows: [] };
+          },
+        }),
+    },
+  };
+}
+
+const altaOk = registerTestDeps();
+const altaRes = mockRes();
+await handleRegister(mockReq("POST", altaBody), altaRes, altaOk.deps);
+assert(
+  "register 201 avisa una vez",
+  altaRes._out.statusCode === 201 &&
+    altaRes._out.body?.ok === true &&
+    altaOk.calls.length === 1 &&
+    altaOk.calls[0].email === "a@b.cl" &&
+    altaOk.calls[0].rut === "12345678-5" &&
+    altaOk.calls[0].razonSocial === "SpA" &&
+    altaOk.calls[0].plan === "gratis" &&
+    Boolean(altaOk.calls[0].companyId),
+  JSON.stringify({ status: altaRes._out.statusCode, body: altaRes._out.body, calls: altaOk.calls }),
+);
+assert(
+  "register 201 no incluye la clave",
+  !/tenchars!!/.test(JSON.stringify(altaRes._out.body)) &&
+    altaRes._out.body?.company?.password == null &&
+    altaOk.calls[0].password == null,
+  JSON.stringify(altaRes._out.body),
+);
+
+const dup = registerTestDeps({ conflict: true });
+const dupRes = mockRes();
+await handleRegister(mockReq("POST", altaBody), dupRes, dup.deps);
+assert(
+  "register 409 no avisa",
+  dupRes._out.statusCode === 409 && dupRes._out.body?.reason === "conflict" && dup.calls.length === 0,
+  JSON.stringify({ status: dupRes._out.statusCode, body: dupRes._out.body, calls: dup.calls }),
+);
+
+const bad = registerTestDeps();
+const badRes = mockRes();
+await handleRegister(mockReq("POST", { rut: "12.345.678-5", email: "no", razonSocial: "SpA", password: "short" }), badRes, bad.deps);
+assert(
+  "register 400 no avisa",
+  badRes._out.statusCode === 400 && badRes._out.body?.reason === "invalid_payload" && bad.calls.length === 0,
+  JSON.stringify({ status: badRes._out.statusCode, body: badRes._out.body, calls: bad.calls }),
+);
+
+const mailFalse = registerTestDeps({ mailer: async () => false });
+const mailFalseRes = mockRes();
+await handleRegister(mockReq("POST", altaBody), mailFalseRes, mailFalse.deps);
+assert(
+  "register 201 si el aviso devuelve false",
+  mailFalseRes._out.statusCode === 201 && mailFalseRes._out.body?.ok === true,
+  JSON.stringify(mailFalseRes._out.body),
+);
+
+const mailThrow = registerTestDeps({
+  mailer: async () => {
+    throw new Error("resend down");
+  },
+});
+const mailThrowRes = mockRes();
+await handleRegister(mockReq("POST", altaBody), mailThrowRes, mailThrow.deps);
+assert(
+  "register 201 si el aviso lanza",
+  mailThrowRes._out.statusCode === 201 && mailThrowRes._out.body?.ok === true,
+  JSON.stringify(mailThrowRes._out.body),
+);
+
+const noDbCalls = [];
+const noDbRes = mockRes();
+await handleRegister(mockReq("POST", altaBody), noDbRes, {
+  sendSignupAvisoEmail: async (payload) => {
+    noDbCalls.push(payload);
+    return true;
+  },
+});
+assert(
+  "register 501 no avisa",
+  noDbRes._out.statusCode === 501 && noDbCalls.length === 0,
+  JSON.stringify({ status: noDbRes._out.statusCode, calls: noDbCalls }),
+);
+
+const dbDownCalls = [];
+const dbDownRes = mockRes();
+await handleRegister(mockReq("POST", altaBody), dbDownRes, {
+  hasDatabaseUrl: () => true,
+  sendSignupAvisoEmail: async (payload) => {
+    dbDownCalls.push(payload);
+    return true;
+  },
+  withDb: async () => {
+    throw new Error("db down");
+  },
+});
+assert(
+  "register 503 no avisa",
+  dbDownRes._out.statusCode === 503 && dbDownCalls.length === 0,
+  JSON.stringify({ status: dbDownRes._out.statusCode, calls: dbDownCalls }),
+);
+
+assert("aviso default a Carlos", signupAvisoTo({}) === "carlos.irigoyen@gmail.com");
+assert(
+  "ADMIN_AVISO_EMAIL pisa el destino",
+  signupAvisoTo({ ADMIN_AVISO_EMAIL: "ops@haberes.cl" }) === "ops@haberes.cl",
+);
+assert(
+  "SIGNUP_AVISO_EMAIL si no hay ADMIN",
+  signupAvisoTo({ SIGNUP_AVISO_EMAIL: "alt@haberes.cl" }) === "alt@haberes.cl",
+);
+
+let avisoFetch = null;
+const avisoSent = await sendSignupAvisoEmail({
+  razonSocial: "SpA",
+  email: "a@b.cl",
+  rut: "12345678-5",
+  plan: "gratis",
+  companyId: "co-1",
+  env: {
+    RESEND_API_KEY: "re_test",
+    ADMIN_AVISO_EMAIL: "ops@haberes.cl",
+  },
+  fetchImpl: async (url, init) => {
+    avisoFetch = { url, init };
+    return { ok: true };
+  },
+});
+const avisoMail = avisoFetch ? JSON.parse(avisoFetch.init.body) : {};
+assert(
+  "aviso Resend usa ADMIN_AVISO_EMAIL",
+  avisoSent === true &&
+    avisoMail.to?.[0] === "ops@haberes.cl" &&
+    avisoMail.subject === "Nueva empresa en Haberes: SpA" &&
+    /Razón social: SpA/.test(avisoMail.text) &&
+    /Correo: a@b.cl/.test(avisoMail.text) &&
+    /RUT: 12345678-5/.test(avisoMail.text) &&
+    /Plan: gratis/.test(avisoMail.text) &&
+    /\/admin/.test(avisoMail.text) &&
+    !/tenchars!!/.test(avisoMail.text) &&
+    avisoFetch.init.headers["Idempotency-Key"] === "haberes-signup-co-1",
+  JSON.stringify(avisoMail),
+);
+const avisoNoKey = await sendSignupAvisoEmail({
+  razonSocial: "SpA",
+  email: "a@b.cl",
+  rut: "12345678-5",
+  plan: "gratis",
+  env: {},
+  fetchImpl: async () => {
+    throw new Error("no fetch");
+  },
+});
+assert("aviso sin API key no lanza", avisoNoKey === false);
 
 const loginIp = "203.0.113.22";
 const loginRes = mockRes();
@@ -2521,6 +2704,49 @@ process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON = JSON.stringify({
 assert("GA4 property alias", ga4PropertyId() === "123456");
 assert("GA4 service account alias", ga4ServiceAccount()?.client_email === "ga4@example.iam.gserviceaccount.com");
 assert("GA4 configurado con alias", ga4Configured() === true);
+const ga4SaSample = JSON.stringify({
+  client_email: "ga4@example.iam.gserviceaccount.com",
+  private_key: "-----BEGIN PRIVATE KEY-----\nabc\n-----END PRIVATE KEY-----\n",
+});
+assert("GA4_PROPERTY alias extra", ga4PropertyId({ GA4_PROPERTY: "777888" }) === "777888");
+assert("ANALYTICS_PROPERTY_ID alias extra", ga4PropertyId({ ANALYTICS_PROPERTY_ID: "555666" }) === "555666");
+assert(
+  "GOOGLE_SERVICE_ACCOUNT_JSON alias extra",
+  ga4ServiceAccount({ GOOGLE_SERVICE_ACCOUNT_JSON: ga4SaSample })?.client_email === "ga4@example.iam.gserviceaccount.com",
+);
+assert(
+  "GCLOUD_SERVICE_ACCOUNT_JSON alias extra",
+  ga4ServiceAccount({ GCLOUD_SERVICE_ACCOUNT_JSON: ga4SaSample })?.client_email === "ga4@example.iam.gserviceaccount.com",
+);
+assert(
+  "GA4 configurado con alias extra",
+  ga4Configured({ GA4_PROPERTY: "777888", GOOGLE_SERVICE_ACCOUNT_JSON: ga4SaSample }) === true,
+);
+assert(
+  "GA4 aliases vacíos siguen desconectados",
+  ga4Configured({
+    GA4_PROPERTY: "",
+    ANALYTICS_PROPERTY_ID: "",
+    GOOGLE_SERVICE_ACCOUNT_JSON: "",
+    GCLOUD_SERVICE_ACCOUNT_JSON: "",
+  }) === false,
+);
+assert(
+  "GTM no configura la Data API",
+  ga4PropertyId({ GA4_PROPERTY_ID: "GTM-PCR596Z2" }) === "" &&
+    ga4PropertyId({ GA4_PROPERTY: "GTM-K3F8GGHV" }) === "" &&
+    ga4Configured({
+      GA4_PROPERTY_ID: "GTM-PCR596Z2",
+      NEXT_PUBLIC_GTM_ID: "GTM-K3F8GGHV",
+      GA4_SERVICE_ACCOUNT_JSON: ga4SaSample,
+    }) === false,
+);
+assert(
+  "GA4 howTo nombra env de Vercel",
+  /GA4_PROPERTY_ID/.test(ga4NotConfiguredBody().howTo) &&
+    /GA4_SERVICE_ACCOUNT_JSON/.test(ga4NotConfiguredBody().howTo) &&
+    !/GTM-PCR596Z2|GTM-K3F8GGHV/.test(ga4NotConfiguredBody().howTo),
+);
 assert("SA JSON inválido", parseServiceAccountJson("{") === null);
 assert("canal orgánico", mapGa4Channel("Organic Search") === "organic");
 assert("canal pago Display", mapGa4Channel("Display") === "paid");
@@ -3226,6 +3452,10 @@ assert(
   "admin no inventa visitas",
   /GA4 no está conectado/.test(adminJs) && /no se muestran visitas inventadas/i.test(adminJs),
 );
+assert(
+  "admin howTo nombra GA4_PROPERTY_ID y GA4_SERVICE_ACCOUNT_JSON",
+  /GA4_PROPERTY_ID/.test(adminJs) && /GA4_SERVICE_ACCOUNT_JSON/.test(adminJs),
+);
 assert("admin excepción de plan", /excepci[oó]n/i.test(adminHtml) && /override de emergencia/i.test(adminJs));
 assert(
   "admin pinta empresas tras cargar",
@@ -3241,8 +3471,12 @@ assert(
   "GA4 aliases de entorno",
   /GA4_PROPERTY_ID/.test(readFileSync(join(root, "api/_ga4.js"), "utf8")) &&
     /GOOGLE_ANALYTICS_PROPERTY_ID/.test(readFileSync(join(root, "api/_ga4.js"), "utf8")) &&
+    /GA4_PROPERTY/.test(readFileSync(join(root, "api/_ga4.js"), "utf8")) &&
+    /ANALYTICS_PROPERTY_ID/.test(readFileSync(join(root, "api/_ga4.js"), "utf8")) &&
     /GA4_SERVICE_ACCOUNT_JSON/.test(readFileSync(join(root, "api/_ga4.js"), "utf8")) &&
-    /GOOGLE_APPLICATION_CREDENTIALS_JSON/.test(readFileSync(join(root, "api/_ga4.js"), "utf8")),
+    /GOOGLE_APPLICATION_CREDENTIALS_JSON/.test(readFileSync(join(root, "api/_ga4.js"), "utf8")) &&
+    /GOOGLE_SERVICE_ACCOUNT_JSON/.test(readFileSync(join(root, "api/_ga4.js"), "utf8")) &&
+    /GCLOUD_SERVICE_ACCOUNT_JSON/.test(readFileSync(join(root, "api/_ga4.js"), "utf8")),
 );
 assert(
   "sin tracker casero de visitas",
@@ -4109,7 +4343,9 @@ assert(
   /no_mail/.test(readFileSync(join(root, "api/enviar.js"), "utf8")) &&
     /mailConfigured\(\)/.test(readFileSync(join(root, "api/enviar.js"), "utf8")) &&
     /no_storage/.test(readFileSync(join(root, "api/enviar.js"), "utf8")) &&
-    /sendDocumentEmail/.test(readFileSync(join(root, "api/_lib.js"), "utf8")),
+    /sendDocumentEmail/.test(readFileSync(join(root, "api/_lib.js"), "utf8")) &&
+    /sendSignupAvisoEmail/.test(readFileSync(join(root, "api/_lib.js"), "utf8")) &&
+    /sendSignupAvisoEmail/.test(readFileSync(join(root, "api/register.js"), "utf8")),
 );
 assert("sql/006.sql envios", /CREATE TABLE IF NOT EXISTS envios/.test(readFileSync(join(root, "sql/006.sql"), "utf8")));
 assert(

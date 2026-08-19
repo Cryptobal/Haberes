@@ -243,7 +243,7 @@ function renderTrafico(data) {
       <p class="notice notice-info">GA4 no está conectado. No se muestran visitas inventadas.</p>
       <p>Cuando exista una propiedad y una cuenta de servicio en Vercel, esta pestaña mostrará:</p>
       <ul>${will}</ul>
-      <p class="hint">${esc(data.howTo || "En Vercel: ID de la propiedad GA4 y JSON de una cuenta de servicio con permiso Lector. No las suba al repositorio.")}</p>`;
+      <p class="hint">${esc(data.howTo || "En Vercel, agregue GA4_PROPERTY_ID (ID numérico de la propiedad de datos; no el contenedor GTM) y GA4_SERVICE_ACCOUNT_JSON (JSON de una cuenta de servicio con permiso de lectura). No suba esas claves al repositorio.")}</p>`;
     return;
   }
   if (!data.ok) {
