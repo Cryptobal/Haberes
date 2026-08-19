@@ -1,16 +1,17 @@
 /**
  * Genera favicon.ico 32×32 con la misma marca que favicon.svg
- * (rectángulo verde #12382c, H #f6f4ef). Sin dependencias.
+ * (tile #12382c, H de dos columnas #f6f4ef). Sin dependencias.
  */
 import { deflateSync } from "node:zlib";
 import { writeFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { TILE_FILL, MARK_ON_TILE, TILE_RX, VIEW, pointInMark, faviconSvg } from "./brand-mark.mjs";
 
-const SIZE = 32;
-const RADIUS = 8;
-const BG = [0x12, 0x38, 0x2c, 0xff];
-const FG = [0xf6, 0xf4, 0xef, 0xff];
+const SIZE = VIEW;
+const RADIUS = TILE_RX;
+const BG = [parseInt(TILE_FILL.slice(1, 3), 16), parseInt(TILE_FILL.slice(3, 5), 16), parseInt(TILE_FILL.slice(5, 7), 16), 0xff];
+const FG = [parseInt(MARK_ON_TILE.slice(1, 3), 16), parseInt(MARK_ON_TILE.slice(3, 5), 16), parseInt(MARK_ON_TILE.slice(5, 7), 16), 0xff];
 
 function crc32(buf) {
   let crc = 0xffffffff;
@@ -46,20 +47,12 @@ function inRoundedRect(x, y) {
   return dx * dx + dy * dy <= RADIUS * RADIUS;
 }
 
-function inH(x, y) {
-  const left = x >= 9 && x <= 13;
-  const right = x >= 18 && x <= 22;
-  const bar = y >= 8 && y <= 23 && (left || right);
-  const cross = y >= 14 && y <= 17 && x >= 9 && x <= 22;
-  return bar || cross;
-}
-
 function rgbaPixels() {
   const px = Buffer.alloc(SIZE * SIZE * 4);
   for (let y = 0; y < SIZE; y += 1) {
     for (let x = 0; x < SIZE; x += 1) {
       const i = (y * SIZE + x) * 4;
-      const color = inRoundedRect(x, y) ? (inH(x, y) ? FG : BG) : [0, 0, 0, 0];
+      const color = inRoundedRect(x, y) ? (pointInMark(x + 0.5, y + 0.5) ? FG : BG) : [0, 0, 0, 0];
       px[i] = color[0];
       px[i + 1] = color[1];
       px[i + 2] = color[2];
@@ -105,6 +98,8 @@ function icoFromPng(png) {
 }
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
+writeFileSync(join(root, "favicon.svg"), faviconSvg());
 const ico = icoFromPng(png32(rgbaPixels()));
 writeFileSync(join(root, "favicon.ico"), ico);
+console.log(`favicon.svg ${faviconSvg().length} bytes`);
 console.log(`favicon.ico ${ico.length} bytes`);
