@@ -416,7 +416,7 @@ main {
   display: grid;
   place-items: center;
   flex-shrink: 0;
-  color: inherit;
+  color: var(--ink);
 }
 
 .brand-mark svg {

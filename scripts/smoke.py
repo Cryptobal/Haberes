@@ -195,35 +195,42 @@ def run():
         mark_page = mark_ctx.new_page()
         mark_page.goto(f"{BASE}/", wait_until="networkidle")
         mark_page.wait_for_timeout(250)
-        mark_info = mark_page.evaluate(
+        mark_day = mark_page.evaluate(
             """() => {
               const mark = document.querySelector('.brand-mark');
               const svg = mark && mark.querySelector('svg');
-              const rects = svg ? svg.querySelectorAll('rect').length : 0;
-              const day = getComputedStyle(mark || document.body).color;
-              document.documentElement.setAttribute('data-theme', 'night');
-              const night = getComputedStyle(mark || document.body).color;
-              const paper = getComputedStyle(document.documentElement).getPropertyValue('--paper').trim();
-              const ink = getComputedStyle(document.documentElement).getPropertyValue('--ink').trim();
               return {
                 hasSvg: Boolean(svg),
-                rects,
-                day,
-                night,
-                paper,
-                ink,
+                rects: svg ? svg.querySelectorAll('rect').length : 0,
+                day: mark ? getComputedStyle(mark).color : '',
                 letterH: mark ? (mark.textContent || '').trim() : '',
               };
             }"""
         )
-        if not mark_info or not mark_info["hasSvg"] or mark_info["rects"] != 11:
+        mark_page.evaluate("document.documentElement.setAttribute('data-theme', 'night')")
+        mark_page.wait_for_timeout(200)
+        mark_night = mark_page.evaluate(
+            """() => {
+              const mark = document.querySelector('.brand-mark');
+              const root = getComputedStyle(document.documentElement);
+              return {
+                night: mark ? getComputedStyle(mark).color : '',
+                fill: mark ? getComputedStyle(mark.querySelector('svg')).fill : '',
+                paper: root.getPropertyValue('--paper').trim(),
+                ink: root.getPropertyValue('--ink').trim(),
+              };
+            }"""
+        )
+        mark_info = {**(mark_day or {}), **(mark_night or {})}
+        if not mark_info.get("hasSvg") or mark_info.get("rects") != 11:
             note(f"inicio sin isotype SVG de 11 rects: {mark_info}")
-        if mark_info and mark_info["letterH"]:
+        if mark_info.get("letterH"):
             note(f"brand-mark aún muestra texto: {mark_info['letterH']!r}")
-        if mark_info and mark_info["ink"].lower() != "#6fe3b4":
-            note(f"noche --ink no es el mint de marca: {mark_info['ink']!r}")
-        if mark_info and "111, 227, 180" not in mark_info["night"]:
-            note(f"marca de noche no toma currentColor mint: {mark_info['night']!r}")
+        if mark_info.get("ink", "").lower() != "#6fe3b4":
+            note(f"noche --ink no es el mint de marca: {mark_info.get('ink')!r}")
+        night_color = mark_info.get("night") or ""
+        if "111, 227, 180" not in night_color:
+            note(f"marca de noche no toma currentColor mint: {night_color!r}")
         mark_page.screenshot(path=f"{SHOTS}/escritorio-inicio-noche-marca.png")
         mark_ctx.close()
 

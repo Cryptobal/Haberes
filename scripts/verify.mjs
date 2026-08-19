@@ -4484,7 +4484,7 @@ assert(
 
   assert(
     "css brand-mark hereda --ink, sin tile",
-    /\.brand-mark\s*\{[\s\S]*?color:\s*inherit/.test(css) &&
+    /\.brand-mark\s*\{[\s\S]*?color:\s*var\(--ink\)/.test(css) &&
       /\.brand-mark svg\s*\{/.test(css) &&
       !/\.brand-mark\s*\{[^}]*background:\s*var\(--ink\)/.test(css),
   );
