@@ -60,6 +60,7 @@ def check_http():
         ("/guias/impuesto-unico", 200, "html"),
         ("/guias/carta-aviso-termino-contrato", 200, "html"),
         ("/guias/gratificacion-legal", 200, "html"),
+        ("/guias/indemnizacion-por-anos-de-servicio", 200, "html"),
         ("/blog", 404, None),
         ("/noticias", 404, None),
     ]
@@ -107,6 +108,7 @@ PAGES = [
     ("guias/impuesto-unico.html", "guia-impuesto"),
     ("guias/carta-aviso-termino-contrato.html", "guia-carta"),
     ("guias/gratificacion-legal.html", "guia-gratificacion"),
+    ("guias/indemnizacion-por-anos-de-servicio.html", "guia-ias"),
 ]
 MOBILE = {"width": 360, "height": 780}
 DESKTOP = {"width": 1280, "height": 900}

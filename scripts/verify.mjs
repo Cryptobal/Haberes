@@ -860,16 +860,18 @@ assert(
 assert("sitemap sin admin ni reset", !locs.some((u) => /\/admin|\/reset/.test(u)));
 assert("sitemap lastmod presente", /<lastmod>\d{4}-\d{2}-\d{2}<\/lastmod>/.test(sitemap));
 assert(
-  "sitemap lastmod por URL (guías espesadas 2026-08-18)",
+  "sitemap lastmod por URL (guías espesadas 2026-08-18 y 2026-08-19)",
   lastmodForPath("/guias/liquidacion-de-sueldo") === "2026-08-18" &&
     lastmodForPath("/guias/finiquito") === "2026-08-18" &&
     lastmodForPath("/guias/impuesto-unico") === "2026-08-18" &&
     lastmodForPath("/guias/carta-aviso-termino-contrato") === "2026-08-18" &&
     lastmodForPath("/guias/gratificacion-legal") === "2026-08-18" &&
-    lastmodForPath("/guias") === "2026-08-18" &&
+    lastmodForPath("/guias/indemnizacion-por-anos-de-servicio") === "2026-08-19" &&
+    lastmodForPath("/guias") === "2026-08-19" &&
     /<loc>https:\/\/www\.haberes\.cl\/guias\/liquidacion-de-sueldo<\/loc>\s*<lastmod>2026-08-18<\/lastmod>/.test(sitemap) &&
     /<loc>https:\/\/www\.haberes\.cl\/guias\/gratificacion-legal<\/loc>\s*<lastmod>2026-08-18<\/lastmod>/.test(sitemap) &&
-    /<loc>https:\/\/www\.haberes\.cl\/guias<\/loc>\s*<lastmod>2026-08-18<\/lastmod>/.test(sitemap),
+    /<loc>https:\/\/www\.haberes\.cl\/guias\/indemnizacion-por-anos-de-servicio<\/loc>\s*<lastmod>2026-08-19<\/lastmod>/.test(sitemap) &&
+    /<loc>https:\/\/www\.haberes\.cl\/guias<\/loc>\s*<lastmod>2026-08-19<\/lastmod>/.test(sitemap),
 );
 assert("sin ruta /blog ni /noticias", !existsSync(join(root, "blog.html")) && !existsSync(join(root, "noticias.html")));
 assert("sitemap sin .html (cleanUrls)", !locs.some((u) => u.endsWith(".html")));
@@ -1188,6 +1190,7 @@ try {
     "/guias/impuesto-unico",
     "/guias/carta-aviso-termino-contrato",
     "/guias/gratificacion-legal",
+    "/guias/indemnizacion-por-anos-de-servicio",
   ]) {
     const r = await hitLocal(p);
     assert(`GET ${p} 200`, r.status === 200 && /<h1>/i.test(r.text) && /text\/html/i.test(r.type));
@@ -4260,6 +4263,7 @@ assert(
       ["guias/impuesto-unico.html", "/sueldo", /13,5 UTM/, /sii\.cl/],
       ["guias/carta-aviso-termino-contrato.html", "/finiquito", /162/, /dt\.gob\.cl/],
       ["guias/gratificacion-legal.html", "/sueldo", /artículo 47/, /dt\.gob\.cl/],
+      ["guias/indemnizacion-por-anos-de-servicio.html", "/finiquito", /artículo 163/, /dt\.gob\.cl/],
     ];
     function visibleWords(html) {
       const main = html.match(/<main\b[\s\S]*?<\/main>/i)?.[0] || html;
@@ -4276,7 +4280,13 @@ assert(
       const html = readFileSync(join(root, file), "utf8");
       const title = (html.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
       const words = visibleWords(html);
-      const minWords = file.includes("gratificacion-legal") ? 900 : 800;
+      const minWords =
+        file.includes("gratificacion-legal") || file.includes("indemnizacion-por-anos-de-servicio")
+          ? 900
+          : 800;
+      const dateRe = file.includes("indemnizacion-por-anos-de-servicio")
+        ? /<time datetime="2026-08-19">/
+        : /<time datetime="2026-08-18">/;
       assert(`SEO ${file} ${minWords}–1400 palabras`, words >= minWords && words <= 1400, `${file}: ${words}`);
       assert(`SEO ${file} sin calculadora en title`, /./.test(title) && !/calculadora/i.test(title), title);
       assert(`SEO ${file} sin branding de IA`, !/\bIA\b/.test(html) && !/inteligencia artificial/i.test(html));
@@ -4284,7 +4294,27 @@ assert(
       assert(`SEO ${file} cita norma`, law.test(html));
       assert(`SEO ${file} cita fuente oficial`, source.test(html));
       assert(`SEO ${file} tiene FAQ visible`, /<h2>Preguntas frecuentes<\/h2>/.test(html));
-      assert(`SEO ${file} tiene fecha`, /<time datetime="2026-08-18">/.test(html));
+      assert(`SEO ${file} tiene fecha`, dateRe.test(html));
+    }
+    {
+      const iasHtml = readFileSync(join(root, "guias/indemnizacion-por-anos-de-servicio.html"), "utf8");
+      const finiHtml = readFileSync(join(root, "finiquito.html"), "utf8");
+      const iasTitle = (iasHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+      const finiTitle = (finiHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+      const iasH1 = (iasHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+      const finiH1 = (finiHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+      assert(
+        "SEO IAS title/H1 distintos de /finiquito y sin calculadora de finiquito",
+        iasTitle &&
+          finiTitle &&
+          iasTitle !== finiTitle &&
+          iasH1 !== finiH1 &&
+          !/calculadora de finiquito/i.test(iasTitle) &&
+          !/calculadora de finiquito/i.test(iasH1) &&
+          /163/.test(iasTitle) &&
+          /90 UF/i.test(iasTitle),
+        `${iasTitle} | ${finiTitle}`,
+      );
     }
   }
   {
