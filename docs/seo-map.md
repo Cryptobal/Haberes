@@ -24,7 +24,7 @@ Actualizar este archivo antes de crear URLs nuevas para evitar canibalización.
 | Indemnización años de servicio | indemnizacion por años de servicio (2.400/24) | `/guias/indemnizacion-por-anos-de-servicio` | embed → `/finiquito` |
 | Horas extras | cálculo horas extras (8.100/17) | `/guias/horas-extras` | embed HE |
 | Vacaciones / feriado proporcional | vacaciones proporcionales (1.300/16), feriado proporcional (590/13) | `/guias/vacaciones-proporcionales` | embed feriado |
-| Semana corrida | semana corrida (1.300/21) | `/guias/semana-corrida` | guía + enlace `/sueldo` |
+| Semana corrida | semana corrida (1.300/21) | `/guias/semana-corrida` | guía espesa + embed `/sueldo` |
 | Carta de aviso | carta de aviso de término de contrato (10–480) | `/guias/carta-aviso-termino-contrato` | plantilla descargable |
 | Casa particular | finiquito asesora del hogar (140/15) | `/guias/finiquito-trabajadora-de-casa-particular` | ya existe; reforzar régimen AFC 4,11 % |
 
