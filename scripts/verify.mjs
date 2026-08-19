@@ -2686,6 +2686,9 @@ delete process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
 delete process.env.GOOGLE_APPLICATION_CREDENTIALS;
 clearGa4Cache();
 assert("GA4 no configurado sin env", ga4Configured() === false);
+assert("GA4 property default Haberes", ga4PropertyId({}) === "550712485");
+assert("GA4 default no configura sin cuenta de servicio", ga4Configured({}) === false);
+assert("GA4_PROPERTY_ID gana al default", ga4PropertyId({ GA4_PROPERTY_ID: "999" }) === "999");
 const missing = await loadGa4Report({ env: {}, fetchImpl: async () => { throw new Error("no fetch"); } });
 assert(
   "GA4 missing no inventa cifras",

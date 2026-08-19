@@ -28,8 +28,7 @@ export function ga4PropertyId(env = process.env) {
     "GOOGLE_ANALYTICS_PROPERTY_ID",
     "GA4_PROPERTY",
     "ANALYTICS_PROPERTY_ID",
-  ]);
-  if (!raw) return "";
+  ]) || "550712485"; // Propiedad GA4 de Haberes (Data API). No es GTM ni Measurement ID.
   const id = raw.replace(/^properties\//i, "").trim();
   // Un contenedor GTM no es el ID numérico de la Data API.
   if (!id || /^GTM-/i.test(id)) return "";
