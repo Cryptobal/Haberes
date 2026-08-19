@@ -867,10 +867,12 @@ assert(
     lastmodForPath("/guias/carta-aviso-termino-contrato") === "2026-08-18" &&
     lastmodForPath("/guias/gratificacion-legal") === "2026-08-18" &&
     lastmodForPath("/guias/indemnizacion-por-anos-de-servicio") === "2026-08-19" &&
+    lastmodForPath("/guias/semana-corrida") === "2026-08-19" &&
     lastmodForPath("/guias") === "2026-08-19" &&
     /<loc>https:\/\/www\.haberes\.cl\/guias\/liquidacion-de-sueldo<\/loc>\s*<lastmod>2026-08-18<\/lastmod>/.test(sitemap) &&
     /<loc>https:\/\/www\.haberes\.cl\/guias\/gratificacion-legal<\/loc>\s*<lastmod>2026-08-18<\/lastmod>/.test(sitemap) &&
     /<loc>https:\/\/www\.haberes\.cl\/guias\/indemnizacion-por-anos-de-servicio<\/loc>\s*<lastmod>2026-08-19<\/lastmod>/.test(sitemap) &&
+    /<loc>https:\/\/www\.haberes\.cl\/guias\/semana-corrida<\/loc>\s*<lastmod>2026-08-19<\/lastmod>/.test(sitemap) &&
     /<loc>https:\/\/www\.haberes\.cl\/guias<\/loc>\s*<lastmod>2026-08-19<\/lastmod>/.test(sitemap),
 );
 assert("sin ruta /blog ni /noticias", !existsSync(join(root, "blog.html")) && !existsSync(join(root, "noticias.html")));
@@ -4503,6 +4505,7 @@ assert(
       ["guias/carta-aviso-termino-contrato.html", "/finiquito", /162/, /dt\.gob\.cl/],
       ["guias/gratificacion-legal.html", "/sueldo", /artículo 47/, /dt\.gob\.cl/],
       ["guias/indemnizacion-por-anos-de-servicio.html", "/finiquito", /artículo 163/, /dt\.gob\.cl/],
+      ["guias/semana-corrida.html", "/sueldo", /artículo 45/, /dt\.gob\.cl/],
     ];
     function visibleWords(html) {
       const main = html.match(/<main\b[\s\S]*?<\/main>/i)?.[0] || html;
@@ -4520,12 +4523,15 @@ assert(
       const title = (html.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
       const words = visibleWords(html);
       const minWords =
-        file.includes("gratificacion-legal") || file.includes("indemnizacion-por-anos-de-servicio")
+        file.includes("gratificacion-legal") ||
+        file.includes("indemnizacion-por-anos-de-servicio") ||
+        file.includes("semana-corrida")
           ? 900
           : 800;
-      const dateRe = file.includes("indemnizacion-por-anos-de-servicio")
-        ? /<time datetime="2026-08-19">/
-        : /<time datetime="2026-08-18">/;
+      const dateRe =
+        file.includes("indemnizacion-por-anos-de-servicio") || file.includes("semana-corrida")
+          ? /<time datetime="2026-08-19">/
+          : /<time datetime="2026-08-18">/;
       assert(`SEO ${file} ${minWords}–1400 palabras`, words >= minWords && words <= 1400, `${file}: ${words}`);
       assert(`SEO ${file} sin calculadora en title`, /./.test(title) && !/calculadora/i.test(title), title);
       assert(`SEO ${file} sin branding de IA`, !/\bIA\b/.test(html) && !/inteligencia artificial/i.test(html));
@@ -4553,6 +4559,28 @@ assert(
           /163/.test(iasTitle) &&
           /90 UF/i.test(iasTitle),
         `${iasTitle} | ${finiTitle}`,
+      );
+    }
+    {
+      const scHtml = readFileSync(join(root, "guias/semana-corrida.html"), "utf8");
+      const liqHtml = readFileSync(join(root, "guias/liquidacion-de-sueldo.html"), "utf8");
+      const scTitle = (scHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+      const liqTitle = (liqHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+      const scH1 = (scHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+      assert(
+        "SEO semana corrida title/H1 distintos de liquidación y con art. 45",
+        scTitle &&
+          liqTitle &&
+          scTitle !== liqTitle &&
+          scH1 &&
+          /45/.test(scTitle) &&
+          /semana corrida/i.test(scTitle) &&
+          /45/.test(scH1) &&
+          !/calculadora/i.test(scTitle) &&
+          !/calculadora/i.test(scH1) &&
+          /href="\/sueldo"/.test(scHtml) &&
+          /href="\/guias"/.test(scHtml),
+        `${scTitle} | ${liqTitle}`,
       );
     }
   }

@@ -43,7 +43,7 @@ export const GUIDES = [
   { slug: "impuesto-unico", group: "liquidacion", calc: "/sueldo", updated: "2026-08-18" },
   { slug: "gratificacion-legal", group: "liquidacion", calc: "/sueldo", updated: "2026-08-18" },
   { slug: "horas-extras", group: "liquidacion", calc: "/sueldo", updated: "2026-08-17" },
-  { slug: "semana-corrida", group: "liquidacion", calc: "/sueldo", updated: "2026-08-17" },
+  { slug: "semana-corrida", group: "liquidacion", calc: "/sueldo", updated: "2026-08-19" },
   { slug: "como-leer-una-liquidacion-de-sueldo", group: "liquidacion", calc: "/sueldo", updated: "2026-08-17" },
   { slug: "formato-de-liquidacion-de-sueldo-chile", group: "liquidacion", calc: "/sueldo", updated: "2026-08-17" },
   { slug: "liquidacion-de-sueldo-y-previred", group: "liquidacion", calc: "/sueldo", updated: "2026-08-17" },
