@@ -4828,7 +4828,7 @@ assert(
     return acc;
   }
   const pages = listHtml(root);
-  assert("48 páginas HTML", pages.length === 48, String(pages.length));
+  assert("49 páginas HTML", pages.length === 49, String(pages.length));
   for (const file of pages) {
     const html = readFileSync(file, "utf8");
     const rel = file.slice(root.length + 1);
