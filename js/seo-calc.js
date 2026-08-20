@@ -163,8 +163,8 @@ function mountHoras(root) {
       <p class="seo-calc__result" data-out>—</p>
       <div class="seo-calc__actions">
         <button type="submit" class="btn">Calcular</button>
-        <a class="btn btn-ghost" href="/sueldo">Abrir calculadora completa</a>
-        <a class="btn btn-ghost" href="/empresa">Cuenta de empresa</a>
+        <a class="btn btn-ghost" href="/horas-extras">Calcular horas extras</a>
+        <a class="btn btn-ghost" href="/sueldo">Ver efecto en el líquido</a>
       </div>
       <p class="seo-calc__note">${DISCLAIMER}</p>
     </form>`;

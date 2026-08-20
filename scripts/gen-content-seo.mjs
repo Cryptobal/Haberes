@@ -696,13 +696,19 @@ for (const name of readdirSync(join(root, "finiquito"))) {
 
 console.log("contenido generado:", GUIDE_SLUGS.length, "guías,", CAUSAL_PAGES.length, "causales");
 
+function calcLinkLabel(calc) {
+  if (calc === "/finiquito") return "Calculadora de finiquito";
+  if (calc === "/horas-extras") return "Calcular horas extras";
+  return "Calculadora de sueldo líquido";
+}
+
 function hubList(items) {
   return `<ul>
         ${items
           .map(
             (g) =>
               `<li><a href="/guias/${g.slug}">${esc(g.title)}</a>
-          — <a href="${g.calc}">${g.calc === "/sueldo" ? "Calculadora de sueldo líquido" : "Calculadora de finiquito"}</a></li>`,
+          — <a href="${g.calc}">${calcLinkLabel(g.calc)}</a></li>`,
           )
           .join("\n        ")}
       </ul>`;

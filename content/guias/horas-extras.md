@@ -13,6 +13,6 @@ Las horas extraordinarias se pagan con recargo. Haberes usa la fórmula de la Di
 
 {{calc}}
 
-Incorpore las horas en la [calculadora de sueldo líquido](/sueldo) o en la [cuenta de empresa](/empresa) como novedad del periodo.
+Para el valor de la hora extra use [calcular horas extras](/horas-extras). También puede incorporarlas en la [calculadora de sueldo líquido](/sueldo) o en la [cuenta de empresa](/empresa) como novedad del periodo.
 
 {{cta}}

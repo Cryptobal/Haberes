@@ -62,6 +62,7 @@ def check_http():
         ("/guias/gratificacion-legal", 200, "html"),
         ("/guias/indemnizacion-por-anos-de-servicio", 200, "html"),
         ("/guias/semana-corrida", 200, "html"),
+        ("/horas-extras", 200, "html"),
         ("/blog", 404, None),
         ("/noticias", 404, None),
     ]
@@ -96,6 +97,7 @@ SHOTS = "/tmp/shots"
 PAGES = [
     ("index.html", "inicio"),
     ("sueldo.html", "sueldo"),
+    ("horas-extras.html", "horas-extras"),
     ("finiquito.html", "finiquito"),
     ("empresa.html", "empresa"),
     ("precios.html", "precios"),

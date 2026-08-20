@@ -115,6 +115,26 @@ assert("IUSC 8 tramos ago 2026", IUSC_TRAMOS.length === 8 && IUSC_TRAMOS[0].hast
 
 console.log("\nHoras extras art. 32");
 assert("800000 → extra ≈ 6666.67 (jornada 42)", close(valorHoraExtra(800000, 42), 6666.67, 0.01), String(valorHoraExtra(800000, 42)));
+assert(
+  "fórmula DT: sueldo/30×28/(jornada×4)×1,5",
+  close(valorHoraExtra(1_000_000, 42), (1_000_000 / 30) * 28 / (42 * 4) * 1.5, 0.0001),
+  String(valorHoraExtra(1_000_000, 42)),
+);
+assert("sueldo 0 → hora extra 0", valorHoraExtra(0, 42) === 0);
+assert("jornada 45: 800000 → extra ≈ 6222.22", close(valorHoraExtra(800000, 45), 6222.22, 0.01), String(valorHoraExtra(800000, 45)));
+assert(
+  "10 extras de 800000/42 ≈ 66667",
+  Math.round(valorHoraExtra(800000, 42) * 10) === 66667,
+  String(Math.round(valorHoraExtra(800000, 42) * 10)),
+);
+{
+  const heApp = readFileSync(join(root, "js/app-horas-extras.js"), "utf8");
+  assert(
+    "app-horas-extras usa valorHoraExtra",
+    /import\s*\{[^}]*valorHoraExtra[^}]*\}\s*from\s*["']\.\/sueldo\.js["']/.test(heApp) &&
+      /valorHoraExtra\s*\(/.test(heApp),
+  );
+}
 
 console.log("\nSueldo líquido");
 const golden = calcularSueldo(
@@ -560,7 +580,9 @@ console.log("\nSitio estático");
 const required = [
   "index.html",
   "sueldo.html",
+  "horas-extras.html",
   "finiquito.html",
+  "js/app-horas-extras.js",
   "empresa.html",
   "privacidad.html",
   "terminos.html",
@@ -689,6 +711,7 @@ assert("sitemap.xml no está en la raíz", !existsSync(join(root, "sitemap.xml")
 const htmlFiles = [
   "index.html",
   "sueldo.html",
+  "horas-extras.html",
   "finiquito.html",
   "empresa.html",
   "privacidad.html",
@@ -763,6 +786,7 @@ console.log("\nNavegación móvil");
 const appEntries = [
   "js/app-home.js",
   "js/app-sueldo.js",
+  "js/app-horas-extras.js",
   "js/app-finiquito.js",
   "js/app-empresa.js",
   "js/app-admin.js",
@@ -795,7 +819,7 @@ assert("robots Allow /", /Allow:\s*\//.test(robots));
 assert("robots Disallow /admin", /Disallow:\s*\/admin/.test(robots));
 assert("robots Disallow /api", /Disallow:\s*\/api/.test(robots));
 assert("robots Disallow /docs", /Disallow:\s*\/docs/.test(robots));
-assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots));
+assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots));
 assert("robots Sitemap", /Sitemap:\s*https:\/\/www\.haberes\.cl\/sitemap\.xml/.test(robots));
 
 const { seoPaths, GUIDE_SLUGS, CAUSAL_PAGES, BASE_PATHS, lastmodForPath } = await import("../content/registry.js");
@@ -812,7 +836,8 @@ assert(
     GUIDE_SLUGS.length >= 16 &&
     CAUSAL_PAGES.length === 21 &&
     BASE_PATHS.includes("/sueldo") &&
-    BASE_PATHS.includes("/finiquito"),
+    BASE_PATHS.includes("/finiquito") &&
+    BASE_PATHS.includes("/horas-extras"),
   `${locs.length} vs ${expectedFromRegistry.length}`,
 );
 assert(
@@ -1159,7 +1184,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 46,
+      seoPaths().length === 47,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -1171,7 +1196,7 @@ try {
   const docsSeo = await hitLocal("/docs/seo-map.md");
   assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
   assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
-  for (const p of ["/sueldo/", "/finiquito/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+  for (const p of ["/sueldo/", "/finiquito/", "/horas-extras/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
   }
@@ -1187,6 +1212,7 @@ try {
       /Últimas actualizaciones/.test(guiasBare.text),
   );
   for (const p of [
+    "/horas-extras",
     "/guias/liquidacion-de-sueldo",
     "/guias/finiquito",
     "/guias/impuesto-unico",
@@ -4392,6 +4418,7 @@ assert(
   const publicPages = [
     ["index.html", "/"],
     ["sueldo.html", "/sueldo"],
+    ["horas-extras.html", "/horas-extras"],
     ["finiquito.html", "/finiquito"],
     ["empresa.html", "/empresa"],
     ["como.html", "/como"],
@@ -4455,6 +4482,47 @@ assert(
     "SEO H1 sueldo es calculadora Chile 2026",
     /<h1>Calculadora de sueldo l[ií]quido Chile 2026<\/h1>/.test(readFileSync(join(root, "sueldo.html"), "utf8")),
   );
+  {
+    const heHtml = readFileSync(join(root, "horas-extras.html"), "utf8");
+    const heTitle = (heHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const heH1 = (heHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const sueldoTitle = (readFileSync(join(root, "sueldo.html"), "utf8").match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const sueldoH1 = (readFileSync(join(root, "sueldo.html"), "utf8").match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const guideHtml = readFileSync(join(root, "guias/horas-extras.html"), "utf8");
+    const guideTitle = (guideHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const guideH1 = (guideHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    assert(
+      "SEO title horas extras apunta a calcular horas extras",
+      /calcular horas extras/i.test(heTitle) &&
+        !/sueldo l[ií]quido/i.test(heTitle) &&
+        heTitle !== sueldoTitle &&
+        heTitle !== guideTitle &&
+        heTitle.length <= 65,
+      heTitle,
+    );
+    assert(
+      "SEO H1 horas extras distinto de /sueldo y de la guía",
+      /calcular horas extras/i.test(heH1) &&
+        heH1 !== sueldoH1 &&
+        heH1 !== guideH1 &&
+        !/sueldo l[ií]quido/i.test(heH1),
+      heH1,
+    );
+    assert("SEO horas extras cita art. 32", /art[ií]culo 32/i.test(heHtml) && /C[oó]digo del Trabajo/.test(heHtml));
+    assert("SEO horas extras recargo mínimo 50 %", /50\s*%/.test(heHtml) && /m[ií]nimo/i.test(heHtml));
+    assert("SEO horas extras enlaza guía y sueldo", /href="\/guias\/horas-extras"/.test(heHtml) && /href="\/sueldo"/.test(heHtml));
+    assert("SEO guía horas extras enlaza la calculadora", /href="\/horas-extras"/.test(guideHtml));
+    assert(
+      "home y nav enlazan /horas-extras",
+      /href="\/horas-extras"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/horas-extras" data-nav>Horas extras<\/a>/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/horas-extras" data-nav>Horas extras<\/a>/.test(heHtml),
+    );
+    assert(
+      "sitemap incluye /horas-extras",
+      locs.includes("https://www.haberes.cl/horas-extras") && lastmodForPath("/horas-extras") === "2026-08-20",
+    );
+  }
   {
     const homeTitle = (readFileSync(join(root, "index.html"), "utf8").match(/<title>([^<]*)<\/title>/) || [])[1] || "";
     assert(
@@ -4588,6 +4656,7 @@ assert(
     const files = [
       "index.html",
       "sueldo.html",
+      "horas-extras.html",
       "finiquito.html",
       "empresa.html",
       "precios.html",

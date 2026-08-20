@@ -39,6 +39,7 @@ en `js/picker.js` (hoja inferior con velo en móvil, panel anclado en escritorio
 
 - `/` inicio
 - `/sueldo` calculadora simple y completa
+- `/horas-extras` valor de la hora extra (art. 32) y total del mes
 - `/finiquito` arts. 159 / 160 / 161
 - `/finiquito/{slug}` páginas por causal prioritaria (necesidades de la empresa, renuncia, vencimiento del plazo, incumplimiento grave, desahucio)
 - `/guias` índice de las 16 guías (liquidación vs finiquito)

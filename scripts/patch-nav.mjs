@@ -18,6 +18,7 @@ const DRAWER_LINKS = [
   ["/como", "Cómo"],
   ["/precios", "Precios"],
   ["/sueldo", "Sueldo líquido"],
+  ["/horas-extras", "Horas extras"],
   ["/finiquito", "Finiquito"],
 ];
 

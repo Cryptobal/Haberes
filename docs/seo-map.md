@@ -11,6 +11,7 @@ Actualizar este archivo antes de crear URLs nuevas para evitar canibalización.
 | Producto pymes | liquidaciones / finiquitos pymes | `/` | Title de producto, no segunda calculadora |
 | Calcular finiquito | calcular finiquito (18.100/28), calculadora finiquito (1.900/23), como calcular finiquito (4.400/23) | `/finiquito` | Reforzar title/H1/FAQ; no crear `/calculadora-finiquito` |
 | Calcular sueldo líquido | calcular sueldo líquido / liquido (5.400/38), sueldo líquido (4.400/35), calculadora de sueldo liquido (1.300/32) | `/sueldo` | H1 calculadora Chile 2026; no crear `/calculadora-sueldo` |
+| Calcular horas extras | calcular horas extras / cálculo horas extras (8.100/17) | `/horas-extras` | Title/H1 «calcular horas extras»; no canibalizar `/sueldo` ni `/guias/horas-extras` |
 | Índice de guías | — | `/guias` | Hub: 16 guías, grupo liquidación vs finiquito |
 
 ## Guías pilar (contenido + calculadora embebida)
@@ -22,7 +23,7 @@ Actualizar este archivo antes de crear URLs nuevas para evitar canibalización.
 | Impuesto único | impuesto único (5.400/28), tabla impuesto único (2.900/22) | `/guias/impuesto-unico` | tabla IUSC desde `js/constants.js` |
 | Gratificación legal | gratificación legal (4.400/17), gratificacion legal chile (1.900/16) | `/guias/gratificacion-legal` | embed gratificación |
 | Indemnización años de servicio | indemnizacion por años de servicio (2.400/24) | `/guias/indemnizacion-por-anos-de-servicio` | embed → `/finiquito` |
-| Horas extras | cálculo horas extras (8.100/17) | `/guias/horas-extras` | embed HE |
+| Horas extras (guía) | cálculo horas extras — explainer | `/guias/horas-extras` | enlace a `/horas-extras`; no reescribir en esta tanda |
 | Vacaciones / feriado proporcional | vacaciones proporcionales (1.300/16), feriado proporcional (590/13) | `/guias/vacaciones-proporcionales` | embed feriado |
 | Semana corrida | semana corrida (1.300/21) | `/guias/semana-corrida` | guía espesa + embed `/sueldo` |
 | Carta de aviso | carta de aviso de término de contrato (10–480) | `/guias/carta-aviso-termino-contrato` | plantilla descargable |
