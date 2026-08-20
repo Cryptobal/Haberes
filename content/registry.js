@@ -34,7 +34,7 @@ export const CAUSAL_PAGES = [
  * group: índice /guias (liquidación vs finiquito).
  * calc: calculadora canónica (no canibalizar titles/H1 de esas URLs).
  * updated: lastmod ISO (YYYY-MM-DD) para sitemap y el bloque «últimas» del hub.
- * @type {{ slug: string, group: "liquidacion" | "finiquito", calc: "/sueldo" | "/finiquito", updated: string }[]}
+ * @type {{ slug: string, group: "liquidacion" | "finiquito", calc: "/sueldo" | "/finiquito" | "/horas-extras", updated: string }[]}
  */
 export const DEFAULT_LASTMOD = "2026-08-17";
 
@@ -42,7 +42,7 @@ export const GUIDES = [
   { slug: "liquidacion-de-sueldo", group: "liquidacion", calc: "/sueldo", updated: "2026-08-18" },
   { slug: "impuesto-unico", group: "liquidacion", calc: "/sueldo", updated: "2026-08-18" },
   { slug: "gratificacion-legal", group: "liquidacion", calc: "/sueldo", updated: "2026-08-18" },
-  { slug: "horas-extras", group: "liquidacion", calc: "/sueldo", updated: "2026-08-17" },
+  { slug: "horas-extras", group: "liquidacion", calc: "/horas-extras", updated: "2026-08-17" },
   { slug: "semana-corrida", group: "liquidacion", calc: "/sueldo", updated: "2026-08-19" },
   { slug: "como-leer-una-liquidacion-de-sueldo", group: "liquidacion", calc: "/sueldo", updated: "2026-08-17" },
   { slug: "formato-de-liquidacion-de-sueldo-chile", group: "liquidacion", calc: "/sueldo", updated: "2026-08-17" },
@@ -60,6 +60,7 @@ export const GUIDES = [
 /** lastmod de rutas base que sí cambiaron después del lote SEO inicial. */
 export const PATH_LASTMOD = {
   "/guias": "2026-08-19",
+  "/horas-extras": "2026-08-20",
   "/privacidad": "2026-08-18",
   "/terminos": "2026-08-18",
 };
@@ -81,6 +82,7 @@ export const BASE_PATHS = [
   "/empresa",
   "/finiquito",
   "/guias",
+  "/horas-extras",
   "/precios",
   "/privacidad",
   "/sueldo",

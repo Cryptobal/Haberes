@@ -212,6 +212,7 @@ function paintLoggedInNav(emp) {
         <a href="/precios" data-nav>Precios</a>
         <a href="/empresa" data-nav>Mi empresa</a>
         <a href="/sueldo" data-nav>Sueldo líquido</a>
+        <a href="/horas-extras" data-nav>Horas extras</a>
         <a href="/finiquito" data-nav>Finiquito</a>`;
     const anchor = foot || null;
     for (const node of [...mid.childNodes]) {

@@ -102,6 +102,56 @@ const META = {
       },
     ],
   },
+  "horas-extras.html": {
+    path: "/horas-extras",
+    title: "Calcular horas extras Chile 2026 — Haberes",
+    description:
+      "Calcule el valor de una hora extra y el total a pagar: sueldo base, jornada semanal y recargo 50 % (art. 32). Resultado al instante y gratis.",
+    ogImage: "/img/og-default.png",
+    jsonld: (url) => [
+      ORG,
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        name: "Calcular horas extras — Haberes",
+        url,
+        applicationCategory: "FinanceApplication",
+        operatingSystem: "Web",
+        inLanguage: "es-CL",
+        offers: { "@type": "Offer", price: "0", priceCurrency: "CLP" },
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        mainEntity: [
+          {
+            "@type": "Question",
+            name: "¿Cuál es el recargo mínimo de la hora extra?",
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: "El artículo 32 del Código del Trabajo fija un recargo del 50 % sobre el sueldo convenido para la jornada ordinaria. Ese es el mínimo legal; el pacto puede ser mayor.",
+            },
+          },
+          {
+            "@type": "Question",
+            name: "¿Sobre qué sueldo se calcula la hora extra?",
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: "Sobre el sueldo pactado de la jornada ordinaria, no sobre el mes proporcional. Haberes usa la fórmula de la Dirección del Trabajo: sueldo / 30 × 28 / (jornada × 4) × 1,5.",
+            },
+          },
+          {
+            "@type": "Question",
+            name: "¿Las horas extras cambian el sueldo líquido?",
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: "Sí. El recargo es imponible y entra a la liquidación. Use esta página para el valor de la hora y el total; para ver el efecto en el líquido abra la calculadora de sueldo.",
+            },
+          },
+        ],
+      },
+    ],
+  },
   "finiquito.html": {
     path: "/finiquito",
     title: "Calculadora de finiquito Chile 2026 — arts. 159, 160 y 161",

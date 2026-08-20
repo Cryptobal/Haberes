@@ -2949,6 +2949,10 @@ body[data-dialog-open] .toaster {
     grid-template-columns: repeat(3, 1fr);
   }
 
+  .cards:has(> :nth-child(4)) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
   .cards.cards-2 {
     grid-template-columns: 1fr 1fr;
   }
