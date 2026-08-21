@@ -14,6 +14,6 @@ Al término del contrato se liquidan el feriado pendiente (días ya devengados n
 
 {{calc}}
 
-Más detalle de base de cálculo: [con qué sueldo se calcula el finiquito](/guias/con-que-sueldo-se-calcula-el-finiquito).
+Para el feriado proporcional use [calcular vacaciones proporcionales](/vacaciones-proporcionales). IAS, aviso y causal van en el [finiquito](/finiquito). Más detalle de base de cálculo: [con qué sueldo se calcula el finiquito](/guias/con-que-sueldo-se-calcula-el-finiquito).
 
 {{cta}}

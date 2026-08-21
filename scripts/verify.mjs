@@ -260,6 +260,16 @@ assert("Fracción > 6 meses suma 1 año", aniosServicio("2020-01-15", "2023-08-2
 assert("Exactamente 6 meses no suma", aniosServicio("2020-01-15", "2023-07-15") === 3);
 assert("Tope 11 años", aniosServicio("2000-01-01", "2020-01-01") === 11);
 assert("Feriado dias*rem/30", feriadoProporcional(15, 900000) === 450000);
+assert("Feriado 10 días × 900000 / 30 = 300000", feriadoProporcional(10, 900000) === 300000);
+assert("Feriado 0 días → 0", feriadoProporcional(0, 900000) === 0);
+{
+  const vpApp = readFileSync(join(root, "js/app-vacaciones-proporcionales.js"), "utf8");
+  assert(
+    "app-vacaciones-proporcionales usa feriadoProporcional",
+    /import\s*\{[^}]*feriadoProporcional[^}]*\}\s*from\s*["']\.\/finiquito\.js["']/.test(vpApp) &&
+      /feriadoProporcional\s*\(/.test(vpApp),
+  );
+}
 
 const f161 = calcularFiniquito(
   {
@@ -581,8 +591,10 @@ const required = [
   "index.html",
   "sueldo.html",
   "horas-extras.html",
+  "vacaciones-proporcionales.html",
   "finiquito.html",
   "js/app-horas-extras.js",
+  "js/app-vacaciones-proporcionales.js",
   "empresa.html",
   "privacidad.html",
   "terminos.html",
@@ -712,6 +724,7 @@ const htmlFiles = [
   "index.html",
   "sueldo.html",
   "horas-extras.html",
+  "vacaciones-proporcionales.html",
   "finiquito.html",
   "empresa.html",
   "privacidad.html",
@@ -787,6 +800,7 @@ const appEntries = [
   "js/app-home.js",
   "js/app-sueldo.js",
   "js/app-horas-extras.js",
+  "js/app-vacaciones-proporcionales.js",
   "js/app-finiquito.js",
   "js/app-empresa.js",
   "js/app-admin.js",
@@ -819,7 +833,7 @@ assert("robots Allow /", /Allow:\s*\//.test(robots));
 assert("robots Disallow /admin", /Disallow:\s*\/admin/.test(robots));
 assert("robots Disallow /api", /Disallow:\s*\/api/.test(robots));
 assert("robots Disallow /docs", /Disallow:\s*\/docs/.test(robots));
-assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots));
+assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots));
 assert("robots Sitemap", /Sitemap:\s*https:\/\/www\.haberes\.cl\/sitemap\.xml/.test(robots));
 
 const { seoPaths, GUIDE_SLUGS, CAUSAL_PAGES, BASE_PATHS, lastmodForPath } = await import("../content/registry.js");
@@ -837,7 +851,8 @@ assert(
     CAUSAL_PAGES.length === 21 &&
     BASE_PATHS.includes("/sueldo") &&
     BASE_PATHS.includes("/finiquito") &&
-    BASE_PATHS.includes("/horas-extras"),
+    BASE_PATHS.includes("/horas-extras") &&
+    BASE_PATHS.includes("/vacaciones-proporcionales"),
   `${locs.length} vs ${expectedFromRegistry.length}`,
 );
 assert(
@@ -1184,7 +1199,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 47,
+      seoPaths().length === 48,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -1196,7 +1211,7 @@ try {
   const docsSeo = await hitLocal("/docs/seo-map.md");
   assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
   assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
-  for (const p of ["/sueldo/", "/finiquito/", "/horas-extras/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+  for (const p of ["/sueldo/", "/finiquito/", "/horas-extras/", "/vacaciones-proporcionales/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
   }
@@ -1213,6 +1228,7 @@ try {
   );
   for (const p of [
     "/horas-extras",
+    "/vacaciones-proporcionales",
     "/guias/liquidacion-de-sueldo",
     "/guias/finiquito",
     "/guias/impuesto-unico",
@@ -4419,6 +4435,7 @@ assert(
     ["index.html", "/"],
     ["sueldo.html", "/sueldo"],
     ["horas-extras.html", "/horas-extras"],
+    ["vacaciones-proporcionales.html", "/vacaciones-proporcionales"],
     ["finiquito.html", "/finiquito"],
     ["empresa.html", "/empresa"],
     ["como.html", "/como"],
@@ -4521,6 +4538,60 @@ assert(
     assert(
       "sitemap incluye /horas-extras",
       locs.includes("https://www.haberes.cl/horas-extras") && lastmodForPath("/horas-extras") === "2026-08-20",
+    );
+  }
+  {
+    const vpHtml = readFileSync(join(root, "vacaciones-proporcionales.html"), "utf8");
+    const vpTitle = (vpHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const vpH1 = (vpHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const finiHtml = readFileSync(join(root, "finiquito.html"), "utf8");
+    const finiTitle = (finiHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const finiH1 = (finiHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const guideHtml = readFileSync(join(root, "guias/vacaciones-proporcionales.html"), "utf8");
+    const guideTitle = (guideHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const guideH1 = (guideHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    assert(
+      "SEO title vacaciones proporcionales apunta a calcular vacaciones proporcionales",
+      /calcular vacaciones proporcionales/i.test(vpTitle) &&
+        !/calculadora de finiquito/i.test(vpTitle) &&
+        vpTitle !== finiTitle &&
+        vpTitle !== guideTitle &&
+        vpTitle.length <= 65,
+      vpTitle,
+    );
+    assert(
+      "SEO H1 vacaciones proporcionales distinto de /finiquito y de la guía",
+      /calcular vacaciones proporcionales/i.test(vpH1) &&
+        vpH1 !== finiH1 &&
+        vpH1 !== guideH1 &&
+        !/calculadora de finiquito/i.test(vpH1),
+      vpH1,
+    );
+    assert("SEO vacaciones proporcionales cita art. 67", /art[ií]culo 67/i.test(vpHtml) && /C[oó]digo del Trabajo/.test(vpHtml));
+    assert("SEO vacaciones proporcionales 15 días hábiles", /15 d[ií]as h[aá]biles/i.test(vpHtml));
+    assert(
+      "SEO vacaciones proporcionales fórmula días×rem/30 y ejemplo 10×900000=300000",
+      /d[ií]as\s*×\s*remuneraci[oó]n(?: mensual)?\s*\/\s*30/i.test(vpHtml) &&
+        /10\s*×\s*900\.?000\s*\/\s*30/.test(vpHtml) &&
+        /\$300\.000/.test(vpHtml) &&
+        feriadoProporcional(10, 900000) === 300000,
+    );
+    assert("SEO vacaciones proporcionales sin feriado progresivo", !/feriado progresivo/i.test(vpHtml));
+    assert(
+      "SEO vacaciones proporcionales enlaza guía y finiquito",
+      /href="\/guias\/vacaciones-proporcionales"/.test(vpHtml) && /href="\/finiquito"/.test(vpHtml),
+    );
+    assert("SEO guía vacaciones proporcionales enlaza la calculadora", /href="\/vacaciones-proporcionales"/.test(guideHtml));
+    assert(
+      "home y nav enlazan /vacaciones-proporcionales",
+      /href="\/vacaciones-proporcionales"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/vacaciones-proporcionales" data-nav>Vacaciones proporcionales<\/a>/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/vacaciones-proporcionales" data-nav>Vacaciones proporcionales<\/a>/.test(vpHtml),
+    );
+    assert(
+      "sitemap incluye /vacaciones-proporcionales",
+      locs.includes("https://www.haberes.cl/vacaciones-proporcionales") &&
+        lastmodForPath("/vacaciones-proporcionales") === "2026-08-21",
     );
   }
   {
@@ -4657,6 +4728,7 @@ assert(
       "index.html",
       "sueldo.html",
       "horas-extras.html",
+      "vacaciones-proporcionales.html",
       "finiquito.html",
       "empresa.html",
       "precios.html",
@@ -4828,7 +4900,7 @@ assert(
     return acc;
   }
   const pages = listHtml(root);
-  assert("49 páginas HTML", pages.length === 49, String(pages.length));
+  assert("50 páginas HTML", pages.length === 50, String(pages.length));
   for (const file of pages) {
     const html = readFileSync(file, "utf8");
     const rel = file.slice(root.length + 1);

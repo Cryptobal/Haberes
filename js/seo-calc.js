@@ -11,7 +11,7 @@ import {
   IUSC_TRAMOS,
   DISCLAIMER,
 } from "./constants.js";
-import { calcularFiniquitoCompleto } from "./finiquito.js";
+import { calcularFiniquitoCompleto, feriadoProporcional } from "./finiquito.js";
 import { calcularSueldo, valorHoraExtra, gratificacionArt50 } from "./sueldo.js";
 
 function pesos(n) {
@@ -193,8 +193,8 @@ function mountFeriado(root) {
       <p class="seo-calc__result" data-out>—</p>
       <div class="seo-calc__actions">
         <button type="submit" class="btn">Calcular</button>
-        <a class="btn btn-ghost" href="/finiquito">Abrir finiquito</a>
-        <a class="btn btn-ghost" href="/empresa">Cuenta de empresa</a>
+        <a class="btn btn-ghost" href="/vacaciones-proporcionales">Calcular vacaciones proporcionales</a>
+        <a class="btn btn-ghost" href="/finiquito">IAS, aviso y causal</a>
       </div>
       <p class="seo-calc__note">${DISCLAIMER}</p>
     </form>`;
@@ -203,7 +203,7 @@ function mountFeriado(root) {
   const run = () => {
     const base = num(form.base);
     const dias = Number(form.dias.value) || 0;
-    const monto = Math.round((base / 30) * dias);
+    const monto = feriadoProporcional(dias, base);
     out.textContent = `Feriado estimado: ${pesos(monto)} (${dias} días × remuneración diaria)`;
   };
   form.addEventListener("submit", (e) => {
