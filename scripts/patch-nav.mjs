@@ -19,6 +19,7 @@ const DRAWER_LINKS = [
   ["/precios", "Precios"],
   ["/sueldo", "Sueldo líquido"],
   ["/horas-extras", "Horas extras"],
+  ["/vacaciones-proporcionales", "Vacaciones proporcionales"],
   ["/finiquito", "Finiquito"],
 ];
 

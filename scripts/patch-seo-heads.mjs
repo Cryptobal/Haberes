@@ -152,6 +152,56 @@ const META = {
       },
     ],
   },
+  "vacaciones-proporcionales.html": {
+    path: "/vacaciones-proporcionales",
+    title: "Calcular vacaciones proporcionales Chile 2026 — Haberes",
+    description:
+      "Calcule vacaciones proporcionales (feriado proporcional): días × remuneración / 30. Artículo 67, 15 días hábiles. Resultado al instante y gratis.",
+    ogImage: "/img/og-default.png",
+    jsonld: (url) => [
+      ORG,
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        name: "Calcular vacaciones proporcionales — Haberes",
+        url,
+        applicationCategory: "FinanceApplication",
+        operatingSystem: "Web",
+        inLanguage: "es-CL",
+        offers: { "@type": "Offer", price: "0", priceCurrency: "CLP" },
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        mainEntity: [
+          {
+            "@type": "Question",
+            name: "¿Vacaciones proporcionales y feriado proporcional son lo mismo?",
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: "En el lenguaje laboral chileno se habla de feriado. «Vacaciones proporcionales» es la forma habitual de buscar el mismo concepto al término del contrato.",
+            },
+          },
+          {
+            "@type": "Question",
+            name: "¿Cómo se calcula el feriado proporcional?",
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: "Se liquida según los días de feriado adeudados multiplicados por la remuneración diaria (remuneración mensual dividida por treinta). En Haberes: días × remuneración / 30, redondeado al peso.",
+            },
+          },
+          {
+            "@type": "Question",
+            name: "¿Cuántos días de feriado anual fija el artículo 67?",
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: "El artículo 67 del Código del Trabajo contempla 15 días hábiles de feriado anual después de un año de servicio. El proporcional es la fracción del año incompleto; usted indica los días, como en el finiquito.",
+            },
+          },
+        ],
+      },
+    ],
+  },
   "finiquito.html": {
     path: "/finiquito",
     title: "Calculadora de finiquito Chile 2026 — arts. 159, 160 y 161",
