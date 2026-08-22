@@ -34,14 +34,14 @@ export const CAUSAL_PAGES = [
  * group: índice /guias (liquidación vs finiquito).
  * calc: calculadora canónica (no canibalizar titles/H1 de esas URLs).
  * updated: lastmod ISO (YYYY-MM-DD) para sitemap y el bloque «últimas» del hub.
- * @type {{ slug: string, group: "liquidacion" | "finiquito", calc: "/sueldo" | "/finiquito" | "/horas-extras" | "/vacaciones-proporcionales", updated: string }[]}
+ * @type {{ slug: string, group: "liquidacion" | "finiquito", calc: "/sueldo" | "/finiquito" | "/horas-extras" | "/gratificacion" | "/vacaciones-proporcionales", updated: string }[]}
  */
 export const DEFAULT_LASTMOD = "2026-08-17";
 
 export const GUIDES = [
   { slug: "liquidacion-de-sueldo", group: "liquidacion", calc: "/sueldo", updated: "2026-08-18" },
   { slug: "impuesto-unico", group: "liquidacion", calc: "/sueldo", updated: "2026-08-18" },
-  { slug: "gratificacion-legal", group: "liquidacion", calc: "/sueldo", updated: "2026-08-18" },
+  { slug: "gratificacion-legal", group: "liquidacion", calc: "/gratificacion", updated: "2026-08-18" },
   { slug: "horas-extras", group: "liquidacion", calc: "/horas-extras", updated: "2026-08-17" },
   { slug: "semana-corrida", group: "liquidacion", calc: "/sueldo", updated: "2026-08-19" },
   { slug: "como-leer-una-liquidacion-de-sueldo", group: "liquidacion", calc: "/sueldo", updated: "2026-08-17" },
@@ -62,6 +62,7 @@ export const PATH_LASTMOD = {
   "/guias": "2026-08-19",
   "/horas-extras": "2026-08-20",
   "/vacaciones-proporcionales": "2026-08-21",
+  "/gratificacion": "2026-08-22",
   "/privacidad": "2026-08-18",
   "/terminos": "2026-08-18",
 };
@@ -83,6 +84,7 @@ export const BASE_PATHS = [
   "/empresa",
   "/finiquito",
   "/guias",
+  "/gratificacion",
   "/horas-extras",
   "/precios",
   "/privacidad",
