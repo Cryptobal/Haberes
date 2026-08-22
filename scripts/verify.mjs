@@ -177,6 +177,24 @@ assert(
 
 assert("Gratificación 25 % con tope", gratificacionArt50(1_000_000) === 219115);
 assert("Gratificación bajo tope", gratificacionArt50(100_000) === 25000);
+assert("Gratificación 800000 → 200000 (bajo tope)", gratificacionArt50(800_000) === 200_000);
+assert("Gratificación 900000 → tope 219115", gratificacionArt50(900_000) === GRATIFICACION_TOPE);
+assert(
+  "Gratificación extras+bonos bajo tope",
+  gratificacionArt50(700_000, 50_000, 50_000) === 200_000,
+);
+assert(
+  "Gratificación extras+bonos con tope",
+  gratificacionArt50(800_000, 50_000, 50_000) === GRATIFICACION_TOPE,
+);
+{
+  const grApp = readFileSync(join(root, "js/app-gratificacion.js"), "utf8");
+  assert(
+    "app-gratificacion usa gratificacionArt50",
+    /import\s*\{[^}]*gratificacionArt50[^}]*\}\s*from\s*["']\.\/sueldo\.js["']/.test(grApp) &&
+      /gratificacionArt50\s*\(/.test(grApp),
+  );
+}
 
 const homeCtrl = calcularSueldo(
   {
@@ -592,9 +610,11 @@ const required = [
   "sueldo.html",
   "horas-extras.html",
   "vacaciones-proporcionales.html",
+  "gratificacion.html",
   "finiquito.html",
   "js/app-horas-extras.js",
   "js/app-vacaciones-proporcionales.js",
+  "js/app-gratificacion.js",
   "empresa.html",
   "privacidad.html",
   "terminos.html",
@@ -725,6 +745,7 @@ const htmlFiles = [
   "sueldo.html",
   "horas-extras.html",
   "vacaciones-proporcionales.html",
+  "gratificacion.html",
   "finiquito.html",
   "empresa.html",
   "privacidad.html",
@@ -801,6 +822,7 @@ const appEntries = [
   "js/app-sueldo.js",
   "js/app-horas-extras.js",
   "js/app-vacaciones-proporcionales.js",
+  "js/app-gratificacion.js",
   "js/app-finiquito.js",
   "js/app-empresa.js",
   "js/app-admin.js",
@@ -833,10 +855,10 @@ assert("robots Allow /", /Allow:\s*\//.test(robots));
 assert("robots Disallow /admin", /Disallow:\s*\/admin/.test(robots));
 assert("robots Disallow /api", /Disallow:\s*\/api/.test(robots));
 assert("robots Disallow /docs", /Disallow:\s*\/docs/.test(robots));
-assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots));
+assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots));
 assert("robots Sitemap", /Sitemap:\s*https:\/\/www\.haberes\.cl\/sitemap\.xml/.test(robots));
 
-const { seoPaths, GUIDE_SLUGS, CAUSAL_PAGES, BASE_PATHS, lastmodForPath } = await import("../content/registry.js");
+const { seoPaths, GUIDE_SLUGS, GUIDES, CAUSAL_PAGES, BASE_PATHS, lastmodForPath } = await import("../content/registry.js");
 const { buildSitemapXml } = await import("../api/_sitemap.js");
 const sitemap = buildSitemapXml();
 const locs = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
@@ -852,7 +874,8 @@ assert(
     BASE_PATHS.includes("/sueldo") &&
     BASE_PATHS.includes("/finiquito") &&
     BASE_PATHS.includes("/horas-extras") &&
-    BASE_PATHS.includes("/vacaciones-proporcionales"),
+    BASE_PATHS.includes("/vacaciones-proporcionales") &&
+    BASE_PATHS.includes("/gratificacion"),
   `${locs.length} vs ${expectedFromRegistry.length}`,
 );
 assert(
@@ -1199,7 +1222,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 48,
+      seoPaths().length === 49,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -1211,7 +1234,7 @@ try {
   const docsSeo = await hitLocal("/docs/seo-map.md");
   assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
   assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
-  for (const p of ["/sueldo/", "/finiquito/", "/horas-extras/", "/vacaciones-proporcionales/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+  for (const p of ["/sueldo/", "/finiquito/", "/horas-extras/", "/vacaciones-proporcionales/", "/gratificacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
   }
@@ -1229,6 +1252,7 @@ try {
   for (const p of [
     "/horas-extras",
     "/vacaciones-proporcionales",
+    "/gratificacion",
     "/guias/liquidacion-de-sueldo",
     "/guias/finiquito",
     "/guias/impuesto-unico",
@@ -4436,6 +4460,7 @@ assert(
     ["sueldo.html", "/sueldo"],
     ["horas-extras.html", "/horas-extras"],
     ["vacaciones-proporcionales.html", "/vacaciones-proporcionales"],
+    ["gratificacion.html", "/gratificacion"],
     ["finiquito.html", "/finiquito"],
     ["empresa.html", "/empresa"],
     ["como.html", "/como"],
@@ -4595,6 +4620,68 @@ assert(
     );
   }
   {
+    const grHtml = readFileSync(join(root, "gratificacion.html"), "utf8");
+    const grTitle = (grHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const grH1 = (grHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const sueldoTitle = (readFileSync(join(root, "sueldo.html"), "utf8").match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const sueldoH1 = (readFileSync(join(root, "sueldo.html"), "utf8").match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const guideHtml = readFileSync(join(root, "guias/gratificacion-legal.html"), "utf8");
+    const guideTitle = (guideHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const guideH1 = (guideHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const guideDesc = (guideHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "";
+    const grDesc = (grHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "";
+    assert(
+      "SEO title gratificación apunta a calcular gratificación",
+      /calcular gratificaci[oó]n/i.test(grTitle) &&
+        !/sueldo l[ií]quido/i.test(grTitle) &&
+        !/gratificaci[oó]n legal en Chile/i.test(grTitle) &&
+        grTitle !== sueldoTitle &&
+        grTitle !== guideTitle &&
+        grTitle.length <= 65,
+      grTitle,
+    );
+    assert(
+      "SEO H1 gratificación distinto de /sueldo y de la guía",
+      /calcular gratificaci[oó]n/i.test(grH1) &&
+        grH1 !== sueldoH1 &&
+        grH1 !== guideH1 &&
+        !/sueldo l[ií]quido/i.test(grH1) &&
+        !/qu[eé] es la gratificaci[oó]n legal/i.test(grH1),
+      grH1,
+    );
+    assert("SEO gratificación meta distinta de la guía", grDesc && guideDesc && grDesc !== guideDesc, grDesc);
+    assert("SEO gratificación cita art. 50", /art[ií]culo 50/i.test(grHtml) && /C[oó]digo del Trabajo/.test(grHtml));
+    assert("SEO gratificación 25 % y tope", /25\s*%/.test(grHtml) && /219\.?115/.test(grHtml));
+    assert(
+      "SEO gratificación ejemplos 800000 y 900000",
+      gratificacionArt50(800_000) === 200_000 &&
+        gratificacionArt50(900_000) === GRATIFICACION_TOPE &&
+        /\$800\.000/.test(grHtml) &&
+        /\$200\.000/.test(grHtml) &&
+        /\$900\.000/.test(grHtml) &&
+        /\$219\.115/.test(grHtml),
+    );
+    assert(
+      "SEO gratificación enlaza guía y sueldo",
+      /href="\/guias\/gratificacion-legal"/.test(grHtml) && /href="\/sueldo"/.test(grHtml),
+    );
+    assert("SEO guía gratificación enlaza la calculadora", /href="\/gratificacion"/.test(guideHtml));
+    assert(
+      "home y nav enlazan /gratificacion",
+      /href="\/gratificacion"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/gratificacion" data-nav>Gratificaci[oó]n<\/a>/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/gratificacion" data-nav>Gratificaci[oó]n<\/a>/.test(grHtml),
+    );
+    assert(
+      "sitemap incluye /gratificacion",
+      locs.includes("https://www.haberes.cl/gratificacion") && lastmodForPath("/gratificacion") === "2026-08-22",
+    );
+    assert(
+      "GUIDES gratificacion-legal apunta a /gratificacion",
+      GUIDES.find((g) => g.slug === "gratificacion-legal")?.calc === "/gratificacion",
+    );
+  }
+  {
     const homeTitle = (readFileSync(join(root, "index.html"), "utf8").match(/<title>([^<]*)<\/title>/) || [])[1] || "";
     assert(
       "SEO título home pymes, no calculadora",
@@ -4642,7 +4729,7 @@ assert(
       ["guias/finiquito.html", "/finiquito", /177/, /dt\.gob\.cl/],
       ["guias/impuesto-unico.html", "/sueldo", /13,5 UTM/, /sii\.cl/],
       ["guias/carta-aviso-termino-contrato.html", "/finiquito", /162/, /dt\.gob\.cl/],
-      ["guias/gratificacion-legal.html", "/sueldo", /artículo 47/, /dt\.gob\.cl/],
+      ["guias/gratificacion-legal.html", "/gratificacion", /artículo 47/, /dt\.gob\.cl/],
       ["guias/indemnizacion-por-anos-de-servicio.html", "/finiquito", /artículo 163/, /dt\.gob\.cl/],
       ["guias/semana-corrida.html", "/sueldo", /artículo 45/, /dt\.gob\.cl/],
     ];
@@ -4729,6 +4816,7 @@ assert(
       "sueldo.html",
       "horas-extras.html",
       "vacaciones-proporcionales.html",
+      "gratificacion.html",
       "finiquito.html",
       "empresa.html",
       "precios.html",
@@ -4900,7 +4988,7 @@ assert(
     return acc;
   }
   const pages = listHtml(root);
-  assert("50 páginas HTML", pages.length === 50, String(pages.length));
+  assert("51 páginas HTML", pages.length === 51, String(pages.length));
   for (const file of pages) {
     const html = readFileSync(file, "utf8");
     const rel = file.slice(root.length + 1);

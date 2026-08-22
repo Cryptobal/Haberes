@@ -152,6 +152,56 @@ const META = {
       },
     ],
   },
+  "gratificacion.html": {
+    path: "/gratificacion",
+    title: "Calcular gratificación Chile 2026 — Haberes",
+    description:
+      "Calcule la gratificación legal art. 50: 25 % del imponible con tope mensual 4,75 IMM. Sueldo base, extras y bonos. Resultado al instante y gratis.",
+    ogImage: "/img/og-default.png",
+    jsonld: (url) => [
+      ORG,
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        name: "Calcular gratificación — Haberes",
+        url,
+        applicationCategory: "FinanceApplication",
+        operatingSystem: "Web",
+        inLanguage: "es-CL",
+        offers: { "@type": "Offer", price: "0", priceCurrency: "CLP" },
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        mainEntity: [
+          {
+            "@type": "Question",
+            name: "¿Cómo se calcula la gratificación del artículo 50?",
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: "El 25 % de la remuneración mensual imponible (sueldo base, horas extras y bonos imponibles), con un tope de 4,75 ingresos mínimos mensuales al año. Haberes aplica ese tope mes a mes: $219.115 en 2026.",
+            },
+          },
+          {
+            "@type": "Question",
+            name: "¿Cuál es el tope mensual de la gratificación art. 50 en 2026?",
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: "El tope mensual es $219.115. Sale de 4,75 × $553.553 / 12, en peso entero. Si el 25 % queda bajo ese monto, se paga el 25 %; si lo supera, se paga el tope.",
+            },
+          },
+          {
+            "@type": "Question",
+            name: "¿Las horas extras y los bonos entran a la gratificación?",
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: "Sí, si son imponibles. Entran a la misma base que el sueldo: 25 % de (sueldo base + extras + bonos), con el tope. Colación y movilización del artículo 41 no entran.",
+            },
+          },
+        ],
+      },
+    ],
+  },
   "vacaciones-proporcionales.html": {
     path: "/vacaciones-proporcionales",
     title: "Calcular vacaciones proporcionales Chile 2026 — Haberes",

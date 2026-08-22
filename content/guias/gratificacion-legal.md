@@ -15,7 +15,7 @@ faq:
 
 # Qué es la gratificación legal: artículo 47 o artículo 50
 
-En Chile la gratificación legal no es un bono de Fiestas Patrias ni un extra que la pyme «regala» cuando hay caja. El [Código del Trabajo](https://www.bcn.cl/leychile/navegar?idNorma=207436) (artículos 47 y 50) obliga a ciertas empresas a participar a los trabajadores en las utilidades, o a pagar un sustituto sobre las remuneraciones del año. Hay **dos caminos**. Esta página explica cuál aplica y qué tope usa Haberes. El número de un mes concreto se estima en la [calculadora de sueldo líquido](/sueldo).
+En Chile la gratificación legal no es un bono de Fiestas Patrias ni un extra que la pyme «regala» cuando hay caja. El [Código del Trabajo](https://www.bcn.cl/leychile/navegar?idNorma=207436) (artículos 47 y 50) obliga a ciertas empresas a participar a los trabajadores en las utilidades, o a pagar un sustituto sobre las remuneraciones del año. Hay **dos caminos**. Esta página explica cuál aplica y qué tope usa Haberes. El número de un mes concreto se estima en [calcular gratificación](/gratificacion).
 
 No sustituye al comprobante del [artículo 54](/guias/liquidacion-de-sueldo). Tampoco es el [impuesto único](/guias/impuesto-unico).
 
@@ -63,7 +63,7 @@ Trabajador con remuneración mensual imponible de **$900.000**, régimen artícu
 
 Si la misma persona gana **$800.000** imponibles, el 25 % es $200.000, bajo el tope, y se paga **$200.000**.
 
-Pruebe el tope en el recuadro o ábralo en la [calculadora de sueldo líquido](/sueldo) (casilla «Gratificación art. 50»). Para cotizaciones, contraste con [Previred](https://www.previred.com/) y la [Superintendencia de Pensiones](https://www.spensiones.cl/).
+Pruebe el tope en el recuadro o ábralo en [calcular gratificación](/gratificacion). Para cotizaciones, contraste con [Previred](https://www.previred.com/) y la [Superintendencia de Pensiones](https://www.spensiones.cl/).
 
 {{calc}}
 
