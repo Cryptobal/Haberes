@@ -699,6 +699,7 @@ console.log("contenido generado:", GUIDE_SLUGS.length, "guías,", CAUSAL_PAGES.l
 function calcLinkLabel(calc) {
   if (calc === "/finiquito") return "Calculadora de finiquito";
   if (calc === "/horas-extras") return "Calcular horas extras";
+  if (calc === "/gratificacion") return "Calcular gratificación";
   if (calc === "/vacaciones-proporcionales") return "Calcular vacaciones proporcionales";
   return "Calculadora de sueldo líquido";
 }
