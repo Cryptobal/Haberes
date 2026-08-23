@@ -14,6 +14,7 @@ Actualizar este archivo antes de crear URLs nuevas para evitar canibalización.
 | Calcular horas extras | calcular horas extras / cálculo horas extras (8.100/17) | `/horas-extras` | Title/H1 «calcular horas extras»; no canibalizar `/sueldo` ni `/guias/horas-extras` |
 | Calcular vacaciones proporcionales | vacaciones proporcionales (1.300/16), feriado proporcional (590/13), calcular feriado proporcional (320/14) | `/vacaciones-proporcionales` | Title/H1 «calcular vacaciones proporcionales»; no canibalizar `/finiquito` ni `/guias/vacaciones-proporcionales` |
 | Calcular gratificación | gratificación legal (4.400/17) — intención calcular | `/gratificacion` | Title/H1 «calcular gratificación»; no canibalizar `/sueldo` ni `/guias/gratificacion-legal` |
+| Calcular impuesto único | calcular impuesto unico (480/mes), tabla impuesto unico (2.900/mes) | `/impuesto-unico` | Title/H1 «calcular impuesto único»; no canibalizar `/sueldo` ni `/guias/impuesto-unico` |
 | Índice de guías | — | `/guias` | Hub: 16 guías, grupo liquidación vs finiquito |
 
 ## Guías pilar (contenido + calculadora embebida)
@@ -22,7 +23,7 @@ Actualizar este archivo antes de crear URLs nuevas para evitar canibalización.
 |---|---|---|---|
 | Finiquito (editorial) | finiquito (18.100/50), finiquito chile (480/39) | `/guias/finiquito` | embed → `/finiquito` |
 | Liquidación de sueldo | liquidacion de sueldo (12.100/29) | `/guias/liquidacion-de-sueldo` | embed → `/sueldo` |
-| Impuesto único | impuesto único (5.400/28), tabla impuesto único (2.900/22) | `/guias/impuesto-unico` | tabla IUSC desde `js/constants.js` |
+| Impuesto único | impuesto único (5.400/28), tabla impuesto único (2.900/22) | `/guias/impuesto-unico` | enlace a `/impuesto-unico`; tabla IUSC desde `js/constants.js`; no reescribir en esta tanda |
 | Gratificación legal | gratificación legal (4.400/17), gratificacion legal chile (1.900/16) | `/guias/gratificacion-legal` | enlace a `/gratificacion`; no reescribir en esta tanda |
 | Indemnización años de servicio | indemnizacion por años de servicio (2.400/24) | `/guias/indemnizacion-por-anos-de-servicio` | embed → `/finiquito` |
 | Horas extras (guía) | cálculo horas extras — explainer | `/guias/horas-extras` | enlace a `/horas-extras`; no reescribir en esta tanda |

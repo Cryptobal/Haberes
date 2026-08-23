@@ -202,6 +202,56 @@ const META = {
       },
     ],
   },
+  "impuesto-unico.html": {
+    path: "/impuesto-unico",
+    title: "Calcular impuesto único Chile 2026 — Haberes",
+    description:
+      "Calcule el impuesto único de segunda categoría sobre la renta líquida imponible. Tabla SII agosto 2026: tramo, rebaja y monto del mes al instante. Gratis.",
+    ogImage: "/img/og-default.png",
+    jsonld: (url) => [
+      ORG,
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        name: "Calcular impuesto único — Haberes",
+        url,
+        applicationCategory: "FinanceApplication",
+        operatingSystem: "Web",
+        inLanguage: "es-CL",
+        offers: { "@type": "Offer", price: "0", priceCurrency: "CLP" },
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        mainEntity: [
+          {
+            "@type": "Question",
+            name: "¿Qué es la renta líquida imponible?",
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: "Es la base del impuesto único: haberes imponibles menos AFP, salud y, si corresponde, el seguro de cesantía del trabajador. No es el sueldo bruto ni el líquido a pago. Colación y movilización del artículo 41 no entran.",
+            },
+          },
+          {
+            "@type": "Question",
+            name: "¿Hasta qué monto está exento el impuesto único en agosto 2026?",
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: "En la tabla mensual de agosto de 2026 del SII el tramo exento llega a $967.261,50 (13,5 UTM). Es la misma tabla que usa la calculadora de sueldo líquido. El SII publica un mes nuevo cuando cambia la UTM.",
+            },
+          },
+          {
+            "@type": "Question",
+            name: "¿Cómo se calcula el impuesto único?",
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: "Se busca el tramo de la renta líquida imponible, se multiplica por el factor y se resta la cantidad a rebajar. El resultado se redondea al peso. Si el tramo es exento, el impuesto es $0.",
+            },
+          },
+        ],
+      },
+    ],
+  },
   "vacaciones-proporcionales.html": {
     path: "/vacaciones-proporcionales",
     title: "Calcular vacaciones proporcionales Chile 2026 — Haberes",

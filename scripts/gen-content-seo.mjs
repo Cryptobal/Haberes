@@ -543,8 +543,13 @@ for (const slug of GUIDE_SLUGS) {
     body: htmlBody,
     faq: meta.faq,
     webApp: {
-      name: meta.calc === "finiquito" ? "Calculadora de finiquito Haberes" : "Calculadora de sueldo líquido Haberes",
-      url: meta.calc === "finiquito" ? "/finiquito" : "/sueldo",
+      name:
+        meta.calc === "finiquito"
+          ? "Calculadora de finiquito Haberes"
+          : meta.calc === "iusc"
+            ? "Calcular impuesto único — Haberes"
+            : "Calculadora de sueldo líquido Haberes",
+      url: meta.calc === "finiquito" ? "/finiquito" : meta.calc === "iusc" ? "/impuesto-unico" : "/sueldo",
       description: meta.description,
     },
   });
@@ -700,6 +705,7 @@ function calcLinkLabel(calc) {
   if (calc === "/finiquito") return "Calculadora de finiquito";
   if (calc === "/horas-extras") return "Calcular horas extras";
   if (calc === "/gratificacion") return "Calcular gratificación";
+  if (calc === "/impuesto-unico") return "Calcular impuesto único";
   if (calc === "/vacaciones-proporcionales") return "Calcular vacaciones proporcionales";
   return "Calculadora de sueldo líquido";
 }
