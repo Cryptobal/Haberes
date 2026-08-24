@@ -232,8 +232,8 @@ function mountIusc(root) {
       </div>
       <p class="seo-calc__note">Fuente: <a href="https://www.sii.cl/valores_y_fechas/impuesto_2da_categoria/impuesto2026.htm">SII, impuesto 2026</a>. Exento hasta $967.261,50 (13,5 UTM).</p>
       <div class="seo-calc__actions">
-        <a class="btn" href="/sueldo">Calcular con impuesto único</a>
-        <a class="btn btn-ghost" href="/empresa">Cuenta de empresa</a>
+        <a class="btn" href="/impuesto-unico">Calcular impuesto único</a>
+        <a class="btn btn-ghost" href="/sueldo">Ver efecto en el líquido</a>
       </div>
       <p class="seo-calc__note">${DISCLAIMER}</p>
     </div>`;

@@ -20,6 +20,7 @@ const DRAWER_LINKS = [
   ["/sueldo", "Sueldo líquido"],
   ["/horas-extras", "Horas extras"],
   ["/gratificacion", "Gratificación"],
+  ["/impuesto-unico", "Impuesto único"],
   ["/vacaciones-proporcionales", "Vacaciones proporcionales"],
   ["/finiquito", "Finiquito"],
 ];

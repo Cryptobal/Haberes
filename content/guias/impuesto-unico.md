@@ -2,7 +2,7 @@
 title: "Impuesto único de segunda categoría: tabla SII — Haberes"
 description: "IUSC mensual: exento hasta 13,5 UTM. Tabla del SII que usa Haberes (agosto 2026), cómo se calcula en la liquidación y enlace a /sueldo."
 h1: "Cómo se calcula el impuesto único en el sueldo"
-calc: "sueldo"
+calc: "iusc"
 updated: "2026-08-18"
 published: "2026-08-17"
 faq:
@@ -15,7 +15,7 @@ faq:
 
 # Cómo se calcula el impuesto único en el sueldo
 
-El impuesto único de segunda categoría (IUSC) es el tributo mensual que el empleador retiene sobre las rentas del trabajo dependiente. No es IVA ni impuesto de primera categoría de la empresa. El [Servicio de Impuestos Internos](https://www.sii.cl/valores_y_fechas/impuesto_2da_categoria/impuesto2026.htm) publica las tablas; Haberes las usa en la [calculadora de sueldo líquido](/sueldo). Esta guía explica la base, el tramo exento y cómo leer la tabla. No sustituye al SII.
+El impuesto único de segunda categoría (IUSC) es el tributo mensual que el empleador retiene sobre las rentas del trabajo dependiente. No es IVA ni impuesto de primera categoría de la empresa. El [Servicio de Impuestos Internos](https://www.sii.cl/valores_y_fechas/impuesto_2da_categoria/impuesto2026.htm) publica las tablas; Haberes las usa en [calcular impuesto único](/impuesto-unico) y en la [calculadora de sueldo líquido](/sueldo). Esta guía explica la base, el tramo exento y cómo leer la tabla. No sustituye al SII.
 
 El SII describe el IUSC como un impuesto progresivo que pagan quienes perciben rentas de una actividad laboral dependiente cuando el monto mensual supera **13,5 UTM**. Bajo ese umbral el tramo es **exento**.
 
@@ -61,7 +61,7 @@ Tampoco confunda el IUSC con:
 
 En el comprobante del [artículo 54](/guias/liquidacion-de-sueldo) el IUSC es una **deducción**. Debe verse el monto. Si la persona está exenta, la línea puede ir en cero; no hace falta esconderla.
 
-Para estimar el descuento junto al resto de la liquidación use la [calculadora de sueldo líquido](/sueldo). Para emitir el PDF con membrete, la [cuenta de empresa](/empresa). Haberes no es el SII ni Previred. Contraste la tabla del mes en el sitio del SII antes de declarar o de pagar el impuesto retenido.
+Para el impuesto del mes use [calcular impuesto único](/impuesto-unico). Para verlo con AFP, salud y el líquido, la [calculadora de sueldo líquido](/sueldo). Para emitir el PDF con membrete, la [cuenta de empresa](/empresa). Haberes no es el SII ni Previred. Contraste la tabla del mes en el sitio del SII antes de declarar o de pagar el impuesto retenido.
 
 {{calc}}
 

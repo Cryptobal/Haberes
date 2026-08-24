@@ -214,6 +214,7 @@ function paintLoggedInNav(emp) {
         <a href="/sueldo" data-nav>Sueldo líquido</a>
         <a href="/horas-extras" data-nav>Horas extras</a>
         <a href="/gratificacion" data-nav>Gratificación</a>
+        <a href="/impuesto-unico" data-nav>Impuesto único</a>
         <a href="/vacaciones-proporcionales" data-nav>Vacaciones proporcionales</a>
         <a href="/finiquito" data-nav>Finiquito</a>`;
     const anchor = foot || null;

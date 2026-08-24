@@ -195,6 +195,14 @@ assert(
       /gratificacionArt50\s*\(/.test(grApp),
   );
 }
+{
+  const iuApp = readFileSync(join(root, "js/app-impuesto-unico.js"), "utf8");
+  assert(
+    "app-impuesto-unico usa calcularIusc",
+    /import\s*\{[^}]*calcularIusc[^}]*\}\s*from\s*["']\.\/sueldo\.js["']/.test(iuApp) &&
+      /calcularIusc\s*\(/.test(iuApp),
+  );
+}
 
 const homeCtrl = calcularSueldo(
   {
@@ -244,6 +252,8 @@ assert("Isapre cobra el mayor entre 7 % y pactado", isapre.salud.monto === 90000
 
 console.log("\nIUSC agosto 2026");
 assert("≤ 967261.5 → 0", calcularIusc(967261.5) === 0);
+assert("800.000 exento → 0", calcularIusc(800_000) === 0);
+assert("1.500.000 → 21310", calcularIusc(1_500_000) === 21310);
 assert(
   "2.000.000 → 4 % − 38690.46",
   calcularIusc(2_000_000) === Math.round(2_000_000 * 0.04 - 38690.46),
@@ -611,10 +621,12 @@ const required = [
   "horas-extras.html",
   "vacaciones-proporcionales.html",
   "gratificacion.html",
+  "impuesto-unico.html",
   "finiquito.html",
   "js/app-horas-extras.js",
   "js/app-vacaciones-proporcionales.js",
   "js/app-gratificacion.js",
+  "js/app-impuesto-unico.js",
   "empresa.html",
   "privacidad.html",
   "terminos.html",
@@ -746,6 +758,7 @@ const htmlFiles = [
   "horas-extras.html",
   "vacaciones-proporcionales.html",
   "gratificacion.html",
+  "impuesto-unico.html",
   "finiquito.html",
   "empresa.html",
   "privacidad.html",
@@ -823,6 +836,7 @@ const appEntries = [
   "js/app-horas-extras.js",
   "js/app-vacaciones-proporcionales.js",
   "js/app-gratificacion.js",
+  "js/app-impuesto-unico.js",
   "js/app-finiquito.js",
   "js/app-empresa.js",
   "js/app-admin.js",
@@ -855,7 +869,7 @@ assert("robots Allow /", /Allow:\s*\//.test(robots));
 assert("robots Disallow /admin", /Disallow:\s*\/admin/.test(robots));
 assert("robots Disallow /api", /Disallow:\s*\/api/.test(robots));
 assert("robots Disallow /docs", /Disallow:\s*\/docs/.test(robots));
-assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots));
+assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots));
 assert("robots Sitemap", /Sitemap:\s*https:\/\/www\.haberes\.cl\/sitemap\.xml/.test(robots));
 
 const { seoPaths, GUIDE_SLUGS, GUIDES, CAUSAL_PAGES, BASE_PATHS, lastmodForPath } = await import("../content/registry.js");
@@ -875,7 +889,8 @@ assert(
     BASE_PATHS.includes("/finiquito") &&
     BASE_PATHS.includes("/horas-extras") &&
     BASE_PATHS.includes("/vacaciones-proporcionales") &&
-    BASE_PATHS.includes("/gratificacion"),
+    BASE_PATHS.includes("/gratificacion") &&
+    BASE_PATHS.includes("/impuesto-unico"),
   `${locs.length} vs ${expectedFromRegistry.length}`,
 );
 assert(
@@ -1222,7 +1237,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 49,
+      seoPaths().length === 50,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -1234,7 +1249,7 @@ try {
   const docsSeo = await hitLocal("/docs/seo-map.md");
   assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
   assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
-  for (const p of ["/sueldo/", "/finiquito/", "/horas-extras/", "/vacaciones-proporcionales/", "/gratificacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+  for (const p of ["/sueldo/", "/finiquito/", "/horas-extras/", "/vacaciones-proporcionales/", "/gratificacion/", "/impuesto-unico/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
   }
@@ -1253,6 +1268,7 @@ try {
     "/horas-extras",
     "/vacaciones-proporcionales",
     "/gratificacion",
+    "/impuesto-unico",
     "/guias/liquidacion-de-sueldo",
     "/guias/finiquito",
     "/guias/impuesto-unico",
@@ -4461,6 +4477,7 @@ assert(
     ["horas-extras.html", "/horas-extras"],
     ["vacaciones-proporcionales.html", "/vacaciones-proporcionales"],
     ["gratificacion.html", "/gratificacion"],
+    ["impuesto-unico.html", "/impuesto-unico"],
     ["finiquito.html", "/finiquito"],
     ["empresa.html", "/empresa"],
     ["como.html", "/como"],
@@ -4682,6 +4699,76 @@ assert(
     );
   }
   {
+    const iuHtml = readFileSync(join(root, "impuesto-unico.html"), "utf8");
+    const iuTitle = (iuHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const iuH1 = (iuHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const sueldoTitle = (readFileSync(join(root, "sueldo.html"), "utf8").match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const sueldoH1 = (readFileSync(join(root, "sueldo.html"), "utf8").match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const guideHtml = readFileSync(join(root, "guias/impuesto-unico.html"), "utf8");
+    const guideTitle = (guideHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const guideH1 = (guideHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const guideDesc = (guideHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "";
+    const iuDesc = (iuHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "";
+    assert(
+      "SEO title impuesto único apunta a calcular impuesto único",
+      /calcular impuesto [uú]nico/i.test(iuTitle) &&
+        !/sueldo l[ií]quido/i.test(iuTitle) &&
+        !/c[oó]mo se calcula el impuesto [uú]nico/i.test(iuTitle) &&
+        iuTitle !== sueldoTitle &&
+        iuTitle !== guideTitle &&
+        iuTitle.length <= 65,
+      iuTitle,
+    );
+    assert(
+      "SEO H1 impuesto único distinto de /sueldo y de la guía",
+      /calcular impuesto [uú]nico/i.test(iuH1) &&
+        iuH1 !== sueldoH1 &&
+        iuH1 !== guideH1 &&
+        !/sueldo l[ií]quido/i.test(iuH1) &&
+        !/c[oó]mo se calcula el impuesto [uú]nico en el sueldo/i.test(iuH1),
+      iuH1,
+    );
+    assert("SEO impuesto único meta distinta de la guía", iuDesc && guideDesc && iuDesc !== guideDesc, iuDesc);
+    assert(
+      "SEO impuesto único cita tabla SII y 13,5 UTM",
+      /13,5 UTM/.test(iuHtml) &&
+        /967\.261,50/.test(iuHtml) &&
+        /sii\.cl\/valores_y_fechas\/impuesto_2da_categoria\/impuesto2026\.htm/.test(iuHtml),
+    );
+    assert(
+      "SEO impuesto único ejemplos 800000 y 1500000",
+      calcularIusc(800_000) === 0 &&
+        calcularIusc(1_500_000) === 21310 &&
+        /\$800\.000/.test(iuHtml) &&
+        /\$1\.500\.000/.test(iuHtml) &&
+        /\$21\.310/.test(iuHtml),
+    );
+    assert("SEO impuesto único FAQPage", /"@type": "FAQPage"/.test(iuHtml));
+    assert(
+      "SEO impuesto único enlaza guía y sueldo",
+      /href="\/guias\/impuesto-unico"/.test(iuHtml) && /href="\/sueldo"/.test(iuHtml),
+    );
+    assert("SEO guía impuesto único enlaza la calculadora", /href="\/impuesto-unico"/.test(guideHtml));
+    assert(
+      "home y nav enlazan /impuesto-unico",
+      /href="\/impuesto-unico"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/impuesto-unico" data-nav>Impuesto [uú]nico<\/a>/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/impuesto-unico" data-nav>Impuesto [uú]nico<\/a>/.test(iuHtml),
+    );
+    assert(
+      "sitemap incluye /impuesto-unico",
+      locs.includes("https://www.haberes.cl/impuesto-unico") && lastmodForPath("/impuesto-unico") === "2026-08-23",
+    );
+    assert(
+      "GUIDES impuesto-unico apunta a /impuesto-unico",
+      GUIDES.find((g) => g.slug === "impuesto-unico")?.calc === "/impuesto-unico",
+    );
+    assert(
+      "seo-calc IUSC CTA apunta a /impuesto-unico",
+      /href="\/impuesto-unico"/.test(readFileSync(join(root, "js/seo-calc.js"), "utf8")),
+    );
+  }
+  {
     const homeTitle = (readFileSync(join(root, "index.html"), "utf8").match(/<title>([^<]*)<\/title>/) || [])[1] || "";
     assert(
       "SEO título home pymes, no calculadora",
@@ -4727,7 +4814,7 @@ assert(
     const thick = [
       ["guias/liquidacion-de-sueldo.html", "/sueldo", /54/, /dt\.gob\.cl/],
       ["guias/finiquito.html", "/finiquito", /177/, /dt\.gob\.cl/],
-      ["guias/impuesto-unico.html", "/sueldo", /13,5 UTM/, /sii\.cl/],
+      ["guias/impuesto-unico.html", "/impuesto-unico", /13,5 UTM/, /sii\.cl/],
       ["guias/carta-aviso-termino-contrato.html", "/finiquito", /162/, /dt\.gob\.cl/],
       ["guias/gratificacion-legal.html", "/gratificacion", /artículo 47/, /dt\.gob\.cl/],
       ["guias/indemnizacion-por-anos-de-servicio.html", "/finiquito", /artículo 163/, /dt\.gob\.cl/],
@@ -4817,6 +4904,7 @@ assert(
       "horas-extras.html",
       "vacaciones-proporcionales.html",
       "gratificacion.html",
+      "impuesto-unico.html",
       "finiquito.html",
       "empresa.html",
       "precios.html",
@@ -4988,7 +5076,7 @@ assert(
     return acc;
   }
   const pages = listHtml(root);
-  assert("51 páginas HTML", pages.length === 51, String(pages.length));
+  assert("52 páginas HTML", pages.length === 52, String(pages.length));
   for (const file of pages) {
     const html = readFileSync(file, "utf8");
     const rel = file.slice(root.length + 1);
