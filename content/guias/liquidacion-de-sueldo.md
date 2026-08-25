@@ -51,7 +51,7 @@ La forma de determinar el monto se entiende mejor si la liquidación separa habe
 - **No imponibles habituales:** asignación de colación y de movilización cuando cumplen el [artículo 41](https://www.bcn.cl/leychile/navegar?idNorma=207436) (se pagan para el trabajo, no como contraprestación). Mal clasificar un bono como «no imponible» distorsiona cotizaciones e [impuesto único](/guias/impuesto-unico).
 - **Variables:** si hay comisiones u otras remuneraciones variables, el [artículo 54 bis](https://www.bcn.cl/leychile/navegar?idNorma=207436) exige el detalle de cómo se determinaron. El comprobante del 54 y el anexo del 54 bis se leen juntos.
 
-La gratificación legal (artículos 47 y 50) y las horas extras tienen guía propia: [gratificación legal](/guias/gratificacion-legal) y [horas extras](/guias/horas-extras). La [semana corrida](/guias/semana-corrida) importa cuando hay remuneración variable diaria.
+La gratificación legal (artículos 47 y 50) y las horas extras tienen guía propia: [gratificación legal](/guias/gratificacion-legal) y [horas extras](/guias/horas-extras). La [semana corrida](/guias/semana-corrida) importa cuando hay remuneración variable diaria. El [aguinaldo de Fiestas Patrias](/guias/aguinaldo-fiestas-patrias), si se paga, va como haber propio: no es la gratificación legal.
 
 ## Descuentos: legales, pactados y lo que no se puede rebajar a la ligera
 

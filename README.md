@@ -45,7 +45,7 @@ en `js/picker.js` (hoja inferior con velo en móvil, panel anclado en escritorio
 - `/vacaciones-proporcionales` feriado proporcional (días × remuneración / 30)
 - `/finiquito` arts. 159 / 160 / 161
 - `/finiquito/{slug}` páginas por causal prioritaria (necesidades de la empresa, renuncia, vencimiento del plazo, incumplimiento grave, desahucio)
-- `/guias` índice de las 16 guías (liquidación vs finiquito)
+- `/guias` índice de las 17 guías (liquidación vs finiquito)
 - `/guias/{slug}` guías laborales (plazo de pago, base de cálculo, casa particular, reserva de derechos, leer liquidación, formato, Previred)
 - `/empresa` cuenta de empresa (RUT + correo + clave), perfil, logo, firma, CSV, liquidación, carta de finiquito, envío por correo al trabajador, nómina bancaria por perfiles y Libro de Remuneraciones Electrónico (LRE)
 - `/como` cómo funciona
