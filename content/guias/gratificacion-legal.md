@@ -29,7 +29,7 @@ El artículo 47 no exige un capital mínimo. Pide, a la vez:
 
 La [Dirección del Trabajo](https://www.dt.gob.cl/portal/1626/w3-article-100598.html) resume esos requisitos. Las cooperativas no necesitan fines de lucro; el resto, sí. Una fundación o corporación sin lucro, en el criterio de la DT, no entra a esta obligación. Si no hay utilidad líquida, no nace el 30 % del artículo 47.
 
-El artículo 46 añade que, si las partes pactan otra gratificación (la **convencional**), no puede ser inferior a la legal. El aguinaldo de septiembre o diciembre es otra cosa: suele ser convencional o de cortesía, no el mecanismo de los artículos 47 y 50.
+El artículo 46 añade que, si las partes pactan otra gratificación (la **convencional**), no puede ser inferior a la legal. El [aguinaldo de Fiestas Patrias](/guias/aguinaldo-fiestas-patrias) de septiembre (o el de diciembre) es otra cosa: suele ser convencional o de cortesía, no el mecanismo de los artículos 47 y 50.
 
 ## Artículo 47: 30 % de las utilidades líquidas
 

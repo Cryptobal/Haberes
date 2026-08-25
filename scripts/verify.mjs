@@ -946,12 +946,14 @@ assert(
     lastmodForPath("/guias/gratificacion-legal") === "2026-08-18" &&
     lastmodForPath("/guias/indemnizacion-por-anos-de-servicio") === "2026-08-19" &&
     lastmodForPath("/guias/semana-corrida") === "2026-08-19" &&
-    lastmodForPath("/guias") === "2026-08-19" &&
+    lastmodForPath("/guias/aguinaldo-fiestas-patrias") === "2026-08-25" &&
+    lastmodForPath("/guias") === "2026-08-25" &&
     /<loc>https:\/\/www\.haberes\.cl\/guias\/liquidacion-de-sueldo<\/loc>\s*<lastmod>2026-08-18<\/lastmod>/.test(sitemap) &&
     /<loc>https:\/\/www\.haberes\.cl\/guias\/gratificacion-legal<\/loc>\s*<lastmod>2026-08-18<\/lastmod>/.test(sitemap) &&
     /<loc>https:\/\/www\.haberes\.cl\/guias\/indemnizacion-por-anos-de-servicio<\/loc>\s*<lastmod>2026-08-19<\/lastmod>/.test(sitemap) &&
     /<loc>https:\/\/www\.haberes\.cl\/guias\/semana-corrida<\/loc>\s*<lastmod>2026-08-19<\/lastmod>/.test(sitemap) &&
-    /<loc>https:\/\/www\.haberes\.cl\/guias<\/loc>\s*<lastmod>2026-08-19<\/lastmod>/.test(sitemap),
+    /<loc>https:\/\/www\.haberes\.cl\/guias\/aguinaldo-fiestas-patrias<\/loc>\s*<lastmod>2026-08-25<\/lastmod>/.test(sitemap) &&
+    /<loc>https:\/\/www\.haberes\.cl\/guias<\/loc>\s*<lastmod>2026-08-25<\/lastmod>/.test(sitemap),
 );
 assert("sin ruta /blog ni /noticias", !existsSync(join(root, "blog.html")) && !existsSync(join(root, "noticias.html")));
 assert("sitemap sin .html (cleanUrls)", !locs.some((u) => u.endsWith(".html")));
@@ -1237,7 +1239,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 50,
+      seoPaths().length === 51,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -1275,6 +1277,8 @@ try {
     "/guias/carta-aviso-termino-contrato",
     "/guias/gratificacion-legal",
     "/guias/indemnizacion-por-anos-de-servicio",
+    "/guias/semana-corrida",
+    "/guias/aguinaldo-fiestas-patrias",
   ]) {
     const r = await hitLocal(p);
     assert(`GET ${p} 200`, r.status === 200 && /<h1>/i.test(r.text) && /text\/html/i.test(r.type));
@@ -4819,6 +4823,7 @@ assert(
       ["guias/gratificacion-legal.html", "/gratificacion", /artículo 47/, /dt\.gob\.cl/],
       ["guias/indemnizacion-por-anos-de-servicio.html", "/finiquito", /artículo 163/, /dt\.gob\.cl/],
       ["guias/semana-corrida.html", "/sueldo", /artículo 45/, /dt\.gob\.cl/],
+      ["guias/aguinaldo-fiestas-patrias.html", "/sueldo", /artículo 41/, /dt\.gob\.cl/],
     ];
     function visibleWords(html) {
       const main = html.match(/<main\b[\s\S]*?<\/main>/i)?.[0] || html;
@@ -4838,11 +4843,14 @@ assert(
       const minWords =
         file.includes("gratificacion-legal") ||
         file.includes("indemnizacion-por-anos-de-servicio") ||
-        file.includes("semana-corrida")
+        file.includes("semana-corrida") ||
+        file.includes("aguinaldo-fiestas-patrias")
           ? 900
           : 800;
       const dateRe =
-        file.includes("indemnizacion-por-anos-de-servicio") || file.includes("semana-corrida")
+        file.includes("aguinaldo-fiestas-patrias")
+          ? /<time datetime="2026-08-25">/
+          : file.includes("indemnizacion-por-anos-de-servicio") || file.includes("semana-corrida")
           ? /<time datetime="2026-08-19">/
           : /<time datetime="2026-08-18">/;
       assert(`SEO ${file} ${minWords}–1400 palabras`, words >= minWords && words <= 1400, `${file}: ${words}`);
@@ -4896,6 +4904,47 @@ assert(
         `${scTitle} | ${liqTitle}`,
       );
     }
+    {
+      const agHtml = readFileSync(join(root, "guias/aguinaldo-fiestas-patrias.html"), "utf8");
+      const grHtml = readFileSync(join(root, "guias/gratificacion-legal.html"), "utf8");
+      const sueldoHtml = readFileSync(join(root, "sueldo.html"), "utf8");
+      const gratHtml = readFileSync(join(root, "gratificacion.html"), "utf8");
+      const agTitle = (agHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+      const agH1 = (agHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+      const grTitle = (grHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+      const grH1 = (grHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+      const sueldoTitle = (sueldoHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+      const sueldoH1 = (sueldoHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+      const gratTitle = (gratHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+      const gratH1 = (gratHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+      assert(
+        "SEO aguinaldo title/H1 únicos y sin obligación general del Código",
+        agTitle &&
+          agH1 &&
+          agTitle !== grTitle &&
+          agH1 !== grH1 &&
+          agTitle !== sueldoTitle &&
+          agH1 !== sueldoH1 &&
+          agTitle !== gratTitle &&
+          agH1 !== gratH1 &&
+          /aguinaldo/i.test(agTitle) &&
+          /Fiestas Patrias/i.test(agTitle) &&
+          /obligatorio/i.test(agTitle) &&
+          /aguinaldo/i.test(agH1) &&
+          /Fiestas Patrias/i.test(agH1) &&
+          !/calculadora/i.test(agTitle) &&
+          !/calculadora/i.test(agH1) &&
+          !/gratificaci[oó]n legal/i.test(agH1) &&
+          /no crea un deber legal general/i.test(agHtml) &&
+          /href="\/sueldo"/.test(agHtml) &&
+          /href="\/guias\/gratificacion-legal"/.test(agHtml) &&
+          /href="\/guias\/liquidacion-de-sueldo"/.test(agHtml) &&
+          /Otros imponibles/.test(agHtml) &&
+          /21\.724/.test(agHtml) &&
+          /7143\/340/.test(agHtml),
+        `${agTitle} | ${agH1}`,
+      );
+    }
   }
   {
     const files = [
@@ -4931,8 +4980,8 @@ assert(
     const hub = readFileSync(join(root, "guias.html"), "utf8");
     assert("SEO hub /guias existe", existsSync(join(root, "guias.html")));
     assert(
-      "SEO hub lista 16 guías agrupadas",
-      GUIDE_SLUGS.length === 16 &&
+      "SEO hub lista 17 guías agrupadas",
+      GUIDE_SLUGS.length === 17 &&
         GUIDE_SLUGS.every((s) => hub.includes(`/guias/${s}`)) &&
         /Liquidaci[oó]n de sueldo/.test(hub) &&
         /<h2>Finiquito<\/h2>/.test(hub) &&
@@ -5076,7 +5125,7 @@ assert(
     return acc;
   }
   const pages = listHtml(root);
-  assert("52 páginas HTML", pages.length === 52, String(pages.length));
+  assert("53 páginas HTML", pages.length === 53, String(pages.length));
   for (const file of pages) {
     const html = readFileSync(file, "utf8");
     const rel = file.slice(root.length + 1);

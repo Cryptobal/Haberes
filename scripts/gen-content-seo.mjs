@@ -742,8 +742,8 @@ function hubLatest(items, limit = 6) {
 {
   const liq = guideIndex.filter((g) => g.group === "liquidacion");
   const fini = guideIndex.filter((g) => g.group === "finiquito");
-  if (liq.length + fini.length !== 16) {
-    throw new Error(`El hub debe listar 16 guías; hay ${liq.length}+${fini.length}`);
+  if (liq.length + fini.length !== GUIDE_SLUGS.length) {
+    throw new Error(`El hub debe listar ${GUIDE_SLUGS.length} guías; hay ${liq.length}+${fini.length}`);
   }
   const hubUpdated = lastmodForPath("/guias");
   const hubBody = `

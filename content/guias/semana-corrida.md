@@ -26,7 +26,7 @@ El artículo 45, en su texto vigente (Ley 20.281, 21 de julio de 2008), nombra *
 
 La [Dirección del Trabajo](https://www.dt.gob.cl/portal/1628/w3-article-60201.html) confirma el caso sueldo más comisiones. En su jurisprudencia también cubre el [trato exclusivo](https://www.dt.gob.cl/portal/1628/w3-article-60211.html) (aunque se liquide al mes) y el pago [por hora](https://www.dt.gob.cl/portal/1628/w3-article-60208.html).
 
-**No aplica**, en la lectura habitual del 45, a quien cobra **solo sueldo mensual** sin parte variable de ese tipo. Un sueldo fijo, sin comisiones ni tratos ni pago por día, no genera por sí solo el séptimo día. Tampoco basta con llamar «variable» a cualquier extra: el segundo inciso del 45 deja fuera las remuneraciones de carácter **accesorio o extraordinario**, «tales como gratificaciones, aguinaldos, bonificaciones u otras». La [gratificación legal](/guias/gratificacion-legal) no entra a esta base.
+**No aplica**, en la lectura habitual del 45, a quien cobra **solo sueldo mensual** sin parte variable de ese tipo. Un sueldo fijo, sin comisiones ni tratos ni pago por día, no genera por sí solo el séptimo día. Tampoco basta con llamar «variable» a cualquier extra: el segundo inciso del 45 deja fuera las remuneraciones de carácter **accesorio o extraordinario**, «tales como gratificaciones, aguinaldos, bonificaciones u otras». La [gratificación legal](/guias/gratificacion-legal) y el [aguinaldo de Fiestas Patrias](/guias/aguinaldo-fiestas-patrias) no entran a esta base.
 
 | Situación | ¿Artículo 45? |
 |---|---|

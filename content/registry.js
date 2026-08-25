@@ -30,7 +30,7 @@ export const CAUSAL_PAGES = [
 ];
 
 /**
- * 16 guías en content/guias/{slug}.md.
+ * 17 guías en content/guias/{slug}.md.
  * group: índice /guias (liquidación vs finiquito).
  * calc: calculadora canónica (no canibalizar titles/H1 de esas URLs).
  * updated: lastmod ISO (YYYY-MM-DD) para sitemap y el bloque «últimas» del hub.
@@ -44,6 +44,7 @@ export const GUIDES = [
   { slug: "gratificacion-legal", group: "liquidacion", calc: "/gratificacion", updated: "2026-08-18" },
   { slug: "horas-extras", group: "liquidacion", calc: "/horas-extras", updated: "2026-08-17" },
   { slug: "semana-corrida", group: "liquidacion", calc: "/sueldo", updated: "2026-08-19" },
+  { slug: "aguinaldo-fiestas-patrias", group: "liquidacion", calc: "/sueldo", updated: "2026-08-25" },
   { slug: "como-leer-una-liquidacion-de-sueldo", group: "liquidacion", calc: "/sueldo", updated: "2026-08-17" },
   { slug: "formato-de-liquidacion-de-sueldo-chile", group: "liquidacion", calc: "/sueldo", updated: "2026-08-17" },
   { slug: "liquidacion-de-sueldo-y-previred", group: "liquidacion", calc: "/sueldo", updated: "2026-08-17" },
@@ -59,7 +60,7 @@ export const GUIDES = [
 
 /** lastmod de rutas base que sí cambiaron después del lote SEO inicial. */
 export const PATH_LASTMOD = {
-  "/guias": "2026-08-19",
+  "/guias": "2026-08-25",
   "/horas-extras": "2026-08-20",
   "/vacaciones-proporcionales": "2026-08-21",
   "/gratificacion": "2026-08-22",
