@@ -252,6 +252,72 @@ const META = {
       },
     ],
   },
+  "cotizaciones-previsionales.html": {
+    path: "/cotizaciones-previsionales",
+    title: "Calcular cotizaciones previsionales Chile 2026 — Haberes",
+    description:
+      "Calcule AFP (10 % + comisión), salud Fonasa 7 % y cesantía del trabajador indefinido, con topes en UF. Resultado al instante y gratis.",
+    ogImage: "/img/og-default.png",
+    jsonld: (url) => [
+      ORG,
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        name: "Calcular cotizaciones previsionales — Haberes",
+        url,
+        applicationCategory: "FinanceApplication",
+        operatingSystem: "Web",
+        inLanguage: "es-CL",
+        offers: { "@type": "Offer", price: "0", priceCurrency: "CLP" },
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        mainEntity: [
+          {
+            "@type": "Question",
+            name: "¿Qué cotizaciones del trabajador incluye esta página?",
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: "AFP (10 % obligatorio más la comisión de la AFP), salud Fonasa 7 % y el seguro de cesantía del trabajador con contrato indefinido (0,6 %). No incluye cotización del empleador, SIS, mutual ni líneas de la Ley 21.735: Haberes todavía no modela esas líneas.",
+            },
+          },
+          {
+            "@type": "Question",
+            name: "¿Qué topes imponibles usa Haberes?",
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: "AFP y salud se calculan sobre la base imponible hasta 90 UF. El seguro de cesantía del trabajador, hasta 135,2 UF. Si el sueldo supera el tope, la base se corta ahí. Los pesos del tope salen de la UF del mes.",
+            },
+          },
+          {
+            "@type": "Question",
+            name: "¿La comisión de la AFP va aparte del 10 % obligatorio?",
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: "Sí. El 10 % es la cotización obligatoria de pensión. La comisión es un porcentaje extra que cobra cada AFP (Circular 2414). Haberes suma ambos sobre la misma base, con el tope de 90 UF.",
+            },
+          },
+          {
+            "@type": "Question",
+            name: "¿Esto es lo mismo que calcular sueldo líquido?",
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: "No. Aquí solo se ven cotizaciones previsionales del trabajador. El líquido también resta el impuesto único y suma haberes no imponibles. Para el efecto en el líquido use la calculadora de sueldo líquido.",
+            },
+          },
+          {
+            "@type": "Question",
+            name: "¿Haberes declara estas cotizaciones en Previred?",
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: "No. Haberes es una herramienta de liquidaciones para pymes. No es Previred ni la Dirección del Trabajo. Contraste siempre antes de declarar o pagar.",
+            },
+          },
+        ],
+      },
+    ],
+  },
   "vacaciones-proporcionales.html": {
     path: "/vacaciones-proporcionales",
     title: "Calcular vacaciones proporcionales Chile 2026 — Haberes",

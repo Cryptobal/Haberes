@@ -34,7 +34,7 @@ export const CAUSAL_PAGES = [
  * group: índice /guias (liquidación vs finiquito).
  * calc: calculadora canónica (no canibalizar titles/H1 de esas URLs).
  * updated: lastmod ISO (YYYY-MM-DD) para sitemap y el bloque «últimas» del hub.
- * @type {{ slug: string, group: "liquidacion" | "finiquito", calc: "/sueldo" | "/finiquito" | "/horas-extras" | "/gratificacion" | "/vacaciones-proporcionales" | "/impuesto-unico", updated: string }[]}
+ * @type {{ slug: string, group: "liquidacion" | "finiquito", calc: "/sueldo" | "/finiquito" | "/horas-extras" | "/gratificacion" | "/vacaciones-proporcionales" | "/impuesto-unico" | "/cotizaciones-previsionales", updated: string }[]}
  */
 export const DEFAULT_LASTMOD = "2026-08-17";
 
@@ -60,11 +60,12 @@ export const GUIDES = [
 
 /** lastmod de rutas base que sí cambiaron después del lote SEO inicial. */
 export const PATH_LASTMOD = {
-  "/guias": "2026-08-25",
+  "/guias": "2026-08-26",
   "/horas-extras": "2026-08-20",
   "/vacaciones-proporcionales": "2026-08-21",
   "/gratificacion": "2026-08-22",
   "/impuesto-unico": "2026-08-23",
+  "/cotizaciones-previsionales": "2026-08-26",
   "/privacidad": "2026-08-18",
   "/terminos": "2026-08-18",
 };
@@ -83,6 +84,7 @@ export const GUIDE_SLUGS = GUIDES.map((g) => g.slug);
 export const BASE_PATHS = [
   "/",
   "/como",
+  "/cotizaciones-previsionales",
   "/empresa",
   "/finiquito",
   "/guias",

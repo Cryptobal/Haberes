@@ -203,6 +203,15 @@ assert(
       /calcularIusc\s*\(/.test(iuApp),
   );
 }
+{
+  const cpApp = readFileSync(join(root, "js/app-cotizaciones-previsionales.js"), "utf8");
+  assert(
+    "app-cotizaciones-previsionales usa calcularSueldo y tasaAfp",
+    /import\s*\{[^}]*calcularSueldo[^}]*tasaAfp[^}]*\}\s*from\s*["']\.\/sueldo\.js["']/.test(cpApp) &&
+      /calcularSueldo\s*\(/.test(cpApp) &&
+      /tasaAfp\s*\(/.test(cpApp),
+  );
+}
 
 const homeCtrl = calcularSueldo(
   {
@@ -622,11 +631,13 @@ const required = [
   "vacaciones-proporcionales.html",
   "gratificacion.html",
   "impuesto-unico.html",
+  "cotizaciones-previsionales.html",
   "finiquito.html",
   "js/app-horas-extras.js",
   "js/app-vacaciones-proporcionales.js",
   "js/app-gratificacion.js",
   "js/app-impuesto-unico.js",
+  "js/app-cotizaciones-previsionales.js",
   "empresa.html",
   "privacidad.html",
   "terminos.html",
@@ -759,6 +770,7 @@ const htmlFiles = [
   "vacaciones-proporcionales.html",
   "gratificacion.html",
   "impuesto-unico.html",
+  "cotizaciones-previsionales.html",
   "finiquito.html",
   "empresa.html",
   "privacidad.html",
@@ -770,17 +782,19 @@ const htmlFiles = [
 ];
 for (const f of htmlFiles) {
   const html = readFileSync(join(root, f), "utf8");
-  assert(
-    `${f} disclaimer legal / no DT / no Previred`,
-    /Documento generado por Haberes/.test(html) &&
-      /Direcci[oó]n del Trabajo/i.test(html) &&
-      /Previred/i.test(html) &&
-      /asesor[ií]a legal/i.test(html) &&
-      !/inteligencia artificial/i.test(html) &&
-      !/generada por IA/i.test(html) &&
-      !/Estimaci[oó]n con IA/i.test(html) &&
-      !/estimaci[oó]n de software/i.test(html),
-  );
+  const disclaimerOk =
+    /Direcci[oó]n del Trabajo/i.test(html) &&
+    /Previred/i.test(html) &&
+    /asesor[ií]a legal/i.test(html) &&
+    /Haberes/.test(html) &&
+    !/inteligencia artificial/i.test(html) &&
+    !/generada por IA/i.test(html) &&
+    !/Estimaci[oó]n con IA/i.test(html) &&
+    !/estimaci[oó]n de software/i.test(html) &&
+    (f === "cotizaciones-previsionales.html"
+      ? !/Documento generado por Haberes/.test(html)
+      : /Documento generado por Haberes/.test(html));
+  assert(`${f} disclaimer legal / no DT / no Previred`, disclaimerOk);
   assert(`${f} canonical haberes.cl`, /rel="canonical" href="https:\/\/www\.haberes\.cl/.test(html));
   assert(`${f} og:url`, /property="og:url" content="https:\/\/www\.haberes\.cl/.test(html));
   assert(`${f} GTM-PCR596Z2`, /GTM-PCR596Z2/.test(html));
@@ -837,6 +851,7 @@ const appEntries = [
   "js/app-vacaciones-proporcionales.js",
   "js/app-gratificacion.js",
   "js/app-impuesto-unico.js",
+  "js/app-cotizaciones-previsionales.js",
   "js/app-finiquito.js",
   "js/app-empresa.js",
   "js/app-admin.js",
@@ -869,7 +884,7 @@ assert("robots Allow /", /Allow:\s*\//.test(robots));
 assert("robots Disallow /admin", /Disallow:\s*\/admin/.test(robots));
 assert("robots Disallow /api", /Disallow:\s*\/api/.test(robots));
 assert("robots Disallow /docs", /Disallow:\s*\/docs/.test(robots));
-assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots));
+assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots));
 assert("robots Sitemap", /Sitemap:\s*https:\/\/www\.haberes\.cl\/sitemap\.xml/.test(robots));
 
 const { seoPaths, GUIDE_SLUGS, GUIDES, CAUSAL_PAGES, BASE_PATHS, lastmodForPath } = await import("../content/registry.js");
@@ -890,7 +905,8 @@ assert(
     BASE_PATHS.includes("/horas-extras") &&
     BASE_PATHS.includes("/vacaciones-proporcionales") &&
     BASE_PATHS.includes("/gratificacion") &&
-    BASE_PATHS.includes("/impuesto-unico"),
+    BASE_PATHS.includes("/impuesto-unico") &&
+    BASE_PATHS.includes("/cotizaciones-previsionales"),
   `${locs.length} vs ${expectedFromRegistry.length}`,
 );
 assert(
@@ -947,13 +963,13 @@ assert(
     lastmodForPath("/guias/indemnizacion-por-anos-de-servicio") === "2026-08-19" &&
     lastmodForPath("/guias/semana-corrida") === "2026-08-19" &&
     lastmodForPath("/guias/aguinaldo-fiestas-patrias") === "2026-08-25" &&
-    lastmodForPath("/guias") === "2026-08-25" &&
+    lastmodForPath("/guias") === "2026-08-26" &&
     /<loc>https:\/\/www\.haberes\.cl\/guias\/liquidacion-de-sueldo<\/loc>\s*<lastmod>2026-08-18<\/lastmod>/.test(sitemap) &&
     /<loc>https:\/\/www\.haberes\.cl\/guias\/gratificacion-legal<\/loc>\s*<lastmod>2026-08-18<\/lastmod>/.test(sitemap) &&
     /<loc>https:\/\/www\.haberes\.cl\/guias\/indemnizacion-por-anos-de-servicio<\/loc>\s*<lastmod>2026-08-19<\/lastmod>/.test(sitemap) &&
     /<loc>https:\/\/www\.haberes\.cl\/guias\/semana-corrida<\/loc>\s*<lastmod>2026-08-19<\/lastmod>/.test(sitemap) &&
     /<loc>https:\/\/www\.haberes\.cl\/guias\/aguinaldo-fiestas-patrias<\/loc>\s*<lastmod>2026-08-25<\/lastmod>/.test(sitemap) &&
-    /<loc>https:\/\/www\.haberes\.cl\/guias<\/loc>\s*<lastmod>2026-08-25<\/lastmod>/.test(sitemap),
+    /<loc>https:\/\/www\.haberes\.cl\/guias<\/loc>\s*<lastmod>2026-08-26<\/lastmod>/.test(sitemap),
 );
 assert("sin ruta /blog ni /noticias", !existsSync(join(root, "blog.html")) && !existsSync(join(root, "noticias.html")));
 assert("sitemap sin .html (cleanUrls)", !locs.some((u) => u.endsWith(".html")));
@@ -1239,7 +1255,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 51,
+      seoPaths().length === 52,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -1251,7 +1267,7 @@ try {
   const docsSeo = await hitLocal("/docs/seo-map.md");
   assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
   assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
-  for (const p of ["/sueldo/", "/finiquito/", "/horas-extras/", "/vacaciones-proporcionales/", "/gratificacion/", "/impuesto-unico/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+  for (const p of ["/sueldo/", "/finiquito/", "/horas-extras/", "/vacaciones-proporcionales/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
   }
@@ -1271,6 +1287,7 @@ try {
     "/vacaciones-proporcionales",
     "/gratificacion",
     "/impuesto-unico",
+    "/cotizaciones-previsionales",
     "/guias/liquidacion-de-sueldo",
     "/guias/finiquito",
     "/guias/impuesto-unico",
@@ -4482,6 +4499,7 @@ assert(
     ["vacaciones-proporcionales.html", "/vacaciones-proporcionales"],
     ["gratificacion.html", "/gratificacion"],
     ["impuesto-unico.html", "/impuesto-unico"],
+    ["cotizaciones-previsionales.html", "/cotizaciones-previsionales"],
     ["finiquito.html", "/finiquito"],
     ["empresa.html", "/empresa"],
     ["como.html", "/como"],
@@ -4773,6 +4791,127 @@ assert(
     );
   }
   {
+    const cpHtml = readFileSync(join(root, "cotizaciones-previsionales.html"), "utf8");
+    const cpTitle = (cpHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const cpH1 = (cpHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const sueldoHtml = readFileSync(join(root, "sueldo.html"), "utf8");
+    const sueldoTitle = (sueldoHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const sueldoH1 = (sueldoHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const iuHtml = readFileSync(join(root, "impuesto-unico.html"), "utf8");
+    const iuTitle = (iuHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const iuH1 = (iuHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const liqHtml = readFileSync(join(root, "guias/liquidacion-de-sueldo.html"), "utf8");
+    const liqTitle = (liqHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const liqH1 = (liqHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const prevHtml = readFileSync(join(root, "guias/liquidacion-de-sueldo-y-previred.html"), "utf8");
+    const prevTitle = (prevHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const prevH1 = (prevHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const leerHtml = readFileSync(join(root, "guias/como-leer-una-liquidacion-de-sueldo.html"), "utf8");
+    const leerTitle = (leerHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const leerH1 = (leerHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const cpDesc = (cpHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "";
+    const demo = calcularSueldo(
+      { sueldoBase: 800_000, afp: "modelo", salud: "fonasa", contrato: "indefinido" },
+      { uf: FALLBACK_UF },
+    );
+    const demoTotal = demo.afp.monto + demo.salud.monto + demo.cesantia.monto;
+    const topeDemo = calcularSueldo(
+      { sueldoBase: 10_000_000, afp: "modelo", salud: "fonasa", contrato: "indefinido" },
+      { uf: FALLBACK_UF },
+    );
+    assert(
+      "SEO title cotizaciones previsionales apunta a calcular cotizaciones",
+      /calcular cotizaciones previsionales/i.test(cpTitle) &&
+        !/sueldo l[ií]quido/i.test(cpTitle) &&
+        !/impuesto [uú]nico/i.test(cpTitle) &&
+        cpTitle !== sueldoTitle &&
+        cpTitle !== iuTitle &&
+        cpTitle !== liqTitle &&
+        cpTitle !== prevTitle &&
+        cpTitle !== leerTitle &&
+        cpTitle.length <= 65,
+      cpTitle,
+    );
+    assert(
+      "SEO H1 cotizaciones previsionales distinto de /sueldo y guías de liquidación",
+      /calcular cotizaciones previsionales/i.test(cpH1) &&
+        cpH1 !== sueldoH1 &&
+        cpH1 !== iuH1 &&
+        cpH1 !== liqH1 &&
+        cpH1 !== prevH1 &&
+        cpH1 !== leerH1 &&
+        !/sueldo l[ií]quido/i.test(cpH1),
+      cpH1,
+    );
+    assert("SEO cotizaciones meta distinta de /sueldo", cpDesc && cpDesc !== ((sueldoHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || ""));
+    assert(
+      "SEO cotizaciones cita topes UF de constants",
+      new RegExp(`${TOPE_AFP_SALUD_UF}\\s*UF`).test(cpHtml) &&
+        /135,2 UF/.test(cpHtml),
+    );
+    assert(
+      "SEO cotizaciones ejemplo 800000 Modelo no deriva",
+      demo.afp.monto === 84640 &&
+        demo.salud.monto === 56000 &&
+        demo.cesantia.monto === 4800 &&
+        demoTotal === 145440 &&
+        cpHtml.includes(clp(demo.afp.monto)) &&
+        cpHtml.includes(clp(demo.salud.monto)) &&
+        cpHtml.includes(clp(demo.cesantia.monto)) &&
+        cpHtml.includes(clp(demoTotal)) &&
+        /\$800\.000/.test(cpHtml),
+    );
+    assert(
+      "SEO cotizaciones tope AFP/salud 90 UF en el motor",
+      close(topeDemo.baseAfpSalud, TOPE_AFP_SALUD_UF * FALLBACK_UF, 0.1) &&
+        close(topeDemo.baseCesantia, TOPE_CESANTIA_UF * FALLBACK_UF, 0.1),
+    );
+    assert("SEO cotizaciones FAQPage", /"@type": "FAQPage"/.test(cpHtml));
+    assert(
+      "SEO cotizaciones no inventa tasas de empleador",
+      /todav[ií]a no modela/.test(cpHtml) && !/SIS\s+\d/.test(cpHtml) && !/mutual\s+\d/i.test(cpHtml),
+    );
+    assert(
+      "SEO cotizaciones enlaza sueldo y guías de liquidación",
+      /href="\/sueldo"/.test(cpHtml) &&
+        /href="\/guias\/liquidacion-de-sueldo"/.test(cpHtml) &&
+        /href="\/guias\/liquidacion-de-sueldo-y-previred"/.test(cpHtml) &&
+        /href="\/guias\/como-leer-una-liquidacion-de-sueldo"/.test(cpHtml) &&
+        /href="\/empresa"/.test(cpHtml),
+    );
+    assert(
+      "SEO guías de liquidación enlazan /cotizaciones-previsionales",
+      /href="\/cotizaciones-previsionales"/.test(liqHtml) &&
+        /href="\/cotizaciones-previsionales"/.test(prevHtml) &&
+        /href="\/cotizaciones-previsionales"/.test(leerHtml),
+    );
+    assert(
+      "home y nav enlazan /cotizaciones-previsionales",
+      /href="\/cotizaciones-previsionales"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/cotizaciones-previsionales" data-nav>Cotizaciones previsionales<\/a>/.test(
+          readFileSync(join(root, "index.html"), "utf8"),
+        ) &&
+        /href="\/cotizaciones-previsionales" data-nav>Cotizaciones previsionales<\/a>/.test(cpHtml),
+    );
+    assert(
+      "sitemap incluye /cotizaciones-previsionales",
+      locs.includes("https://www.haberes.cl/cotizaciones-previsionales") &&
+        lastmodForPath("/cotizaciones-previsionales") === "2026-08-26",
+    );
+    assert(
+      "no se crean URLs hermanas de cotizaciones",
+      !existsSync(join(root, "tope-imponible.html")) &&
+        !existsSync(join(root, "cotizacion-afp.html")) &&
+        !existsSync(join(root, "descuentos-legales.html")) &&
+        !existsSync(join(root, "calculadora-sueldo.html")),
+    );
+    assert(
+      "seo-map documenta /cotizaciones-previsionales y no-canibalizar /sueldo",
+      /\/cotizaciones-previsionales/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no canibalizar `\/sueldo`/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")),
+    );
+  }
+  {
     const homeTitle = (readFileSync(join(root, "index.html"), "utf8").match(/<title>([^<]*)<\/title>/) || [])[1] || "";
     assert(
       "SEO título home pymes, no calculadora",
@@ -4954,6 +5093,7 @@ assert(
       "vacaciones-proporcionales.html",
       "gratificacion.html",
       "impuesto-unico.html",
+      "cotizaciones-previsionales.html",
       "finiquito.html",
       "empresa.html",
       "precios.html",
@@ -5125,7 +5265,7 @@ assert(
     return acc;
   }
   const pages = listHtml(root);
-  assert("53 páginas HTML", pages.length === 53, String(pages.length));
+  assert("54 páginas HTML", pages.length === 54, String(pages.length));
   for (const file of pages) {
     const html = readFileSync(file, "utf8");
     const rel = file.slice(root.length + 1);

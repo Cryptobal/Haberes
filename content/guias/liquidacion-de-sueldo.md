@@ -64,6 +64,8 @@ Los descuentos legales más frecuentes en un contrato indefinido son:
 
 El artículo 58 del Código del Trabajo limita otros descuentos (anticipos, créditos, cuotas sindicales, pensiones de alimentos, etc.). No descuente «multas» o faltantes de caja si no hay base legal o pacto válido. Si hay duda, la vía es la Inspección o un abogado laboral, no un ajuste silencioso en la planilla.
 
+Para AFP, salud y cesantía del trabajador use [calcular cotizaciones previsionales](/cotizaciones-previsionales).
+
 El **líquido a pago** es haberes menos descuentos. Si ese número no cuadra con el comprobante, el problema no se arregla cambiando el nombre de una línea: hay que recalcular.
 
 ## Liquidación, Previred y Haberes
