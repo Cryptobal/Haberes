@@ -16,6 +16,8 @@ export const GRATIFICACION_TOPE = 219115;
 
 export const JORNADA_DEFAULT = 42;
 export const HORAS_EXTRA_FACTOR = 1.5;
+/** Mínimo legal art. 38 N°7: recargo sobre horas ordinarias en domingo (comercio/servicios al público). */
+export const RECARGO_DOMINGO_COMERCIO_MIN = 0.3;
 
 /** AFP: 10 % obligatorio + comisión (Circular 2414), sobre tope 90 UF */
 export const AFP_OBLIGATORIO = 0.1;

@@ -19,6 +19,7 @@ const DRAWER_LINKS = [
   ["/precios", "Precios"],
   ["/sueldo", "Sueldo líquido"],
   ["/horas-extras", "Horas extras"],
+  ["/recargo-domingo-comercio", "Recargo domingo comercio"],
   ["/gratificacion", "Gratificación"],
   ["/impuesto-unico", "Impuesto único"],
   ["/cotizaciones-previsionales", "Cotizaciones previsionales"],

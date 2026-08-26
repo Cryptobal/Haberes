@@ -318,6 +318,72 @@ const META = {
       },
     ],
   },
+  "recargo-domingo-comercio.html": {
+    path: "/recargo-domingo-comercio",
+    title: "Calcular recargo domingo comercio Chile 2026 — Haberes",
+    description:
+      "Calcule el recargo mínimo 30 % por horas ordinarias en domingo del comercio (art. 38 N°7). Distinto de las horas extras. Resultado al instante y gratis.",
+    ogImage: "/img/og-default.png",
+    jsonld: (url) => [
+      ORG,
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        name: "Calcular recargo domingo comercio — Haberes",
+        url,
+        applicationCategory: "FinanceApplication",
+        operatingSystem: "Web",
+        inLanguage: "es-CL",
+        offers: { "@type": "Offer", price: "0", priceCurrency: "CLP" },
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        mainEntity: [
+          {
+            "@type": "Question",
+            name: "¿Cuánto recargo se paga por trabajar el domingo en el comercio?",
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: "El artículo 38 N°7 del Código del Trabajo manda remunerar las horas ordinarias trabajadas en domingo con un recargo de, a lo menos, un 30 % sobre el sueldo convenido para la jornada ordinaria. El pacto puede ser mayor. Haberes usa el mínimo 30 % y la misma base de hora de la Dirección del Trabajo: sueldo / 30 × 28 / (jornada × 4).",
+            },
+          },
+          {
+            "@type": "Question",
+            name: "¿El recargo del domingo es lo mismo que las horas extras?",
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: "No. Las horas extras (artículo 32) son las que exceden la jornada ordinaria semanal y llevan recargo 50 %. El 30 % del artículo 38 es un recargo distinto, sobre horas ordinarias en domingo en comercio o servicios que atienden al público. Si ese domingo además hubo extras, la DT toma como base la hora ordinaria más el 30 % y sobre eso aplica el 50 %.",
+            },
+          },
+          {
+            "@type": "Question",
+            name: "¿El 30 % también se paga si abrimos un festivo?",
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: "El recargo del 30 % está escrito para las horas ordinarias en día domingo, no para el festivo por el solo hecho de ser feriado. En festivo trabajado el Código sí exige un día de descanso en compensación. Si las horas de ese día exceden la jornada semanal, se pagan como extras (artículo 32). No invente un porcentaje de festivo: si el caso es dudoso, consulte a su contador o a la DT.",
+            },
+          },
+          {
+            "@type": "Question",
+            name: "¿El recargo reemplaza el día de descanso?",
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: "No. El recargo es pago. Aparte, las empresas exceptuadas del descanso dominical deben otorgar un día de descanso a la semana por el domingo trabajado, y otro por cada festivo en que se prestaron servicios. En el comercio del N°7, el artículo 38 bis añade siete días domingo de descanso al año, con excepciones. Haberes no cuenta esos días aquí.",
+            },
+          },
+          {
+            "@type": "Question",
+            name: "¿El recargo entra al sueldo líquido?",
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: "Sí: es remuneración y se liquida junto con las remuneraciones del período. En el Libro de Remuneraciones Electrónico esa línea es el código 2107. Esta página estima solo el recargo. Para ver AFP, salud e impuesto único use la calculadora de sueldo líquido.",
+            },
+          },
+        ],
+      },
+    ],
+  },
   "vacaciones-proporcionales.html": {
     path: "/vacaciones-proporcionales",
     title: "Calcular vacaciones proporcionales Chile 2026 — Haberes",

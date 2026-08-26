@@ -16,6 +16,7 @@ Actualizar este archivo antes de crear URLs nuevas para evitar canibalización.
 | Calcular gratificación | gratificación legal (4.400/17) — intención calcular | `/gratificacion` | Title/H1 «calcular gratificación»; no canibalizar `/sueldo` ni `/guias/gratificacion-legal` |
 | Calcular impuesto único | calcular impuesto unico (480/mes), tabla impuesto unico (2.900/mes) | `/impuesto-unico` | Title/H1 «calcular impuesto único»; no canibalizar `/sueldo` ni `/guias/impuesto-unico` |
 | Calcular cotizaciones previsionales | cotizaciones previsionales / tope imponible AFP / comisión AFP | `/cotizaciones-previsionales` | Title/H1 «calcular cotizaciones previsionales»; no canibalizar `/sueldo` ni `/guias/liquidacion-de-sueldo-y-previred`. No crear `/tope-imponible`, `/cotizacion-afp`, `/descuentos-legales` ni `/calculadora-sueldo` |
+| Calcular recargo domingo comercio | recargo domingo comercio / recargo 30% domingo / art. 38 N°7 | `/recargo-domingo-comercio` | Title/H1 «calcular recargo domingo comercio»; no canibalizar `/horas-extras` ni `/guias/horas-extras`. No es hora extra (art. 32) ni semana corrida (art. 45). No crear `/horas-extras-domingo` ni `/recargo-festivo` |
 | Índice de guías | — | `/guias` | Hub: 17 guías, grupo liquidación vs finiquito |
 
 ## Guías pilar (contenido + calculadora embebida)
@@ -89,6 +90,10 @@ Haberes no se presenta como IA en el sitio. El memo de operación está en
 No publicar hermanas de cotizaciones: `/tope-imponible`, `/cotizacion-afp`,
 `/descuentos-legales`, `/calculadora-sueldo`. La intención «calcular sueldo líquido»
 sigue en `/sueldo`.
+
+No publicar hermanas del recargo domingo: `/horas-extras-domingo`, `/recargo-festivo`,
+`/trabajo-en-domingo`. El recargo 30 % del comercio (art. 38 N°7) vive en
+`/recargo-domingo-comercio`. Las horas extras (art. 32) siguen en `/horas-extras`.
 
 ## Cómo regenerar
 
