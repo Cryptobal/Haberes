@@ -21,6 +21,7 @@ const DRAWER_LINKS = [
   ["/horas-extras", "Horas extras"],
   ["/gratificacion", "Gratificación"],
   ["/impuesto-unico", "Impuesto único"],
+  ["/cotizaciones-previsionales", "Cotizaciones previsionales"],
   ["/vacaciones-proporcionales", "Vacaciones proporcionales"],
   ["/finiquito", "Finiquito"],
 ];

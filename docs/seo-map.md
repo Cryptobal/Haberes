@@ -15,6 +15,7 @@ Actualizar este archivo antes de crear URLs nuevas para evitar canibalización.
 | Calcular vacaciones proporcionales | vacaciones proporcionales (1.300/16), feriado proporcional (590/13), calcular feriado proporcional (320/14) | `/vacaciones-proporcionales` | Title/H1 «calcular vacaciones proporcionales»; no canibalizar `/finiquito` ni `/guias/vacaciones-proporcionales` |
 | Calcular gratificación | gratificación legal (4.400/17) — intención calcular | `/gratificacion` | Title/H1 «calcular gratificación»; no canibalizar `/sueldo` ni `/guias/gratificacion-legal` |
 | Calcular impuesto único | calcular impuesto unico (480/mes), tabla impuesto unico (2.900/mes) | `/impuesto-unico` | Title/H1 «calcular impuesto único»; no canibalizar `/sueldo` ni `/guias/impuesto-unico` |
+| Calcular cotizaciones previsionales | cotizaciones previsionales / tope imponible AFP / comisión AFP | `/cotizaciones-previsionales` | Title/H1 «calcular cotizaciones previsionales»; no canibalizar `/sueldo` ni `/guias/liquidacion-de-sueldo-y-previred`. No crear `/tope-imponible`, `/cotizacion-afp`, `/descuentos-legales` ni `/calculadora-sueldo` |
 | Índice de guías | — | `/guias` | Hub: 17 guías, grupo liquidación vs finiquito |
 
 ## Guías pilar (contenido + calculadora embebida)
@@ -42,7 +43,7 @@ Actualizar este archivo antes de crear URLs nuevas para evitar canibalización.
 | `/guias/me-reservo-el-derecho-en-el-finiquito` | Firma / reserva |
 | `/guias/como-leer-una-liquidacion-de-sueldo` | Soporte liquidación |
 | `/guias/formato-de-liquidacion-de-sueldo-chile` | Formato PDF |
-| `/guias/liquidacion-de-sueldo-y-previred` | Previred vs liquidación |
+| `/guias/liquidacion-de-sueldo-y-previred` | Previred vs liquidación; enlace a `/cotizaciones-previsionales` (cálculo, no declaración) |
 
 ## 21 causales de finiquito (`/finiquito/{slug}`)
 
@@ -84,6 +85,10 @@ Prosa editorial editable en `content/causales/{slug}.md`.
 No publicar `/ia`, `/etica`, `/gobernanza` ni páginas de «exactitud» o sesgo.
 Haberes no se presenta como IA en el sitio. El memo de operación está en
 `docs/INTERNO-USO-DE-IA.md` (fuera del deploy).
+
+No publicar hermanas de cotizaciones: `/tope-imponible`, `/cotizacion-afp`,
+`/descuentos-legales`, `/calculadora-sueldo`. La intención «calcular sueldo líquido»
+sigue en `/sueldo`.
 
 ## Cómo regenerar
 

@@ -9,6 +9,8 @@ calc: "sueldo"
 
 Una liquidación separa haberes y descuentos para llegar al líquido a pagar. Revise AFP, salud, cesantía e impuesto único, además de días trabajados y horas extras.
 
+Para el desglose de AFP, salud y cesantía del trabajador (no el líquido) use [calcular cotizaciones previsionales](/cotizaciones-previsionales).
+
 {{calc}}
 
 {{cta}}

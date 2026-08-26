@@ -42,6 +42,7 @@ en `js/picker.js` (hoja inferior con velo en móvil, panel anclado en escritorio
 - `/horas-extras` valor de la hora extra (art. 32) y total del mes
 - `/gratificacion` gratificación legal art. 50 (25 % con tope mensual)
 - `/impuesto-unico` impuesto único de segunda categoría (IUSC) sobre la renta líquida imponible
+- `/cotizaciones-previsionales` AFP, salud Fonasa 7 % y cesantía del trabajador, con topes en UF
 - `/vacaciones-proporcionales` feriado proporcional (días × remuneración / 30)
 - `/finiquito` arts. 159 / 160 / 161
 - `/finiquito/{slug}` páginas por causal prioritaria (necesidades de la empresa, renuncia, vencimiento del plazo, incumplimiento grave, desahucio)
