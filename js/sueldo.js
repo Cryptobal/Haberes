@@ -155,6 +155,46 @@ export function calcularAsignacionFamiliar({
 }
 
 /**
+ * Semana corrida (art. 45 Código del Trabajo): remuneración en dinero por
+ * domingo y festivos de quien se paga por día o con sueldo mensual más
+ * remuneraciones variables (comisiones o tratos).
+ *
+ * Fórmula de la consulta DT (también aplicable al período mensual):
+ * promedio_diario = suma de remuneraciones variables diarias / días en que
+ * legalmente debió laborar; semana_corrida = promedio_diario × (domingos +
+ * festivos del período). Si hay sueldo mensual, la base es solo la parte
+ * variable. Quedan fuera gratificaciones, aguinaldos y bonificaciones
+ * accesorias (inciso 2°).
+ *
+ * Haberes aplica la doctrina DT vigente (devengo diario; estipendio principal
+ * y ordinario). No unifica jurisprudencia de la Corte Suprema sobre comisiones
+ * que no se devengan día a día. El usuario ingresa el conteo de domingo y
+ * festivos; no hay calendario de feriados en el motor.
+ *
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=207436
+ * @see https://www.dt.gob.cl/portal/1628/w3-article-60203.html
+ */
+export function calcularSemanaCorrida({
+  remuneracionesVariables = 0,
+  diasQueDebioLaborar = 0,
+  domingosFestivos = 0,
+} = {}) {
+  const variables = Math.max(0, Number(remuneracionesVariables) || 0);
+  const dias = Math.max(0, Number(diasQueDebioLaborar) || 0);
+  const descansos = Math.max(0, Number(domingosFestivos) || 0);
+  const promedioDiario = dias > 0 ? variables / dias : 0;
+  const semanaCorrida = promedioDiario * descansos;
+  return {
+    remuneracionesVariables: variables,
+    diasQueDebioLaborar: dias,
+    domingosFestivos: descansos,
+    promedioDiario,
+    semanaCorrida,
+    total: roundPeso(semanaCorrida),
+  };
+}
+
+/**
  * @param {object} input
  * @param {{ uf?: number }} indicadores
  *

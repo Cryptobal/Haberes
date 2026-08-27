@@ -34,7 +34,7 @@ export const CAUSAL_PAGES = [
  * group: índice /guias (liquidación vs finiquito).
  * calc: calculadora canónica (no canibalizar titles/H1 de esas URLs).
  * updated: lastmod ISO (YYYY-MM-DD) para sitemap y el bloque «últimas» del hub.
- * @type {{ slug: string, group: "liquidacion" | "finiquito", calc: "/sueldo" | "/finiquito" | "/horas-extras" | "/recargo-domingo-comercio" | "/gratificacion" | "/vacaciones-proporcionales" | "/impuesto-unico" | "/cotizaciones-previsionales" | "/asignacion-familiar", updated: string }[]}
+ * @type {{ slug: string, group: "liquidacion" | "finiquito", calc: "/sueldo" | "/finiquito" | "/horas-extras" | "/recargo-domingo-comercio" | "/semana-corrida" | "/gratificacion" | "/vacaciones-proporcionales" | "/impuesto-unico" | "/cotizaciones-previsionales" | "/asignacion-familiar", updated: string }[]}
  */
 export const DEFAULT_LASTMOD = "2026-08-17";
 
@@ -43,7 +43,7 @@ export const GUIDES = [
   { slug: "impuesto-unico", group: "liquidacion", calc: "/impuesto-unico", updated: "2026-08-18" },
   { slug: "gratificacion-legal", group: "liquidacion", calc: "/gratificacion", updated: "2026-08-18" },
   { slug: "horas-extras", group: "liquidacion", calc: "/horas-extras", updated: "2026-08-17" },
-  { slug: "semana-corrida", group: "liquidacion", calc: "/sueldo", updated: "2026-08-19" },
+  { slug: "semana-corrida", group: "liquidacion", calc: "/semana-corrida", updated: "2026-08-27" },
   { slug: "aguinaldo-fiestas-patrias", group: "liquidacion", calc: "/sueldo", updated: "2026-08-25" },
   { slug: "como-leer-una-liquidacion-de-sueldo", group: "liquidacion", calc: "/sueldo", updated: "2026-08-17" },
   { slug: "formato-de-liquidacion-de-sueldo-chile", group: "liquidacion", calc: "/sueldo", updated: "2026-08-17" },
@@ -60,13 +60,14 @@ export const GUIDES = [
 
 /** lastmod de rutas base que sí cambiaron después del lote SEO inicial. */
 export const PATH_LASTMOD = {
-  "/guias": "2026-08-26",
+  "/guias": "2026-08-27",
   "/horas-extras": "2026-08-20",
   "/vacaciones-proporcionales": "2026-08-21",
   "/gratificacion": "2026-08-22",
   "/impuesto-unico": "2026-08-23",
   "/cotizaciones-previsionales": "2026-08-26",
   "/recargo-domingo-comercio": "2026-08-26",
+  "/semana-corrida": "2026-08-27",
   "/asignacion-familiar": "2026-08-27",
   "/privacidad": "2026-08-18",
   "/terminos": "2026-08-18",
@@ -97,6 +98,7 @@ export const BASE_PATHS = [
   "/precios",
   "/privacidad",
   "/recargo-domingo-comercio",
+  "/semana-corrida",
   "/sueldo",
   "/terminos",
   "/vacaciones-proporcionales",

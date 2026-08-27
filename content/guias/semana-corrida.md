@@ -3,19 +3,19 @@ title: "Semana corrida en Chile: art. 45, a quién aplica — Haberes"
 description: "Artículo 45: pago de domingo y festivos si se remunera por día, o por sueldo mensual más comisiones o tratos. Quién no entra y cómo se ve en la liquidación."
 h1: "Semana corrida: artículo 45, a quién aplica y cómo se calcula"
 calc: "sueldo"
-updated: "2026-08-19"
+updated: "2026-08-27"
 published: "2026-08-17"
 faq:
   - {"q":"¿Qué es la semana corrida?","a":"Es la remuneración en dinero por los días domingo y festivos que el artículo 45 del Código del Trabajo reconoce a quienes se pagan por día y a quienes combinan sueldo mensual con remuneraciones variables (comisiones o tratos). La Dirección del Trabajo también la llama pago del séptimo día."}
   - {"q":"¿A quién aplica y a quién no?","a":"Aplica al remunerado exclusivamente por día y al que tiene sueldo mensual más parte variable (comisiones o tratos). La DT extiende el criterio a trato o hora cuando el estipendio se devenga al día. No nace si solo hay sueldo mensual sin esa parte variable."}
   - {"q":"¿Cómo se calcula a grandes rasgos?","a":"Se divide la suma de las remuneraciones diarias (o, si el sueldo es mensual, solo la parte variable) por los días en que legalmente debió laborar esa semana. Ese promedio se paga por el domingo y por cada festivo del mismo período. Quedan fuera gratificaciones, aguinaldos y bonificaciones de carácter accesorio."}
-  - {"q":"¿Va en la liquidación y es imponible?","a":"Sí. Es remuneración en dinero: debe verse el haber y cómo se determinó (artículo 54). Entra a la base de cotizaciones y puede mover el impuesto único. Haberes no calcula sola la semana corrida; se modela como otro imponible en la calculadora de sueldo líquido."}
+  - {"q":"¿Va en la liquidación y es imponible?","a":"Sí. Es remuneración en dinero: debe verse el haber y cómo se determinó (artículo 54). Entra a la base de cotizaciones y puede mover el impuesto único. Estime el monto en la calculadora de semana corrida y, para ver cotizaciones e impuesto único, súmelo como otro imponible en la calculadora de sueldo líquido."}
   - {"q":"¿Haberes reemplaza a la Dirección del Trabajo o a Previred?","a":"No. Haberes estima montos y arma el comprobante. No es un cálculo de la Dirección del Trabajo ni de Previred, ni asesoría legal. La calificación del artículo 45 es casuística: verifique con su contador o en los canales oficiales."}
 ---
 
 # Semana corrida: artículo 45, a quién aplica y cómo se calcula
 
-La **semana corrida** es la remuneración en dinero por los **días domingo y festivos** que el [artículo 45 del Código del Trabajo](https://www.bcn.cl/leychile/navegar?idNorma=207436) reconoce a ciertos trabajadores. No es un bono de cortesía ni el recargo por **trabajar** un domingo. Cubre a quien se paga **exclusivamente por día** y a quien combina **sueldo mensual con remuneraciones variables** (comisiones o tratos). El líquido de un mes se estima en la [calculadora de sueldo líquido](/sueldo).
+La **semana corrida** es la remuneración en dinero por los **días domingo y festivos** que el [artículo 45 del Código del Trabajo](https://www.bcn.cl/leychile/navegar?idNorma=207436) reconoce a ciertos trabajadores. No es un bono de cortesía ni el recargo por **trabajar** un domingo. Cubre a quien se paga **exclusivamente por día** y a quien combina **sueldo mensual con remuneraciones variables** (comisiones o tratos). El monto del haber se estima en la [calculadora de semana corrida](/semana-corrida); el líquido del mes, en la [calculadora de sueldo líquido](/sueldo).
 
 ## A quién aplica y a quién no
 
@@ -35,7 +35,7 @@ La [Dirección del Trabajo](https://www.dt.gob.cl/portal/1628/w3-article-60201.h
 | Sueldo mensual más comisiones o tratos | Sí, solo sobre la parte variable |
 | Gratificación, aguinaldo o bonificación accesoria como base | No: el 45 las excluye |
 
-La DT pide, además, que esa parte variable se **devengue día a día** y sea **principal y ordinaria**, no un extra esporádico. Eso es criterio administrativo, no un porcentaje inventado aquí. Si el contrato es dudoso, pregunte en la Inspección o a su contador.
+La DT pide, además, que esa parte variable se **devengue día a día** y sea **principal y ordinaria**, no un extra esporádico. Eso es criterio administrativo, no un porcentaje inventado aquí. Haberes aplica esa doctrina DT vigente y no unifica jurisprudencia de la Corte Suprema sobre comisiones que no se devengan día a día. Si el contrato es dudoso, pregunte en la Inspección o a su contador.
 
 ## Cómo se calcula a grandes rasgos
 
@@ -57,7 +57,7 @@ Persona remunerada **solo por día**. En una semana debía laborar **6** días y
 
 Misma semana, régimen **mixto**: sueldo mensual **$700.000** y comisiones de esos seis días **$120.000**. El 45 manda calcular el promedio **sólo** sobre la parte variable: $120.000 / 6 = **$20.000** por el domingo (y por cada festivo de esa semana). El sueldo mensual no se prorratea para este haber.
 
-Haberes **no** arma esa división por usted: no conoce los días en que debió laborar ni qué comisión es «diaria». En la [calculadora de sueldo líquido](/sueldo) sume el monto ya determinado en **Bonos imponibles** u **Otros imponibles** y vea el efecto en cotizaciones e [impuesto único](/guias/impuesto-unico).
+La [calculadora de semana corrida](/semana-corrida) aplica esa división si usted ingresa la suma de variables, los días en que debió laborar y el conteo de domingo y festivos. No califica si la comisión es «diaria» ni arma el calendario de feriados. En la [calculadora de sueldo líquido](/sueldo) sume el monto ya determinado en **Bonos imponibles** u **Otros imponibles** y vea el efecto en cotizaciones e [impuesto único](/guias/impuesto-unico).
 
 {{calc}}
 
@@ -78,7 +78,7 @@ El [artículo 71](https://www.bcn.cl/leychile/navegar?idNorma=207436) (Ley 20.61
 - Pagar el domingo y **olvidar el festivo** de la misma semana, o usar «días que vino» en vez de los días en que **debió** laborar.
 - No mostrar el haber ni la forma de cálculo en la liquidación, o marcarlo como no imponible.
 - Confundir semana corrida (pago por el día de **descanso**) con el recargo por **trabajar** el domingo ([calcular recargo domingo comercio](/recargo-domingo-comercio)).
-- Pretender que Haberes calcule sola la semana corrida. Solo estima el líquido una vez que usted ingresa el monto.
+- Olvidar pasar el monto a la liquidación: la [calculadora de semana corrida](/semana-corrida) estima el haber; en la de [sueldo líquido](/sueldo) súmelo como otro imponible.
 
 También: [índice de guías](/guias).
 

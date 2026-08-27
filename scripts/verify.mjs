@@ -41,6 +41,7 @@ import {
   calcularAsignacionFamiliar,
   calcularIusc,
   calcularRecargoDomingoComercio,
+  calcularSemanaCorrida,
   calcularSueldo,
   gratificacionArt50,
   tasaAfp,
@@ -252,6 +253,65 @@ assert(
     "app-asignacion-familiar usa calcularAsignacionFamiliar",
     /import\s*\{[^}]*calcularAsignacionFamiliar[^}]*\}\s*from\s*["']\.\/sueldo\.js["']/.test(afApp) &&
       /calcularAsignacionFamiliar\s*\(/.test(afApp),
+  );
+}
+
+console.log("\nSemana corrida art. 45");
+{
+  const a = calcularSemanaCorrida({
+    remuneracionesVariables: 600_000,
+    diasQueDebioLaborar: 24,
+    domingosFestivos: 5,
+  });
+  assert("600000 / 24 × 5 = 125000", a.total === 125000, String(a.total));
+  assert("promedio diario 25000", a.promedioDiario === 25000, String(a.promedioDiario));
+}
+{
+  const sem = calcularSemanaCorrida({
+    remuneracionesVariables: 180_000,
+    diasQueDebioLaborar: 6,
+    domingosFestivos: 1,
+  });
+  assert("guía semanal 180000 / 6 × 1 = 30000", sem.total === 30000, String(sem.total));
+}
+{
+  const fest = calcularSemanaCorrida({
+    remuneracionesVariables: 180_000,
+    diasQueDebioLaborar: 6,
+    domingosFestivos: 2,
+  });
+  assert("guía semanal + festivo 180000 / 6 × 2 = 60000", fest.total === 60000, String(fest.total));
+}
+{
+  const mixto = calcularSemanaCorrida({
+    remuneracionesVariables: 120_000,
+    diasQueDebioLaborar: 6,
+    domingosFestivos: 1,
+  });
+  assert("mixto solo variable 120000 / 6 × 1 = 20000", mixto.total === 20000, String(mixto.total));
+}
+assert(
+  "0 días → 0 (sin dividir)",
+  calcularSemanaCorrida({ remuneracionesVariables: 600_000, diasQueDebioLaborar: 0, domingosFestivos: 5 }).total === 0,
+);
+assert(
+  "0 descansos → 0",
+  calcularSemanaCorrida({ remuneracionesVariables: 600_000, diasQueDebioLaborar: 24, domingosFestivos: 0 }).total === 0,
+);
+assert(
+  "0 variables → 0",
+  calcularSemanaCorrida({ remuneracionesVariables: 0, diasQueDebioLaborar: 24, domingosFestivos: 5 }).total === 0,
+);
+assert(
+  "redondeo peso 100000 / 3 × 1 = 33333",
+  calcularSemanaCorrida({ remuneracionesVariables: 100_000, diasQueDebioLaborar: 3, domingosFestivos: 1 }).total === 33333,
+);
+{
+  const scApp = readFileSync(join(root, "js/app-semana-corrida.js"), "utf8");
+  assert(
+    "app-semana-corrida usa calcularSemanaCorrida",
+    /import\s*\{[^}]*calcularSemanaCorrida[^}]*\}\s*from\s*["']\.\/sueldo\.js["']/.test(scApp) &&
+      /calcularSemanaCorrida\s*\(/.test(scApp),
   );
 }
 
@@ -752,6 +812,7 @@ const required = [
   "impuesto-unico.html",
   "cotizaciones-previsionales.html",
   "recargo-domingo-comercio.html",
+  "semana-corrida.html",
   "asignacion-familiar.html",
   "finiquito.html",
   "js/app-horas-extras.js",
@@ -760,6 +821,7 @@ const required = [
   "js/app-impuesto-unico.js",
   "js/app-cotizaciones-previsionales.js",
   "js/app-recargo-domingo-comercio.js",
+  "js/app-semana-corrida.js",
   "js/app-asignacion-familiar.js",
   "empresa.html",
   "privacidad.html",
@@ -895,6 +957,7 @@ const htmlFiles = [
   "impuesto-unico.html",
   "cotizaciones-previsionales.html",
   "recargo-domingo-comercio.html",
+  "semana-corrida.html",
   "asignacion-familiar.html",
   "finiquito.html",
   "empresa.html",
@@ -978,6 +1041,7 @@ const appEntries = [
   "js/app-impuesto-unico.js",
   "js/app-cotizaciones-previsionales.js",
   "js/app-recargo-domingo-comercio.js",
+  "js/app-semana-corrida.js",
   "js/app-asignacion-familiar.js",
   "js/app-finiquito.js",
   "js/app-empresa.js",
@@ -1011,7 +1075,7 @@ assert("robots Allow /", /Allow:\s*\//.test(robots));
 assert("robots Disallow /admin", /Disallow:\s*\/admin/.test(robots));
 assert("robots Disallow /api", /Disallow:\s*\/api/.test(robots));
 assert("robots Disallow /docs", /Disallow:\s*\/docs/.test(robots));
-assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots));
+assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots));
 assert("robots Sitemap", /Sitemap:\s*https:\/\/www\.haberes\.cl\/sitemap\.xml/.test(robots));
 
 const { seoPaths, GUIDE_SLUGS, GUIDES, CAUSAL_PAGES, BASE_PATHS, lastmodForPath } = await import("../content/registry.js");
@@ -1035,6 +1099,7 @@ assert(
     BASE_PATHS.includes("/impuesto-unico") &&
     BASE_PATHS.includes("/cotizaciones-previsionales") &&
     BASE_PATHS.includes("/recargo-domingo-comercio") &&
+    BASE_PATHS.includes("/semana-corrida") &&
     BASE_PATHS.includes("/asignacion-familiar"),
   `${locs.length} vs ${expectedFromRegistry.length}`,
 );
@@ -1090,15 +1155,15 @@ assert(
     lastmodForPath("/guias/carta-aviso-termino-contrato") === "2026-08-18" &&
     lastmodForPath("/guias/gratificacion-legal") === "2026-08-18" &&
     lastmodForPath("/guias/indemnizacion-por-anos-de-servicio") === "2026-08-19" &&
-    lastmodForPath("/guias/semana-corrida") === "2026-08-19" &&
+    lastmodForPath("/guias/semana-corrida") === "2026-08-27" &&
     lastmodForPath("/guias/aguinaldo-fiestas-patrias") === "2026-08-25" &&
-    lastmodForPath("/guias") === "2026-08-26" &&
+    lastmodForPath("/guias") === "2026-08-27" &&
     /<loc>https:\/\/www\.haberes\.cl\/guias\/liquidacion-de-sueldo<\/loc>\s*<lastmod>2026-08-18<\/lastmod>/.test(sitemap) &&
     /<loc>https:\/\/www\.haberes\.cl\/guias\/gratificacion-legal<\/loc>\s*<lastmod>2026-08-18<\/lastmod>/.test(sitemap) &&
     /<loc>https:\/\/www\.haberes\.cl\/guias\/indemnizacion-por-anos-de-servicio<\/loc>\s*<lastmod>2026-08-19<\/lastmod>/.test(sitemap) &&
-    /<loc>https:\/\/www\.haberes\.cl\/guias\/semana-corrida<\/loc>\s*<lastmod>2026-08-19<\/lastmod>/.test(sitemap) &&
+    /<loc>https:\/\/www\.haberes\.cl\/guias\/semana-corrida<\/loc>\s*<lastmod>2026-08-27<\/lastmod>/.test(sitemap) &&
     /<loc>https:\/\/www\.haberes\.cl\/guias\/aguinaldo-fiestas-patrias<\/loc>\s*<lastmod>2026-08-25<\/lastmod>/.test(sitemap) &&
-    /<loc>https:\/\/www\.haberes\.cl\/guias<\/loc>\s*<lastmod>2026-08-26<\/lastmod>/.test(sitemap),
+    /<loc>https:\/\/www\.haberes\.cl\/guias<\/loc>\s*<lastmod>2026-08-27<\/lastmod>/.test(sitemap),
 );
 assert("sin ruta /blog ni /noticias", !existsSync(join(root, "blog.html")) && !existsSync(join(root, "noticias.html")));
 assert("sitemap sin .html (cleanUrls)", !locs.some((u) => u.endsWith(".html")));
@@ -1384,7 +1449,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 54,
+      seoPaths().length === 55,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -1396,7 +1461,7 @@ try {
   const docsSeo = await hitLocal("/docs/seo-map.md");
   assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
   assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
-  for (const p of ["/sueldo/", "/finiquito/", "/horas-extras/", "/recargo-domingo-comercio/", "/vacaciones-proporcionales/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/asignacion-familiar/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+  for (const p of ["/sueldo/", "/finiquito/", "/horas-extras/", "/recargo-domingo-comercio/", "/semana-corrida/", "/vacaciones-proporcionales/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/asignacion-familiar/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
   }
@@ -1414,6 +1479,7 @@ try {
   for (const p of [
     "/horas-extras",
     "/recargo-domingo-comercio",
+    "/semana-corrida",
     "/vacaciones-proporcionales",
     "/gratificacion",
     "/impuesto-unico",
@@ -4632,6 +4698,7 @@ assert(
     ["impuesto-unico.html", "/impuesto-unico"],
     ["cotizaciones-previsionales.html", "/cotizaciones-previsionales"],
     ["recargo-domingo-comercio.html", "/recargo-domingo-comercio"],
+    ["semana-corrida.html", "/semana-corrida"],
     ["asignacion-familiar.html", "/asignacion-familiar"],
     ["finiquito.html", "/finiquito"],
     ["empresa.html", "/empresa"],
@@ -5250,6 +5317,128 @@ assert(
     );
   }
   {
+    const scHtml = readFileSync(join(root, "semana-corrida.html"), "utf8");
+    const scTitle = (scHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const scH1 = (scHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const scDesc = (scHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "";
+    const rdHtml = readFileSync(join(root, "recargo-domingo-comercio.html"), "utf8");
+    const rdTitle = (rdHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const rdH1 = (rdHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const heHtml = readFileSync(join(root, "horas-extras.html"), "utf8");
+    const heTitle = (heHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const heH1 = (heHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const sueldoHtml = readFileSync(join(root, "sueldo.html"), "utf8");
+    const sueldoTitle = (sueldoHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const sueldoH1 = (sueldoHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const guideHtml = readFileSync(join(root, "guias/semana-corrida.html"), "utf8");
+    const guideTitle = (guideHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const guideH1 = (guideHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const demo = calcularSemanaCorrida({
+      remuneracionesVariables: 600_000,
+      diasQueDebioLaborar: 24,
+      domingosFestivos: 5,
+    });
+    const semanal = calcularSemanaCorrida({
+      remuneracionesVariables: 180_000,
+      diasQueDebioLaborar: 6,
+      domingosFestivos: 1,
+    });
+    assert(
+      "SEO title semana corrida apunta a calcular semana corrida",
+      /calcular semana corrida/i.test(scTitle) &&
+        !/recargo domingo/i.test(scTitle) &&
+        !/horas extras/i.test(scTitle) &&
+        !/sueldo l[ií]quido/i.test(scTitle) &&
+        scTitle !== rdTitle &&
+        scTitle !== heTitle &&
+        scTitle !== sueldoTitle &&
+        scTitle !== guideTitle &&
+        scTitle.length <= 65,
+      scTitle,
+    );
+    assert(
+      "SEO H1 semana corrida distinto de recargo, extras, sueldo y guía",
+      /calcular semana corrida/i.test(scH1) &&
+        scH1 !== rdH1 &&
+        scH1 !== heH1 &&
+        scH1 !== sueldoH1 &&
+        scH1 !== guideH1 &&
+        !/recargo domingo/i.test(scH1) &&
+        !/horas extras/i.test(scH1) &&
+        !/sueldo l[ií]quido/i.test(scH1),
+      scH1,
+    );
+    assert(
+      "SEO semana corrida meta distinta de /recargo-domingo-comercio y /sueldo",
+      scDesc &&
+        scDesc !== ((rdHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "") &&
+        scDesc !== ((sueldoHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || ""),
+    );
+    assert(
+      "SEO semana corrida cita art. 45 y Código",
+      /art[ií]culo 45/i.test(scHtml) && /C[oó]digo del Trabajo/.test(scHtml),
+    );
+    assert(
+      "SEO semana corrida métrica principal no es Total a pagar",
+      /Semana corrida a pagar/.test(scHtml) && !/<p class="metric-label">Total a pagar<\/p>/.test(scHtml),
+    );
+    assert(
+      "SEO semana corrida ejemplo 600000 / 24 × 5 = 125000",
+      demo.total === 125000 &&
+        semanal.total === 30000 &&
+        /\$600\.000/.test(scHtml) &&
+        /\$25\.000/.test(scHtml) &&
+        /\$125\.000/.test(scHtml) &&
+        /\$180\.000/.test(scHtml) &&
+        /\$30\.000/.test(scHtml),
+    );
+    assert("SEO semana corrida FAQPage", /"@type": "FAQPage"/.test(scHtml));
+    assert(
+      "SEO semana corrida distingue recargo, extras y sueldo",
+      /no es el <a href="\/recargo-domingo-comercio">recargo domingo comercio<\/a>/i.test(scHtml) &&
+        /href="\/horas-extras"/.test(scHtml) &&
+        /href="\/sueldo"/.test(scHtml) &&
+        /href="\/guias\/semana-corrida"/.test(scHtml) &&
+        /href="\/empresa"/.test(scHtml),
+    );
+    assert(
+      "SEO semana corrida doctrina DT sin unificar CS",
+      /devengue d[ií]a a d[ií]a/.test(scHtml) &&
+        /no unifica/.test(scHtml) &&
+        /Corte Suprema/.test(scHtml) &&
+        /dt\.gob\.cl\/portal\/1628\/w3-article-60203/.test(scHtml),
+    );
+    assert(
+      "SEO recargo y horas extras enlazan /semana-corrida",
+      /href="\/semana-corrida"/.test(rdHtml) && /href="\/semana-corrida"/.test(heHtml),
+    );
+    assert(
+      "home y nav enlazan /semana-corrida",
+      /href="\/semana-corrida"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/semana-corrida" data-nav>Semana corrida<\/a>/.test(
+          readFileSync(join(root, "index.html"), "utf8"),
+        ) &&
+        /href="\/semana-corrida" data-nav>Semana corrida<\/a>/.test(scHtml),
+    );
+    assert(
+      "sitemap incluye /semana-corrida",
+      locs.includes("https://www.haberes.cl/semana-corrida") &&
+        lastmodForPath("/semana-corrida") === "2026-08-27",
+    );
+    assert(
+      "no se crean URLs hermanas de semana corrida",
+      !existsSync(join(root, "septimo-dia.html")) &&
+        !existsSync(join(root, "pago-domingo-festivo.html")) &&
+        !existsSync(join(root, "semana-corrida-mensual.html")),
+    );
+    assert(
+      "seo-map documenta /semana-corrida y no-canibalizar guía ni recargo",
+      /\/semana-corrida/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no canibalizar `\/guias\/semana-corrida`/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no crear `\/septimo-dia`/i.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")),
+    );
+  }
+  {
     const homeTitle = (readFileSync(join(root, "index.html"), "utf8").match(/<title>([^<]*)<\/title>/) || [])[1] || "";
     assert(
       "SEO título home pymes, no calculadora",
@@ -5327,7 +5516,9 @@ assert(
       const dateRe =
         file.includes("aguinaldo-fiestas-patrias")
           ? /<time datetime="2026-08-25">/
-          : file.includes("indemnizacion-por-anos-de-servicio") || file.includes("semana-corrida")
+          : file.includes("semana-corrida")
+          ? /<time datetime="2026-08-27">/
+          : file.includes("indemnizacion-por-anos-de-servicio")
           ? /<time datetime="2026-08-19">/
           : /<time datetime="2026-08-18">/;
       assert(`SEO ${file} ${minWords}–1400 palabras`, words >= minWords && words <= 1400, `${file}: ${words}`);
@@ -5377,6 +5568,7 @@ assert(
           !/calculadora/i.test(scTitle) &&
           !/calculadora/i.test(scH1) &&
           /href="\/sueldo"/.test(scHtml) &&
+          /href="\/semana-corrida"/.test(scHtml) &&
           /href="\/guias"/.test(scHtml),
         `${scTitle} | ${liqTitle}`,
       );
@@ -5433,6 +5625,7 @@ assert(
       "impuesto-unico.html",
       "cotizaciones-previsionales.html",
       "recargo-domingo-comercio.html",
+      "semana-corrida.html",
       "asignacion-familiar.html",
       "finiquito.html",
       "empresa.html",
@@ -5605,7 +5798,7 @@ assert(
     return acc;
   }
   const pages = listHtml(root);
-  assert("56 páginas HTML", pages.length === 56, String(pages.length));
+  assert("57 páginas HTML", pages.length === 57, String(pages.length));
   for (const file of pages) {
     const html = readFileSync(file, "utf8");
     const rel = file.slice(root.length + 1);
