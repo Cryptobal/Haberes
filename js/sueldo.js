@@ -9,6 +9,7 @@ import {
   HORAS_EXTRA_FACTOR,
   IUSC_TRAMOS,
   JORNADA_DEFAULT,
+  RECARGO_DOMINGO_COMERCIO_MIN,
   SALUD_TASA,
   TOPE_AFP_SALUD_UF,
   TOPE_CESANTIA_UF,
@@ -34,15 +35,67 @@ export function tasaAfp(afpKey) {
 }
 
 /**
+ * Valor de 1 hora ordinaria (sin recargo). Misma base DT que la hora extra:
+ * sueldo / 30 * 28 / (jornada * 4)
+ * Se calcula sobre el sueldo pactado (no el proporcional del mes).
+ */
+export function valorHoraOrdinaria(sueldo, jornada = JORNADA_DEFAULT) {
+  const s = Number(sueldo) || 0;
+  const j = Number(jornada) || JORNADA_DEFAULT;
+  if (s <= 0 || j <= 0) return 0;
+  return (s / 30) * 28 / (j * 4);
+}
+
+/**
  * Valor de 1 hora extra. DT art. 32:
  * sueldo / 30 * 28 / (jornada * 4) * 1.5
  * Se calcula sobre el sueldo pactado (no el proporcional del mes).
  */
 export function valorHoraExtra(sueldo, jornada = JORNADA_DEFAULT) {
-  const s = Number(sueldo) || 0;
-  const j = Number(jornada) || JORNADA_DEFAULT;
-  if (s <= 0 || j <= 0) return 0;
-  return (s / 30) * 28 / (j * 4) * HORAS_EXTRA_FACTOR;
+  return valorHoraOrdinaria(sueldo, jornada) * HORAS_EXTRA_FACTOR;
+}
+
+/**
+ * Recargo art. 38 N°7 / Ley 20.823: horas ordinarias trabajadas en domingo
+ * en establecimientos de comercio y de servicios que atiendan al público.
+ * Mínimo 30 % sobre el sueldo convenido (valor hora ordinaria DT).
+ *
+ * El recargo es el incremento (no el sueldo del día). El Código lo escribe
+ * para el domingo, no para el festivo por sí solo. Si hay horas extras en
+ * ese domingo, la DT toma hora ordinaria + 30 % y sobre eso aplica el 50 %
+ * del art. 32 (dictamen 2611/39).
+ *
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=207436
+ * @see https://www.dt.gob.cl/legislacion/1624/w3-article-105693.html
+ */
+export function calcularRecargoDomingoComercio({
+  sueldoBase,
+  jornada = JORNADA_DEFAULT,
+  horasOrdinarias = 0,
+  horasExtras = 0,
+  recargo = RECARGO_DOMINGO_COMERCIO_MIN,
+} = {}) {
+  const horaOrd = valorHoraOrdinaria(sueldoBase, jornada);
+  const hOrd = Math.max(0, Number(horasOrdinarias) || 0);
+  const hExt = Math.max(0, Number(horasExtras) || 0);
+  const factor = Number(recargo) > 0 ? Number(recargo) : RECARGO_DOMINGO_COMERCIO_MIN;
+  const recargoHora = horaOrd * factor;
+  const horaDomingo = horaOrd + recargoHora;
+  const recargoTotal = recargoHora * hOrd;
+  const horaExtraDomingo = horaDomingo * HORAS_EXTRA_FACTOR;
+  const extrasTotal = horaExtraDomingo * hExt;
+  return {
+    valorHoraOrdinaria: horaOrd,
+    recargoHora,
+    horaDomingo,
+    recargoTotal,
+    horaExtraDomingo,
+    extrasTotal,
+    horasOrdinarias: hOrd,
+    horasExtras: hExt,
+    recargo: factor,
+    jornada: Number(jornada) || JORNADA_DEFAULT,
+  };
 }
 
 export function calcularIusc(baseTributable) {

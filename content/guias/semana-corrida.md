@@ -45,7 +45,7 @@ La [consulta de la DT](https://www.dt.gob.cl/portal/1628/w3-article-60203.html) 
 2. Divida por el número de días en que **legalmente debió laborar** esa semana (no «los que le dio la gana contar»).
 3. Ese promedio es lo que se paga por el **domingo** y por **cada festivo** de ese mismo período.
 
-El último inciso del 45 aplica lo mismo, en cuanto corresponda, a los **días de descanso** de quienes están exceptuados del artículo 35. No lo confunda con el recargo por **trabajar** el domingo (artículo 38 en varios giros) ni con las [horas extras](/guias/horas-extras) del artículo 32.
+El último inciso del 45 aplica lo mismo, en cuanto corresponda, a los **días de descanso** de quienes están exceptuados del artículo 35. No lo confunda con el recargo por **trabajar** el domingo ([calcular recargo domingo comercio](/recargo-domingo-comercio), artículo 38 N°7) ni con las [horas extras](/guias/horas-extras) del artículo 32.
 
 ### Ejemplo numérico (ficticio)
 
@@ -77,7 +77,7 @@ El [artículo 71](https://www.bcn.cl/leychile/navegar?idNorma=207436) (Ley 20.61
 - Meter en la base la [gratificación del artículo 50](/guias/gratificacion-legal), el aguinaldo o un bono de una vez. El 45 los deja fuera.
 - Pagar el domingo y **olvidar el festivo** de la misma semana, o usar «días que vino» en vez de los días en que **debió** laborar.
 - No mostrar el haber ni la forma de cálculo en la liquidación, o marcarlo como no imponible.
-- Confundir semana corrida (pago por el día de **descanso**) con el recargo por **trabajar** el domingo.
+- Confundir semana corrida (pago por el día de **descanso**) con el recargo por **trabajar** el domingo ([calcular recargo domingo comercio](/recargo-domingo-comercio)).
 - Pretender que Haberes calcule sola la semana corrida. Solo estima el líquido una vez que usted ingresa el monto.
 
 También: [índice de guías](/guias).

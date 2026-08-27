@@ -38,10 +38,12 @@ import {
 } from "../js/novedades.js";
 import {
   calcularIusc,
+  calcularRecargoDomingoComercio,
   calcularSueldo,
   gratificacionArt50,
   tasaAfp,
   valorHoraExtra,
+  valorHoraOrdinaria,
 } from "../js/sueldo.js";
 import { clp, dvRut, validarRut } from "../js/format.js";
 import {
@@ -133,6 +135,59 @@ assert(
     "app-horas-extras usa valorHoraExtra",
     /import\s*\{[^}]*valorHoraExtra[^}]*\}\s*from\s*["']\.\/sueldo\.js["']/.test(heApp) &&
       /valorHoraExtra\s*\(/.test(heApp),
+  );
+}
+
+console.log("\nRecargo domingo comercio art. 38 N°7");
+assert(
+  "hora ordinaria 800000/42 ≈ 4444.44",
+  close(valorHoraOrdinaria(800000, 42), 4444.44, 0.01),
+  String(valorHoraOrdinaria(800000, 42)),
+);
+assert(
+  "hora extra = hora ordinaria × 1,5",
+  close(valorHoraExtra(800000, 42), valorHoraOrdinaria(800000, 42) * 1.5, 0.0001),
+);
+{
+  const rd = calcularRecargoDomingoComercio({ sueldoBase: 800000, jornada: 42, horasOrdinarias: 8 });
+  assert(
+    "800000/42/8h recargo ≈ 10666.67",
+    close(rd.recargoTotal, 10666.67, 0.01),
+    String(rd.recargoTotal),
+  );
+  assert(
+    "800000/42/8h recargo redondeado 10667",
+    Math.round(rd.recargoTotal) === 10667,
+    String(Math.round(rd.recargoTotal)),
+  );
+  assert("recargo es 30 % de la hora × horas", close(rd.recargoHora, rd.valorHoraOrdinaria * 0.3, 0.0001));
+  assert("hora en domingo = ordinaria + recargo", close(rd.horaDomingo, rd.valorHoraOrdinaria * 1.3, 0.0001));
+}
+{
+  const dt = calcularRecargoDomingoComercio({ sueldoBase: 225000, jornada: 45, horasOrdinarias: 9 });
+  assert("DT 2611/39 recargo 9h = 3150", close(dt.recargoTotal, 3150, 0.01), String(dt.recargoTotal));
+  assert("DT 2611/39 hora ordinaria ≈ 1167", Math.round(dt.valorHoraOrdinaria) === 1167, String(dt.valorHoraOrdinaria));
+  assert("DT 2611/39 hora domingo ≈ 1517", Math.round(dt.horaDomingo) === 1517, String(dt.horaDomingo));
+  assert(
+    "DT 2611/39 hora extra domingo ≈ 2275",
+    Math.round(dt.horaExtraDomingo) === 2275,
+    String(dt.horaExtraDomingo),
+  );
+}
+assert(
+  "sueldo 0 → recargo 0",
+  calcularRecargoDomingoComercio({ sueldoBase: 0, jornada: 42, horasOrdinarias: 8 }).recargoTotal === 0,
+);
+assert(
+  "0 horas → recargo 0",
+  calcularRecargoDomingoComercio({ sueldoBase: 800000, jornada: 42, horasOrdinarias: 0 }).recargoTotal === 0,
+);
+{
+  const rdApp = readFileSync(join(root, "js/app-recargo-domingo-comercio.js"), "utf8");
+  assert(
+    "app-recargo-domingo-comercio usa calcularRecargoDomingoComercio",
+    /import\s*\{[^}]*calcularRecargoDomingoComercio[^}]*\}\s*from\s*["']\.\/sueldo\.js["']/.test(rdApp) &&
+      /calcularRecargoDomingoComercio\s*\(/.test(rdApp),
   );
 }
 
@@ -632,12 +687,14 @@ const required = [
   "gratificacion.html",
   "impuesto-unico.html",
   "cotizaciones-previsionales.html",
+  "recargo-domingo-comercio.html",
   "finiquito.html",
   "js/app-horas-extras.js",
   "js/app-vacaciones-proporcionales.js",
   "js/app-gratificacion.js",
   "js/app-impuesto-unico.js",
   "js/app-cotizaciones-previsionales.js",
+  "js/app-recargo-domingo-comercio.js",
   "empresa.html",
   "privacidad.html",
   "terminos.html",
@@ -771,6 +828,7 @@ const htmlFiles = [
   "gratificacion.html",
   "impuesto-unico.html",
   "cotizaciones-previsionales.html",
+  "recargo-domingo-comercio.html",
   "finiquito.html",
   "empresa.html",
   "privacidad.html",
@@ -852,6 +910,7 @@ const appEntries = [
   "js/app-gratificacion.js",
   "js/app-impuesto-unico.js",
   "js/app-cotizaciones-previsionales.js",
+  "js/app-recargo-domingo-comercio.js",
   "js/app-finiquito.js",
   "js/app-empresa.js",
   "js/app-admin.js",
@@ -884,7 +943,7 @@ assert("robots Allow /", /Allow:\s*\//.test(robots));
 assert("robots Disallow /admin", /Disallow:\s*\/admin/.test(robots));
 assert("robots Disallow /api", /Disallow:\s*\/api/.test(robots));
 assert("robots Disallow /docs", /Disallow:\s*\/docs/.test(robots));
-assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots));
+assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots));
 assert("robots Sitemap", /Sitemap:\s*https:\/\/www\.haberes\.cl\/sitemap\.xml/.test(robots));
 
 const { seoPaths, GUIDE_SLUGS, GUIDES, CAUSAL_PAGES, BASE_PATHS, lastmodForPath } = await import("../content/registry.js");
@@ -906,7 +965,8 @@ assert(
     BASE_PATHS.includes("/vacaciones-proporcionales") &&
     BASE_PATHS.includes("/gratificacion") &&
     BASE_PATHS.includes("/impuesto-unico") &&
-    BASE_PATHS.includes("/cotizaciones-previsionales"),
+    BASE_PATHS.includes("/cotizaciones-previsionales") &&
+    BASE_PATHS.includes("/recargo-domingo-comercio"),
   `${locs.length} vs ${expectedFromRegistry.length}`,
 );
 assert(
@@ -1255,7 +1315,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 52,
+      seoPaths().length === 53,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -1267,7 +1327,7 @@ try {
   const docsSeo = await hitLocal("/docs/seo-map.md");
   assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
   assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
-  for (const p of ["/sueldo/", "/finiquito/", "/horas-extras/", "/vacaciones-proporcionales/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+  for (const p of ["/sueldo/", "/finiquito/", "/horas-extras/", "/recargo-domingo-comercio/", "/vacaciones-proporcionales/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
   }
@@ -1284,6 +1344,7 @@ try {
   );
   for (const p of [
     "/horas-extras",
+    "/recargo-domingo-comercio",
     "/vacaciones-proporcionales",
     "/gratificacion",
     "/impuesto-unico",
@@ -4500,6 +4561,7 @@ assert(
     ["gratificacion.html", "/gratificacion"],
     ["impuesto-unico.html", "/impuesto-unico"],
     ["cotizaciones-previsionales.html", "/cotizaciones-previsionales"],
+    ["recargo-domingo-comercio.html", "/recargo-domingo-comercio"],
     ["finiquito.html", "/finiquito"],
     ["empresa.html", "/empresa"],
     ["como.html", "/como"],
@@ -4912,6 +4974,96 @@ assert(
     );
   }
   {
+    const rdHtml = readFileSync(join(root, "recargo-domingo-comercio.html"), "utf8");
+    const rdTitle = (rdHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const rdH1 = (rdHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const rdDesc = (rdHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "";
+    const heHtml = readFileSync(join(root, "horas-extras.html"), "utf8");
+    const heTitle = (heHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const heH1 = (heHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const sueldoHtml = readFileSync(join(root, "sueldo.html"), "utf8");
+    const sueldoTitle = (sueldoHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const sueldoH1 = (sueldoHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const guideHtml = readFileSync(join(root, "guias/horas-extras.html"), "utf8");
+    const guideTitle = (guideHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const guideH1 = (guideHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const demo = calcularRecargoDomingoComercio({ sueldoBase: 800000, jornada: 42, horasOrdinarias: 8 });
+    assert(
+      "SEO title recargo domingo comercio apunta a calcular recargo domingo",
+      /calcular recargo domingo comercio/i.test(rdTitle) &&
+        !/horas extras/i.test(rdTitle) &&
+        !/sueldo l[ií]quido/i.test(rdTitle) &&
+        rdTitle !== heTitle &&
+        rdTitle !== sueldoTitle &&
+        rdTitle !== guideTitle &&
+        rdTitle.length <= 65,
+      rdTitle,
+    );
+    assert(
+      "SEO H1 recargo domingo comercio distinto de /horas-extras y /sueldo",
+      /calcular recargo domingo comercio/i.test(rdH1) &&
+        rdH1 !== heH1 &&
+        rdH1 !== sueldoH1 &&
+        rdH1 !== guideH1 &&
+        !/horas extras/i.test(rdH1) &&
+        !/sueldo l[ií]quido/i.test(rdH1),
+      rdH1,
+    );
+    assert("SEO recargo domingo meta distinta de /horas-extras", rdDesc && rdDesc !== ((heHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || ""));
+    assert(
+      "SEO recargo domingo cita art. 38 N°7 y Código",
+      /art[ií]culo 38/i.test(rdHtml) &&
+        /N[°º]\s*7/.test(rdHtml) &&
+        /C[oó]digo del Trabajo/.test(rdHtml),
+    );
+    assert("SEO recargo domingo recargo mínimo 30 %", /30\s*%/.test(rdHtml) && /m[ií]nimo/i.test(rdHtml));
+    assert(
+      "SEO recargo domingo no inventa recargo de festivo",
+      /no para el festivo por (s[ií] solo|el solo hecho)/i.test(rdHtml) &&
+        !/recargo de, a lo menos, un 30 %[^.]*festivo/i.test(rdHtml),
+    );
+    assert(
+      "SEO recargo domingo ejemplo 800000/42/8h = 10667",
+      Math.round(demo.recargoTotal) === 10667 &&
+        /\$800\.000/.test(rdHtml) &&
+        /\$10\.667/.test(rdHtml) &&
+        /42 horas/.test(rdHtml),
+    );
+    assert("SEO recargo domingo FAQPage", /"@type": "FAQPage"/.test(rdHtml));
+    assert(
+      "SEO recargo domingo enlaza horas extras, sueldo y empresa",
+      /href="\/horas-extras"/.test(rdHtml) && /href="\/sueldo"/.test(rdHtml) && /href="\/empresa"/.test(rdHtml),
+    );
+    assert(
+      "SEO horas extras enlaza /recargo-domingo-comercio",
+      /href="\/recargo-domingo-comercio"/.test(heHtml) && /href="\/recargo-domingo-comercio"/.test(guideHtml),
+    );
+    assert(
+      "home y nav enlazan /recargo-domingo-comercio",
+      /href="\/recargo-domingo-comercio"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/recargo-domingo-comercio" data-nav>Recargo domingo comercio<\/a>/.test(
+          readFileSync(join(root, "index.html"), "utf8"),
+        ) &&
+        /href="\/recargo-domingo-comercio" data-nav>Recargo domingo comercio<\/a>/.test(rdHtml),
+    );
+    assert(
+      "sitemap incluye /recargo-domingo-comercio",
+      locs.includes("https://www.haberes.cl/recargo-domingo-comercio") &&
+        lastmodForPath("/recargo-domingo-comercio") === "2026-08-26",
+    );
+    assert(
+      "no se crean URLs hermanas de recargo domingo",
+      !existsSync(join(root, "horas-extras-domingo.html")) &&
+        !existsSync(join(root, "recargo-festivo.html")) &&
+        !existsSync(join(root, "trabajo-en-domingo.html")),
+    );
+    assert(
+      "seo-map documenta /recargo-domingo-comercio y no-canibalizar /horas-extras",
+      /\/recargo-domingo-comercio/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no canibalizar `\/horas-extras`/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")),
+    );
+  }
+  {
     const homeTitle = (readFileSync(join(root, "index.html"), "utf8").match(/<title>([^<]*)<\/title>/) || [])[1] || "";
     assert(
       "SEO título home pymes, no calculadora",
@@ -5094,6 +5246,7 @@ assert(
       "gratificacion.html",
       "impuesto-unico.html",
       "cotizaciones-previsionales.html",
+      "recargo-domingo-comercio.html",
       "finiquito.html",
       "empresa.html",
       "precios.html",
@@ -5265,7 +5418,7 @@ assert(
     return acc;
   }
   const pages = listHtml(root);
-  assert("54 páginas HTML", pages.length === 54, String(pages.length));
+  assert("55 páginas HTML", pages.length === 55, String(pages.length));
   for (const file of pages) {
     const html = readFileSync(file, "utf8");
     const rel = file.slice(root.length + 1);

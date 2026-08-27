@@ -9,7 +9,7 @@ faq:
 
 # Cálculo de horas extras
 
-Las horas extraordinarias se pagan con recargo. Haberes usa la fórmula de la Dirección del Trabajo reflejada en `valorHoraExtra` (`js/sueldo.js`) y el factor de `constants.js`.
+Las horas extraordinarias se pagan con recargo. Haberes usa la fórmula de la Dirección del Trabajo reflejada en `valorHoraExtra` (`js/sueldo.js`) y el factor de `constants.js`. No es el recargo 30 % por domingo en el comercio ([calcular recargo domingo comercio](/recargo-domingo-comercio), artículo 38 N°7).
 
 {{calc}}
 
