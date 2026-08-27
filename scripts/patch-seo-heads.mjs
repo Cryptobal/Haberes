@@ -384,6 +384,40 @@ const META = {
       },
     ],
   },
+  "semana-corrida.html": {
+    path: "/semana-corrida",
+    title: "Calcular semana corrida Chile 2026 — Haberes",
+    description:
+      "Calcule la semana corrida (art. 45): promedio diario de variables por domingo y festivo. Distinto del recargo domingo comercio. Resultado al instante y gratis.",
+    ogImage: "/img/og-default.png",
+    jsonld: (url) => [
+      ORG,
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        name: "Calcular semana corrida — Haberes",
+        url,
+        applicationCategory: "FinanceApplication",
+        operatingSystem: "Web",
+        inLanguage: "es-CL",
+        offers: { "@type": "Offer", price: "0", priceCurrency: "CLP" },
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        mainEntity: [
+          {
+            "@type": "Question",
+            name: "¿Qué es la semana corrida?",
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: "Es la remuneración en dinero por los días domingo y festivos que el artículo 45 del Código del Trabajo reconoce a quienes se pagan por día y a quienes combinan sueldo mensual con remuneraciones variables (comisiones o tratos). La Dirección del Trabajo también la llama pago del séptimo día.",
+            },
+          },
+        ],
+      },
+    ],
+  },
   "asignacion-familiar.html": {
     path: "/asignacion-familiar",
     title: "Calcular asignación familiar Chile 2026 — Haberes",
