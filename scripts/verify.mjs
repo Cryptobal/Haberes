@@ -9,6 +9,7 @@ import { fileURLToPath } from "node:url";
 
 import {
   AFP_COMISION,
+  ASIGNACION_FAMILIAR_TRAMOS,
   DISCLAIMER,
   DISCLAIMER_FINIQUITO,
   FALLBACK_UF,
@@ -37,6 +38,7 @@ import {
   validarArt58,
 } from "../js/novedades.js";
 import {
+  calcularAsignacionFamiliar,
   calcularIusc,
   calcularRecargoDomingoComercio,
   calcularSueldo,
@@ -114,6 +116,17 @@ assert(
 assert("Tope AFP/salud 90 UF", TOPE_AFP_SALUD_UF === 90);
 assert("Tope cesantía 135.2 UF", TOPE_CESANTIA_UF === 135.2);
 assert("IUSC 8 tramos ago 2026", IUSC_TRAMOS.length === 8 && IUSC_TRAMOS[0].hasta === 967261.5);
+assert(
+  "Asignación familiar 4 tramos Ley 21.830",
+  ASIGNACION_FAMILIAR_TRAMOS.length === 4 &&
+    ASIGNACION_FAMILIAR_TRAMOS[0].hasta === 649039 &&
+    ASIGNACION_FAMILIAR_TRAMOS[0].monto === 22601 &&
+    ASIGNACION_FAMILIAR_TRAMOS[1].hasta === 947990 &&
+    ASIGNACION_FAMILIAR_TRAMOS[1].monto === 13870 &&
+    ASIGNACION_FAMILIAR_TRAMOS[2].hasta === 1478539 &&
+    ASIGNACION_FAMILIAR_TRAMOS[2].monto === 4382 &&
+    ASIGNACION_FAMILIAR_TRAMOS[3].monto === 0,
+);
 
 console.log("\nHoras extras art. 32");
 assert("800000 → extra ≈ 6666.67 (jornada 42)", close(valorHoraExtra(800000, 42), 6666.67, 0.01), String(valorHoraExtra(800000, 42)));
@@ -188,6 +201,57 @@ assert(
     "app-recargo-domingo-comercio usa calcularRecargoDomingoComercio",
     /import\s*\{[^}]*calcularRecargoDomingoComercio[^}]*\}\s*from\s*["']\.\/sueldo\.js["']/.test(rdApp) &&
       /calcularRecargoDomingoComercio\s*\(/.test(rdApp),
+  );
+}
+
+console.log("\nAsignación familiar Ley 21.830");
+{
+  const a = calcularAsignacionFamiliar({ ingresoMensual: 600_000, cargas: 2 });
+  assert("600000 / 2 cargas = 45202", a.total === 45202, String(a.total));
+  assert("600000 tramo 1 monto 22601", a.tramo === 1 && a.montoCarga === 22601);
+}
+assert(
+  "límite tramo 1: 649039 → 22601",
+  calcularAsignacionFamiliar({ ingresoMensual: 649_039, cargas: 1 }).total === 22601,
+);
+assert(
+  "inicio tramo 2: 649040 → 13870",
+  calcularAsignacionFamiliar({ ingresoMensual: 649_040, cargas: 1 }).total === 13870,
+);
+assert(
+  "límite tramo 2: 947990 → 13870",
+  calcularAsignacionFamiliar({ ingresoMensual: 947_990, cargas: 1 }).total === 13870,
+);
+assert(
+  "inicio tramo 3: 947991 → 4382",
+  calcularAsignacionFamiliar({ ingresoMensual: 947_991, cargas: 1 }).total === 4382,
+);
+assert(
+  "límite tramo 3: 1478539 → 4382",
+  calcularAsignacionFamiliar({ ingresoMensual: 1_478_539, cargas: 1 }).total === 4382,
+);
+assert(
+  "sobre tope: 1478540 → 0",
+  calcularAsignacionFamiliar({ ingresoMensual: 1_478_540, cargas: 3 }).total === 0,
+);
+assert(
+  "duplo COMPIN: 600000 / 1 invalidez = 45202",
+  calcularAsignacionFamiliar({ ingresoMensual: 600_000, cargasInvalidez: 1 }).total === 45202,
+);
+assert(
+  "mixto: 1 simple + 1 duplo = 67803",
+  calcularAsignacionFamiliar({ ingresoMensual: 600_000, cargas: 1, cargasInvalidez: 1 }).total === 67803,
+);
+assert(
+  "0 cargas → 0",
+  calcularAsignacionFamiliar({ ingresoMensual: 600_000, cargas: 0 }).total === 0,
+);
+{
+  const afApp = readFileSync(join(root, "js/app-asignacion-familiar.js"), "utf8");
+  assert(
+    "app-asignacion-familiar usa calcularAsignacionFamiliar",
+    /import\s*\{[^}]*calcularAsignacionFamiliar[^}]*\}\s*from\s*["']\.\/sueldo\.js["']/.test(afApp) &&
+      /calcularAsignacionFamiliar\s*\(/.test(afApp),
   );
 }
 
@@ -688,6 +752,7 @@ const required = [
   "impuesto-unico.html",
   "cotizaciones-previsionales.html",
   "recargo-domingo-comercio.html",
+  "asignacion-familiar.html",
   "finiquito.html",
   "js/app-horas-extras.js",
   "js/app-vacaciones-proporcionales.js",
@@ -695,6 +760,7 @@ const required = [
   "js/app-impuesto-unico.js",
   "js/app-cotizaciones-previsionales.js",
   "js/app-recargo-domingo-comercio.js",
+  "js/app-asignacion-familiar.js",
   "empresa.html",
   "privacidad.html",
   "terminos.html",
@@ -829,6 +895,7 @@ const htmlFiles = [
   "impuesto-unico.html",
   "cotizaciones-previsionales.html",
   "recargo-domingo-comercio.html",
+  "asignacion-familiar.html",
   "finiquito.html",
   "empresa.html",
   "privacidad.html",
@@ -911,6 +978,7 @@ const appEntries = [
   "js/app-impuesto-unico.js",
   "js/app-cotizaciones-previsionales.js",
   "js/app-recargo-domingo-comercio.js",
+  "js/app-asignacion-familiar.js",
   "js/app-finiquito.js",
   "js/app-empresa.js",
   "js/app-admin.js",
@@ -943,7 +1011,7 @@ assert("robots Allow /", /Allow:\s*\//.test(robots));
 assert("robots Disallow /admin", /Disallow:\s*\/admin/.test(robots));
 assert("robots Disallow /api", /Disallow:\s*\/api/.test(robots));
 assert("robots Disallow /docs", /Disallow:\s*\/docs/.test(robots));
-assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots));
+assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots));
 assert("robots Sitemap", /Sitemap:\s*https:\/\/www\.haberes\.cl\/sitemap\.xml/.test(robots));
 
 const { seoPaths, GUIDE_SLUGS, GUIDES, CAUSAL_PAGES, BASE_PATHS, lastmodForPath } = await import("../content/registry.js");
@@ -966,7 +1034,8 @@ assert(
     BASE_PATHS.includes("/gratificacion") &&
     BASE_PATHS.includes("/impuesto-unico") &&
     BASE_PATHS.includes("/cotizaciones-previsionales") &&
-    BASE_PATHS.includes("/recargo-domingo-comercio"),
+    BASE_PATHS.includes("/recargo-domingo-comercio") &&
+    BASE_PATHS.includes("/asignacion-familiar"),
   `${locs.length} vs ${expectedFromRegistry.length}`,
 );
 assert(
@@ -1315,7 +1384,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 53,
+      seoPaths().length === 54,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -1327,7 +1396,7 @@ try {
   const docsSeo = await hitLocal("/docs/seo-map.md");
   assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
   assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
-  for (const p of ["/sueldo/", "/finiquito/", "/horas-extras/", "/recargo-domingo-comercio/", "/vacaciones-proporcionales/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+  for (const p of ["/sueldo/", "/finiquito/", "/horas-extras/", "/recargo-domingo-comercio/", "/vacaciones-proporcionales/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/asignacion-familiar/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
   }
@@ -1349,6 +1418,7 @@ try {
     "/gratificacion",
     "/impuesto-unico",
     "/cotizaciones-previsionales",
+    "/asignacion-familiar",
     "/guias/liquidacion-de-sueldo",
     "/guias/finiquito",
     "/guias/impuesto-unico",
@@ -4562,6 +4632,7 @@ assert(
     ["impuesto-unico.html", "/impuesto-unico"],
     ["cotizaciones-previsionales.html", "/cotizaciones-previsionales"],
     ["recargo-domingo-comercio.html", "/recargo-domingo-comercio"],
+    ["asignacion-familiar.html", "/asignacion-familiar"],
     ["finiquito.html", "/finiquito"],
     ["empresa.html", "/empresa"],
     ["como.html", "/como"],
@@ -5064,6 +5135,121 @@ assert(
     );
   }
   {
+    const afHtml = readFileSync(join(root, "asignacion-familiar.html"), "utf8");
+    const afTitle = (afHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const afH1 = (afHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const afDesc = (afHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "";
+    const sueldoHtml = readFileSync(join(root, "sueldo.html"), "utf8");
+    const sueldoTitle = (sueldoHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const sueldoH1 = (sueldoHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const cpHtml = readFileSync(join(root, "cotizaciones-previsionales.html"), "utf8");
+    const cpTitle = (cpHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const cpH1 = (cpHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const liqHtml = readFileSync(join(root, "guias/liquidacion-de-sueldo.html"), "utf8");
+    const liqTitle = (liqHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const liqH1 = (liqHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const demo = calcularAsignacionFamiliar({ ingresoMensual: 600_000, cargas: 2 });
+    const mixto = calcularAsignacionFamiliar({ ingresoMensual: 600_000, cargas: 1, cargasInvalidez: 1 });
+    assert(
+      "SEO title asignación familiar apunta a calcular asignación familiar",
+      /calcular asignaci[oó]n familiar/i.test(afTitle) &&
+        !/sueldo l[ií]quido/i.test(afTitle) &&
+        !/cotizaciones previsionales/i.test(afTitle) &&
+        afTitle !== sueldoTitle &&
+        afTitle !== cpTitle &&
+        afTitle !== liqTitle &&
+        afTitle.length <= 65,
+      afTitle,
+    );
+    assert(
+      "SEO H1 asignación familiar distinto de /sueldo y liquidación",
+      /calcular asignaci[oó]n familiar/i.test(afH1) &&
+        afH1 !== sueldoH1 &&
+        afH1 !== cpH1 &&
+        afH1 !== liqH1 &&
+        !/sueldo l[ií]quido/i.test(afH1),
+      afH1,
+    );
+    assert(
+      "SEO asignación familiar meta distinta de /sueldo",
+      afDesc && afDesc !== ((sueldoHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || ""),
+    );
+    assert(
+      "SEO asignación familiar cita Ley 21.830 y tramos",
+      /21\.830/.test(afHtml) &&
+        /22\.601/.test(afHtml) &&
+        /649\.039/.test(afHtml) &&
+        /dt\.gob\.cl\/portal\/1628\/w3-article-85651/.test(afHtml) &&
+        /suseso\.gob\.cl\/612\/w3-article-686804/.test(afHtml),
+    );
+    assert(
+      "SEO asignación familiar ejemplo 600000 / 2 cargas = 45202",
+      demo.total === 45202 &&
+        mixto.total === 67803 &&
+        /\$600\.000/.test(afHtml) &&
+        /\$22\.601/.test(afHtml) &&
+        /\$45\.202/.test(afHtml) &&
+        /\$67\.803/.test(afHtml),
+    );
+    assert("SEO asignación familiar FAQPage", /"@type": "FAQPage"/.test(afHtml));
+    assert(
+      "SEO asignación familiar no es segunda liquidación",
+      /no arma una segunda liquidaci[oó]n/i.test(afHtml) &&
+        /no constituyen remuneraci[oó]n/i.test(afHtml) &&
+        !/renta l[ií]quida imponible/i.test(afHtml),
+    );
+    assert(
+      "SEO asignación familiar distingue SUF y no inventa /suf",
+      /SUF/.test(afHtml) &&
+        /18\.020/.test(afHtml) &&
+        /no abre una p[aá]gina \/suf/i.test(afHtml) &&
+        !existsSync(join(root, "suf.html")) &&
+        !existsSync(join(root, "asignacion-maternal.html")) &&
+        !existsSync(join(root, "cargas-familiares.html")),
+    );
+    assert(
+      "SEO asignación familiar enlaza sueldo, empresa y guías de liquidación",
+      /href="\/sueldo"/.test(afHtml) &&
+        /href="\/empresa"/.test(afHtml) &&
+        /href="\/guias\/liquidacion-de-sueldo"/.test(afHtml) &&
+        /href="\/guias\/como-leer-una-liquidacion-de-sueldo"/.test(afHtml) &&
+        /href="\/guias\/formato-de-liquidacion-de-sueldo-chile"/.test(afHtml) &&
+        /href="\/guias\/liquidacion-de-sueldo-y-previred"/.test(afHtml),
+    );
+    assert(
+      "SEO guías de liquidación enlazan /asignacion-familiar",
+      /href="\/asignacion-familiar"/.test(liqHtml) &&
+        /href="\/asignacion-familiar"/.test(
+          readFileSync(join(root, "guias/como-leer-una-liquidacion-de-sueldo.html"), "utf8"),
+        ) &&
+        /href="\/asignacion-familiar"/.test(
+          readFileSync(join(root, "guias/formato-de-liquidacion-de-sueldo-chile.html"), "utf8"),
+        ) &&
+        /href="\/asignacion-familiar"/.test(
+          readFileSync(join(root, "guias/liquidacion-de-sueldo-y-previred.html"), "utf8"),
+        ),
+    );
+    assert(
+      "home y nav enlazan /asignacion-familiar",
+      /href="\/asignacion-familiar"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/asignacion-familiar" data-nav>Asignaci[oó]n familiar<\/a>/.test(
+          readFileSync(join(root, "index.html"), "utf8"),
+        ) &&
+        /href="\/asignacion-familiar" data-nav>Asignaci[oó]n familiar<\/a>/.test(afHtml),
+    );
+    assert(
+      "sitemap incluye /asignacion-familiar",
+      locs.includes("https://www.haberes.cl/asignacion-familiar") &&
+        lastmodForPath("/asignacion-familiar") === "2026-08-27",
+    );
+    assert(
+      "seo-map documenta /asignacion-familiar y no-canibalizar /sueldo",
+      /\/asignacion-familiar/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no canibalizar `\/sueldo`/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no crear `\/suf`/i.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")),
+    );
+  }
+  {
     const homeTitle = (readFileSync(join(root, "index.html"), "utf8").match(/<title>([^<]*)<\/title>/) || [])[1] || "";
     assert(
       "SEO título home pymes, no calculadora",
@@ -5247,6 +5433,7 @@ assert(
       "impuesto-unico.html",
       "cotizaciones-previsionales.html",
       "recargo-domingo-comercio.html",
+      "asignacion-familiar.html",
       "finiquito.html",
       "empresa.html",
       "precios.html",
@@ -5418,7 +5605,7 @@ assert(
     return acc;
   }
   const pages = listHtml(root);
-  assert("55 páginas HTML", pages.length === 55, String(pages.length));
+  assert("56 páginas HTML", pages.length === 56, String(pages.length));
   for (const file of pages) {
     const html = readFileSync(file, "utf8");
     const rel = file.slice(root.length + 1);

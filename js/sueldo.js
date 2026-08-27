@@ -2,6 +2,7 @@ import {
   AFP_COMISION,
   AFP_NOMBRES,
   AFP_OBLIGATORIO,
+  ASIGNACION_FAMILIAR_TRAMOS,
   CESANTIA_INDEFINIDO,
   FALLBACK_UF,
   GRATIFICACION_TASA,
@@ -112,6 +113,45 @@ export function calcularIusc(baseTributable) {
 export function gratificacionArt50(base, extras = 0, bonos = 0, tope = GRATIFICACION_TOPE) {
   const bruto = (Number(base) || 0) + (Number(extras) || 0) + (Number(bonos) || 0);
   return Math.min(bruto * GRATIFICACION_TASA, Number(tope) || GRATIFICACION_TOPE);
+}
+
+/**
+ * Tramo y monto de asignación familiar / maternal (Sistema Único, D.F.L. N° 150).
+ * Tramos Ley 21.830 a contar del 1 de mayo de 2026.
+ * total = monto(tramo) × cargas + monto(tramo)×2 × cargasInvalidez.
+ *
+ * El «ingreso mensual» es el que usa la entidad administradora para el tramo
+ * (promedio ene–jun del periodo SUSESO 202602 / 202603), no el líquido del mes.
+ */
+export function tramoAsignacionFamiliar(ingresoMensual) {
+  const ingreso = Math.max(0, Number(ingresoMensual) || 0);
+  for (const t of ASIGNACION_FAMILIAR_TRAMOS) {
+    if (ingreso <= t.hasta) return t;
+  }
+  return ASIGNACION_FAMILIAR_TRAMOS[ASIGNACION_FAMILIAR_TRAMOS.length - 1];
+}
+
+export function calcularAsignacionFamiliar({
+  ingresoMensual = 0,
+  cargas = 0,
+  cargasInvalidez = 0,
+} = {}) {
+  const ingreso = Math.max(0, Number(ingresoMensual) || 0);
+  const n = Math.max(0, Math.floor(Number(cargas) || 0));
+  const nInv = Math.max(0, Math.floor(Number(cargasInvalidez) || 0));
+  const tramo = tramoAsignacionFamiliar(ingreso);
+  const montoCarga = tramo.monto;
+  const montoCargaInvalidez = montoCarga * 2;
+  return {
+    ingreso,
+    tramo: ASIGNACION_FAMILIAR_TRAMOS.indexOf(tramo) + 1,
+    hasta: tramo.hasta,
+    montoCarga,
+    montoCargaInvalidez,
+    cargas: n,
+    cargasInvalidez: nInv,
+    total: montoCarga * n + montoCargaInvalidez * nInv,
+  };
 }
 
 /**

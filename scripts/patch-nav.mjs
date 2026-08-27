@@ -23,6 +23,7 @@ const DRAWER_LINKS = [
   ["/gratificacion", "Gratificación"],
   ["/impuesto-unico", "Impuesto único"],
   ["/cotizaciones-previsionales", "Cotizaciones previsionales"],
+  ["/asignacion-familiar", "Asignación familiar"],
   ["/vacaciones-proporcionales", "Vacaciones proporcionales"],
   ["/finiquito", "Finiquito"],
 ];

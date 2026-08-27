@@ -34,7 +34,7 @@ export const CAUSAL_PAGES = [
  * group: índice /guias (liquidación vs finiquito).
  * calc: calculadora canónica (no canibalizar titles/H1 de esas URLs).
  * updated: lastmod ISO (YYYY-MM-DD) para sitemap y el bloque «últimas» del hub.
- * @type {{ slug: string, group: "liquidacion" | "finiquito", calc: "/sueldo" | "/finiquito" | "/horas-extras" | "/recargo-domingo-comercio" | "/gratificacion" | "/vacaciones-proporcionales" | "/impuesto-unico" | "/cotizaciones-previsionales", updated: string }[]}
+ * @type {{ slug: string, group: "liquidacion" | "finiquito", calc: "/sueldo" | "/finiquito" | "/horas-extras" | "/recargo-domingo-comercio" | "/gratificacion" | "/vacaciones-proporcionales" | "/impuesto-unico" | "/cotizaciones-previsionales" | "/asignacion-familiar", updated: string }[]}
  */
 export const DEFAULT_LASTMOD = "2026-08-17";
 
@@ -67,6 +67,7 @@ export const PATH_LASTMOD = {
   "/impuesto-unico": "2026-08-23",
   "/cotizaciones-previsionales": "2026-08-26",
   "/recargo-domingo-comercio": "2026-08-26",
+  "/asignacion-familiar": "2026-08-27",
   "/privacidad": "2026-08-18",
   "/terminos": "2026-08-18",
 };
@@ -84,6 +85,7 @@ export const GUIDE_SLUGS = GUIDES.map((g) => g.slug);
 
 export const BASE_PATHS = [
   "/",
+  "/asignacion-familiar",
   "/como",
   "/cotizaciones-previsionales",
   "/empresa",

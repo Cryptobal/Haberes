@@ -69,6 +69,7 @@ def check_http():
         ("/impuesto-unico", 200, "html"),
         ("/cotizaciones-previsionales", 200, "html"),
         ("/recargo-domingo-comercio", 200, "html"),
+        ("/asignacion-familiar", 200, "html"),
         ("/blog", 404, None),
         ("/noticias", 404, None),
     ]
@@ -109,6 +110,7 @@ PAGES = [
     ("impuesto-unico.html", "impuesto-unico"),
     ("cotizaciones-previsionales.html", "cotizaciones-previsionales"),
     ("recargo-domingo-comercio.html", "recargo-domingo-comercio"),
+    ("asignacion-familiar.html", "asignacion-familiar"),
     ("finiquito.html", "finiquito"),
     ("empresa.html", "empresa"),
     ("precios.html", "precios"),

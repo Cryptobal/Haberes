@@ -708,6 +708,7 @@ function calcLinkLabel(calc) {
   if (calc === "/gratificacion") return "Calcular gratificación";
   if (calc === "/impuesto-unico") return "Calcular impuesto único";
   if (calc === "/cotizaciones-previsionales") return "Calcular cotizaciones previsionales";
+  if (calc === "/asignacion-familiar") return "Calcular asignación familiar";
   if (calc === "/vacaciones-proporcionales") return "Calcular vacaciones proporcionales";
   return "Calculadora de sueldo líquido";
 }
@@ -761,7 +762,7 @@ function hubLatest(items, limit = 6) {
       <p>Las piezas de dinero más leídas se reescriben aquí, con fecha a la vista.</p>
       ${hubLatest(guideIndex)}
       <h2>Liquidación de sueldo</h2>
-      <p>Qué es el comprobante de remuneraciones, descuentos legales e impuesto único. Para estimar el líquido use <a href="/sueldo">/sueldo</a>. Para AFP, salud y cesantía del trabajador, <a href="/cotizaciones-previsionales">calcular cotizaciones previsionales</a>.</p>
+      <p>Qué es el comprobante de remuneraciones, descuentos legales e impuesto único. Para estimar el líquido use <a href="/sueldo">/sueldo</a>. Para AFP, salud y cesantía del trabajador, <a href="/cotizaciones-previsionales">calcular cotizaciones previsionales</a>. Para el monto por cargas acreditadas, <a href="/asignacion-familiar">calcular asignación familiar</a>.</p>
       ${hubList(liq)}
       <h2>Finiquito</h2>
       <p>Causales, plazos del artículo 177, indemnizaciones y qué firmar. Para estimar el monto use <a href="/finiquito">/finiquito</a>.</p>
