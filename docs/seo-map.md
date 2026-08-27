@@ -17,6 +17,7 @@ Actualizar este archivo antes de crear URLs nuevas para evitar canibalización.
 | Calcular impuesto único | calcular impuesto unico (480/mes), tabla impuesto unico (2.900/mes) | `/impuesto-unico` | Title/H1 «calcular impuesto único»; no canibalizar `/sueldo` ni `/guias/impuesto-unico` |
 | Calcular cotizaciones previsionales | cotizaciones previsionales / tope imponible AFP / comisión AFP | `/cotizaciones-previsionales` | Title/H1 «calcular cotizaciones previsionales»; no canibalizar `/sueldo` ni `/guias/liquidacion-de-sueldo-y-previred`. No crear `/tope-imponible`, `/cotizacion-afp`, `/descuentos-legales` ni `/calculadora-sueldo` |
 | Calcular recargo domingo comercio | recargo domingo comercio / recargo 30% domingo / art. 38 N°7 | `/recargo-domingo-comercio` | Title/H1 «calcular recargo domingo comercio»; no canibalizar `/horas-extras` ni `/guias/horas-extras`. No es hora extra (art. 32) ni semana corrida (art. 45). No crear `/horas-extras-domingo` ni `/recargo-festivo` |
+| Calcular asignación familiar | asignación familiar / tramos asignación familiar / cargas familiares | `/asignacion-familiar` | Title/H1 «calcular asignación familiar»; no canibalizar `/sueldo`, `/cotizaciones-previsionales` ni `/guias/liquidacion-de-sueldo`. Sistema Único (D.F.L. 150), no SUF municipal. No crear `/suf`, `/asignacion-maternal` ni `/cargas-familiares` |
 | Índice de guías | — | `/guias` | Hub: 17 guías, grupo liquidación vs finiquito |
 
 ## Guías pilar (contenido + calculadora embebida)
@@ -94,6 +95,11 @@ sigue en `/sueldo`.
 No publicar hermanas del recargo domingo: `/horas-extras-domingo`, `/recargo-festivo`,
 `/trabajo-en-domingo`. El recargo 30 % del comercio (art. 38 N°7) vive en
 `/recargo-domingo-comercio`. Las horas extras (art. 32) siguen en `/horas-extras`.
+
+No publicar hermanas de asignación familiar: `/suf`, `/asignacion-maternal`,
+`/cargas-familiares`. El SUF municipal (Ley 18.020) no es esta calculadora.
+La asignación maternal comparte tramos con `/asignacion-familiar`; no abre URL propia.
+La intención «calcular sueldo líquido» sigue en `/sueldo`.
 
 ## Cómo regenerar
 

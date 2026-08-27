@@ -384,6 +384,48 @@ const META = {
       },
     ],
   },
+  "asignacion-familiar.html": {
+    path: "/asignacion-familiar",
+    title: "Calcular asignación familiar Chile 2026 — Haberes",
+    description:
+      "Calcule la asignación familiar por carga según tramos Ley 21.830 (desde mayo 2026). El empleador paga y recupera. No es sueldo líquido ni SUF.",
+    ogImage: "/img/og-default.png",
+    jsonld: (url) => [
+      ORG,
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        name: "Calcular asignación familiar — Haberes",
+        url,
+        applicationCategory: "FinanceApplication",
+        operatingSystem: "Web",
+        inLanguage: "es-CL",
+        offers: { "@type": "Offer", price: "0", priceCurrency: "CLP" },
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        mainEntity: [
+          {
+            "@type": "Question",
+            name: "¿Cuál es el valor de la asignación familiar en 2026?",
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: "A contar del 1 de mayo de 2026, la Ley 21.830 fija $22.601 por carga si el ingreso mensual no excede $649.039; $13.870 si supera esa cifra y no excede $947.990; $4.382 si supera $947.990 y no excede $1.478.539; y $0 sobre $1.478.539. La carga con invalidez declarada por la COMPIN da derecho al duplo (D.F.L. N° 150, art. 14).",
+            },
+          },
+          {
+            "@type": "Question",
+            name: "¿La asignación familiar es lo mismo que el SUF?",
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: "No. Esta página cubre la asignación familiar y maternal del Sistema Único de Prestaciones Familiares (D.F.L. N° 150): el empleador la paga con la liquidación si las cargas están acreditadas y después recupera. El SUF (subsidio familiar, Ley 18.020) lo tramitan las municipalidades. Haberes no abre una página /suf.",
+            },
+          },
+        ],
+      },
+    ],
+  },
   "vacaciones-proporcionales.html": {
     path: "/vacaciones-proporcionales",
     title: "Calcular vacaciones proporcionales Chile 2026 — Haberes",

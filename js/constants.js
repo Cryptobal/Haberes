@@ -61,6 +61,19 @@ export const IUSC_TRAMOS = [
   { hasta: Infinity, tasa: 0.4, rebaja: 2781414.18 },
 ];
 
+/**
+ * Asignación familiar y maternal — tramos a contar del 1 de mayo de 2026.
+ * Ley N° 21.830 (D.O. 22.06.2026) modifica el inciso primero del art. 1° de la Ley N° 18.987.
+ * SUSESO dictamen O-01-S-02728-2026; DT consulta «¿Cuál es el valor de la asignación familiar?».
+ * Causantes por invalidez: asignación aumentada al duplo (D.F.L. N° 150, art. 14).
+ */
+export const ASIGNACION_FAMILIAR_TRAMOS = [
+  { hasta: 649039, monto: 22601 },
+  { hasta: 947990, monto: 13870 },
+  { hasta: 1478539, monto: 4382 },
+  { hasta: Infinity, monto: 0 },
+];
+
 export const IAS_TOPE_ANIOS = 11;
 
 export const DISCLAIMER =
