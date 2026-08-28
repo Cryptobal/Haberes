@@ -19,6 +19,7 @@ Actualizar este archivo antes de crear URLs nuevas para evitar canibalización.
 | Calcular recargo domingo comercio | recargo domingo comercio / recargo 30% domingo / art. 38 N°7 | `/recargo-domingo-comercio` | Title/H1 «calcular recargo domingo comercio»; no canibalizar `/horas-extras` ni `/guias/horas-extras`. No es hora extra (art. 32) ni semana corrida (art. 45). No crear `/horas-extras-domingo` ni `/recargo-festivo` |
 | Calcular semana corrida | semana corrida (1.300/21) — intención calcular | `/semana-corrida` | Title/H1 «calcular semana corrida»; no canibalizar `/guias/semana-corrida`, `/recargo-domingo-comercio` ni `/sueldo`. Art. 45 (pago del descanso), no recargo 30 % art. 38 N°7 ni hora extra art. 32. No crear `/septimo-dia` ni `/pago-domingo-festivo` |
 | Calcular asignación familiar | asignación familiar / tramos asignación familiar / cargas familiares | `/asignacion-familiar` | Title/H1 «calcular asignación familiar»; no canibalizar `/sueldo`, `/cotizaciones-previsionales` ni `/guias/liquidacion-de-sueldo`. Sistema Único (D.F.L. 150), no SUF municipal. No crear `/suf`, `/asignacion-maternal` ni `/cargas-familiares` |
+| Calcular feriado progresivo | feriado progresivo / vacaciones progresivas / calcular feriado progresivo | `/feriado-progresivo` | Title/H1 «calcular feriado progresivo»; no canibalizar `/vacaciones-proporcionales` ni `/finiquito`. Art. 68 (días extra al feriado anual), no art. 73 (plata de días no usados). No crear `/vacaciones-progresivas` ni `/indemnizacion` |
 | Índice de guías | — | `/guias` | Hub: 17 guías, grupo liquidación vs finiquito |
 
 ## Guías pilar (contenido + calculadora embebida)
@@ -101,6 +102,10 @@ No publicar hermanas de asignación familiar: `/suf`, `/asignacion-maternal`,
 `/cargas-familiares`. El SUF municipal (Ley 18.020) no es esta calculadora.
 La asignación maternal comparte tramos con `/asignacion-familiar`; no abre URL propia.
 La intención «calcular sueldo líquido» sigue en `/sueldo`.
+
+No publicar `/vacaciones-progresivas` ni `/indemnizacion`. El feriado progresivo (art. 68) vive en
+`/feriado-progresivo`. El proporcional en dinero vive en `/vacaciones-proporcionales`.
+IAS sigue en `/finiquito` (la guía `/guias/indemnizacion-por-anos-de-servicio` apunta ahí a propósito).
 
 No publicar hermanas de semana corrida: `/septimo-dia`, `/pago-domingo-festivo`,
 `/semana-corrida-mensual`. El haber del artículo 45 vive en `/semana-corrida`.

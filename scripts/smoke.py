@@ -71,6 +71,7 @@ def check_http():
         ("/recargo-domingo-comercio", 200, "html"),
         ("/semana-corrida", 200, "html"),
         ("/asignacion-familiar", 200, "html"),
+        ("/feriado-progresivo", 200, "html"),
         ("/blog", 404, None),
         ("/noticias", 404, None),
     ]
@@ -113,6 +114,7 @@ PAGES = [
     ("recargo-domingo-comercio.html", "recargo-domingo-comercio"),
     ("semana-corrida.html", "semana-corrida"),
     ("asignacion-familiar.html", "asignacion-familiar"),
+    ("feriado-progresivo.html", "feriado-progresivo"),
     ("finiquito.html", "finiquito"),
     ("empresa.html", "empresa"),
     ("precios.html", "precios"),
