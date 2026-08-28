@@ -16,7 +16,7 @@ faq:
 
 # Indemnización por años de servicio: base, tope 90 UF y aviso de 30 días
 
-La **indemnización por años de servicio** (IAS) es el pago del [artículo 163 del Código del Trabajo](https://www.bcn.cl/leychile/navegar?idNorma=207436): treinta días de la última remuneración mensual por cada año y fracción superior a seis meses, con tope de 330 días, si el contrato duró un año o más y el término se funda en el artículo 161. Esta página cubre **base, tope de 90 UF y la diferencia con el aviso de treinta días**. El número lo estima la [calculadora de finiquito](/finiquito); el documento y el plazo de pago están en la [guía de finiquito](/guias/finiquito).
+La **indemnización por años de servicio** (IAS) es el pago del [artículo 163 del Código del Trabajo](https://www.bcn.cl/leychile/navegar?idNorma=207436): treinta días de la última remuneración mensual por cada año y fracción superior a seis meses, con tope de 330 días, si el contrato duró un año o más y el término se funda en el artículo 161. Esta página cubre **base, tope de 90 UF y la diferencia con el aviso de treinta días**. El número de la IAS lo estima [calcular indemnización por años de servicio](/indemnizacion-anos-servicio). El finiquito completo y la carta están en la [calculadora de finiquito](/finiquito); el documento y el plazo de pago, en la [guía de finiquito](/guias/finiquito).
 
 ## Cuándo corresponde (artículos 161 y 163)
 

@@ -28,6 +28,7 @@ import {
   aniosServicio,
   calcularFiniquito,
   calcularFiniquitoCompleto,
+  calcularIas,
   feriadoProporcional,
   vigenciaUnAnioOMas,
 } from "../js/finiquito.js";
@@ -550,6 +551,100 @@ console.log("\nFiniquito");
 assert("Fracción > 6 meses suma 1 año", aniosServicio("2020-01-15", "2023-08-20") === 4);
 assert("Exactamente 6 meses no suma", aniosServicio("2020-01-15", "2023-07-15") === 3);
 assert("Tope 11 años", aniosServicio("2000-01-01", "2020-01-01") === 11);
+assert("4 años 4 meses no redondea", aniosServicio("2020-01-15", "2024-05-15") === 4);
+assert("4 años 7 meses redondea a 5", aniosServicio("2020-01-15", "2024-08-15") === 5);
+{
+  const ias4y4m = calcularIas(
+    { ingreso: "2020-01-15", termino: "2024-05-15", remuneracion: 1_000_000, avisoPrevio: true },
+    { uf: FALLBACK_UF },
+  );
+  assert(
+    "IAS 4 años 4 meses × $1.000.000 = $4.000.000 (sin redondeo, sin aviso)",
+    ias4y4m.anios === 4 &&
+      ias4y4m.ias === 4_000_000 &&
+      ias4y4m.aviso === 0 &&
+      ias4y4m.vigenciaUnAnio &&
+      !ias4y4m.recortoTopeUf &&
+      !ias4y4m.recortoTopeAnios,
+    String(ias4y4m.ias),
+  );
+  const ias4y7m = calcularIas(
+    { ingreso: "2020-01-15", termino: "2024-08-15", remuneracion: 1_000_000, avisoPrevio: true },
+    { uf: FALLBACK_UF },
+  );
+  assert("IAS 4 años 7 meses → 5 × $1.000.000 = $5.000.000", ias4y7m.anios === 5 && ias4y7m.ias === 5_000_000);
+  const iasTopeAnios = calcularIas(
+    { ingreso: "2000-01-01", termino: "2020-01-01", remuneracion: 1_000_000, avisoPrevio: true },
+    { uf: FALLBACK_UF },
+  );
+  assert(
+    "IAS tope 11 años (20 años → 11 × $1.000.000)",
+    iasTopeAnios.anios === 11 && iasTopeAnios.ias === 11_000_000 && iasTopeAnios.recortoTopeAnios,
+  );
+  const iasTopeUf = calcularIas(
+    { ingreso: "2020-01-15", termino: "2022-01-15", remuneracion: 10_000_000, avisoPrevio: false },
+    { uf: FALLBACK_UF },
+  );
+  const tope90 = 90 * FALLBACK_UF;
+  assert(
+    "IAS tope 90 UF: 2 años × min($10.000.000, 90 UF)",
+    iasTopeUf.anios === 2 &&
+      iasTopeUf.baseIas === Math.round(tope90) &&
+      iasTopeUf.ias === Math.round(2 * tope90) &&
+      iasTopeUf.aviso === Math.round(tope90) &&
+      iasTopeUf.recortoTopeUf &&
+      iasTopeUf.ias === 7_353_722 &&
+      iasTopeUf.aviso === 3_676_861,
+    `${iasTopeUf.baseIas} ${iasTopeUf.ias} ${iasTopeUf.aviso}`,
+  );
+  const iasCorta = calcularIas(
+    { ingreso: "2025-01-15", termino: "2025-10-15", remuneracion: 1_000_000, avisoPrevio: false },
+    { uf: FALLBACK_UF },
+  );
+  assert(
+    "IAS menos de un año → $0; aviso sustitutivo sí",
+    iasCorta.ias === 0 && iasCorta.anios === 0 && !iasCorta.vigenciaUnAnio && iasCorta.aviso === 1_000_000,
+  );
+  const iasGuia = calcularIas(
+    { ingreso: "2020-03-01", termino: "2026-03-01", remuneracion: 900_000, avisoPrevio: false },
+    { uf: FALLBACK_UF },
+  );
+  assert(
+    "IAS ejemplo guía 6 × $900.000 = $5.400.000 + aviso $900.000",
+    iasGuia.anios === 6 && iasGuia.ias === 5_400_000 && iasGuia.aviso === 900_000,
+  );
+  const finMatch = calcularFiniquito(
+    {
+      articulo: "161",
+      ingreso: "2020-01-15",
+      termino: "2023-08-20",
+      remuneracion: 1_000_000,
+      avisoPrevio: false,
+      diasFeriado: 0,
+    },
+    { uf: FALLBACK_UF },
+  );
+  const iasMatch = calcularIas(
+    { ingreso: "2020-01-15", termino: "2023-08-20", remuneracion: 1_000_000, avisoPrevio: false },
+    { uf: FALLBACK_UF },
+  );
+  assert(
+    "IAS reusa calcularFiniquito (4 años, $4.000.000 + aviso $1.000.000)",
+    iasMatch.ias === finMatch.ias &&
+      iasMatch.aviso === finMatch.aviso &&
+      iasMatch.baseIas === finMatch.baseIas &&
+      iasMatch.ias === 4_000_000 &&
+      iasMatch.aviso === 1_000_000,
+  );
+}
+{
+  const iasApp = readFileSync(join(root, "js/app-indemnizacion-anos-servicio.js"), "utf8");
+  assert(
+    "app-indemnizacion-anos-servicio usa calcularIas",
+    /import\s*\{[^}]*calcularIas[^}]*\}\s*from\s*["']\.\/finiquito\.js["']/.test(iasApp) &&
+      /calcularIas\s*\(/.test(iasApp),
+  );
+}
 assert("Feriado dias*rem/30", feriadoProporcional(15, 900000) === 450000);
 assert("Feriado 10 días × 900000 / 30 = 300000", feriadoProporcional(10, 900000) === 300000);
 assert("Feriado 0 días → 0", feriadoProporcional(0, 900000) === 0);
@@ -890,6 +985,7 @@ const required = [
   "semana-corrida.html",
   "asignacion-familiar.html",
   "feriado-progresivo.html",
+  "indemnizacion-anos-servicio.html",
   "finiquito.html",
   "js/app-horas-extras.js",
   "js/app-vacaciones-proporcionales.js",
@@ -900,6 +996,7 @@ const required = [
   "js/app-semana-corrida.js",
   "js/app-asignacion-familiar.js",
   "js/app-feriado-progresivo.js",
+  "js/app-indemnizacion-anos-servicio.js",
   "empresa.html",
   "privacidad.html",
   "terminos.html",
@@ -1037,6 +1134,7 @@ const htmlFiles = [
   "semana-corrida.html",
   "asignacion-familiar.html",
   "feriado-progresivo.html",
+  "indemnizacion-anos-servicio.html",
   "finiquito.html",
   "empresa.html",
   "privacidad.html",
@@ -1122,6 +1220,7 @@ const appEntries = [
   "js/app-semana-corrida.js",
   "js/app-asignacion-familiar.js",
   "js/app-feriado-progresivo.js",
+  "js/app-indemnizacion-anos-servicio.js",
   "js/app-finiquito.js",
   "js/app-empresa.js",
   "js/app-admin.js",
@@ -1154,7 +1253,7 @@ assert("robots Allow /", /Allow:\s*\//.test(robots));
 assert("robots Disallow /admin", /Disallow:\s*\/admin/.test(robots));
 assert("robots Disallow /api", /Disallow:\s*\/api/.test(robots));
 assert("robots Disallow /docs", /Disallow:\s*\/docs/.test(robots));
-assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots));
+assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots));
 assert("robots Sitemap", /Sitemap:\s*https:\/\/www\.haberes\.cl\/sitemap\.xml/.test(robots));
 
 const { seoPaths, GUIDE_SLUGS, GUIDES, CAUSAL_PAGES, BASE_PATHS, lastmodForPath } = await import("../content/registry.js");
@@ -1180,7 +1279,8 @@ assert(
     BASE_PATHS.includes("/recargo-domingo-comercio") &&
     BASE_PATHS.includes("/semana-corrida") &&
     BASE_PATHS.includes("/asignacion-familiar") &&
-    BASE_PATHS.includes("/feriado-progresivo"),
+    BASE_PATHS.includes("/feriado-progresivo") &&
+    BASE_PATHS.includes("/indemnizacion-anos-servicio"),
   `${locs.length} vs ${expectedFromRegistry.length}`,
 );
 assert(
@@ -1529,7 +1629,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 56,
+      seoPaths().length === 57,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -1541,7 +1641,7 @@ try {
   const docsSeo = await hitLocal("/docs/seo-map.md");
   assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
   assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
-  for (const p of ["/sueldo/", "/finiquito/", "/horas-extras/", "/recargo-domingo-comercio/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/asignacion-familiar/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+  for (const p of ["/sueldo/", "/finiquito/", "/horas-extras/", "/recargo-domingo-comercio/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/asignacion-familiar/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
   }
@@ -1562,6 +1662,7 @@ try {
     "/semana-corrida",
     "/vacaciones-proporcionales",
     "/feriado-progresivo",
+    "/indemnizacion-anos-servicio",
     "/gratificacion",
     "/impuesto-unico",
     "/cotizaciones-previsionales",
@@ -4782,6 +4883,7 @@ assert(
     ["semana-corrida.html", "/semana-corrida"],
     ["asignacion-familiar.html", "/asignacion-familiar"],
     ["feriado-progresivo.html", "/feriado-progresivo"],
+    ["indemnizacion-anos-servicio.html", "/indemnizacion-anos-servicio"],
     ["finiquito.html", "/finiquito"],
     ["empresa.html", "/empresa"],
     ["como.html", "/como"],
@@ -5047,6 +5149,127 @@ assert(
         /href="\/feriado-progresivo"/.test(
           readFileSync(join(root, "guias/vacaciones-proporcionales.html"), "utf8"),
         ),
+    );
+  }
+  {
+    const iasHtml = readFileSync(join(root, "indemnizacion-anos-servicio.html"), "utf8");
+    const iasTitle = (iasHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const iasH1 = (iasHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const iasDesc = (iasHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "";
+    const finiHtml = readFileSync(join(root, "finiquito.html"), "utf8");
+    const finiTitle = (finiHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const finiH1 = (finiHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const guideHtml = readFileSync(join(root, "guias/indemnizacion-por-anos-de-servicio.html"), "utf8");
+    const guideTitle = (guideHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const guideH1 = (guideHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const demo = calcularIas(
+      { ingreso: "2020-01-15", termino: "2024-05-15", remuneracion: 1_000_000, avisoPrevio: true },
+      { uf: FALLBACK_UF },
+    );
+    const redondeo = calcularIas(
+      { ingreso: "2020-01-15", termino: "2024-08-15", remuneracion: 1_000_000, avisoPrevio: true },
+      { uf: FALLBACK_UF },
+    );
+    const topeAnios = calcularIas(
+      { ingreso: "2000-01-01", termino: "2020-01-01", remuneracion: 1_000_000, avisoPrevio: true },
+      { uf: FALLBACK_UF },
+    );
+    const topeUf = calcularIas(
+      { ingreso: "2020-01-15", termino: "2022-01-15", remuneracion: 10_000_000, avisoPrevio: false },
+      { uf: FALLBACK_UF },
+    );
+    assert(
+      "SEO title IAS apunta a calcular indemnización por años de servicio",
+      /calcular indemnizaci[oó]n por a[nñ]os de servicio/i.test(iasTitle) &&
+        !/calculadora de finiquito/i.test(iasTitle) &&
+        iasTitle !== finiTitle &&
+        iasTitle !== guideTitle &&
+        iasTitle.length <= 65,
+      iasTitle,
+    );
+    assert(
+      "SEO H1 IAS distinto de /finiquito y de la guía",
+      iasH1 === "Calcular indemnización por años de servicio Chile 2026" &&
+        iasH1 !== finiH1 &&
+        iasH1 !== guideH1 &&
+        !/calculadora de finiquito/i.test(iasH1),
+      iasH1,
+    );
+    assert(
+      "SEO IAS meta distinta de /finiquito y de la guía",
+      iasDesc &&
+        iasDesc !== ((finiHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "") &&
+        iasDesc !== ((guideHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || ""),
+    );
+    assert(
+      "SEO IAS cita art. 163, 172, DT y Código",
+      /art[ií]culo 163/i.test(iasHtml) &&
+        /art[ií]culo 172/i.test(iasHtml) &&
+        /C[oó]digo del Trabajo/.test(iasHtml) &&
+        /dt\.gob\.cl\/portal\/1628\/w3-article-60593/.test(iasHtml) &&
+        /dt\.gob\.cl\/portal\/1628\/w3-article-60590/.test(iasHtml) &&
+        /dt\.gob\.cl\/portal\/1628\/w3-article-60604/.test(iasHtml) &&
+        /bcn\.cl\/leychile\/navegar\?idNorma=207436/.test(iasHtml),
+    );
+    assert(
+      "SEO IAS golden 4 años 4 meses, redondeo, tope 11 y 90 UF",
+      demo.anios === 4 &&
+        demo.ias === 4_000_000 &&
+        redondeo.anios === 5 &&
+        redondeo.ias === 5_000_000 &&
+        topeAnios.anios === 11 &&
+        topeAnios.ias === 11_000_000 &&
+        topeUf.ias === 7_353_722 &&
+        topeUf.aviso === 3_676_861 &&
+        /\$4\.000\.000/.test(iasHtml) &&
+        /\$5\.000\.000/.test(iasHtml) &&
+        /\$11\.000\.000/.test(iasHtml) &&
+        /\$3\.676\.861/.test(iasHtml) &&
+        /\$7\.353\.722/.test(iasHtml) &&
+        /4 a[nñ]os y 4 meses/.test(iasHtml) &&
+        /tope 11 a[nñ]os/.test(iasHtml),
+    );
+    assert("SEO IAS FAQPage", /"@type": "FAQPage"/.test(iasHtml));
+    assert(
+      "SEO IAS no es finiquito completo ni guía",
+      /no incluye feriado proporcional/i.test(iasHtml) &&
+        /href="\/finiquito"/.test(iasHtml) &&
+        /href="\/guias\/indemnizacion-por-anos-de-servicio"/.test(iasHtml) &&
+        !existsSync(join(root, "indemnizacion.html")),
+    );
+    assert(
+      "SEO IAS métrica principal es la IAS, aviso opcional",
+      /Indemnizaci[oó]n por a[nñ]os de servicio/.test(iasHtml) &&
+        /Sumar indemnizaci[oó]n sustitutiva del aviso previo/.test(iasHtml) &&
+        /Opcional y aparte/.test(iasHtml),
+    );
+    assert(
+      "home y nav enlazan /indemnizacion-anos-servicio",
+      /href="\/indemnizacion-anos-servicio"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/indemnizacion-anos-servicio" data-nav>Indemnizaci[oó]n a[nñ]os de servicio<\/a>/.test(
+          readFileSync(join(root, "index.html"), "utf8"),
+        ) &&
+        /href="\/indemnizacion-anos-servicio" data-nav>Indemnizaci[oó]n a[nñ]os de servicio<\/a>/.test(iasHtml),
+    );
+    assert(
+      "sitemap incluye /indemnizacion-anos-servicio",
+      locs.includes("https://www.haberes.cl/indemnizacion-anos-servicio") &&
+        lastmodForPath("/indemnizacion-anos-servicio") === "2026-08-28",
+    );
+    assert(
+      "seo-map documenta /indemnizacion-anos-servicio y no-canibalizar /finiquito",
+      /\/indemnizacion-anos-servicio/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no canibalizar `\/finiquito`/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no crear `\/indemnizacion`/i.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")),
+    );
+    assert(
+      "guía IAS y /finiquito enlazan /indemnizacion-anos-servicio",
+      /href="\/indemnizacion-anos-servicio"/.test(guideHtml) &&
+        /href="\/indemnizacion-anos-servicio"/.test(finiHtml),
+    );
+    assert(
+      "SEO guía IAS sigue enlazando /finiquito",
+      /href="\/finiquito"/.test(guideHtml),
     );
   }
   {
@@ -5819,6 +6042,7 @@ assert(
       "semana-corrida.html",
       "asignacion-familiar.html",
       "feriado-progresivo.html",
+      "indemnizacion-anos-servicio.html",
       "finiquito.html",
       "empresa.html",
       "precios.html",

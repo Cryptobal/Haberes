@@ -34,7 +34,7 @@ export const CAUSAL_PAGES = [
  * group: índice /guias (liquidación vs finiquito).
  * calc: calculadora canónica (no canibalizar titles/H1 de esas URLs).
  * updated: lastmod ISO (YYYY-MM-DD) para sitemap y el bloque «últimas» del hub.
- * @type {{ slug: string, group: "liquidacion" | "finiquito", calc: "/sueldo" | "/finiquito" | "/horas-extras" | "/recargo-domingo-comercio" | "/semana-corrida" | "/gratificacion" | "/vacaciones-proporcionales" | "/impuesto-unico" | "/cotizaciones-previsionales" | "/asignacion-familiar", updated: string }[]}
+ * @type {{ slug: string, group: "liquidacion" | "finiquito", calc: "/sueldo" | "/finiquito" | "/horas-extras" | "/recargo-domingo-comercio" | "/semana-corrida" | "/gratificacion" | "/vacaciones-proporcionales" | "/impuesto-unico" | "/cotizaciones-previsionales" | "/asignacion-familiar" | "/indemnizacion-anos-servicio", updated: string }[]}
  */
 export const DEFAULT_LASTMOD = "2026-08-17";
 
@@ -49,7 +49,7 @@ export const GUIDES = [
   { slug: "formato-de-liquidacion-de-sueldo-chile", group: "liquidacion", calc: "/sueldo", updated: "2026-08-17" },
   { slug: "liquidacion-de-sueldo-y-previred", group: "liquidacion", calc: "/sueldo", updated: "2026-08-17" },
   { slug: "finiquito", group: "finiquito", calc: "/finiquito", updated: "2026-08-18" },
-  { slug: "indemnizacion-por-anos-de-servicio", group: "finiquito", calc: "/finiquito", updated: "2026-08-19" },
+  { slug: "indemnizacion-por-anos-de-servicio", group: "finiquito", calc: "/indemnizacion-anos-servicio", updated: "2026-08-19" },
   { slug: "vacaciones-proporcionales", group: "finiquito", calc: "/vacaciones-proporcionales", updated: "2026-08-17" },
   { slug: "carta-aviso-termino-contrato", group: "finiquito", calc: "/finiquito", updated: "2026-08-18" },
   { slug: "plazo-de-pago-del-finiquito", group: "finiquito", calc: "/finiquito", updated: "2026-08-17" },
@@ -70,6 +70,7 @@ export const PATH_LASTMOD = {
   "/semana-corrida": "2026-08-27",
   "/asignacion-familiar": "2026-08-27",
   "/feriado-progresivo": "2026-08-28",
+  "/indemnizacion-anos-servicio": "2026-08-28",
   "/privacidad": "2026-08-18",
   "/terminos": "2026-08-18",
 };
@@ -97,6 +98,7 @@ export const BASE_PATHS = [
   "/gratificacion",
   "/horas-extras",
   "/impuesto-unico",
+  "/indemnizacion-anos-servicio",
   "/precios",
   "/privacidad",
   "/recargo-domingo-comercio",

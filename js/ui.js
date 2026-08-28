@@ -220,6 +220,7 @@ function paintLoggedInNav(emp) {
         <a href="/asignacion-familiar" data-nav>Asignación familiar</a>
         <a href="/vacaciones-proporcionales" data-nav>Vacaciones proporcionales</a>
         <a href="/feriado-progresivo" data-nav>Feriado progresivo</a>
+        <a href="/indemnizacion-anos-servicio" data-nav>Indemnización años de servicio</a>
         <a href="/finiquito" data-nav>Finiquito</a>`;
     const anchor = foot || null;
     for (const node of [...mid.childNodes]) {

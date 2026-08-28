@@ -126,6 +126,65 @@ export function calcularFiniquito(input = {}, indicadores = {}) {
   };
 }
 
+/**
+ * IAS del artículo 163 y, aparte, la sustitutiva del aviso (art. 162).
+ * Reusa calcularFiniquito: tope 11 años, tope 90 UF, fracción > 6 meses.
+ * La IAS exige un año o más de vigencia; el aviso no.
+ */
+export function calcularIas(input = {}, indicadores = {}) {
+  const ingreso = input.ingreso || "";
+  const termino = input.termino || "";
+  const fin = calcularFiniquito(
+    {
+      articulo: "161",
+      ingreso,
+      termino,
+      remuneracion: input.remuneracion,
+      avisoPrevio: Boolean(input.avisoPrevio),
+      diasFeriadoPendiente: 0,
+      diasFeriadoProporcional: 0,
+      otros: 0,
+    },
+    indicadores,
+  );
+  let vigenciaUnAnio = false;
+  if (ingreso && termino) {
+    try {
+      vigenciaUnAnio = vigenciaUnAnioOMas(ingreso, termino);
+    } catch {
+      vigenciaUnAnio = false;
+    }
+  }
+  let aniosSinTope = 0;
+  if (vigenciaUnAnio) {
+    try {
+      aniosSinTope = aniosServicio(ingreso, termino, { tope: null });
+    } catch {
+      aniosSinTope = 0;
+    }
+  }
+  const anios = vigenciaUnAnio ? fin.anios : 0;
+  const ias = vigenciaUnAnio ? fin.ias : 0;
+  const aviso = fin.aviso;
+  return {
+    articulo: "161",
+    anios,
+    aniosSinTope,
+    remuneracion: fin.remuneracion,
+    topeMensual: fin.topeMensual,
+    baseIas: fin.baseIas,
+    ias,
+    aviso,
+    avisoPrevio: fin.avisoPrevio,
+    vigenciaUnAnio,
+    aplicaIas: vigenciaUnAnio,
+    recortoTopeUf: fin.remuneracion > fin.topeMensual,
+    recortoTopeAnios: aniosSinTope > IAS_TOPE_ANIOS,
+    totalIasAviso: ias + aviso,
+    uf: fin.uf,
+  };
+}
+
 function articuloDesdeCausal(causalId) {
   return causalPorId(causalId)?.articulo || "";
 }
