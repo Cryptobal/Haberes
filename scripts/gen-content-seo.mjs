@@ -711,17 +711,24 @@ function calcLinkLabel(calc) {
   if (calc === "/cotizaciones-previsionales") return "Calcular cotizaciones previsionales";
   if (calc === "/asignacion-familiar") return "Calcular asignación familiar";
   if (calc === "/vacaciones-proporcionales") return "Calcular vacaciones proporcionales";
+  if (calc === "/indemnizacion-anos-servicio") return "Calcular indemnización por años de servicio";
   return "Calculadora de sueldo líquido";
 }
 
 function hubList(items) {
   return `<ul>
         ${items
-          .map(
-            (g) =>
-              `<li><a href="/guias/${g.slug}">${esc(g.title)}</a>
-          — <a href="${g.calc}">${calcLinkLabel(g.calc)}</a></li>`,
-          )
+          .map((g) => {
+            let extra = "";
+            if (g.slug === "vacaciones-proporcionales") {
+              extra = `\n          · <a href="/feriado-progresivo">Calcular feriado progresivo</a>`;
+            }
+            if (g.slug === "indemnizacion-por-anos-de-servicio") {
+              extra = `\n          · <a href="/finiquito">Calculadora de finiquito</a>`;
+            }
+            return `<li><a href="/guias/${g.slug}">${esc(g.title)}</a>
+          — <a href="${g.calc}">${calcLinkLabel(g.calc)}</a>${extra}</li>`;
+          })
           .join("\n        ")}
       </ul>`;
 }
@@ -766,7 +773,7 @@ function hubLatest(items, limit = 6) {
       <p>Qué es el comprobante de remuneraciones, descuentos legales e impuesto único. Para estimar el líquido use <a href="/sueldo">/sueldo</a>. Para AFP, salud y cesantía del trabajador, <a href="/cotizaciones-previsionales">calcular cotizaciones previsionales</a>. Para el monto por cargas acreditadas, <a href="/asignacion-familiar">calcular asignación familiar</a>. Para el séptimo día (art. 45), <a href="/semana-corrida">calcular semana corrida</a>.</p>
       ${hubList(liq)}
       <h2>Finiquito</h2>
-      <p>Causales, plazos del artículo 177, indemnizaciones y qué firmar. Para estimar el monto use <a href="/finiquito">/finiquito</a>. Los días extra del artículo 68 están en <a href="/feriado-progresivo">calcular feriado progresivo</a>.</p>
+      <p>Causales, plazos del artículo 177, indemnizaciones y qué firmar. Para el finiquito completo use <a href="/finiquito">/finiquito</a>. La IAS sola (art. 163) está en <a href="/indemnizacion-anos-servicio">calcular indemnización por años de servicio</a>. Los días extra del artículo 68 están en <a href="/feriado-progresivo">calcular feriado progresivo</a>.</p>
       ${hubList(fini)}
       <p class="actions"><a class="btn" href="/sueldo">Calcular sueldo líquido</a>
       <a class="btn btn-ghost" href="/finiquito">Calcular finiquito</a></p>

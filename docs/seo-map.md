@@ -20,6 +20,7 @@ Actualizar este archivo antes de crear URLs nuevas para evitar canibalización.
 | Calcular semana corrida | semana corrida (1.300/21) — intención calcular | `/semana-corrida` | Title/H1 «calcular semana corrida»; no canibalizar `/guias/semana-corrida`, `/recargo-domingo-comercio` ni `/sueldo`. Art. 45 (pago del descanso), no recargo 30 % art. 38 N°7 ni hora extra art. 32. No crear `/septimo-dia` ni `/pago-domingo-festivo` |
 | Calcular asignación familiar | asignación familiar / tramos asignación familiar / cargas familiares | `/asignacion-familiar` | Title/H1 «calcular asignación familiar»; no canibalizar `/sueldo`, `/cotizaciones-previsionales` ni `/guias/liquidacion-de-sueldo`. Sistema Único (D.F.L. 150), no SUF municipal. No crear `/suf`, `/asignacion-maternal` ni `/cargas-familiares` |
 | Calcular feriado progresivo | feriado progresivo / vacaciones progresivas / calcular feriado progresivo | `/feriado-progresivo` | Title/H1 «calcular feriado progresivo»; no canibalizar `/vacaciones-proporcionales` ni `/finiquito`. Art. 68 (días extra al feriado anual), no art. 73 (plata de días no usados). No crear `/vacaciones-progresivas` ni `/indemnizacion` |
+| Calcular indemnización por años de servicio | indemnizacion por años de servicio (2.400/24) — intención calcular | `/indemnizacion-anos-servicio` | Title/H1 «calcular indemnización por años de servicio»; no canibalizar `/finiquito` ni `/guias/indemnizacion-por-anos-de-servicio`. Art. 163 (IAS), no el finiquito completo. No crear `/indemnizacion` |
 | Índice de guías | — | `/guias` | Hub: 17 guías, grupo liquidación vs finiquito |
 
 ## Guías pilar (contenido + calculadora embebida)
@@ -30,7 +31,7 @@ Actualizar este archivo antes de crear URLs nuevas para evitar canibalización.
 | Liquidación de sueldo | liquidacion de sueldo (12.100/29) | `/guias/liquidacion-de-sueldo` | embed → `/sueldo` |
 | Impuesto único | impuesto único (5.400/28), tabla impuesto único (2.900/22) | `/guias/impuesto-unico` | enlace a `/impuesto-unico`; tabla IUSC desde `js/constants.js`; no reescribir en esta tanda |
 | Gratificación legal | gratificación legal (4.400/17), gratificacion legal chile (1.900/16) | `/guias/gratificacion-legal` | enlace a `/gratificacion`; no reescribir en esta tanda |
-| Indemnización años de servicio | indemnizacion por años de servicio (2.400/24) | `/guias/indemnizacion-por-anos-de-servicio` | embed → `/finiquito` |
+| Indemnización años de servicio | indemnizacion por años de servicio (2.400/24) | `/guias/indemnizacion-por-anos-de-servicio` | explica; el cálculo vive en `/indemnizacion-anos-servicio`; `/finiquito` sigue siendo el finiquito completo |
 | Horas extras (guía) | cálculo horas extras — explainer | `/guias/horas-extras` | enlace a `/horas-extras`; no reescribir en esta tanda |
 | Vacaciones / feriado proporcional (guía) | vacaciones proporcionales — explainer | `/guias/vacaciones-proporcionales` | enlace a `/vacaciones-proporcionales`; no reescribir en esta tanda |
 | Semana corrida | semana corrida (1.300/21) — explainer | `/guias/semana-corrida` | enlace a `/semana-corrida`; embed `/sueldo` para el líquido; no canibalizar title/H1 de la calculadora |
@@ -105,7 +106,8 @@ La intención «calcular sueldo líquido» sigue en `/sueldo`.
 
 No publicar `/vacaciones-progresivas` ni `/indemnizacion`. El feriado progresivo (art. 68) vive en
 `/feriado-progresivo`. El proporcional en dinero vive en `/vacaciones-proporcionales`.
-IAS sigue en `/finiquito` (la guía `/guias/indemnizacion-por-anos-de-servicio` apunta ahí a propósito).
+La IAS (art. 163) se calcula en `/indemnizacion-anos-servicio`. La guía
+`/guias/indemnizacion-por-anos-de-servicio` explica; `/finiquito` sigue siendo el finiquito completo.
 
 No publicar hermanas de semana corrida: `/septimo-dia`, `/pago-domingo-festivo`,
 `/semana-corrida-mensual`. El haber del artículo 45 vive en `/semana-corrida`.
