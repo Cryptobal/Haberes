@@ -26,6 +26,7 @@ const DRAWER_LINKS = [
   ["/cotizaciones-previsionales", "Cotizaciones previsionales"],
   ["/asignacion-familiar", "Asignación familiar"],
   ["/vacaciones-proporcionales", "Vacaciones proporcionales"],
+  ["/feriado-progresivo", "Feriado progresivo"],
   ["/finiquito", "Finiquito"],
 ];
 

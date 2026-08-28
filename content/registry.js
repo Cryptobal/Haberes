@@ -69,6 +69,7 @@ export const PATH_LASTMOD = {
   "/recargo-domingo-comercio": "2026-08-26",
   "/semana-corrida": "2026-08-27",
   "/asignacion-familiar": "2026-08-27",
+  "/feriado-progresivo": "2026-08-28",
   "/privacidad": "2026-08-18",
   "/terminos": "2026-08-18",
 };
@@ -90,6 +91,7 @@ export const BASE_PATHS = [
   "/como",
   "/cotizaciones-previsionales",
   "/empresa",
+  "/feriado-progresivo",
   "/finiquito",
   "/guias",
   "/gratificacion",

@@ -39,6 +39,7 @@ import {
 } from "../js/novedades.js";
 import {
   calcularAsignacionFamiliar,
+  calcularFeriadoProgresivo,
   calcularIusc,
   calcularRecargoDomingoComercio,
   calcularSemanaCorrida,
@@ -312,6 +313,80 @@ assert(
     "app-semana-corrida usa calcularSemanaCorrida",
     /import\s*\{[^}]*calcularSemanaCorrida[^}]*\}\s*from\s*["']\.\/sueldo\.js["']/.test(scApp) &&
       /calcularSemanaCorrida\s*\(/.test(scApp),
+  );
+}
+
+console.log("\nFeriado progresivo art. 68");
+{
+  const unmet = calcularFeriadoProgresivo({ aniosEmpleadoresAnteriores: 5, aniosEmpleadorActual: 4 });
+  assert("base incumplida 5+4 → 0 extra", unmet.diasExtra === 0 && unmet.baseCumplida === false, JSON.stringify(unmet));
+}
+{
+  const d1 = calcularFeriadoProgresivo({ aniosEmpleadoresAnteriores: 10, aniosEmpleadorActual: 3 });
+  assert(
+    "base 10 + 3 actual → 1 extra, anual 16",
+    d1.diasExtra === 1 && d1.diasFeriadoAnual === 16 && d1.baseCumplida === true,
+    JSON.stringify(d1),
+  );
+}
+{
+  const d2 = calcularFeriadoProgresivo({ aniosEmpleadoresAnteriores: 10, aniosEmpleadorActual: 6 });
+  assert(
+    "base 10 + 6 actual → 2 extra, anual 17",
+    d2.diasExtra === 2 && d2.diasFeriadoAnual === 17,
+    JSON.stringify(d2),
+  );
+}
+{
+  const mismo = calcularFeriadoProgresivo({ aniosEmpleadoresAnteriores: 0, aniosEmpleadorActual: 13 });
+  assert(
+    "13 años mismo empleador → 1 extra (no 16 por sumar 13 a secas)",
+    mismo.diasExtra === 1 && mismo.diasFeriadoAnual === 16,
+    JSON.stringify(mismo),
+  );
+}
+{
+  const doce = calcularFeriadoProgresivo({ aniosEmpleadoresAnteriores: 0, aniosEmpleadorActual: 12 });
+  assert("12 años mismo empleador → 0 extra", doce.diasExtra === 0 && doce.diasFeriadoAnual === 15, JSON.stringify(doce));
+}
+{
+  const mito = calcularFeriadoProgresivo({ aniosEmpleadoresAnteriores: 13, aniosEmpleadorActual: 2 });
+  assert(
+    "13 anteriores (tope 10) + 2 actual → 0 extra",
+    mito.diasExtra === 0 && mito.aniosAnterioresAcreditables === 10,
+    JSON.stringify(mito),
+  );
+}
+{
+  const plata = calcularFeriadoProgresivo({
+    aniosEmpleadoresAnteriores: 10,
+    aniosEmpleadorActual: 3,
+    remuneracionMensual: 900_000,
+  });
+  assert(
+    "1 extra × 900000 / 30 = 30000 (misma convención que feriado proporcional)",
+    plata.valorExtra === 30000 && plata.valorExtra === feriadoProporcional(1, 900_000),
+    String(plata.valorExtra),
+  );
+}
+{
+  const sur = calcularFeriadoProgresivo({
+    aniosEmpleadoresAnteriores: 10,
+    aniosEmpleadorActual: 3,
+    feriadoBasico: 20,
+  });
+  assert("Magallanes/Aysén/Palena 20 + 1 extra = 21", sur.diasFeriadoAnual === 21 && sur.feriadoBasico === 20);
+}
+assert(
+  "10 años solo actuales → 0 extra (falta el tramo de 3 nuevos)",
+  calcularFeriadoProgresivo({ aniosEmpleadoresAnteriores: 0, aniosEmpleadorActual: 10 }).diasExtra === 0,
+);
+{
+  const fpApp = readFileSync(join(root, "js/app-feriado-progresivo.js"), "utf8");
+  assert(
+    "app-feriado-progresivo usa calcularFeriadoProgresivo",
+    /import\s*\{[^}]*calcularFeriadoProgresivo[^}]*\}\s*from\s*["']\.\/sueldo\.js["']/.test(fpApp) &&
+      /calcularFeriadoProgresivo\s*\(/.test(fpApp),
   );
 }
 
@@ -814,6 +889,7 @@ const required = [
   "recargo-domingo-comercio.html",
   "semana-corrida.html",
   "asignacion-familiar.html",
+  "feriado-progresivo.html",
   "finiquito.html",
   "js/app-horas-extras.js",
   "js/app-vacaciones-proporcionales.js",
@@ -823,6 +899,7 @@ const required = [
   "js/app-recargo-domingo-comercio.js",
   "js/app-semana-corrida.js",
   "js/app-asignacion-familiar.js",
+  "js/app-feriado-progresivo.js",
   "empresa.html",
   "privacidad.html",
   "terminos.html",
@@ -959,6 +1036,7 @@ const htmlFiles = [
   "recargo-domingo-comercio.html",
   "semana-corrida.html",
   "asignacion-familiar.html",
+  "feriado-progresivo.html",
   "finiquito.html",
   "empresa.html",
   "privacidad.html",
@@ -1043,6 +1121,7 @@ const appEntries = [
   "js/app-recargo-domingo-comercio.js",
   "js/app-semana-corrida.js",
   "js/app-asignacion-familiar.js",
+  "js/app-feriado-progresivo.js",
   "js/app-finiquito.js",
   "js/app-empresa.js",
   "js/app-admin.js",
@@ -1075,7 +1154,7 @@ assert("robots Allow /", /Allow:\s*\//.test(robots));
 assert("robots Disallow /admin", /Disallow:\s*\/admin/.test(robots));
 assert("robots Disallow /api", /Disallow:\s*\/api/.test(robots));
 assert("robots Disallow /docs", /Disallow:\s*\/docs/.test(robots));
-assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots));
+assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots));
 assert("robots Sitemap", /Sitemap:\s*https:\/\/www\.haberes\.cl\/sitemap\.xml/.test(robots));
 
 const { seoPaths, GUIDE_SLUGS, GUIDES, CAUSAL_PAGES, BASE_PATHS, lastmodForPath } = await import("../content/registry.js");
@@ -1100,7 +1179,8 @@ assert(
     BASE_PATHS.includes("/cotizaciones-previsionales") &&
     BASE_PATHS.includes("/recargo-domingo-comercio") &&
     BASE_PATHS.includes("/semana-corrida") &&
-    BASE_PATHS.includes("/asignacion-familiar"),
+    BASE_PATHS.includes("/asignacion-familiar") &&
+    BASE_PATHS.includes("/feriado-progresivo"),
   `${locs.length} vs ${expectedFromRegistry.length}`,
 );
 assert(
@@ -1449,7 +1529,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 55,
+      seoPaths().length === 56,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -1461,7 +1541,7 @@ try {
   const docsSeo = await hitLocal("/docs/seo-map.md");
   assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
   assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
-  for (const p of ["/sueldo/", "/finiquito/", "/horas-extras/", "/recargo-domingo-comercio/", "/semana-corrida/", "/vacaciones-proporcionales/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/asignacion-familiar/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+  for (const p of ["/sueldo/", "/finiquito/", "/horas-extras/", "/recargo-domingo-comercio/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/asignacion-familiar/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
   }
@@ -1481,6 +1561,7 @@ try {
     "/recargo-domingo-comercio",
     "/semana-corrida",
     "/vacaciones-proporcionales",
+    "/feriado-progresivo",
     "/gratificacion",
     "/impuesto-unico",
     "/cotizaciones-previsionales",
@@ -4700,6 +4781,7 @@ assert(
     ["recargo-domingo-comercio.html", "/recargo-domingo-comercio"],
     ["semana-corrida.html", "/semana-corrida"],
     ["asignacion-familiar.html", "/asignacion-familiar"],
+    ["feriado-progresivo.html", "/feriado-progresivo"],
     ["finiquito.html", "/finiquito"],
     ["empresa.html", "/empresa"],
     ["como.html", "/como"],
@@ -4840,7 +4922,13 @@ assert(
         /\$300\.000/.test(vpHtml) &&
         feriadoProporcional(10, 900000) === 300000,
     );
-    assert("SEO vacaciones proporcionales sin feriado progresivo", !/feriado progresivo/i.test(vpHtml));
+    assert(
+      "SEO vacaciones proporcionales distingue feriado progresivo sin robarle el H1",
+      /href="\/feriado-progresivo"/.test(vpHtml) &&
+        /calcular feriado progresivo/i.test(vpHtml) &&
+        !/calcular feriado progresivo/i.test(vpH1) &&
+        !/calcular feriado progresivo/i.test(vpTitle),
+    );
     assert(
       "SEO vacaciones proporcionales enlaza guía y finiquito",
       /href="\/guias\/vacaciones-proporcionales"/.test(vpHtml) && /href="\/finiquito"/.test(vpHtml),
@@ -4856,6 +4944,109 @@ assert(
       "sitemap incluye /vacaciones-proporcionales",
       locs.includes("https://www.haberes.cl/vacaciones-proporcionales") &&
         lastmodForPath("/vacaciones-proporcionales") === "2026-08-21",
+    );
+  }
+  {
+    const fpHtml = readFileSync(join(root, "feriado-progresivo.html"), "utf8");
+    const fpTitle = (fpHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const fpH1 = (fpHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const fpDesc = (fpHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "";
+    const vpHtml = readFileSync(join(root, "vacaciones-proporcionales.html"), "utf8");
+    const vpTitle = (vpHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const vpH1 = (vpHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const finiHtml = readFileSync(join(root, "finiquito.html"), "utf8");
+    const finiTitle = (finiHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const finiH1 = (finiHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const demo = calcularFeriadoProgresivo({
+      aniosEmpleadoresAnteriores: 10,
+      aniosEmpleadorActual: 3,
+      remuneracionMensual: 900_000,
+    });
+    const seis = calcularFeriadoProgresivo({ aniosEmpleadoresAnteriores: 10, aniosEmpleadorActual: 6 });
+    const unmet = calcularFeriadoProgresivo({ aniosEmpleadoresAnteriores: 5, aniosEmpleadorActual: 4 });
+    assert(
+      "SEO title feriado progresivo apunta a calcular feriado progresivo",
+      /calcular feriado progresivo/i.test(fpTitle) &&
+        !/vacaciones proporcionales/i.test(fpTitle) &&
+        !/calculadora de finiquito/i.test(fpTitle) &&
+        fpTitle !== vpTitle &&
+        fpTitle !== finiTitle &&
+        fpTitle.length <= 65,
+      fpTitle,
+    );
+    assert(
+      "SEO H1 feriado progresivo distinto de /vacaciones-proporcionales y /finiquito",
+      /calcular feriado progresivo/i.test(fpH1) &&
+        fpH1 === "Calcular feriado progresivo Chile 2026" &&
+        fpH1 !== vpH1 &&
+        fpH1 !== finiH1 &&
+        !/vacaciones proporcionales/i.test(fpH1) &&
+        !/calculadora de finiquito/i.test(fpH1),
+      fpH1,
+    );
+    assert(
+      "SEO feriado progresivo meta distinta de /vacaciones-proporcionales",
+      fpDesc && fpDesc !== ((vpHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || ""),
+    );
+    assert(
+      "SEO feriado progresivo cita art. 68, DT y Código",
+      /art[ií]culo 68/i.test(fpHtml) &&
+        /C[oó]digo del Trabajo/.test(fpHtml) &&
+        /dt\.gob\.cl\/portal\/1628\/w3-article-60194/.test(fpHtml) &&
+        /dt\.gob\.cl\/portal\/1628\/w3-article-60195/.test(fpHtml) &&
+        /bcn\.cl\/leychile\/navegar\?idNorma=207436/.test(fpHtml),
+    );
+    assert(
+      "SEO feriado progresivo ejemplos DT 0 / 1 / 2 días extra",
+      unmet.diasExtra === 0 &&
+        demo.diasExtra === 1 &&
+        demo.diasFeriadoAnual === 16 &&
+        demo.valorExtra === 30000 &&
+        seis.diasExtra === 2 &&
+        /0 d[ií]as extra/.test(fpHtml) &&
+        /1 d[ií]a extra/.test(fpHtml) &&
+        /2 d[ií]as extra/.test(fpHtml) &&
+        /\$30\.000/.test(fpHtml) &&
+        /\$900\.000/.test(fpHtml),
+    );
+    assert("SEO feriado progresivo FAQPage", /"@type": "FAQPage"/.test(fpHtml));
+    assert(
+      "SEO feriado progresivo no es vacaciones proporcionales ni IAS",
+      /no es el valor en dinero de los d[ií]as no usados/i.test(fpHtml) &&
+        /href="\/vacaciones-proporcionales"/.test(fpHtml) &&
+        /href="\/finiquito"/.test(fpHtml) &&
+        !existsSync(join(root, "vacaciones-progresivas.html")) &&
+        !existsSync(join(root, "indemnizacion.html")),
+    );
+    assert(
+      "SEO feriado progresivo métrica principal son días extra",
+      /D[ií]as extra \(art\. 68\)/.test(fpHtml) && !/<p class="metric-label">Feriado proporcional<\/p>/.test(fpHtml),
+    );
+    assert(
+      "home y nav enlazan /feriado-progresivo",
+      /href="\/feriado-progresivo"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/feriado-progresivo" data-nav>Feriado progresivo<\/a>/.test(
+          readFileSync(join(root, "index.html"), "utf8"),
+        ) &&
+        /href="\/feriado-progresivo" data-nav>Feriado progresivo<\/a>/.test(fpHtml),
+    );
+    assert(
+      "sitemap incluye /feriado-progresivo",
+      locs.includes("https://www.haberes.cl/feriado-progresivo") &&
+        lastmodForPath("/feriado-progresivo") === "2026-08-28",
+    );
+    assert(
+      "seo-map documenta /feriado-progresivo y no-canibalizar /vacaciones-proporcionales",
+      /\/feriado-progresivo/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no canibalizar `\/vacaciones-proporcionales`/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no crear `\/vacaciones-progresivas`/i.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")),
+    );
+    assert(
+      "vacaciones proporcionales y su guía enlazan /feriado-progresivo",
+      /href="\/feriado-progresivo"/.test(vpHtml) &&
+        /href="\/feriado-progresivo"/.test(
+          readFileSync(join(root, "guias/vacaciones-proporcionales.html"), "utf8"),
+        ),
     );
   }
   {
@@ -5627,6 +5818,7 @@ assert(
       "recargo-domingo-comercio.html",
       "semana-corrida.html",
       "asignacion-familiar.html",
+      "feriado-progresivo.html",
       "finiquito.html",
       "empresa.html",
       "precios.html",
@@ -5798,7 +5990,7 @@ assert(
     return acc;
   }
   const pages = listHtml(root);
-  assert("57 páginas HTML", pages.length === 57, String(pages.length));
+  assert("58 páginas HTML", pages.length === 58, String(pages.length));
   for (const file of pages) {
     const html = readFileSync(file, "utf8");
     const rel = file.slice(root.length + 1);

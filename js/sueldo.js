@@ -194,6 +194,85 @@ export function calcularSemanaCorrida({
   };
 }
 
+/** Feriado anual básico art. 67 (días hábiles; sábado inhábil, art. 69). */
+export const FERIADO_ANUAL_DIAS = 15;
+/** Art. 67: Magallanes, Aysén y Palena. */
+export const FERIADO_ANUAL_EXTREMO_SUR_DIAS = 20;
+/** Base de 10 años / 120 cotizaciones para el feriado progresivo (art. 68). */
+export const FERIADO_PROGRESIVO_BASE_ANIOS = 10;
+/** Un día extra por cada 3 años nuevos con el empleador actual (art. 68). */
+export const FERIADO_PROGRESIVO_ANIOS_POR_DIA = 3;
+
+/**
+ * Feriado progresivo (art. 68 Código del Trabajo).
+ *
+ * El trabajador con diez años de trabajo, para uno o más empleadores,
+ * continuos o no, tiene derecho a un día adicional de feriado por cada tres
+ * nuevos años trabajados. Solo pueden hacerse valer hasta diez años prestados
+ * a empleadores anteriores.
+ *
+ * Lectura DT (consultas 60194 y 60195; dictamen 2694/34): la base de 10 años
+ * (120 cotizaciones) se acredita con el empleador actual y/o anteriores
+ * (estos, con tope de 10). El primer día extra exige 3 años con el empleador
+ * actual *después* de cumplida esa base («sobre los primeros diez»). Si cambia
+ * de empleador, los días extra se pierden; el tiempo previo solo sirve para
+ * completar la base, y hay que volver a cumplir 3 años con el nuevo empleador.
+ *
+ * No convierte el feriado básico a dinero. El valor opcional de los días extra
+ * usa la misma convención remuneración / 30 del feriado proporcional (art. 73
+ * / finiquito), como estimación, no como derecho automático de pago.
+ *
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=207436
+ * @see https://www.dt.gob.cl/portal/1628/w3-article-60194.html
+ * @see https://www.dt.gob.cl/portal/1628/w3-article-60195.html
+ * @see https://www.dt.gob.cl/legislacion/1624/w3-article-103605.html
+ */
+export function calcularFeriadoProgresivo({
+  aniosEmpleadoresAnteriores = 0,
+  aniosEmpleadorActual = 0,
+  remuneracionMensual = 0,
+  feriadoBasico = FERIADO_ANUAL_DIAS,
+} = {}) {
+  const aniosAnteriores = Math.max(0, Number(aniosEmpleadoresAnteriores) || 0);
+  const aniosActual = Math.max(0, Number(aniosEmpleadorActual) || 0);
+  const rem = Math.max(0, Number(remuneracionMensual) || 0);
+  const aniosAnterioresAcreditables = Math.min(FERIADO_PROGRESIVO_BASE_ANIOS, aniosAnteriores);
+  const aniosParaCompletarBase = Math.max(0, FERIADO_PROGRESIVO_BASE_ANIOS - aniosAnterioresAcreditables);
+  const aniosNuevosConActual = Math.max(0, aniosActual - aniosParaCompletarBase);
+  const baseCumplida = aniosAnterioresAcreditables + aniosActual >= FERIADO_PROGRESIVO_BASE_ANIOS;
+  const diasExtra = Math.floor(aniosNuevosConActual / FERIADO_PROGRESIVO_ANIOS_POR_DIA + 1e-12);
+  const basico =
+    Number(feriadoBasico) === FERIADO_ANUAL_EXTREMO_SUR_DIAS
+      ? FERIADO_ANUAL_EXTREMO_SUR_DIAS
+      : FERIADO_ANUAL_DIAS;
+  const aplicaFeriadoBasico = aniosActual >= 1;
+  const diasFeriadoAnual = aplicaFeriadoBasico ? basico + diasExtra : 0;
+  const valorExtra = diasExtra > 0 && rem > 0 ? roundPeso((diasExtra * rem) / 30) : 0;
+  let aniosFaltanProximo;
+  if (baseCumplida) {
+    const resto = aniosNuevosConActual % FERIADO_PROGRESIVO_ANIOS_POR_DIA;
+    aniosFaltanProximo = resto === 0 ? FERIADO_PROGRESIVO_ANIOS_POR_DIA : FERIADO_PROGRESIVO_ANIOS_POR_DIA - resto;
+  } else {
+    aniosFaltanProximo = aniosParaCompletarBase - aniosActual + FERIADO_PROGRESIVO_ANIOS_POR_DIA;
+  }
+
+  return {
+    aniosEmpleadoresAnteriores: aniosAnteriores,
+    aniosEmpleadorActual: aniosActual,
+    aniosAnterioresAcreditables,
+    aniosParaCompletarBase,
+    aniosNuevosConActual,
+    baseCumplida,
+    diasExtra,
+    feriadoBasico: basico,
+    aplicaFeriadoBasico,
+    diasFeriadoAnual,
+    remuneracionMensual: rem,
+    valorExtra,
+    aniosFaltanProximo,
+  };
+}
+
 /**
  * @param {object} input
  * @param {{ uf?: number }} indicadores
