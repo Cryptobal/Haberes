@@ -38,6 +38,7 @@ import { CAUSALES, causalPorId } from "../js/causales.js";
 import { parseNovedadesCsv, parseTrabajadoresCsv } from "../js/csv.js";
 import {
   aniosServicio,
+  calcularAvisoPrevio,
   calcularFiniquito,
   calcularFiniquitoCasaParticular,
   calcularFiniquitoCompleto,
@@ -958,6 +959,76 @@ assert("4 años 7 meses redondea a 5", aniosServicio("2020-01-15", "2024-08-15")
       /calcularIas\s*\(/.test(iasApp),
   );
 }
+{
+  const millon = calcularAvisoPrevio(
+    { causal: "161-necesidades", remuneracion: 1_000_000, avisoPrevio: false },
+    { uf: FALLBACK_UF },
+  );
+  assert(
+    "Aviso $1.000.000 con derecho y sin preaviso → $1.000.000",
+    millon.aviso === 1_000_000 && millon.aplicaAviso && millon.motivo === "ok",
+    String(millon.aviso),
+  );
+  const seiscientos = calcularAvisoPrevio(
+    { causal: "161-desahucio", remuneracion: 600_000, avisoPrevio: false },
+    { uf: FALLBACK_UF },
+  );
+  assert("Aviso $600.000 → $600.000", seiscientos.aviso === 600_000, String(seiscientos.aviso));
+  const sinDerecho = calcularAvisoPrevio(
+    { causal: "160-7", remuneracion: 1_000_000, avisoPrevio: false },
+    { uf: FALLBACK_UF },
+  );
+  assert(
+    "Sin derecho a aviso (art. 160) → $0",
+    sinDerecho.aviso === 0 && !sinDerecho.aplicaAviso && sinDerecho.motivo === "sin_derecho",
+    String(sinDerecho.aviso),
+  );
+  const conHabituales = calcularAvisoPrevio(
+    {
+      causal: "161-necesidades",
+      remuneracion: 500_000,
+      colacion: 80_000,
+      movilizacion: 70_000,
+      avisoPrevio: false,
+    },
+    { uf: FALLBACK_UF },
+  );
+  assert(
+    "Base art. 172: sueldo + colación + movilización habituales → $650.000",
+    conHabituales.aviso === 650_000 && conHabituales.baseIngresada === 650_000,
+    String(conHabituales.aviso),
+  );
+  const finSuma = calcularFiniquito(
+    { articulo: "161", remuneracion: 500_000 + 80_000 + 70_000, avisoPrevio: false },
+    { uf: FALLBACK_UF },
+  );
+  assert(
+    "calcularAvisoPrevio reusa calcularFiniquito (suma colación/movilización y tope 90 UF)",
+    conHabituales.aviso === finSuma.aviso && conHabituales.base === finSuma.baseIas,
+  );
+  const otorgado = calcularAvisoPrevio(
+    { causal: "161-necesidades", remuneracion: 1_000_000, avisoPrevio: true },
+    { uf: FALLBACK_UF },
+  );
+  assert("Con aviso de 30 días otorgado → $0", otorgado.aviso === 0 && otorgado.motivo === "aviso_otorgado");
+  const topeUf = calcularAvisoPrevio(
+    { causal: "161-necesidades", remuneracion: 10_000_000, avisoPrevio: false },
+    { uf: FALLBACK_UF },
+  );
+  assert(
+    "Aviso tope 90 UF: $10.000.000 → $3.676.861",
+    topeUf.aviso === 3_676_861 && topeUf.recortoTopeUf,
+    String(topeUf.aviso),
+  );
+}
+{
+  const avisoApp = readFileSync(join(root, "js/app-indemnizacion-aviso-previo.js"), "utf8");
+  assert(
+    "app-indemnizacion-aviso-previo usa calcularAvisoPrevio",
+    /import\s*\{[^}]*calcularAvisoPrevio[^}]*\}\s*from\s*["']\.\/finiquito\.js["']/.test(avisoApp) &&
+      /calcularAvisoPrevio\s*\(/.test(avisoApp),
+  );
+}
 assert("Feriado dias*rem/30", feriadoProporcional(15, 900000) === 450000);
 assert("Feriado 10 días × 900000 / 30 = 300000", feriadoProporcional(10, 900000) === 300000);
 assert("Feriado 0 días → 0", feriadoProporcional(0, 900000) === 0);
@@ -1429,6 +1500,7 @@ const required = [
   "aguinaldo.html",
   "finiquito-casa-particular.html",
   "sueldo-proporcional.html",
+  "indemnizacion-aviso-previo.html",
   "finiquito.html",
   "js/app-horas-extras.js",
   "js/app-vacaciones-proporcionales.js",
@@ -1445,6 +1517,7 @@ const required = [
   "js/app-aguinaldo.js",
   "js/app-finiquito-casa-particular.js",
   "js/app-sueldo-proporcional.js",
+  "js/app-indemnizacion-aviso-previo.js",
   "empresa.html",
   "privacidad.html",
   "terminos.html",
@@ -1588,6 +1661,7 @@ const htmlFiles = [
   "aguinaldo.html",
   "finiquito-casa-particular.html",
   "sueldo-proporcional.html",
+  "indemnizacion-aviso-previo.html",
   "finiquito.html",
   "empresa.html",
   "privacidad.html",
@@ -1679,6 +1753,7 @@ const appEntries = [
   "js/app-aguinaldo.js",
   "js/app-finiquito-casa-particular.js",
   "js/app-sueldo-proporcional.js",
+  "js/app-indemnizacion-aviso-previo.js",
   "js/app-finiquito.js",
   "js/app-empresa.js",
   "js/app-admin.js",
@@ -1711,7 +1786,7 @@ assert("robots Allow /", /Allow:\s*\//.test(robots));
 assert("robots Disallow /admin", /Disallow:\s*\/admin/.test(robots));
 assert("robots Disallow /api", /Disallow:\s*\/api/.test(robots));
 assert("robots Disallow /docs", /Disallow:\s*\/docs/.test(robots));
-assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots));
+assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots));
 assert("robots Sitemap", /Sitemap:\s*https:\/\/www\.haberes\.cl\/sitemap\.xml/.test(robots));
 
 const { seoPaths, GUIDE_SLUGS, GUIDES, CAUSAL_PAGES, BASE_PATHS, lastmodForPath } = await import("../content/registry.js");
@@ -1743,7 +1818,8 @@ assert(
     BASE_PATHS.includes("/indemnizacion-anos-servicio") &&
     BASE_PATHS.includes("/aguinaldo") &&
     BASE_PATHS.includes("/finiquito-casa-particular") &&
-    BASE_PATHS.includes("/sueldo-proporcional"),
+    BASE_PATHS.includes("/sueldo-proporcional") &&
+    BASE_PATHS.includes("/indemnizacion-aviso-previo"),
   `${locs.length} vs ${expectedFromRegistry.length}`,
 );
 assert(
@@ -2094,7 +2170,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 62,
+      seoPaths().length === 63,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -2106,7 +2182,7 @@ try {
   const docsSeo = await hitLocal("/docs/seo-map.md");
   assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
   assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
-  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/aguinaldo/", "/sueldo-proporcional/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/asignacion-familiar/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/aguinaldo/", "/sueldo-proporcional/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/asignacion-familiar/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
   }
@@ -2131,6 +2207,7 @@ try {
     "/aguinaldo",
     "/finiquito-casa-particular",
     "/sueldo-proporcional",
+    "/indemnizacion-aviso-previo",
     "/gratificacion",
     "/impuesto-unico",
     "/cotizaciones-previsionales",
@@ -5359,6 +5436,7 @@ assert(
     ["aguinaldo.html", "/aguinaldo"],
     ["finiquito-casa-particular.html", "/finiquito-casa-particular"],
     ["sueldo-proporcional.html", "/sueldo-proporcional"],
+    ["indemnizacion-aviso-previo.html", "/indemnizacion-aviso-previo"],
     ["finiquito.html", "/finiquito"],
     ["empresa.html", "/empresa"],
     ["como.html", "/como"],
@@ -5856,6 +5934,135 @@ assert(
         !/<h2>Finiquito<\/h2>[\s\S]*href="\/sueldo-proporcional"/.test(
           readFileSync(join(root, "guias.html"), "utf8"),
         ),
+    );
+  }
+  {
+    const avisoHtml = readFileSync(join(root, "indemnizacion-aviso-previo.html"), "utf8");
+    const avisoTitle = (avisoHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const avisoH1 = (avisoHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const avisoDesc = (avisoHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "";
+    const finiHtml = readFileSync(join(root, "finiquito.html"), "utf8");
+    const finiTitle = (finiHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const finiH1 = (finiHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const iasHtml = readFileSync(join(root, "indemnizacion-anos-servicio.html"), "utf8");
+    const iasTitle = (iasHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const iasH1 = (iasHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const cartaHtml = readFileSync(join(root, "guias/carta-aviso-termino-contrato.html"), "utf8");
+    const millon = calcularAvisoPrevio(
+      { causal: "161-necesidades", remuneracion: 1_000_000, avisoPrevio: false },
+      { uf: FALLBACK_UF },
+    );
+    const seiscientos = calcularAvisoPrevio(
+      { causal: "161-desahucio", remuneracion: 600_000, avisoPrevio: false },
+      { uf: FALLBACK_UF },
+    );
+    const sinDerecho = calcularAvisoPrevio(
+      { causal: "160-7", remuneracion: 1_000_000, avisoPrevio: false },
+      { uf: FALLBACK_UF },
+    );
+    const conHabituales = calcularAvisoPrevio(
+      {
+        causal: "161-necesidades",
+        remuneracion: 500_000,
+        colacion: 80_000,
+        movilizacion: 70_000,
+        avisoPrevio: false,
+      },
+      { uf: FALLBACK_UF },
+    );
+    assert(
+      "SEO title aviso previo apunta a calcular indemnización por aviso previo",
+      /calcular indemnizaci[oó]n por aviso previo/i.test(avisoTitle) &&
+        !/calculadora de finiquito/i.test(avisoTitle) &&
+        !/a[nñ]os de servicio/i.test(avisoTitle) &&
+        avisoTitle !== finiTitle &&
+        avisoTitle !== iasTitle &&
+        avisoTitle.length <= 65,
+      avisoTitle,
+    );
+    assert(
+      "SEO H1 aviso previo distinto de /finiquito y de /indemnizacion-anos-servicio",
+      avisoH1 === "Calcular indemnización por aviso previo Chile 2026" &&
+        avisoH1 !== finiH1 &&
+        avisoH1 !== iasH1 &&
+        !/calculadora de finiquito/i.test(avisoH1) &&
+        !/a[nñ]os de servicio/i.test(avisoH1),
+      avisoH1,
+    );
+    assert(
+      "SEO aviso previo meta distinta de /finiquito y de IAS",
+      avisoDesc &&
+        avisoDesc !== ((finiHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "") &&
+        avisoDesc !== ((iasHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || ""),
+    );
+    assert(
+      "SEO aviso previo cita arts. 161, 162, 172, DT y Código",
+      /art[ií]culos 161 y 162/i.test(avisoHtml) &&
+        /art[ií]culo 172/i.test(avisoHtml) &&
+        /C[oó]digo del Trabajo/.test(avisoHtml) &&
+        /dt\.gob\.cl\/portal\/1628\/w3-article-60543/.test(avisoHtml) &&
+        /dt\.gob\.cl\/portal\/1628\/w3-article-60604/.test(avisoHtml) &&
+        /bcn\.cl\/leychile\/navegar\?idNorma=207436/.test(avisoHtml),
+    );
+    assert(
+      "SEO aviso previo golden $1.000.000, $600.000, $0 y colación+movilización",
+      millon.aviso === 1_000_000 &&
+        seiscientos.aviso === 600_000 &&
+        sinDerecho.aviso === 0 &&
+        conHabituales.aviso === 650_000 &&
+        /\$1\.000\.000/.test(avisoHtml) &&
+        /\$600\.000/.test(avisoHtml) &&
+        /\$650\.000/.test(avisoHtml) &&
+        /\$0/.test(avisoHtml) &&
+        /colaci[oó]n \$80\.000/.test(avisoHtml) &&
+        /movilizaci[oó]n \$70\.000/.test(avisoHtml),
+    );
+    assert("SEO aviso previo FAQPage", /"@type": "FAQPage"/.test(avisoHtml));
+    assert(
+      "SEO aviso previo no es finiquito completo ni IAS",
+      /no es la/.test(avisoHtml.toLowerCase()) &&
+        /href="\/finiquito"/.test(avisoHtml) &&
+        /href="\/indemnizacion-anos-servicio"/.test(avisoHtml) &&
+        /Estimaci[oó]n orientativa/.test(avisoHtml) &&
+        /Inspecci[oó]n del Trabajo/.test(avisoHtml) &&
+        !existsSync(join(root, "dias-aviso.html")) &&
+        !existsSync(join(root, "aviso-previo.html")),
+    );
+    assert(
+      "SEO aviso previo métrica principal es la sustitutiva",
+      /Indemnizaci[oó]n sustitutiva del aviso/.test(avisoHtml) &&
+        !/<p class="metric-label">Indemnizaci[oó]n por a[nñ]os de servicio<\/p>/.test(avisoHtml),
+    );
+    assert(
+      "home y nav enlazan /indemnizacion-aviso-previo",
+      /href="\/indemnizacion-aviso-previo"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/indemnizacion-aviso-previo" data-nav>Indemnizaci[oó]n aviso previo<\/a>/.test(
+          readFileSync(join(root, "index.html"), "utf8"),
+        ) &&
+        /href="\/indemnizacion-aviso-previo" data-nav>Indemnizaci[oó]n aviso previo<\/a>/.test(avisoHtml),
+    );
+    assert(
+      "sitemap incluye /indemnizacion-aviso-previo",
+      locs.includes("https://www.haberes.cl/indemnizacion-aviso-previo") &&
+        lastmodForPath("/indemnizacion-aviso-previo") === "2026-08-29",
+    );
+    assert(
+      "seo-map documenta /indemnizacion-aviso-previo y no-canibalizar /finiquito",
+      /\/indemnizacion-aviso-previo/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no canibalizar `\/finiquito`/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no crear `\/dias-aviso`/i.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no crear `\/aviso-previo`/i.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")),
+    );
+    assert(
+      "carta de aviso, IAS y /finiquito enlazan /indemnizacion-aviso-previo",
+      /href="\/indemnizacion-aviso-previo"/.test(cartaHtml) &&
+        /href="\/indemnizacion-aviso-previo"/.test(iasHtml) &&
+        /href="\/indemnizacion-aviso-previo"/.test(finiHtml),
+    );
+    assert(
+      "hub /guias enlaza /indemnizacion-aviso-previo en cluster finiquito",
+      /href="\/indemnizacion-aviso-previo"/.test(readFileSync(join(root, "guias.html"), "utf8")) &&
+        /<h2>Finiquito<\/h2>/.test(readFileSync(join(root, "guias.html"), "utf8")),
     );
   }
   {
@@ -7187,6 +7394,7 @@ assert(
       "aguinaldo.html",
       "finiquito-casa-particular.html",
       "sueldo-proporcional.html",
+      "indemnizacion-aviso-previo.html",
       "finiquito.html",
       "empresa.html",
       "precios.html",
@@ -7361,7 +7569,7 @@ assert(
     return acc;
   }
   const pages = listHtml(root);
-  assert("64 páginas HTML", pages.length === 64, String(pages.length));
+  assert("65 páginas HTML", pages.length === 65, String(pages.length));
   for (const file of pages) {
     const html = readFileSync(file, "utf8");
     const rel = file.slice(root.length + 1);

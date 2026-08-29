@@ -26,6 +26,7 @@ Actualizar este archivo antes de crear URLs nuevas para evitar canibalización.
 | Calcular sueldo proporcional | sueldo proporcional / días trabajados mes / remuneración proporcional | `/sueldo-proporcional` | Title/H1 «calcular sueldo proporcional»; no canibalizar `/sueldo`, `/vacaciones-proporcionales` ni `/finiquito`. Bruto de un mes incompleto (mensual / 30 × días calendario). No crear `/dias-trabajados` ni `/sueldo-proporcional-dias` |
 | Calcular aguinaldo Fiestas Patrias | aguinaldo fiestas patrias (5.400/23) — intención presupuestar/calcular monto | `/aguinaldo` | Title/H1 «calcular aguinaldo Fiestas Patrias»; no es obligación legal general del Código; no canibalizar `/gratificacion`, `/sueldo` ni `/guias/aguinaldo-fiestas-patrias`. No crear `/bono-fiestas-patrias` ni `/aguinaldo-navidad` |
 | Calcular finiquito de casa particular | finiquito asesora del hogar / finiquito trabajadora casa particular — intención calcular | `/finiquito-casa-particular` | Title/H1 «calcular finiquito casa particular»; no canibalizar `/finiquito`, `/indemnizacion-anos-servicio` ni `/guias/finiquito-trabajadora-de-casa-particular`. Estatuto propio (art. 163 a todo evento AFP 1,11 %, aviso art. 161). No crear `/finiquito-nana` ni `/asesora-hogar` |
+| Calcular indemnización por aviso previo | indemnizacion aviso previo / indemnizacion sustitutiva aviso — intención calcular | `/indemnizacion-aviso-previo` | Title/H1 «calcular indemnización por aviso previo»; no canibalizar `/finiquito` ni `/indemnizacion-anos-servicio`. Arts. 161 y 162 (sustitutiva de 30 días), no IAS art. 163 ni el finiquito completo. No crear `/dias-aviso`. No crear `/aviso-previo` |
 | Índice de guías | — | `/guias` | Hub: 17 guías, grupo liquidación vs finiquito |
 
 ## Guías pilar (contenido + calculadora embebida)
@@ -130,6 +131,10 @@ No publicar `/dias-trabajados` ni `/sueldo-proporcional-dias`. El bruto de un me
 (remuneración mensual / 30 × días calendario) vive en `/sueldo-proporcional`. El líquido
 sigue en `/sueldo`. El feriado en dinero sigue en `/vacaciones-proporcionales`. El finiquito
 completo sigue en `/finiquito`.
+
+No publicar `/dias-aviso` ni `/aviso-previo`. La indemnización sustitutiva del aviso de treinta días
+(arts. 161 y 162) vive en `/indemnizacion-aviso-previo`. La carta (formalidades) sigue en
+`/guias/carta-aviso-termino-contrato`.
 
 No publicar hermanas de semana corrida: `/septimo-dia`, `/pago-domingo-festivo`,
 `/semana-corrida-mensual`. El haber del artículo 45 vive en `/semana-corrida`.
