@@ -75,6 +75,7 @@ export const PATH_LASTMOD = {
   "/asignacion-familiar": "2026-08-27",
   "/feriado-progresivo": "2026-08-28",
   "/indemnizacion-anos-servicio": "2026-08-28",
+  "/sueldo-proporcional": "2026-08-29",
   "/privacidad": "2026-08-18",
   "/terminos": "2026-08-18",
 };
@@ -112,6 +113,7 @@ export const BASE_PATHS = [
   "/semana-corrida",
   "/seguro-cesantia",
   "/sueldo",
+  "/sueldo-proporcional",
   "/terminos",
   "/vacaciones-proporcionales",
 ];
