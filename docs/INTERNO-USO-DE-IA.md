@@ -5,17 +5,17 @@ Este archivo es para quien opera Haberes. No va en el sitio, el sitemap, el men�
 
 ## Qué es el producto
 
-Haberes es una calculadora determinista de sueldo líquido, finiquito y documentos de apoyo en Chile.
-Usa tablas publicadas (AFP, impuesto único, topes) y UF/UTM (mindicador.cl + respaldo).
-No es un modelo que decida sobre personas (contratación, crédito, scoring).
+Haberes es una herramienta chilena de liquidaciones y finiquitos para pymes (empleadores),
+no una calculadora de trabajador ni un contador SII.
+El cálculo es determinista: tablas publicadas (AFP, impuesto único, topes) y UF/UTM
+(mindicador.cl + respaldo). No es un modelo que decida sobre personas (contratación, crédito, scoring).
+
+El producto lo empuja Haberes, con asistentes de IA (Cursor y agentes) para escribir código
+y operar. En la UI pública no hay branding de IA: el pie dice «Documento generado por Haberes»
+y el crédito lx3.ai. No se pegan en chats ni se usan para entrenar modelos: liquidaciones de
+clientes, claves, tokens de pago ni datos de trabajadores.
 
 «Exactitud» aquí significa usar las cifras y reglas publicadas, no una métrica de aprendizaje automático.
-
-## Cómo usamos asistentes
-
-Usamos asistentes (Cursor y agentes) para escribir código y operar el producto.
-No se pegan en chats ni se usan para entrenar modelos: liquidaciones de clientes, claves,
-tokens de pago ni datos de trabajadores.
 
 ## Qué no decimos en público
 

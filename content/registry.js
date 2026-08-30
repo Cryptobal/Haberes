@@ -34,7 +34,7 @@ export const CAUSAL_PAGES = [
  * group: índice /guias (liquidación vs finiquito).
  * calc: calculadora canónica (no canibalizar titles/H1 de esas URLs).
  * updated: lastmod ISO (YYYY-MM-DD) para sitemap y el bloque «últimas» del hub.
- * @type {{ slug: string, group: "liquidacion" | "finiquito", calc: "/sueldo" | "/finiquito" | "/horas-extras" | "/recargo-domingo-comercio" | "/semana-corrida" | "/gratificacion" | "/vacaciones-proporcionales" | "/impuesto-unico" | "/cotizaciones-previsionales" | "/asignacion-familiar" | "/indemnizacion-anos-servicio", updated: string }[]}
+ * @type {{ slug: string, group: "liquidacion" | "finiquito", calc: "/sueldo" | "/finiquito" | "/horas-extras" | "/recargo-domingo-comercio" | "/semana-corrida" | "/gratificacion" | "/aguinaldo" | "/vacaciones-proporcionales" | "/impuesto-unico" | "/cotizaciones-previsionales" | "/asignacion-familiar" | "/indemnizacion-anos-servicio", updated: string }[]}
  */
 export const DEFAULT_LASTMOD = "2026-08-17";
 
@@ -44,7 +44,7 @@ export const GUIDES = [
   { slug: "gratificacion-legal", group: "liquidacion", calc: "/gratificacion", updated: "2026-08-18" },
   { slug: "horas-extras", group: "liquidacion", calc: "/horas-extras", updated: "2026-08-17" },
   { slug: "semana-corrida", group: "liquidacion", calc: "/semana-corrida", updated: "2026-08-27" },
-  { slug: "aguinaldo-fiestas-patrias", group: "liquidacion", calc: "/sueldo", updated: "2026-08-25" },
+  { slug: "aguinaldo-fiestas-patrias", group: "liquidacion", calc: "/aguinaldo", updated: "2026-08-30" },
   { slug: "como-leer-una-liquidacion-de-sueldo", group: "liquidacion", calc: "/sueldo", updated: "2026-08-17" },
   { slug: "formato-de-liquidacion-de-sueldo-chile", group: "liquidacion", calc: "/sueldo", updated: "2026-08-17" },
   { slug: "liquidacion-de-sueldo-y-previred", group: "liquidacion", calc: "/sueldo", updated: "2026-08-17" },
@@ -60,7 +60,8 @@ export const GUIDES = [
 
 /** lastmod de rutas base que sí cambiaron después del lote SEO inicial. */
 export const PATH_LASTMOD = {
-  "/guias": "2026-08-27",
+  "/guias": "2026-08-30",
+  "/aguinaldo": "2026-08-30",
   "/horas-extras": "2026-08-20",
   "/vacaciones-proporcionales": "2026-08-21",
   "/gratificacion": "2026-08-22",
@@ -88,6 +89,7 @@ export const GUIDE_SLUGS = GUIDES.map((g) => g.slug);
 
 export const BASE_PATHS = [
   "/",
+  "/aguinaldo",
   "/asignacion-familiar",
   "/como",
   "/cotizaciones-previsionales",

@@ -40,6 +40,7 @@ import {
 } from "../js/novedades.js";
 import {
   calcularAsignacionFamiliar,
+  calcularAguinaldo,
   calcularFeriadoProgresivo,
   calcularIusc,
   calcularRecargoDomingoComercio,
@@ -448,6 +449,65 @@ assert(
     "app-gratificacion usa gratificacionArt50",
     /import\s*\{[^}]*gratificacionArt50[^}]*\}\s*from\s*["']\.\/sueldo\.js["']/.test(grApp) &&
       /gratificacionArt50\s*\(/.test(grApp),
+  );
+}
+{
+  const fijo = calcularAguinaldo({
+    modo: "fijo",
+    montoFijo: 50_000,
+    sueldoBase: 800_000,
+    trabajadores: 1,
+    imponible: true,
+  });
+  assert("aguinaldo fijo 50000", fijo.porTrabajador === 50_000 && fijo.totalPlanilla === 50_000, String(fijo.porTrabajador));
+  assert(
+    "aguinaldo fijo imponible extra líquido 40910",
+    fijo.extraLiquido === 40_910 && fijo.extraDescuentos === 9_090 && fijo.extraImponible === 50_000,
+    `${fijo.extraLiquido} ${fijo.extraDescuentos}`,
+  );
+  const planilla = calcularAguinaldo({
+    modo: "fijo",
+    montoFijo: 50_000,
+    sueldoBase: 800_000,
+    trabajadores: 10,
+    imponible: true,
+  });
+  assert(
+    "aguinaldo 10 trabajadores planilla 500000",
+    planilla.porTrabajador === 50_000 &&
+      planilla.totalPlanilla === 500_000 &&
+      planilla.extraLiquidoPlanilla === 409_100,
+    String(planilla.totalPlanilla),
+  );
+  const pct = calcularAguinaldo({
+    modo: "porcentaje",
+    porcentaje: 10,
+    sueldoBase: 800_000,
+    trabajadores: 5,
+    imponible: true,
+  });
+  assert(
+    "aguinaldo 10 % de 800000 × 5",
+    pct.porTrabajador === 80_000 && pct.totalPlanilla === 400_000 && pct.modo === "porcentaje",
+    `${pct.porTrabajador} ${pct.totalPlanilla}`,
+  );
+  const noImp = calcularAguinaldo({
+    modo: "fijo",
+    montoFijo: 50_000,
+    sueldoBase: 800_000,
+    trabajadores: 1,
+    imponible: false,
+  });
+  assert(
+    "aguinaldo no imponible extra = haber",
+    noImp.extraLiquido === 50_000 && noImp.extraDescuentos === 0 && noImp.extraImponible === 0,
+    `${noImp.extraLiquido} ${noImp.extraDescuentos}`,
+  );
+  const agApp = readFileSync(join(root, "js/app-aguinaldo.js"), "utf8");
+  assert(
+    "app-aguinaldo usa calcularAguinaldo",
+    /import\s*\{[^}]*calcularAguinaldo[^}]*\}\s*from\s*["']\.\/sueldo\.js["']/.test(agApp) &&
+      /calcularAguinaldo\s*\(/.test(agApp),
   );
 }
 {
@@ -986,6 +1046,7 @@ const required = [
   "asignacion-familiar.html",
   "feriado-progresivo.html",
   "indemnizacion-anos-servicio.html",
+  "aguinaldo.html",
   "finiquito.html",
   "js/app-horas-extras.js",
   "js/app-vacaciones-proporcionales.js",
@@ -997,6 +1058,7 @@ const required = [
   "js/app-asignacion-familiar.js",
   "js/app-feriado-progresivo.js",
   "js/app-indemnizacion-anos-servicio.js",
+  "js/app-aguinaldo.js",
   "empresa.html",
   "privacidad.html",
   "terminos.html",
@@ -1135,6 +1197,7 @@ const htmlFiles = [
   "asignacion-familiar.html",
   "feriado-progresivo.html",
   "indemnizacion-anos-servicio.html",
+  "aguinaldo.html",
   "finiquito.html",
   "empresa.html",
   "privacidad.html",
@@ -1221,6 +1284,7 @@ const appEntries = [
   "js/app-asignacion-familiar.js",
   "js/app-feriado-progresivo.js",
   "js/app-indemnizacion-anos-servicio.js",
+  "js/app-aguinaldo.js",
   "js/app-finiquito.js",
   "js/app-empresa.js",
   "js/app-admin.js",
@@ -1253,7 +1317,7 @@ assert("robots Allow /", /Allow:\s*\//.test(robots));
 assert("robots Disallow /admin", /Disallow:\s*\/admin/.test(robots));
 assert("robots Disallow /api", /Disallow:\s*\/api/.test(robots));
 assert("robots Disallow /docs", /Disallow:\s*\/docs/.test(robots));
-assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots));
+assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots));
 assert("robots Sitemap", /Sitemap:\s*https:\/\/www\.haberes\.cl\/sitemap\.xml/.test(robots));
 
 const { seoPaths, GUIDE_SLUGS, GUIDES, CAUSAL_PAGES, BASE_PATHS, lastmodForPath } = await import("../content/registry.js");
@@ -1280,7 +1344,8 @@ assert(
     BASE_PATHS.includes("/semana-corrida") &&
     BASE_PATHS.includes("/asignacion-familiar") &&
     BASE_PATHS.includes("/feriado-progresivo") &&
-    BASE_PATHS.includes("/indemnizacion-anos-servicio"),
+    BASE_PATHS.includes("/indemnizacion-anos-servicio") &&
+    BASE_PATHS.includes("/aguinaldo"),
   `${locs.length} vs ${expectedFromRegistry.length}`,
 );
 assert(
@@ -1336,14 +1401,14 @@ assert(
     lastmodForPath("/guias/gratificacion-legal") === "2026-08-18" &&
     lastmodForPath("/guias/indemnizacion-por-anos-de-servicio") === "2026-08-19" &&
     lastmodForPath("/guias/semana-corrida") === "2026-08-27" &&
-    lastmodForPath("/guias/aguinaldo-fiestas-patrias") === "2026-08-25" &&
-    lastmodForPath("/guias") === "2026-08-27" &&
+    lastmodForPath("/guias/aguinaldo-fiestas-patrias") === "2026-08-30" &&
+    lastmodForPath("/guias") === "2026-08-30" &&
     /<loc>https:\/\/www\.haberes\.cl\/guias\/liquidacion-de-sueldo<\/loc>\s*<lastmod>2026-08-18<\/lastmod>/.test(sitemap) &&
     /<loc>https:\/\/www\.haberes\.cl\/guias\/gratificacion-legal<\/loc>\s*<lastmod>2026-08-18<\/lastmod>/.test(sitemap) &&
     /<loc>https:\/\/www\.haberes\.cl\/guias\/indemnizacion-por-anos-de-servicio<\/loc>\s*<lastmod>2026-08-19<\/lastmod>/.test(sitemap) &&
     /<loc>https:\/\/www\.haberes\.cl\/guias\/semana-corrida<\/loc>\s*<lastmod>2026-08-27<\/lastmod>/.test(sitemap) &&
-    /<loc>https:\/\/www\.haberes\.cl\/guias\/aguinaldo-fiestas-patrias<\/loc>\s*<lastmod>2026-08-25<\/lastmod>/.test(sitemap) &&
-    /<loc>https:\/\/www\.haberes\.cl\/guias<\/loc>\s*<lastmod>2026-08-27<\/lastmod>/.test(sitemap),
+    /<loc>https:\/\/www\.haberes\.cl\/guias\/aguinaldo-fiestas-patrias<\/loc>\s*<lastmod>2026-08-30<\/lastmod>/.test(sitemap) &&
+    /<loc>https:\/\/www\.haberes\.cl\/guias<\/loc>\s*<lastmod>2026-08-30<\/lastmod>/.test(sitemap),
 );
 assert("sin ruta /blog ni /noticias", !existsSync(join(root, "blog.html")) && !existsSync(join(root, "noticias.html")));
 assert("sitemap sin .html (cleanUrls)", !locs.some((u) => u.endsWith(".html")));
@@ -1629,7 +1694,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 57,
+      seoPaths().length === 58,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -1641,7 +1706,7 @@ try {
   const docsSeo = await hitLocal("/docs/seo-map.md");
   assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
   assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
-  for (const p of ["/sueldo/", "/finiquito/", "/horas-extras/", "/recargo-domingo-comercio/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/asignacion-familiar/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+  for (const p of ["/sueldo/", "/finiquito/", "/horas-extras/", "/recargo-domingo-comercio/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/aguinaldo/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/asignacion-familiar/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
   }
@@ -1663,6 +1728,7 @@ try {
     "/vacaciones-proporcionales",
     "/feriado-progresivo",
     "/indemnizacion-anos-servicio",
+    "/aguinaldo",
     "/gratificacion",
     "/impuesto-unico",
     "/cotizaciones-previsionales",
@@ -4884,6 +4950,7 @@ assert(
     ["asignacion-familiar.html", "/asignacion-familiar"],
     ["feriado-progresivo.html", "/feriado-progresivo"],
     ["indemnizacion-anos-servicio.html", "/indemnizacion-anos-servicio"],
+    ["aguinaldo.html", "/aguinaldo"],
     ["finiquito.html", "/finiquito"],
     ["empresa.html", "/empresa"],
     ["como.html", "/como"],
@@ -5403,6 +5470,11 @@ assert(
       "seo-calc IUSC CTA apunta a /impuesto-unico",
       /href="\/impuesto-unico"/.test(readFileSync(join(root, "js/seo-calc.js"), "utf8")),
     );
+    assert(
+      "seo-calc aguinaldo CTA apunta a /aguinaldo",
+      /href="\/aguinaldo"/.test(readFileSync(join(root, "js/seo-calc.js"), "utf8")) &&
+        /aguinaldo:\s*mountAguinaldo/.test(readFileSync(join(root, "js/seo-calc.js"), "utf8")),
+    );
   }
   {
     const cpHtml = readFileSync(join(root, "cotizaciones-previsionales.html"), "utf8");
@@ -5903,7 +5975,7 @@ assert(
       ["guias/gratificacion-legal.html", "/gratificacion", /artículo 47/, /dt\.gob\.cl/],
       ["guias/indemnizacion-por-anos-de-servicio.html", "/finiquito", /artículo 163/, /dt\.gob\.cl/],
       ["guias/semana-corrida.html", "/sueldo", /artículo 45/, /dt\.gob\.cl/],
-      ["guias/aguinaldo-fiestas-patrias.html", "/sueldo", /artículo 41/, /dt\.gob\.cl/],
+      ["guias/aguinaldo-fiestas-patrias.html", "/aguinaldo", /artículo 41/, /dt\.gob\.cl/],
     ];
     function visibleWords(html) {
       const main = html.match(/<main\b[\s\S]*?<\/main>/i)?.[0] || html;
@@ -5929,7 +6001,7 @@ assert(
           : 800;
       const dateRe =
         file.includes("aguinaldo-fiestas-patrias")
-          ? /<time datetime="2026-08-25">/
+          ? /<time datetime="2026-08-30">/
           : file.includes("semana-corrida")
           ? /<time datetime="2026-08-27">/
           : file.includes("indemnizacion-por-anos-de-servicio")
@@ -6020,6 +6092,7 @@ assert(
           !/gratificaci[oó]n legal/i.test(agH1) &&
           /no crea un deber legal general/i.test(agHtml) &&
           /href="\/sueldo"/.test(agHtml) &&
+          /href="\/aguinaldo"/.test(agHtml) &&
           /href="\/guias\/gratificacion-legal"/.test(agHtml) &&
           /href="\/guias\/liquidacion-de-sueldo"/.test(agHtml) &&
           /Otros imponibles/.test(agHtml) &&
@@ -6028,6 +6101,132 @@ assert(
         `${agTitle} | ${agH1}`,
       );
     }
+  }
+  {
+    const agHtml = readFileSync(join(root, "aguinaldo.html"), "utf8");
+    const agTitle = (agHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const agH1 = (agHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const agDesc = (agHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "";
+    const sueldoHtml = readFileSync(join(root, "sueldo.html"), "utf8");
+    const sueldoTitle = (sueldoHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const sueldoH1 = (sueldoHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const gratHtml = readFileSync(join(root, "gratificacion.html"), "utf8");
+    const gratTitle = (gratHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const gratH1 = (gratHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const guideHtml = readFileSync(join(root, "guias/aguinaldo-fiestas-patrias.html"), "utf8");
+    const guideTitle = (guideHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const guideH1 = (guideHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const fijo = calcularAguinaldo({
+      modo: "fijo",
+      montoFijo: 50_000,
+      sueldoBase: 800_000,
+      trabajadores: 10,
+      imponible: true,
+    });
+    const pct = calcularAguinaldo({
+      modo: "porcentaje",
+      porcentaje: 10,
+      sueldoBase: 800_000,
+      trabajadores: 5,
+      imponible: true,
+    });
+    assert(
+      "SEO title aguinaldo apunta a calcular aguinaldo Fiestas Patrias",
+      /calcular aguinaldo/i.test(agTitle) &&
+        /Fiestas Patrias/i.test(agTitle) &&
+        !/sueldo l[ií]quido/i.test(agTitle) &&
+        !/gratificaci[oó]n legal/i.test(agTitle) &&
+        !/obligatorio/i.test(agTitle) &&
+        agTitle !== sueldoTitle &&
+        agTitle !== gratTitle &&
+        agTitle !== guideTitle &&
+        agTitle.length <= 65,
+      agTitle,
+    );
+    assert(
+      "SEO H1 aguinaldo distinto de /sueldo, /gratificacion y de la guía",
+      agH1 === "Calcular aguinaldo Fiestas Patrias Chile 2026" &&
+        agH1 !== sueldoH1 &&
+        agH1 !== gratH1 &&
+        agH1 !== guideH1 &&
+        !/sueldo l[ií]quido/i.test(agH1) &&
+        !/obligatorio/i.test(agH1),
+      agH1,
+    );
+    assert(
+      "SEO aguinaldo meta distinta de la guía y de /gratificacion",
+      agDesc &&
+        agDesc !== ((guideHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "") &&
+        agDesc !== ((gratHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || ""),
+    );
+    assert(
+      "SEO aguinaldo no afirma obligación legal general",
+      /no crea un deber legal general/i.test(agHtml) &&
+        /no es una obligaci[oó]n legal/i.test(agHtml) &&
+        !/la ley obliga/i.test(agHtml) &&
+        /dt\.gob\.cl\/portal\/1627\/w3-article-96895/.test(agHtml) &&
+        /bcn\.cl\/leychile\/navegar\?idNorma=207436/.test(agHtml) &&
+        /7143\/340/.test(agHtml) &&
+        /art[ií]culo 41/i.test(agHtml),
+    );
+    assert(
+      "SEO aguinaldo no es gratificación ni sueldo líquido",
+      /href="\/gratificacion"/.test(agHtml) &&
+        /href="\/sueldo"/.test(agHtml) &&
+        /href="\/guias\/aguinaldo-fiestas-patrias"/.test(agHtml) &&
+        /no es la gratificaci[oó]n/i.test(agHtml),
+    );
+    assert(
+      "SEO aguinaldo golden fijo, %, N e imponible",
+      fijo.porTrabajador === 50_000 &&
+        fijo.totalPlanilla === 500_000 &&
+        fijo.extraLiquido === 40_910 &&
+        pct.porTrabajador === 80_000 &&
+        pct.totalPlanilla === 400_000 &&
+        /\$50\.000/.test(agHtml) &&
+        /\$40\.910/.test(agHtml) &&
+        /\$500\.000/.test(agHtml) &&
+        /\$80\.000/.test(agHtml) &&
+        /\$400\.000/.test(agHtml) &&
+        /\$800\.000/.test(agHtml),
+    );
+    assert("SEO aguinaldo FAQPage", /"@type": "FAQPage"/.test(agHtml));
+    assert(
+      "SEO aguinaldo métrica es total planilla, default imponible",
+      /Total planilla/.test(agHtml) &&
+        /Marcar como no imponible/.test(agHtml) &&
+        /Por defecto es haber imponible/.test(agHtml),
+    );
+    assert(
+      "home y nav enlazan /aguinaldo",
+      /href="\/aguinaldo"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/aguinaldo" data-nav>Aguinaldo<\/a>/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/aguinaldo" data-nav>Aguinaldo<\/a>/.test(agHtml),
+    );
+    assert(
+      "sitemap incluye /aguinaldo",
+      locs.includes("https://www.haberes.cl/aguinaldo") && lastmodForPath("/aguinaldo") === "2026-08-30",
+    );
+    assert(
+      "GUIDES aguinaldo-fiestas-patrias apunta a /aguinaldo",
+      GUIDES.find((g) => g.slug === "aguinaldo-fiestas-patrias")?.calc === "/aguinaldo",
+    );
+    assert(
+      "seo-map documenta /aguinaldo y no-canibalizar /gratificacion",
+      /\/aguinaldo/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no canibalizar `\/gratificacion`/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no crear `\/bono-fiestas-patrias`/i.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")),
+    );
+    assert(
+      "no se crean URLs hermanas de aguinaldo",
+      !existsSync(join(root, "bono-fiestas-patrias.html")) &&
+        !existsSync(join(root, "aguinaldo-navidad.html")) &&
+        !existsSync(join(root, "aguinaldo-18.html")),
+    );
+    assert(
+      "guía aguinaldo y /gratificacion enlazan /aguinaldo",
+      /href="\/aguinaldo"/.test(guideHtml) && /href="\/aguinaldo"/.test(gratHtml),
+    );
   }
   {
     const files = [
@@ -6043,6 +6242,7 @@ assert(
       "asignacion-familiar.html",
       "feriado-progresivo.html",
       "indemnizacion-anos-servicio.html",
+      "aguinaldo.html",
       "finiquito.html",
       "empresa.html",
       "precios.html",
@@ -6214,7 +6414,7 @@ assert(
     return acc;
   }
   const pages = listHtml(root);
-  assert("59 páginas HTML", pages.length === 59, String(pages.length));
+  assert("60 páginas HTML", pages.length === 60, String(pages.length));
   for (const file of pages) {
     const html = readFileSync(file, "utf8");
     const rel = file.slice(root.length + 1);

@@ -215,6 +215,7 @@ function paintLoggedInNav(emp) {
         <a href="/horas-extras" data-nav>Horas extras</a>
         <a href="/recargo-domingo-comercio" data-nav>Recargo domingo comercio</a>
         <a href="/gratificacion" data-nav>Gratificación</a>
+        <a href="/aguinaldo" data-nav>Aguinaldo</a>
         <a href="/impuesto-unico" data-nav>Impuesto único</a>
         <a href="/cotizaciones-previsionales" data-nav>Cotizaciones previsionales</a>
         <a href="/asignacion-familiar" data-nav>Asignación familiar</a>

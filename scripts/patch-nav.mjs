@@ -22,6 +22,7 @@ const DRAWER_LINKS = [
   ["/recargo-domingo-comercio", "Recargo domingo comercio"],
   ["/semana-corrida", "Semana corrida"],
   ["/gratificacion", "Gratificación"],
+  ["/aguinaldo", "Aguinaldo"],
   ["/impuesto-unico", "Impuesto único"],
   ["/cotizaciones-previsionales", "Cotizaciones previsionales"],
   ["/asignacion-familiar", "Asignación familiar"],

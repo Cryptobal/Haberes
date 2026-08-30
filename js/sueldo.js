@@ -500,3 +500,77 @@ export function calcularSueldo(input = {}, indicadores = {}) {
         : "",
   };
 }
+
+/**
+ * Presupuesto de aguinaldo (Fiestas Patrias u otro de costumbre/convenio).
+ *
+ * No es un haber legal general del Código del Trabajo en el sector privado.
+ * El monto lo pone el usuario (fijo o % del sueldo). Por defecto se trata
+ * como haber imponible (art. 41: el aguinaldo no está en el listado de
+ * exclusiones; dictamen DT 7143/340 sobre aguinaldos pactados). El usuario
+ * puede marcarlo no imponible si su pacto o una exención expresa lo ameritan.
+ *
+ * El impacto en la liquidación compara el líquido con/sin el aguinaldo,
+ * con AFP Modelo, Fonasa y contrato indefinido (misma cuenta que /sueldo).
+ *
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=207436
+ * @see https://www.dt.gob.cl/portal/1627/w3-article-96895.html
+ */
+export function calcularAguinaldo(
+  {
+    modo = "fijo",
+    montoFijo = 0,
+    porcentaje = 0,
+    sueldoBase = 0,
+    trabajadores = 1,
+    imponible = true,
+  } = {},
+  indicadores = {},
+) {
+  const esPorcentaje = String(modo || "fijo").toLowerCase() === "porcentaje";
+  const sueldo = Math.max(0, Number(sueldoBase) || 0);
+  const fijo = Math.max(0, Number(montoFijo) || 0);
+  const pct = Math.max(0, Number(porcentaje) || 0);
+  const n = Math.max(0, Math.floor(Number(trabajadores) || 0));
+  const esImponible = imponible !== false;
+  const porTrabajador = roundPeso(esPorcentaje ? (sueldo * pct) / 100 : fijo);
+  const totalPlanilla = roundPeso(porTrabajador * n);
+
+  const baseInput = {
+    sueldoBase: sueldo,
+    afp: "modelo",
+    salud: "fonasa",
+    contrato: "indefinido",
+  };
+  const sin = calcularSueldo(baseInput, indicadores);
+  const con = calcularSueldo(
+    {
+      ...baseInput,
+      otrosImponibles: esImponible ? porTrabajador : 0,
+      otrosNoImponibles: esImponible ? 0 : porTrabajador,
+    },
+    indicadores,
+  );
+
+  return {
+    modo: esPorcentaje ? "porcentaje" : "fijo",
+    montoFijo: fijo,
+    porcentaje: pct,
+    sueldoBase: sueldo,
+    trabajadores: n,
+    imponible: esImponible,
+    porTrabajador,
+    totalPlanilla,
+    extraLiquido: con.liquido - sin.liquido,
+    extraDescuentos: con.totalDescuentos - sin.totalDescuentos,
+    extraLiquidoPlanilla: roundPeso((con.liquido - sin.liquido) * n),
+    extraDescuentosPlanilla: roundPeso((con.totalDescuentos - sin.totalDescuentos) * n),
+    extraImponible: con.imponible - sin.imponible,
+    extraIusc: con.iusc - sin.iusc,
+    extraAfp: con.afp.monto - sin.afp.monto,
+    extraSalud: con.salud.monto - sin.salud.monto,
+    extraCesantia: con.cesantia.monto - sin.cesantia.monto,
+    liquidoCon: con.liquido,
+    liquidoSin: sin.liquido,
+  };
+}

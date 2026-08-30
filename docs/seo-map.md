@@ -21,6 +21,7 @@ Actualizar este archivo antes de crear URLs nuevas para evitar canibalización.
 | Calcular asignación familiar | asignación familiar / tramos asignación familiar / cargas familiares | `/asignacion-familiar` | Title/H1 «calcular asignación familiar»; no canibalizar `/sueldo`, `/cotizaciones-previsionales` ni `/guias/liquidacion-de-sueldo`. Sistema Único (D.F.L. 150), no SUF municipal. No crear `/suf`, `/asignacion-maternal` ni `/cargas-familiares` |
 | Calcular feriado progresivo | feriado progresivo / vacaciones progresivas / calcular feriado progresivo | `/feriado-progresivo` | Title/H1 «calcular feriado progresivo»; no canibalizar `/vacaciones-proporcionales` ni `/finiquito`. Art. 68 (días extra al feriado anual), no art. 73 (plata de días no usados). No crear `/vacaciones-progresivas` ni `/indemnizacion` |
 | Calcular indemnización por años de servicio | indemnizacion por años de servicio (2.400/24) — intención calcular | `/indemnizacion-anos-servicio` | Title/H1 «calcular indemnización por años de servicio»; no canibalizar `/finiquito` ni `/guias/indemnizacion-por-anos-de-servicio`. Art. 163 (IAS), no el finiquito completo. No crear `/indemnizacion` |
+| Calcular aguinaldo Fiestas Patrias | aguinaldo fiestas patrias (5.400/23) — intención presupuestar/calcular monto | `/aguinaldo` | Title/H1 «calcular aguinaldo Fiestas Patrias»; no es obligación legal general del Código; no canibalizar `/gratificacion`, `/sueldo` ni `/guias/aguinaldo-fiestas-patrias`. No crear `/bono-fiestas-patrias` ni `/aguinaldo-navidad` |
 | Índice de guías | — | `/guias` | Hub: 17 guías, grupo liquidación vs finiquito |
 
 ## Guías pilar (contenido + calculadora embebida)
@@ -35,7 +36,7 @@ Actualizar este archivo antes de crear URLs nuevas para evitar canibalización.
 | Horas extras (guía) | cálculo horas extras — explainer | `/guias/horas-extras` | enlace a `/horas-extras`; no reescribir en esta tanda |
 | Vacaciones / feriado proporcional (guía) | vacaciones proporcionales — explainer | `/guias/vacaciones-proporcionales` | enlace a `/vacaciones-proporcionales`; no reescribir en esta tanda |
 | Semana corrida | semana corrida (1.300/21) — explainer | `/guias/semana-corrida` | enlace a `/semana-corrida`; embed `/sueldo` para el líquido; no canibalizar title/H1 de la calculadora |
-| Aguinaldo Fiestas Patrias | aguinaldo fiestas patrias (5.400/23), es obligatorio el aguinaldo (480/15), bono fiestas patrias (170) | `/guias/aguinaldo-fiestas-patrias` | guía espesa + embed `/sueldo`; no es obligación general del Código; no canibalizar `/gratificacion` ni `/guias/gratificacion-legal` |
+| Aguinaldo Fiestas Patrias | aguinaldo fiestas patrias (5.400/23), es obligatorio el aguinaldo (480/15), bono fiestas patrias (170) | `/guias/aguinaldo-fiestas-patrias` | guía espesa; el cálculo vive en `/aguinaldo`; no es obligación general del Código; no canibalizar `/gratificacion` ni `/guias/gratificacion-legal` |
 | Carta de aviso | carta de aviso de término de contrato (10–480) | `/guias/carta-aviso-termino-contrato` | plantilla descargable |
 | Casa particular | finiquito asesora del hogar (140/15) | `/guias/finiquito-trabajadora-de-casa-particular` | ya existe; reforzar régimen AFC 4,11 % |
 
@@ -113,6 +114,11 @@ No publicar hermanas de semana corrida: `/septimo-dia`, `/pago-domingo-festivo`,
 `/semana-corrida-mensual`. El haber del artículo 45 vive en `/semana-corrida`.
 El recargo 30 % del comercio (art. 38 N°7) sigue en `/recargo-domingo-comercio`.
 La guía editorial sigue en `/guias/semana-corrida`.
+
+No publicar hermanas de aguinaldo: `/bono-fiestas-patrias`, `/aguinaldo-navidad`,
+`/aguinaldo-18`. El presupuesto (monto fijo o % del sueldo, planilla e impacto
+imponible) vive en `/aguinaldo`. La guía «¿es obligatorio?» sigue en
+`/guias/aguinaldo-fiestas-patrias`. No canibalizar `/gratificacion` ni `/sueldo`.
 
 ## Cómo regenerar
 
