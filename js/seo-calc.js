@@ -12,7 +12,7 @@ import {
   DISCLAIMER,
 } from "./constants.js";
 import { calcularFiniquitoCompleto, feriadoProporcional } from "./finiquito.js";
-import { calcularSueldo, valorHoraExtra, gratificacionArt50 } from "./sueldo.js";
+import { calcularAguinaldo, calcularSueldo, valorHoraExtra, gratificacionArt50 } from "./sueldo.js";
 
 function pesos(n) {
   return new Intl.NumberFormat("es-CL", {
@@ -239,6 +239,38 @@ function mountIusc(root) {
     </div>`;
 }
 
+function mountAguinaldo(root) {
+  root.innerHTML = `
+    <form class="seo-calc__form" novalidate>
+      <p class="seo-calc__title">Estimar aguinaldo (presupuesto pyme)</p>
+      ${field("Monto por trabajador", "monto", 'type="text" inputmode="numeric" value="50000"')}
+      ${field("Trabajadores", "n", 'type="number" min="0" value="10"')}
+      <p class="seo-calc__result" data-out>—</p>
+      <div class="seo-calc__actions">
+        <button type="submit" class="btn">Calcular</button>
+        <a class="btn btn-ghost" href="/aguinaldo">Calcular aguinaldo</a>
+        <a class="btn btn-ghost" href="/sueldo">Ver efecto en el líquido</a>
+      </div>
+      <p class="seo-calc__note">En el sector privado no es obligación legal general del Código. ${DISCLAIMER}</p>
+    </form>`;
+  const form = root.querySelector("form");
+  const out = root.querySelector("[data-out]");
+  const run = () => {
+    const r = calcularAguinaldo({
+      modo: "fijo",
+      montoFijo: num(form.monto),
+      trabajadores: Number(form.n.value) || 0,
+      imponible: true,
+    });
+    out.textContent = `Planilla estimada: ${pesos(r.totalPlanilla)} (${pesos(r.porTrabajador)} por persona)`;
+  };
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    run();
+  });
+  run();
+}
+
 const MOUNTERS = {
   finiquito: mountFiniquito,
   sueldo: mountSueldo,
@@ -246,6 +278,7 @@ const MOUNTERS = {
   horas: mountHoras,
   feriado: mountFeriado,
   iusc: mountIusc,
+  aguinaldo: mountAguinaldo,
 };
 
 document.querySelectorAll("[data-seo-calc]").forEach((el) => {

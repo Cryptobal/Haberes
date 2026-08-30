@@ -2,20 +2,21 @@
 title: "Aguinaldo de Fiestas Patrias: ¿es obligatorio en Chile? — Haberes"
 description: "El Código del Trabajo no obliga un aguinaldo de Fiestas Patrias en el sector privado. Cuándo sí se debe, cómo va en la liquidación y si es imponible."
 h1: "Aguinaldo de Fiestas Patrias: ¿es obligatorio en Chile?"
-calc: "sueldo"
-updated: "2026-08-25"
+calc: "aguinaldo"
+updated: "2026-08-30"
 published: "2026-08-25"
 faq:
   - {"q":"¿Es obligatorio el aguinaldo de Fiestas Patrias?","a":"En el sector privado, no como regla general. El Código del Trabajo no crea un deber legal de pagar un aguinaldo de 18 de septiembre. Sí se debe si está en el contrato, en un instrumento colectivo, o si la Dirección del Trabajo estima que el pago reiterado configuró una cláusula tácita. En el sector público nace de la ley de reajuste (Ley 21.724; montos 2026 en la Ley 21.806), no del Código."}
   - {"q":"¿Hay un aguinaldo mínimo o un porcentaje legal?","a":"No en el sector privado. No existe un aguinaldo mínimo ni un porcentaje del sueldo para pymes. Los montos del sector público (por ejemplo $91.682 y $63.645 en 2026) no son piso para una empresa privada. Si hay pacto o cláusula tácita, rige lo pactado o lo que se venía pagando."}
   - {"q":"¿El aguinaldo es la gratificación legal?","a":"No. La gratificación legal es el mecanismo de los artículos 47 y 50 (30 % de utilidades líquidas o 25 % con tope de 4,75 IMM). El aguinaldo o bono de Fiestas Patrias es otra partida: suele ser convencional, de política interna o de cortesía. No sustituye ni completa la gratificación."}
   - {"q":"¿El aguinaldo es imponible?","a":"En una pyme, si el pago es remuneración del artículo 41 (dinero por causa del contrato y no está en el listado del inciso segundo), la Dirección del Trabajo lo ha calificado como remuneración y entra a cotizaciones e impuesto único, salvo una exención expresa. El aguinaldo público de la Ley 21.724 no es imponible ni tributable (artículo 10). Si el caso es mixto, pregunte al contador o a la DT."}
-  - {"q":"¿Cómo se ve en la liquidación y en Haberes?","a":"Si se paga, debe aparecer como haber propio en el comprobante del artículo 54, con monto y forma de determinación. Haberes no tiene un campo «aguinaldo»: en la calculadora de sueldo líquido, modo completo, súmelo en Otros imponibles. No es un cálculo de la Dirección del Trabajo ni de Previred."}
+  - {"q":"¿Cómo se ve en la liquidación y en Haberes?","a":"Si se paga, debe aparecer como haber propio en el comprobante del artículo 54, con monto y forma de determinación. Presupueste en la calculadora de aguinaldo. En sueldo líquido, modo completo, súmelo en Otros imponibles. No es un cálculo de la Dirección del Trabajo ni de Previred."}
 ---
+
 
 # Aguinaldo de Fiestas Patrias: ¿es obligatorio en Chile?
 
-Cada septiembre la pyme pregunta si debe pagar **aguinaldo de Fiestas Patrias** (o un **bono de Fiestas Patrias**) por el **18 de septiembre**. En el **sector privado** el [Código del Trabajo](https://www.bcn.cl/leychile/navegar?idNorma=207436) **no crea un deber legal general** de pagarlo. No es la [gratificación legal](/guias/gratificacion-legal) de los artículos 47 y 50. Si sí se paga, va como haber propio en la [liquidación](/guias/liquidacion-de-sueldo); el líquido se estima en la [calculadora de sueldo líquido](/sueldo).
+Cada septiembre la pyme pregunta si debe pagar **aguinaldo de Fiestas Patrias** (o un **bono de Fiestas Patrias**) por el **18 de septiembre**. En el **sector privado** el [Código del Trabajo](https://www.bcn.cl/leychile/navegar?idNorma=207436) **no crea un deber legal general** de pagarlo. No es la [gratificación legal](/guias/gratificacion-legal) de los artículos 47 y 50. Para presupuestar el monto use [calcular aguinaldo](/aguinaldo). Si sí se paga, va como haber propio en la [liquidación](/guias/liquidacion-de-sueldo); el líquido se estima en la [calculadora de sueldo líquido](/sueldo).
 
 ## Qué es (y qué no es)
 
@@ -65,7 +66,7 @@ Pyme privada, sueldo base **$800.000**. El anexo promete **$50.000** de aguinald
 
 1. Liquidación de septiembre: sueldo base $800.000 y línea **Aguinaldo Fiestas Patrias $50.000**.
 2. Si es remuneración del 41, esos $50.000 **suben la base imponible**. El trabajador no recibe $50.000 líquidos extra.
-3. En [calcular sueldo líquido](/sueldo), modo completo, súmelos en **Otros imponibles**. No use **Otros no imponibles** solo porque «es un bono de fiesta».
+3. En [calcular aguinaldo](/aguinaldo) ponga $50.000, el sueldo y cuántas personas. En [calcular sueldo líquido](/sueldo), modo completo, súmelos en **Otros imponibles**. No use **Otros no imponibles** solo porque «es un bono de fiesta».
 
 Haberes **estima** el líquido. **No declara en Previred** y no califica la cláusula tácita. Si el haber es de una vez al año, no lo sume a ciegas a la [indemnización por años de servicio](/guias/indemnizacion-por-anos-de-servicio): [con qué sueldo se calcula el finiquito](/guias/con-que-sueldo-se-calcula-el-finiquito).
 
@@ -76,7 +77,7 @@ Haberes **estima** el líquido. **No declara en Previred** y no califica la clá
 - Confundirlo con la [gratificación 47/50](/guias/gratificacion-legal) o usarlo para «llegar» al ingreso mínimo.
 - Meterlo en la base de la [semana corrida](/guias/semana-corrida). El 45 lo excluye.
 - No mostrarlo en la liquidación, o marcarlo no imponible sin exención.
-- Pretender que Haberes calcule sola el aguinaldo.
+- Confundir el presupuesto de [calcular aguinaldo](/aguinaldo) con una obligación legal o con la [gratificación 47/50](/guias/gratificacion-legal).
 
 También: [índice de guías](/guias).
 
