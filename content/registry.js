@@ -61,6 +61,7 @@ export const GUIDES = [
 /** lastmod de rutas base que sí cambiaron después del lote SEO inicial. */
 export const PATH_LASTMOD = {
   "/guias": "2026-08-30",
+  "/costo-empresa": "2026-08-30",
   "/aguinaldo": "2026-08-30",
   "/horas-extras": "2026-08-20",
   "/vacaciones-proporcionales": "2026-08-21",
@@ -93,6 +94,7 @@ export const BASE_PATHS = [
   "/asignacion-familiar",
   "/como",
   "/cotizaciones-previsionales",
+  "/costo-empresa",
   "/empresa",
   "/feriado-progresivo",
   "/finiquito",
