@@ -25,6 +25,7 @@ const DRAWER_LINKS = [
   ["/aguinaldo", "Aguinaldo"],
   ["/impuesto-unico", "Impuesto único"],
   ["/cotizaciones-previsionales", "Cotizaciones previsionales"],
+  ["/costo-empresa", "Costo empresa"],
   ["/asignacion-familiar", "Asignación familiar"],
   ["/vacaciones-proporcionales", "Vacaciones proporcionales"],
   ["/feriado-progresivo", "Feriado progresivo"],

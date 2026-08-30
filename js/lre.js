@@ -16,9 +16,10 @@
 // - El archivo lleva encabezados y no admite quitar ni agregar columnas
 //
 // Este módulo genera un borrador para revisar antes de subir a Mi DT: los
-// aportes del empleador (mutual, SIS, reforma Ley 21.735) van en 0 porque el
-// sitio no calcula tasas de cargo del empleador, y la DT aún no publica
-// códigos propios para el aporte de la reforma.
+// aportes del empleador (mutual, SIS, reforma Ley 21.735) van en 0. La
+// estimación de esas tasas vive en /costo-empresa; el LRE no las rellena
+// porque la mutual adicional depende de la siniestralidad de cada empresa
+// y la DT aún no publica códigos propios para el detalle de la reforma.
 
 import { sumaAnticiposPrestamos } from "./novedades.js";
 import { calcularSueldo, roundPeso } from "./sueldo.js";
@@ -400,9 +401,9 @@ function filaLre(trabajador, contexto, indicadores) {
   if (otrosDescuentos) v[3183] = otrosDescuentos;
   if (anticiposPrestamos) v[3188] = anticiposPrestamos;
 
-  // Aportes del empleador: el sitio no calcula tasas de cargo del empleador
-  // (mutual según siniestralidad, SIS, aporte Ley 21.735). Van en 0 para que
-  // el contador los complete; la DT exige el campo pero acepta cero.
+  // Aportes del empleador: /costo-empresa estima Ley 21.735, cesantía,
+  // mutual y SANNA; el LRE sigue en 0 para que el contador complete la
+  // tasa adicional SUSESO. La DT exige el campo pero acepta cero.
   v[4152] = 0;
   v[4155] = 0;
 

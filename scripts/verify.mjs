@@ -10,6 +10,8 @@ import { fileURLToPath } from "node:url";
 import {
   AFP_COMISION,
   ASIGNACION_FAMILIAR_TRAMOS,
+  CESANTIA_EMPLEADOR_INDEFINIDO,
+  CESANTIA_EMPLEADOR_PLAZO_FIJO,
   DISCLAIMER,
   DISCLAIMER_FINIQUITO,
   FALLBACK_UF,
@@ -17,6 +19,12 @@ import {
   GRATIFICACION_TOPE,
   IMM,
   IUSC_TRAMOS,
+  LEY_21735_CRP,
+  LEY_21735_CUENTA_INDIVIDUAL,
+  LEY_21735_SSP,
+  LEY_21735_TASA,
+  MUTUAL_TASA_BASICA,
+  SANNA_TASA,
   TEXTO_LEGAL_MAX,
   TOPE_AFP_SALUD_UF,
   TOPE_CESANTIA_UF,
@@ -41,11 +49,13 @@ import {
 import {
   calcularAsignacionFamiliar,
   calcularAguinaldo,
+  calcularCostoEmpresa,
   calcularFeriadoProgresivo,
   calcularIusc,
   calcularRecargoDomingoComercio,
   calcularSemanaCorrida,
   calcularSueldo,
+  brutoDesdeLiquido,
   gratificacionArt50,
   tasaAfp,
   valorHoraExtra,
@@ -119,6 +129,19 @@ assert(
 );
 assert("Tope AFP/salud 90 UF", TOPE_AFP_SALUD_UF === 90);
 assert("Tope cesantía 135.2 UF", TOPE_CESANTIA_UF === 135.2);
+assert(
+  "Cesantía empleador Ley 19.728",
+  CESANTIA_EMPLEADOR_INDEFINIDO === 0.024 && CESANTIA_EMPLEADOR_PLAZO_FIJO === 0.03,
+);
+assert(
+  "Ley 21.735 ago-2026 3,5 % con SIS incluido",
+  LEY_21735_TASA === 0.035 &&
+    LEY_21735_CUENTA_INDIVIDUAL === 0.001 &&
+    LEY_21735_CRP === 0.009 &&
+    LEY_21735_SSP === 0.025 &&
+    close(LEY_21735_CUENTA_INDIVIDUAL + LEY_21735_CRP + LEY_21735_SSP, LEY_21735_TASA, 1e-12),
+);
+assert("Mutual básica 0,90 % y SANNA 0,03 %", MUTUAL_TASA_BASICA === 0.009 && SANNA_TASA === 0.0003);
 assert("IUSC 8 tramos ago 2026", IUSC_TRAMOS.length === 8 && IUSC_TRAMOS[0].hasta === 967261.5);
 assert(
   "Asignación familiar 4 tramos Ley 21.830",
@@ -508,6 +531,97 @@ assert(
     "app-aguinaldo usa calcularAguinaldo",
     /import\s*\{[^}]*calcularAguinaldo[^}]*\}\s*from\s*["']\.\/sueldo\.js["']/.test(agApp) &&
       /calcularAguinaldo\s*\(/.test(agApp),
+  );
+}
+{
+  const ind = { uf: FALLBACK_UF };
+  const demo = calcularCostoEmpresa(
+    { modo: "bruto", monto: 800_000, contrato: "indefinido" },
+    ind,
+  );
+  assert(
+    "costo empresa 800000 indefinido = 854640",
+    demo.ley21735.monto === 28_000 &&
+      demo.cesantiaEmpleador.monto === 19_200 &&
+      demo.mutual.monto === 7_200 &&
+      demo.sanna.monto === 240 &&
+      demo.totalAportes === 54_640 &&
+      demo.costoEmpresa === 854_640 &&
+      demo.liquido === 654_560,
+    JSON.stringify({
+      ley: demo.ley21735.monto,
+      ces: demo.cesantiaEmpleador.monto,
+      mutual: demo.mutual.monto,
+      sanna: demo.sanna.monto,
+      aportes: demo.totalAportes,
+      costo: demo.costoEmpresa,
+    }),
+  );
+  assert(
+    "costo empresa Ley 21.735 desglose 0,1+0,9+2,5",
+    demo.ley21735.cuentaIndividual.monto === 800 &&
+      demo.ley21735.crp.monto === 7_200 &&
+      demo.ley21735.ssp.monto === 20_000 &&
+      demo.ley21735.monto === 28_000,
+  );
+  const plazo = calcularCostoEmpresa(
+    { modo: "bruto", monto: 800_000, contrato: "plazo_fijo" },
+    ind,
+  );
+  assert(
+    "costo empresa plazo fijo cesantía 3 %",
+    plazo.cesantiaEmpleador.tasa === 0.03 &&
+      plazo.cesantiaEmpleador.monto === 24_000 &&
+      plazo.costoEmpresa === 859_440,
+    String(plazo.costoEmpresa),
+  );
+  const grat = calcularCostoEmpresa(
+    { modo: "bruto", monto: 800_000, contrato: "indefinido", gratificacionArt50: true },
+    ind,
+  );
+  assert(
+    "costo empresa con grat art. 50",
+    grat.gratificacion === 200_000 &&
+      grat.imponible === 1_000_000 &&
+      grat.totalAportes === 68_300 &&
+      grat.costoEmpresa === 1_068_300,
+    String(grat.costoEmpresa),
+  );
+  const liq = calcularSueldo(
+    { sueldoBase: 800_000, afp: "modelo", salud: "fonasa", contrato: "indefinido" },
+    ind,
+  );
+  assert(
+    "brutoDesdeLiquido 654560 → 800000",
+    brutoDesdeLiquido(liq.liquido, { afp: "modelo", salud: "fonasa", contrato: "indefinido" }, ind) === 800_000 &&
+      liq.liquido === 654_560,
+  );
+  const fromLiq = calcularCostoEmpresa(
+    { modo: "liquido", monto: 654_560, contrato: "indefinido" },
+    ind,
+  );
+  assert(
+    "costo empresa desde líquido 654560",
+    fromLiq.sueldoBase === 800_000 && fromLiq.costoEmpresa === 854_640,
+    `${fromLiq.sueldoBase} ${fromLiq.costoEmpresa}`,
+  );
+  const tope = calcularCostoEmpresa(
+    { modo: "bruto", monto: 10_000_000, contrato: "indefinido" },
+    ind,
+  );
+  assert(
+    "costo empresa respeta tope 90 UF y 135,2 UF",
+    close(tope.baseAfpSalud, TOPE_AFP_SALUD_UF * FALLBACK_UF, 0.1) &&
+      close(tope.baseCesantia, TOPE_CESANTIA_UF * FALLBACK_UF, 0.1) &&
+      tope.ley21735.monto === 128_691 &&
+      tope.cesantiaEmpleador.monto === 132_563,
+    `${tope.ley21735.monto} ${tope.cesantiaEmpleador.monto}`,
+  );
+  const ceApp = readFileSync(join(root, "js/app-costo-empresa.js"), "utf8");
+  assert(
+    "app-costo-empresa usa calcularCostoEmpresa",
+    /import\s*\{[^}]*calcularCostoEmpresa[^}]*\}\s*from\s*["']\.\/sueldo\.js["']/.test(ceApp) &&
+      /calcularCostoEmpresa\s*\(/.test(ceApp),
   );
 }
 {
@@ -1041,6 +1155,7 @@ const required = [
   "gratificacion.html",
   "impuesto-unico.html",
   "cotizaciones-previsionales.html",
+  "costo-empresa.html",
   "recargo-domingo-comercio.html",
   "semana-corrida.html",
   "asignacion-familiar.html",
@@ -1053,6 +1168,7 @@ const required = [
   "js/app-gratificacion.js",
   "js/app-impuesto-unico.js",
   "js/app-cotizaciones-previsionales.js",
+  "js/app-costo-empresa.js",
   "js/app-recargo-domingo-comercio.js",
   "js/app-semana-corrida.js",
   "js/app-asignacion-familiar.js",
@@ -1192,6 +1308,7 @@ const htmlFiles = [
   "gratificacion.html",
   "impuesto-unico.html",
   "cotizaciones-previsionales.html",
+  "costo-empresa.html",
   "recargo-domingo-comercio.html",
   "semana-corrida.html",
   "asignacion-familiar.html",
@@ -1279,6 +1396,7 @@ const appEntries = [
   "js/app-gratificacion.js",
   "js/app-impuesto-unico.js",
   "js/app-cotizaciones-previsionales.js",
+  "js/app-costo-empresa.js",
   "js/app-recargo-domingo-comercio.js",
   "js/app-semana-corrida.js",
   "js/app-asignacion-familiar.js",
@@ -1317,7 +1435,7 @@ assert("robots Allow /", /Allow:\s*\//.test(robots));
 assert("robots Disallow /admin", /Disallow:\s*\/admin/.test(robots));
 assert("robots Disallow /api", /Disallow:\s*\/api/.test(robots));
 assert("robots Disallow /docs", /Disallow:\s*\/docs/.test(robots));
-assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots));
+assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots));
 assert("robots Sitemap", /Sitemap:\s*https:\/\/www\.haberes\.cl\/sitemap\.xml/.test(robots));
 
 const { seoPaths, GUIDE_SLUGS, GUIDES, CAUSAL_PAGES, BASE_PATHS, lastmodForPath } = await import("../content/registry.js");
@@ -1340,6 +1458,7 @@ assert(
     BASE_PATHS.includes("/gratificacion") &&
     BASE_PATHS.includes("/impuesto-unico") &&
     BASE_PATHS.includes("/cotizaciones-previsionales") &&
+    BASE_PATHS.includes("/costo-empresa") &&
     BASE_PATHS.includes("/recargo-domingo-comercio") &&
     BASE_PATHS.includes("/semana-corrida") &&
     BASE_PATHS.includes("/asignacion-familiar") &&
@@ -1694,7 +1813,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 58,
+      seoPaths().length === 59,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -1706,7 +1825,7 @@ try {
   const docsSeo = await hitLocal("/docs/seo-map.md");
   assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
   assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
-  for (const p of ["/sueldo/", "/finiquito/", "/horas-extras/", "/recargo-domingo-comercio/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/aguinaldo/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/asignacion-familiar/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+  for (const p of ["/sueldo/", "/finiquito/", "/horas-extras/", "/recargo-domingo-comercio/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/aguinaldo/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/asignacion-familiar/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
   }
@@ -1732,6 +1851,7 @@ try {
     "/gratificacion",
     "/impuesto-unico",
     "/cotizaciones-previsionales",
+    "/costo-empresa",
     "/asignacion-familiar",
     "/guias/liquidacion-de-sueldo",
     "/guias/finiquito",
@@ -4945,6 +5065,7 @@ assert(
     ["gratificacion.html", "/gratificacion"],
     ["impuesto-unico.html", "/impuesto-unico"],
     ["cotizaciones-previsionales.html", "/cotizaciones-previsionales"],
+    ["costo-empresa.html", "/costo-empresa"],
     ["recargo-domingo-comercio.html", "/recargo-domingo-comercio"],
     ["semana-corrida.html", "/semana-corrida"],
     ["asignacion-familiar.html", "/asignacion-familiar"],
@@ -5555,7 +5676,10 @@ assert(
     assert("SEO cotizaciones FAQPage", /"@type": "FAQPage"/.test(cpHtml));
     assert(
       "SEO cotizaciones no inventa tasas de empleador",
-      /todav[ií]a no modela/.test(cpHtml) && !/SIS\s+\d/.test(cpHtml) && !/mutual\s+\d/i.test(cpHtml),
+      /href="\/costo-empresa"/.test(cpHtml) &&
+        !/todav[ií]a no modela/.test(cpHtml) &&
+        !/SIS\s+\d/.test(cpHtml) &&
+        !/mutual\s+\d/i.test(cpHtml),
     );
     assert(
       "SEO cotizaciones enlaza sueldo y guías de liquidación",
@@ -6229,6 +6353,116 @@ assert(
     );
   }
   {
+    const ceHtml = readFileSync(join(root, "costo-empresa.html"), "utf8");
+    const ceTitle = (ceHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const ceH1 = (ceHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const ceDesc = (ceHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "";
+    const sueldoHtml = readFileSync(join(root, "sueldo.html"), "utf8");
+    const sueldoTitle = (sueldoHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const sueldoH1 = (sueldoHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const cpHtml = readFileSync(join(root, "cotizaciones-previsionales.html"), "utf8");
+    const cpTitle = (cpHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const cpH1 = (cpHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const gratHtml = readFileSync(join(root, "gratificacion.html"), "utf8");
+    const demo = calcularCostoEmpresa(
+      { modo: "bruto", monto: 800_000, contrato: "indefinido" },
+      { uf: FALLBACK_UF },
+    );
+    assert(
+      "SEO title costo empresa apunta a calcular costo empresa",
+      /calcular costo empresa/i.test(ceTitle) &&
+        !/sueldo l[ií]quido/i.test(ceTitle) &&
+        !/cotizaciones previsionales/i.test(ceTitle) &&
+        ceTitle !== sueldoTitle &&
+        ceTitle !== cpTitle &&
+        ceTitle.length <= 65,
+      ceTitle,
+    );
+    assert(
+      "SEO H1 costo empresa exacto y distinto de /sueldo y /cotizaciones",
+      ceH1 === "Calcular costo empresa de un sueldo Chile 2026" &&
+        ceH1 !== sueldoH1 &&
+        ceH1 !== cpH1 &&
+        !/sueldo l[ií]quido/i.test(ceH1),
+      ceH1,
+    );
+    assert(
+      "SEO costo empresa meta distinta de /sueldo y /cotizaciones",
+      ceDesc &&
+        ceDesc !== ((sueldoHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "") &&
+        ceDesc !== ((cpHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || ""),
+    );
+    assert(
+      "SEO costo empresa no canibaliza líquido ni cotizaciones del trabajador",
+      /no es el/i.test(ceHtml) &&
+        /sueldo l[ií]quido/.test(ceHtml) &&
+        /href="\/sueldo"/.test(ceHtml) &&
+        /href="\/cotizaciones-previsionales"/.test(ceHtml) &&
+        /href="\/gratificacion"/.test(ceHtml) &&
+        /Costo empresa/.test(ceHtml),
+    );
+    assert(
+      "SEO costo empresa cita Ley 21.735 y no suma SIS aparte",
+      /21\.735/.test(ceHtml) &&
+        /3,5\s*%/.test(ceHtml) &&
+        /no suma un SIS extra/i.test(ceHtml) &&
+        /spensiones\.cl/.test(ceHtml),
+    );
+    assert(
+      "SEO costo empresa ejemplo 800000 = 854640",
+      demo.costoEmpresa === 854_640 &&
+        demo.totalAportes === 54_640 &&
+        /\$800\.000/.test(ceHtml) &&
+        /\$854\.640/.test(ceHtml) &&
+        /\$54\.640/.test(ceHtml) &&
+        /\$28\.000/.test(ceHtml) &&
+        /\$19\.200/.test(ceHtml) &&
+        /\$7\.200/.test(ceHtml) &&
+        /\$240/.test(ceHtml) &&
+        /\$654\.560/.test(ceHtml),
+    );
+    assert("SEO costo empresa FAQPage", /"@type": "FAQPage"/.test(ceHtml));
+    assert(
+      "SEO costo empresa disclaimer Haberes / no DT / no Previred",
+      /Documento generado por Haberes/.test(ceHtml) &&
+        /Direcci[oó]n del Trabajo/.test(ceHtml) &&
+        /Previred/.test(ceHtml) &&
+        !/inteligencia artificial/i.test(ceHtml),
+    );
+    assert(
+      "home y nav enlazan /costo-empresa",
+      /href="\/costo-empresa"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/costo-empresa" data-nav>Costo empresa<\/a>/.test(
+          readFileSync(join(root, "index.html"), "utf8"),
+        ) &&
+        /href="\/costo-empresa" data-nav>Costo empresa<\/a>/.test(ceHtml),
+    );
+    assert(
+      "sitemap incluye /costo-empresa",
+      locs.includes("https://www.haberes.cl/costo-empresa") &&
+        lastmodForPath("/costo-empresa") === "2026-08-30",
+    );
+    assert(
+      "seo-map documenta /costo-empresa y no-canibalizar /sueldo",
+      /\/costo-empresa/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no canibalizar `\/sueldo` ni `\/cotizaciones-previsionales`/.test(
+          readFileSync(join(root, "docs/seo-map.md"), "utf8"),
+        ) &&
+        /no crear `\/costo-trabajador`/i.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")),
+    );
+    assert(
+      "no se crean URLs hermanas de costo empresa",
+      !existsSync(join(root, "costo-trabajador.html")) &&
+        !existsSync(join(root, "aportes-patronales.html")),
+    );
+    assert(
+      "sueldo, cotizaciones y gratificación enlazan /costo-empresa",
+      /href="\/costo-empresa"/.test(sueldoHtml) &&
+        /href="\/costo-empresa"/.test(cpHtml) &&
+        /href="\/costo-empresa"/.test(gratHtml),
+    );
+  }
+  {
     const files = [
       "index.html",
       "sueldo.html",
@@ -6237,6 +6471,7 @@ assert(
       "gratificacion.html",
       "impuesto-unico.html",
       "cotizaciones-previsionales.html",
+      "costo-empresa.html",
       "recargo-domingo-comercio.html",
       "semana-corrida.html",
       "asignacion-familiar.html",
@@ -6414,7 +6649,7 @@ assert(
     return acc;
   }
   const pages = listHtml(root);
-  assert("60 páginas HTML", pages.length === 60, String(pages.length));
+  assert("61 páginas HTML", pages.length === 61, String(pages.length));
   for (const file of pages) {
     const html = readFileSync(file, "utf8");
     const rel = file.slice(root.length + 1);

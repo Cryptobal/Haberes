@@ -47,6 +47,36 @@ export const CESANTIA_INDEFINIDO = 0.006;
 export const TOPE_CESANTIA_UF = 135.2;
 
 /**
+ * Seguro de cesantía de cargo del empleador — Ley 19.728.
+ * Indefinido 2,4 %; plazo fijo 3,0 %. Misma base y tope de 135,2 UF que el
+ * 0,6 % del trabajador. No se inventa un tope distinto.
+ */
+export const CESANTIA_EMPLEADOR_INDEFINIDO = 0.024;
+export const CESANTIA_EMPLEADOR_PLAZO_FIJO = 0.03;
+
+/**
+ * Cotización de cargo del empleador Ley 21.735 (reforma previsional).
+ * Remuneraciones de agosto 2026 a julio 2027: 3,5 % sobre la base AFP
+ * (tope 90 UF). Incluye el SIS: no se suma un SIS aparte.
+ * Distribución Superintendencia de Pensiones:
+ * 0,1 % cuenta individual + 0,9 % CRP + 2,5 % SSP (SIS y CEV).
+ * @see https://www.spensiones.cl/portal/institucional/594/w3-propertyvalue-10906.html
+ */
+export const LEY_21735_TASA = 0.035;
+export const LEY_21735_CUENTA_INDIVIDUAL = 0.001;
+export const LEY_21735_CRP = 0.009;
+export const LEY_21735_SSP = 0.025;
+
+/**
+ * Seguro de accidentes del trabajo (Ley 16.744 / D.S. N° 110): tasa básica
+ * 0,90 % sobre la base AFP/salud (tope 90 UF). La tasa adicional SUSESO es
+ * de cada empresa; el usuario la indica, no se inventa.
+ * SANNA (Ley 21.063): 0,03 % sobre la misma base.
+ */
+export const MUTUAL_TASA_BASICA = 0.009;
+export const SANNA_TASA = 0.0003;
+
+/**
  * Impuesto único de segunda categoría — tramos agosto 2026 (pesos).
  * tasa * base − rebaja
  */

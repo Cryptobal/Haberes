@@ -3,6 +3,8 @@ import {
   AFP_NOMBRES,
   AFP_OBLIGATORIO,
   ASIGNACION_FAMILIAR_TRAMOS,
+  CESANTIA_EMPLEADOR_INDEFINIDO,
+  CESANTIA_EMPLEADOR_PLAZO_FIJO,
   CESANTIA_INDEFINIDO,
   FALLBACK_UF,
   GRATIFICACION_TASA,
@@ -10,8 +12,14 @@ import {
   HORAS_EXTRA_FACTOR,
   IUSC_TRAMOS,
   JORNADA_DEFAULT,
+  LEY_21735_CRP,
+  LEY_21735_CUENTA_INDIVIDUAL,
+  LEY_21735_SSP,
+  LEY_21735_TASA,
+  MUTUAL_TASA_BASICA,
   RECARGO_DOMINGO_COMERCIO_MIN,
   SALUD_TASA,
+  SANNA_TASA,
   TOPE_AFP_SALUD_UF,
   TOPE_CESANTIA_UF,
 } from "./constants.js";
@@ -572,5 +580,113 @@ export function calcularAguinaldo(
     extraCesantia: con.cesantia.monto - sin.cesantia.monto,
     liquidoCon: con.liquido,
     liquidoSin: sin.liquido,
+  };
+}
+
+export function tasaCesantiaEmpleador(contrato) {
+  const c = String(contrato || "indefinido").toLowerCase().trim();
+  if (c === "plazo_fijo" || c === "plazo fijo" || c === "fijo") {
+    return CESANTIA_EMPLEADOR_PLAZO_FIJO;
+  }
+  return CESANTIA_EMPLEADOR_INDEFINIDO;
+}
+
+/**
+ * Invierte calcularSueldo: busca el sueldo base (peso entero) cuyo líquido
+ * alcanza el objetivo. Misma AFP, salud, contrato y gratificación art. 50.
+ */
+export function brutoDesdeLiquido(liquidoObjetivo, input = {}, indicadores = {}) {
+  const target = roundPeso(liquidoObjetivo);
+  if (target <= 0) return 0;
+  const base = {
+    afp: input.afp || "modelo",
+    salud: input.salud || "fonasa",
+    contrato: input.contrato || "indefinido",
+    gratificacionArt50: Boolean(input.gratificacionArt50),
+  };
+  let lo = 0;
+  let hi = Math.max(target * 4, 1_000_000);
+  for (let guard = 0; guard < 10 && calcularSueldo({ ...base, sueldoBase: hi }, indicadores).liquido < target; guard++) {
+    hi *= 2;
+  }
+  for (let i = 0; i < 48; i++) {
+    const mid = lo + Math.floor((hi - lo) / 2);
+    const liq = calcularSueldo({ ...base, sueldoBase: mid }, indicadores).liquido;
+    if (liq >= target) hi = mid;
+    else lo = mid + 1;
+  }
+  return hi;
+}
+
+/**
+ * Costo para el empleador de un sueldo: haberes pagados al trabajador más
+ * cotizaciones de cargo del empleador que Haberes modela.
+ *
+ * - Ley 21.735 (3,5 % desde ago-2026, incluye SIS) sobre tope 90 UF.
+ * - Cesantía empleador (2,4 % indefinido / 3,0 % plazo fijo) sobre tope 135,2 UF.
+ * - Mutual tasa básica 0,90 % + adicional SUSESO que indica el usuario.
+ * - SANNA 0,03 %.
+ *
+ * No suma un SIS aparte (va dentro del 2,5 % SSP). No inventa tasa adicional
+ * de mutual, trabajo pesado ni APVC.
+ *
+ * @see https://www.spensiones.cl/portal/institucional/594/w3-propertyvalue-10906.html
+ */
+export function calcularCostoEmpresa(input = {}, indicadores = {}) {
+  const modo = String(input.modo || "bruto").toLowerCase() === "liquido" ? "liquido" : "bruto";
+  const monto = Math.max(0, Number(input.monto ?? input.sueldoBase) || 0);
+  const contrato = String(input.contrato || "indefinido").toLowerCase();
+  const mutualAdicionalPct = Math.max(0, Number(input.mutualAdicionalPct) || 0);
+  const sueldoOpts = {
+    afp: input.afp || "modelo",
+    salud: input.salud || "fonasa",
+    contrato,
+    gratificacionArt50: Boolean(input.gratificacionArt50),
+  };
+  const sueldoBase =
+    modo === "liquido" ? brutoDesdeLiquido(monto, sueldoOpts, indicadores) : roundPeso(monto);
+  const calc = calcularSueldo({ ...sueldoOpts, sueldoBase }, indicadores);
+
+  const baseAfp = calc.baseAfpSalud;
+  const baseCes = calc.baseCesantia;
+  const tasaMutual = Math.round((MUTUAL_TASA_BASICA + mutualAdicionalPct / 100) * 1e6) / 1e6;
+  const tasaCesEmp = tasaCesantiaEmpleador(contrato);
+
+  const leyCuenta = roundPeso(baseAfp * LEY_21735_CUENTA_INDIVIDUAL);
+  const leyCrp = roundPeso(baseAfp * LEY_21735_CRP);
+  const leySsp = roundPeso(baseAfp * LEY_21735_SSP);
+  const leyMonto = leyCuenta + leyCrp + leySsp;
+  const cesMonto = roundPeso(baseCes * tasaCesEmp);
+  const mutualMonto = roundPeso(baseAfp * tasaMutual);
+  const sannaMonto = roundPeso(baseAfp * SANNA_TASA);
+  const totalAportes = leyMonto + cesMonto + mutualMonto + sannaMonto;
+  const costoEmpresa = roundPeso(calc.totalHaberes + totalAportes);
+
+  return {
+    modo,
+    monto,
+    sueldoBase,
+    contrato,
+    mutualAdicionalPct,
+    imponible: calc.imponible,
+    totalHaberes: calc.totalHaberes,
+    gratificacion: calc.gratificacion,
+    liquido: calc.liquido,
+    baseAfpSalud: calc.baseAfpSalud,
+    baseCesantia: calc.baseCesantia,
+    topeAfpSalud: calc.topeAfpSalud,
+    topeCesantia: calc.topeCesantia,
+    ley21735: {
+      tasa: LEY_21735_TASA,
+      monto: leyMonto,
+      cuentaIndividual: { tasa: LEY_21735_CUENTA_INDIVIDUAL, monto: leyCuenta },
+      crp: { tasa: LEY_21735_CRP, monto: leyCrp },
+      ssp: { tasa: LEY_21735_SSP, monto: leySsp },
+    },
+    cesantiaEmpleador: { tasa: tasaCesEmp, monto: cesMonto },
+    mutual: { tasa: tasaMutual, tasaBasica: MUTUAL_TASA_BASICA, monto: mutualMonto },
+    sanna: { tasa: SANNA_TASA, monto: sannaMonto },
+    totalAportes,
+    costoEmpresa,
   };
 }
