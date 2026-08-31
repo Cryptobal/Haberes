@@ -550,7 +550,9 @@ for (const slug of GUIDE_SLUGS) {
             ? "Calcular impuesto único — Haberes"
             : meta.calc === "aguinaldo"
               ? "Calcular aguinaldo Fiestas Patrias — Haberes"
-              : "Calculadora de sueldo líquido Haberes",
+              : meta.calc === "horas"
+                ? "Calcular horas extras — Haberes"
+                : "Calculadora de sueldo líquido Haberes",
       url:
         meta.calc === "finiquito"
           ? "/finiquito"
@@ -558,7 +560,9 @@ for (const slug of GUIDE_SLUGS) {
             ? "/impuesto-unico"
             : meta.calc === "aguinaldo"
               ? "/aguinaldo"
-              : "/sueldo",
+              : meta.calc === "horas"
+                ? "/horas-extras"
+                : "/sueldo",
       description: meta.description,
     },
   });
@@ -780,7 +784,7 @@ function hubLatest(items, limit = 6) {
       <p>Las piezas de dinero más leídas se reescriben aquí, con fecha a la vista.</p>
       ${hubLatest(guideIndex)}
       <h2>Liquidación de sueldo</h2>
-      <p>Qué es el comprobante de remuneraciones, descuentos legales e impuesto único. Para estimar el líquido use <a href="/sueldo">/sueldo</a>. Para AFP, salud y cesantía del trabajador, <a href="/cotizaciones-previsionales">calcular cotizaciones previsionales</a>. Para el monto por cargas acreditadas, <a href="/asignacion-familiar">calcular asignación familiar</a>. Para el séptimo día (art. 45), <a href="/semana-corrida">calcular semana corrida</a>. Para el aguinaldo de Fiestas Patrias (presupuesto, no obligación legal general), <a href="/aguinaldo">calcular aguinaldo</a>.</p>
+      <p>Qué es el comprobante de remuneraciones, descuentos legales e impuesto único. Para estimar el líquido use <a href="/sueldo">/sueldo</a>. Para AFP, salud y cesantía del trabajador, <a href="/cotizaciones-previsionales">calcular cotizaciones previsionales</a>. Para el monto por cargas acreditadas, <a href="/asignacion-familiar">calcular asignación familiar</a>. Para las horas extras (art. 32, recargo 50 %), <a href="/horas-extras">calcular horas extras</a>. Para el séptimo día (art. 45), <a href="/semana-corrida">calcular semana corrida</a>. Para el aguinaldo de Fiestas Patrias (presupuesto, no obligación legal general), <a href="/aguinaldo">calcular aguinaldo</a>.</p>
       ${hubList(liq)}
       <h2>Finiquito</h2>
       <p>Causales, plazos del artículo 177, indemnizaciones y qué firmar. Para el finiquito completo use <a href="/finiquito">/finiquito</a>. La IAS sola (art. 163) está en <a href="/indemnizacion-anos-servicio">calcular indemnización por años de servicio</a>. Los días extra del artículo 68 están en <a href="/feriado-progresivo">calcular feriado progresivo</a>.</p>

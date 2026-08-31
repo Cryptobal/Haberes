@@ -1521,13 +1521,15 @@ assert(
     lastmodForPath("/guias/indemnizacion-por-anos-de-servicio") === "2026-08-19" &&
     lastmodForPath("/guias/semana-corrida") === "2026-08-27" &&
     lastmodForPath("/guias/aguinaldo-fiestas-patrias") === "2026-08-30" &&
-    lastmodForPath("/guias") === "2026-08-30" &&
+    lastmodForPath("/guias/horas-extras") === "2026-08-31" &&
+    lastmodForPath("/guias") === "2026-08-31" &&
     /<loc>https:\/\/www\.haberes\.cl\/guias\/liquidacion-de-sueldo<\/loc>\s*<lastmod>2026-08-18<\/lastmod>/.test(sitemap) &&
     /<loc>https:\/\/www\.haberes\.cl\/guias\/gratificacion-legal<\/loc>\s*<lastmod>2026-08-18<\/lastmod>/.test(sitemap) &&
     /<loc>https:\/\/www\.haberes\.cl\/guias\/indemnizacion-por-anos-de-servicio<\/loc>\s*<lastmod>2026-08-19<\/lastmod>/.test(sitemap) &&
     /<loc>https:\/\/www\.haberes\.cl\/guias\/semana-corrida<\/loc>\s*<lastmod>2026-08-27<\/lastmod>/.test(sitemap) &&
     /<loc>https:\/\/www\.haberes\.cl\/guias\/aguinaldo-fiestas-patrias<\/loc>\s*<lastmod>2026-08-30<\/lastmod>/.test(sitemap) &&
-    /<loc>https:\/\/www\.haberes\.cl\/guias<\/loc>\s*<lastmod>2026-08-30<\/lastmod>/.test(sitemap),
+    /<loc>https:\/\/www\.haberes\.cl\/guias\/horas-extras<\/loc>\s*<lastmod>2026-08-31<\/lastmod>/.test(sitemap) &&
+    /<loc>https:\/\/www\.haberes\.cl\/guias<\/loc>\s*<lastmod>2026-08-31<\/lastmod>/.test(sitemap),
 );
 assert("sin ruta /blog ni /noticias", !existsSync(join(root, "blog.html")) && !existsSync(join(root, "noticias.html")));
 assert("sitemap sin .html (cleanUrls)", !locs.some((u) => u.endsWith(".html")));
@@ -6100,6 +6102,7 @@ assert(
       ["guias/indemnizacion-por-anos-de-servicio.html", "/finiquito", /artículo 163/, /dt\.gob\.cl/],
       ["guias/semana-corrida.html", "/sueldo", /artículo 45/, /dt\.gob\.cl/],
       ["guias/aguinaldo-fiestas-patrias.html", "/aguinaldo", /artículo 41/, /dt\.gob\.cl/],
+      ["guias/horas-extras.html", "/horas-extras", /artículo 32/, /dt\.gob\.cl/],
     ];
     function visibleWords(html) {
       const main = html.match(/<main\b[\s\S]*?<\/main>/i)?.[0] || html;
@@ -6120,11 +6123,14 @@ assert(
         file.includes("gratificacion-legal") ||
         file.includes("indemnizacion-por-anos-de-servicio") ||
         file.includes("semana-corrida") ||
-        file.includes("aguinaldo-fiestas-patrias")
+        file.includes("aguinaldo-fiestas-patrias") ||
+        file.includes("horas-extras")
           ? 900
           : 800;
       const dateRe =
-        file.includes("aguinaldo-fiestas-patrias")
+        file.includes("horas-extras")
+          ? /<time datetime="2026-08-31">/
+          : file.includes("aguinaldo-fiestas-patrias")
           ? /<time datetime="2026-08-30">/
           : file.includes("semana-corrida")
           ? /<time datetime="2026-08-27">/
@@ -6223,6 +6229,61 @@ assert(
           /21\.724/.test(agHtml) &&
           /7143\/340/.test(agHtml),
         `${agTitle} | ${agH1}`,
+      );
+    }
+    {
+      const heHtml = readFileSync(join(root, "guias/horas-extras.html"), "utf8");
+      const heLanding = readFileSync(join(root, "horas-extras.html"), "utf8");
+      const sueldoHtml = readFileSync(join(root, "sueldo.html"), "utf8");
+      const finiHtml = readFileSync(join(root, "finiquito.html"), "utf8");
+      const heTitle = (heHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+      const heH1 = (heHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+      const landingTitle = (heLanding.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+      const landingH1 = (heLanding.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+      const sueldoTitle = (sueldoHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+      const sueldoH1 = (sueldoHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+      const finiTitle = (finiHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+      const finiH1 = (finiHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+      assert(
+        "SEO guía horas extras title/H1 únicos, informativos y alineados a valorHoraExtra",
+        heTitle &&
+          heH1 &&
+          heTitle !== landingTitle &&
+          heH1 !== landingH1 &&
+          heTitle !== sueldoTitle &&
+          heH1 !== sueldoH1 &&
+          heTitle !== finiTitle &&
+          heH1 !== finiH1 &&
+          /horas extras/i.test(heTitle) &&
+          /50\s*%/.test(heTitle) &&
+          /fórmula DT/i.test(heTitle) &&
+          /horas extras/i.test(heH1) &&
+          /50\s*%/.test(heH1) &&
+          !/^Calcular /i.test(heH1) &&
+          !/calculadora/i.test(heTitle) &&
+          !/calculadora/i.test(heH1) &&
+          !/sueldo l[ií]quido/i.test(heH1) &&
+          !/js\/sueldo\.js/.test(heHtml) &&
+          !/valorHoraExtra/.test(heHtml) &&
+          /sueldo \/ 30/.test(heHtml) &&
+          /jornada/.test(heHtml) &&
+          /0,0083333/.test(heHtml) &&
+          /\$800\.000/.test(heHtml) &&
+          /\$6\.666,6/.test(heHtml) &&
+          /42/.test(heHtml) &&
+          /26 de abril de 2028/.test(heHtml) &&
+          /artículo 31/.test(heHtml) &&
+          /dos horas/.test(heHtml) &&
+          /no es «hora extra al 100 %»/.test(heHtml) &&
+          /href="\/horas-extras"/.test(heHtml) &&
+          /href="\/sueldo"/.test(heHtml) &&
+          /href="\/recargo-domingo-comercio"/.test(heHtml) &&
+          /href="\/guias\/semana-corrida"/.test(heHtml) &&
+          /href="\/guias"/.test(heHtml) &&
+          /w3-article-95182/.test(heHtml) &&
+          /1191554/.test(heHtml) &&
+          landingH1 === "Calcular horas extras Chile 2026",
+        `${heTitle} | ${heH1} | ${landingH1}`,
       );
     }
   }
@@ -6516,7 +6577,9 @@ assert(
       "SEO hub tiene últimas con fecha",
       /<h2>Últimas actualizaciones<\/h2>/.test(hub) &&
         /<ol class="guide-latest">/.test(hub) &&
+        /datetime="2026-08-31"/.test(hub) &&
         /datetime="2026-08-18"/.test(hub) &&
+        /href="\/guias\/horas-extras"/.test(hub) &&
         !/href="\/blog"/.test(hub),
     );
     assert("SEO hub en sitemap", locs.includes("https://www.haberes.cl/guias"));
