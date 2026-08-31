@@ -23,6 +23,7 @@ Actualizar este archivo antes de crear URLs nuevas para evitar canibalización.
 | Calcular feriado progresivo | feriado progresivo / vacaciones progresivas / calcular feriado progresivo | `/feriado-progresivo` | Title/H1 «calcular feriado progresivo»; no canibalizar `/vacaciones-proporcionales` ni `/finiquito`. Art. 68 (días extra al feriado anual), no art. 73 (plata de días no usados). No crear `/vacaciones-progresivas` ni `/indemnizacion` |
 | Calcular indemnización por años de servicio | indemnizacion por años de servicio (2.400/24) — intención calcular | `/indemnizacion-anos-servicio` | Title/H1 «calcular indemnización por años de servicio»; no canibalizar `/finiquito` ni `/guias/indemnizacion-por-anos-de-servicio`. Art. 163 (IAS), no el finiquito completo. No crear `/indemnizacion` |
 | Calcular aguinaldo Fiestas Patrias | aguinaldo fiestas patrias (5.400/23) — intención presupuestar/calcular monto | `/aguinaldo` | Title/H1 «calcular aguinaldo Fiestas Patrias»; no es obligación legal general del Código; no canibalizar `/gratificacion`, `/sueldo` ni `/guias/aguinaldo-fiestas-patrias`. No crear `/bono-fiestas-patrias` ni `/aguinaldo-navidad` |
+| Calcular finiquito de casa particular | finiquito asesora del hogar / finiquito trabajadora casa particular — intención calcular | `/finiquito-casa-particular` | Title/H1 «calcular finiquito casa particular»; no canibalizar `/finiquito`, `/indemnizacion-anos-servicio` ni `/guias/finiquito-trabajadora-de-casa-particular`. Estatuto propio (art. 163 a todo evento AFP 1,11 %, aviso art. 161). No crear `/finiquito-nana` ni `/asesora-hogar` |
 | Índice de guías | — | `/guias` | Hub: 17 guías, grupo liquidación vs finiquito |
 
 ## Guías pilar (contenido + calculadora embebida)
@@ -39,7 +40,7 @@ Actualizar este archivo antes de crear URLs nuevas para evitar canibalización.
 | Semana corrida | semana corrida (1.300/21) — explainer | `/guias/semana-corrida` | enlace a `/semana-corrida`; embed `/sueldo` para el líquido; no canibalizar title/H1 de la calculadora |
 | Aguinaldo Fiestas Patrias | aguinaldo fiestas patrias (5.400/23), es obligatorio el aguinaldo (480/15), bono fiestas patrias (170) | `/guias/aguinaldo-fiestas-patrias` | guía espesa; el cálculo vive en `/aguinaldo`; no es obligación general del Código; no canibalizar `/gratificacion` ni `/guias/gratificacion-legal` |
 | Carta de aviso | carta de aviso de término de contrato (10–480) | `/guias/carta-aviso-termino-contrato` | plantilla descargable |
-| Casa particular | finiquito asesora del hogar (140/15) | `/guias/finiquito-trabajadora-de-casa-particular` | ya existe; reforzar régimen AFC 4,11 % |
+| Casa particular | finiquito asesora del hogar (140/15) | `/guias/finiquito-trabajadora-de-casa-particular` | explica; el cálculo vive en `/finiquito-casa-particular`; no reescribir la guía como segunda calculadora |
 
 ## Guías de apoyo (ya publicadas — no canibalizar)
 
@@ -111,6 +112,11 @@ No publicar `/vacaciones-progresivas` ni `/indemnizacion`. El feriado progresivo
 `/feriado-progresivo`. El proporcional en dinero vive en `/vacaciones-proporcionales`.
 La IAS (art. 163) se calcula en `/indemnizacion-anos-servicio`. La guía
 `/guias/indemnizacion-por-anos-de-servicio` explica; `/finiquito` sigue siendo el finiquito completo.
+
+No publicar `/finiquito-nana` ni `/asesora-hogar`. El finiquito de casa particular (aviso art. 161
+y fondo AFP 1,11 %, no IAS de 30 días) vive en `/finiquito-casa-particular`. La guía
+`/guias/finiquito-trabajadora-de-casa-particular` explica. No canibalizar `/finiquito` ni
+`/indemnizacion-anos-servicio`.
 
 No publicar hermanas de semana corrida: `/septimo-dia`, `/pago-domingo-festivo`,
 `/semana-corrida-mensual`. El haber del artículo 45 vive en `/semana-corrida`.

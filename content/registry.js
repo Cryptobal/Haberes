@@ -34,7 +34,7 @@ export const CAUSAL_PAGES = [
  * group: índice /guias (liquidación vs finiquito).
  * calc: calculadora canónica (no canibalizar titles/H1 de esas URLs).
  * updated: lastmod ISO (YYYY-MM-DD) para sitemap y el bloque «últimas» del hub.
- * @type {{ slug: string, group: "liquidacion" | "finiquito", calc: "/sueldo" | "/finiquito" | "/horas-extras" | "/recargo-domingo-comercio" | "/semana-corrida" | "/gratificacion" | "/aguinaldo" | "/vacaciones-proporcionales" | "/impuesto-unico" | "/cotizaciones-previsionales" | "/asignacion-familiar" | "/indemnizacion-anos-servicio", updated: string }[]}
+ * @type {{ slug: string, group: "liquidacion" | "finiquito", calc: "/sueldo" | "/finiquito" | "/finiquito-casa-particular" | "/horas-extras" | "/recargo-domingo-comercio" | "/semana-corrida" | "/gratificacion" | "/aguinaldo" | "/vacaciones-proporcionales" | "/impuesto-unico" | "/cotizaciones-previsionales" | "/asignacion-familiar" | "/indemnizacion-anos-servicio", updated: string }[]}
  */
 export const DEFAULT_LASTMOD = "2026-08-17";
 
@@ -54,13 +54,14 @@ export const GUIDES = [
   { slug: "carta-aviso-termino-contrato", group: "finiquito", calc: "/finiquito", updated: "2026-08-18" },
   { slug: "plazo-de-pago-del-finiquito", group: "finiquito", calc: "/finiquito", updated: "2026-08-17" },
   { slug: "con-que-sueldo-se-calcula-el-finiquito", group: "finiquito", calc: "/finiquito", updated: "2026-08-17" },
-  { slug: "finiquito-trabajadora-de-casa-particular", group: "finiquito", calc: "/finiquito", updated: "2026-08-17" },
+  { slug: "finiquito-trabajadora-de-casa-particular", group: "finiquito", calc: "/finiquito-casa-particular", updated: "2026-08-31" },
   { slug: "me-reservo-el-derecho-en-el-finiquito", group: "finiquito", calc: "/finiquito", updated: "2026-08-17" },
 ];
 
 /** lastmod de rutas base que sí cambiaron después del lote SEO inicial. */
 export const PATH_LASTMOD = {
-  "/guias": "2026-08-30",
+  "/guias": "2026-08-31",
+  "/finiquito-casa-particular": "2026-08-31",
   "/costo-empresa": "2026-08-30",
   "/aguinaldo": "2026-08-30",
   "/horas-extras": "2026-08-20",
@@ -98,6 +99,7 @@ export const BASE_PATHS = [
   "/empresa",
   "/feriado-progresivo",
   "/finiquito",
+  "/finiquito-casa-particular",
   "/guias",
   "/gratificacion",
   "/horas-extras",

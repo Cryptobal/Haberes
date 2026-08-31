@@ -30,6 +30,7 @@ const DRAWER_LINKS = [
   ["/vacaciones-proporcionales", "Vacaciones proporcionales"],
   ["/feriado-progresivo", "Feriado progresivo"],
   ["/indemnizacion-anos-servicio", "Indemnización años de servicio"],
+  ["/finiquito-casa-particular", "Finiquito casa particular"],
   ["/finiquito", "Finiquito"],
 ];
 
