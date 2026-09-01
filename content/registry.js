@@ -34,7 +34,7 @@ export const CAUSAL_PAGES = [
  * group: índice /guias (liquidación vs finiquito).
  * calc: calculadora canónica (no canibalizar titles/H1 de esas URLs).
  * updated: lastmod ISO (YYYY-MM-DD) para sitemap y el bloque «últimas» del hub.
- * @type {{ slug: string, group: "liquidacion" | "finiquito", calc: "/sueldo" | "/finiquito" | "/finiquito-casa-particular" | "/horas-extras" | "/recargo-domingo-comercio" | "/semana-corrida" | "/gratificacion" | "/aguinaldo" | "/vacaciones-proporcionales" | "/impuesto-unico" | "/cotizaciones-previsionales" | "/asignacion-familiar" | "/indemnizacion-anos-servicio", updated: string }[]}
+ * @type {{ slug: string, group: "liquidacion" | "finiquito", calc: "/sueldo" | "/finiquito" | "/finiquito-casa-particular" | "/horas-extras" | "/recargo-domingo-comercio" | "/semana-corrida" | "/gratificacion" | "/aguinaldo" | "/vacaciones-proporcionales" | "/impuesto-unico" | "/cotizaciones-previsionales" | "/asignacion-familiar" | "/indemnizacion-anos-servicio" | "/seguro-cesantia", updated: string }[]}
  */
 export const DEFAULT_LASTMOD = "2026-08-17";
 
@@ -60,9 +60,10 @@ export const GUIDES = [
 
 /** lastmod de rutas base que sí cambiaron después del lote SEO inicial. */
 export const PATH_LASTMOD = {
-  "/guias": "2026-08-31",
+  "/guias": "2026-09-01",
   "/finiquito-casa-particular": "2026-08-31",
   "/costo-empresa": "2026-08-30",
+  "/seguro-cesantia": "2026-09-01",
   "/aguinaldo": "2026-08-30",
   "/horas-extras": "2026-08-20",
   "/vacaciones-proporcionales": "2026-08-21",
@@ -109,6 +110,7 @@ export const BASE_PATHS = [
   "/privacidad",
   "/recargo-domingo-comercio",
   "/semana-corrida",
+  "/seguro-cesantia",
   "/sueldo",
   "/terminos",
   "/vacaciones-proporcionales",
