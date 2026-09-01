@@ -212,8 +212,10 @@ function paintLoggedInNav(emp) {
         <a href="/precios" data-nav>Precios</a>
         <a href="/empresa" data-nav>Mi empresa</a>
         <a href="/sueldo" data-nav>Sueldo líquido</a>
+        <a href="/sueldo-proporcional" data-nav>Sueldo proporcional</a>
         <a href="/horas-extras" data-nav>Horas extras</a>
         <a href="/recargo-domingo-comercio" data-nav>Recargo domingo comercio</a>
+        <a href="/semana-corrida" data-nav>Semana corrida</a>
         <a href="/gratificacion" data-nav>Gratificación</a>
         <a href="/aguinaldo" data-nav>Aguinaldo</a>
         <a href="/impuesto-unico" data-nav>Impuesto único</a>

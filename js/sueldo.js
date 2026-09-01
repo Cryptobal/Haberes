@@ -286,6 +286,127 @@ export function calcularFeriadoProgresivo({
 }
 
 /**
+ * Último día calendario del mes (1–12). Usa el calendario civil, no un
+ * listado de feriados ni IMM/UF.
+ */
+export function ultimoDiaDelMes(anio, mes) {
+  const y = Number(anio);
+  const m = Number(mes);
+  if (!Number.isFinite(y) || !Number.isFinite(m) || m < 1 || m > 12) return 0;
+  return new Date(Date.UTC(y, m, 0)).getUTCDate();
+}
+
+function parseIsoFecha(iso) {
+  const match = String(iso || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return null;
+  const y = Number(match[1]);
+  const mo = Number(match[2]);
+  const d = Number(match[3]);
+  const last = ultimoDiaDelMes(y, mo);
+  if (!last || d < 1 || d > last) return null;
+  return { y, mo, d, last };
+}
+
+/**
+ * Días calendario de la relación en un mes (ORD. N°5715 / ORD. N°3754).
+ *
+ * Ingreso el 25 de un mes de 31 → 7 días (25 al 31). Ingreso el 16 de
+ * febrero no bisiesto → 13 (16 al 28). No reutiliza `diasBaseDelPeriodo`
+ * (convención de liquidación 31−D con tope 30: el 25 de enero daría 6).
+ *
+ * Solo ingreso: desde ese día hasta el último del mes.
+ * Solo salida: desde el 1 hasta ese día.
+ * Ambas, mismo mes: inclusive. Mes distinto u orden invertido → error.
+ */
+export function diasCalendarioFraccionMes({ ingreso = "", salida = "" } = {}) {
+  const a = parseIsoFecha(ingreso);
+  const b = parseIsoFecha(salida);
+  if (!a && !b) return null;
+  if (a && b) {
+    if (a.y !== b.y || a.mo !== b.mo) {
+      return { dias: 0, mesCompleto: false, lastDay: a.last, error: "otro_mes" };
+    }
+    if (b.d < a.d) {
+      return { dias: 0, mesCompleto: false, lastDay: a.last, error: "orden" };
+    }
+    const dias = b.d - a.d + 1;
+    return {
+      dias,
+      mesCompleto: a.d === 1 && b.d === a.last,
+      lastDay: a.last,
+      desde: a.d,
+      hasta: b.d,
+    };
+  }
+  if (a) {
+    const dias = a.last - a.d + 1;
+    return {
+      dias,
+      mesCompleto: a.d === 1,
+      lastDay: a.last,
+      desde: a.d,
+      hasta: a.last,
+    };
+  }
+  const dias = b.d;
+  return {
+    dias,
+    mesCompleto: b.d === b.last,
+    lastDay: b.last,
+    desde: 1,
+    hasta: b.d,
+  };
+}
+
+/**
+ * Bruto de un sueldo mensual fijo por fracción de mes.
+ *
+ * Reutiliza `proporcional` de liquidación: ÷ 30 × días, `roundPeso`
+ * (Math.round). Ese motor trata d ≥ 30 como el pactado entero (no 31/30).
+ * Un mes calendario completo se paga entero aunque tenga 28 o 31 días
+ * (ORD. N°5715; el /30 solo aplica a la fracción).
+ *
+ * No calcula AFP, salud, IUSC ni aportes del empleador.
+ *
+ * @see https://www.dt.gob.cl/legislacion/1624/w3-article-108020.html
+ */
+export function calcularSueldoProporcional({
+  remuneracion = 0,
+  dias = null,
+  mesCompleto = false,
+  ingreso = "",
+  salida = "",
+} = {}) {
+  const rem = Math.max(0, Number(remuneracion) || 0);
+  const fechas = ingreso || salida ? diasCalendarioFraccionMes({ ingreso, salida }) : null;
+  const error = fechas?.error || "";
+  const hasExplicitDias = dias != null && dias !== "";
+  let diasPagar = 0;
+  if (hasExplicitDias) {
+    const raw = Number(dias);
+    diasPagar = Number.isFinite(raw) ? Math.max(0, Math.trunc(raw)) : 0;
+  } else if (fechas && !error && Number.isFinite(fechas.dias)) {
+    diasPagar = Math.max(0, Math.trunc(fechas.dias));
+  }
+  const completo = Boolean(mesCompleto) || (!hasExplicitDias && Boolean(fechas?.mesCompleto));
+  const bruto = error
+    ? 0
+    : completo
+      ? proporcional(rem, DIAS_MES_CONVENCIONAL)
+      : proporcional(rem, diasPagar);
+  return {
+    remuneracion: roundPeso(rem),
+    dias: diasPagar,
+    mesCompleto: completo,
+    valorDiario: rem > 0 ? rem / DIAS_MES_CONVENCIONAL : 0,
+    bruto,
+    fechas,
+    error,
+    topeTreinta: !completo && !error && diasPagar >= DIAS_MES_CONVENCIONAL,
+  };
+}
+
+/**
  * @param {object} input
  * @param {{ uf?: number }} indicadores
  *
