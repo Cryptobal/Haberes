@@ -223,6 +223,7 @@ function paintLoggedInNav(emp) {
         <a href="/costo-empresa" data-nav>Costo empresa</a>
         <a href="/seguro-cesantia" data-nav>Seguro de cesantía</a>
         <a href="/asignacion-familiar" data-nav>Asignación familiar</a>
+        <a href="/colacion-movilizacion" data-nav>Colación y movilización</a>
         <a href="/vacaciones-proporcionales" data-nav>Vacaciones proporcionales</a>
         <a href="/feriado-progresivo" data-nav>Feriado progresivo</a>
         <a href="/indemnizacion-anos-servicio" data-nav>Indemnización años de servicio</a>

@@ -29,6 +29,7 @@ const DRAWER_LINKS = [
   ["/costo-empresa", "Costo empresa"],
   ["/seguro-cesantia", "Seguro de cesantía"],
   ["/asignacion-familiar", "Asignación familiar"],
+  ["/colacion-movilizacion", "Colación y movilización"],
   ["/vacaciones-proporcionales", "Vacaciones proporcionales"],
   ["/feriado-progresivo", "Feriado progresivo"],
   ["/indemnizacion-anos-servicio", "Indemnización años de servicio"],

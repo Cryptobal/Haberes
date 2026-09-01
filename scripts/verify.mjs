@@ -55,6 +55,7 @@ import {
 import {
   calcularAsignacionFamiliar,
   calcularAguinaldo,
+  calcularColacionMovilizacion,
   calcularCostoEmpresa,
   calcularFeriadoProgresivo,
   calcularIusc,
@@ -287,6 +288,59 @@ assert(
   "mixto: 1 simple + 1 duplo = 67803",
   calcularAsignacionFamiliar({ ingresoMensual: 600_000, cargas: 1, cargasInvalidez: 1 }).total === 67803,
 );
+{
+  const cmApp = readFileSync(join(root, "js/app-colacion-movilizacion.js"), "utf8");
+  assert(
+    "app-colacion-movilizacion usa calcularColacionMovilizacion",
+    /import\s*\{[^}]*calcularColacionMovilizacion[^}]*\}\s*from\s*["']\.\/sueldo\.js["']/.test(cmApp) &&
+      /calcularColacionMovilizacion\s*\(/.test(cmApp),
+  );
+}
+{
+  const noImp = calcularColacionMovilizacion({
+    colacion: 50_000,
+    movilizacion: 40_000,
+    sueldoBase: 800_000,
+  });
+  assert(
+    "colación+movilización no imponibles total 90000 extra base 0",
+    noImp.totalAsignaciones === 90_000 &&
+      noImp.noImponible === 90_000 &&
+      noImp.extraImponible === 0 &&
+      noImp.extraLiquido === 90_000 &&
+      noImp.extraDescuentos === 0,
+    `${noImp.totalAsignaciones} ${noImp.extraImponible} ${noImp.extraLiquido}`,
+  );
+  const imp = calcularColacionMovilizacion({
+    colacion: 50_000,
+    movilizacion: 40_000,
+    sueldoBase: 800_000,
+    colacionNoImponible: false,
+    movilizacionNoImponible: false,
+  });
+  assert(
+    "colación+movilización imponibles extra líquido 73638",
+    imp.extraImponible === 90_000 &&
+      imp.noImponible === 0 &&
+      imp.extraLiquido === 73_638 &&
+      imp.extraDescuentos === 16_362,
+    `${imp.extraImponible} ${imp.extraLiquido} ${imp.extraDescuentos}`,
+  );
+  const mixto = calcularColacionMovilizacion({
+    colacion: 50_000,
+    movilizacion: 40_000,
+    sueldoBase: 800_000,
+    colacionNoImponible: true,
+    movilizacionNoImponible: false,
+  });
+  assert(
+    "colación no imponible + movilización imponible mixto",
+    mixto.noImponible === 50_000 &&
+      mixto.extraImponible === 40_000 &&
+      mixto.extraLiquido === 82_728,
+    `${mixto.noImponible} ${mixto.extraImponible} ${mixto.extraLiquido}`,
+  );
+}
 assert(
   "0 cargas → 0",
   calcularAsignacionFamiliar({ ingresoMensual: 600_000, cargas: 0 }).total === 0,
@@ -1495,6 +1549,7 @@ const required = [
   "recargo-domingo-comercio.html",
   "semana-corrida.html",
   "asignacion-familiar.html",
+  "colacion-movilizacion.html",
   "feriado-progresivo.html",
   "indemnizacion-anos-servicio.html",
   "aguinaldo.html",
@@ -1512,6 +1567,7 @@ const required = [
   "js/app-recargo-domingo-comercio.js",
   "js/app-semana-corrida.js",
   "js/app-asignacion-familiar.js",
+  "js/app-colacion-movilizacion.js",
   "js/app-feriado-progresivo.js",
   "js/app-indemnizacion-anos-servicio.js",
   "js/app-aguinaldo.js",
@@ -1656,6 +1712,7 @@ const htmlFiles = [
   "recargo-domingo-comercio.html",
   "semana-corrida.html",
   "asignacion-familiar.html",
+  "colacion-movilizacion.html",
   "feriado-progresivo.html",
   "indemnizacion-anos-servicio.html",
   "aguinaldo.html",
@@ -1748,6 +1805,7 @@ const appEntries = [
   "js/app-recargo-domingo-comercio.js",
   "js/app-semana-corrida.js",
   "js/app-asignacion-familiar.js",
+  "js/app-colacion-movilizacion.js",
   "js/app-feriado-progresivo.js",
   "js/app-indemnizacion-anos-servicio.js",
   "js/app-aguinaldo.js",
@@ -1786,7 +1844,7 @@ assert("robots Allow /", /Allow:\s*\//.test(robots));
 assert("robots Disallow /admin", /Disallow:\s*\/admin/.test(robots));
 assert("robots Disallow /api", /Disallow:\s*\/api/.test(robots));
 assert("robots Disallow /docs", /Disallow:\s*\/docs/.test(robots));
-assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots));
+assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots));
 assert("robots Sitemap", /Sitemap:\s*https:\/\/www\.haberes\.cl\/sitemap\.xml/.test(robots));
 
 const { seoPaths, GUIDE_SLUGS, GUIDES, CAUSAL_PAGES, BASE_PATHS, lastmodForPath } = await import("../content/registry.js");
@@ -1814,6 +1872,7 @@ assert(
     BASE_PATHS.includes("/recargo-domingo-comercio") &&
     BASE_PATHS.includes("/semana-corrida") &&
     BASE_PATHS.includes("/asignacion-familiar") &&
+    BASE_PATHS.includes("/colacion-movilizacion") &&
     BASE_PATHS.includes("/feriado-progresivo") &&
     BASE_PATHS.includes("/indemnizacion-anos-servicio") &&
     BASE_PATHS.includes("/aguinaldo") &&
@@ -2170,7 +2229,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 63,
+      seoPaths().length === 64,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -2182,7 +2241,7 @@ try {
   const docsSeo = await hitLocal("/docs/seo-map.md");
   assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
   assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
-  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/aguinaldo/", "/sueldo-proporcional/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/asignacion-familiar/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/aguinaldo/", "/sueldo-proporcional/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/asignacion-familiar/", "/colacion-movilizacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
   }
@@ -2214,6 +2273,7 @@ try {
     "/costo-empresa",
     "/seguro-cesantia",
     "/asignacion-familiar",
+    "/colacion-movilizacion",
     "/guias/liquidacion-de-sueldo",
     "/guias/finiquito",
     "/guias/impuesto-unico",
@@ -5431,6 +5491,7 @@ assert(
     ["recargo-domingo-comercio.html", "/recargo-domingo-comercio"],
     ["semana-corrida.html", "/semana-corrida"],
     ["asignacion-familiar.html", "/asignacion-familiar"],
+    ["colacion-movilizacion.html", "/colacion-movilizacion"],
     ["feriado-progresivo.html", "/feriado-progresivo"],
     ["indemnizacion-anos-servicio.html", "/indemnizacion-anos-servicio"],
     ["aguinaldo.html", "/aguinaldo"],
@@ -6532,6 +6593,143 @@ assert(
     );
   }
   {
+    const cmHtml = readFileSync(join(root, "colacion-movilizacion.html"), "utf8");
+    const cmTitle = (cmHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const cmH1 = (cmHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const cmDesc = (cmHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "";
+    const sueldoHtml = readFileSync(join(root, "sueldo.html"), "utf8");
+    const sueldoTitle = (sueldoHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const sueldoH1 = (sueldoHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const cpHtml = readFileSync(join(root, "cotizaciones-previsionales.html"), "utf8");
+    const cpTitle = (cpHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const cpH1 = (cpHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const ceHtml = readFileSync(join(root, "costo-empresa.html"), "utf8");
+    const ceTitle = (ceHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const ceH1 = (ceHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const liqHtml = readFileSync(join(root, "guias/liquidacion-de-sueldo.html"), "utf8");
+    const liqTitle = (liqHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const liqH1 = (liqHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const demo = calcularColacionMovilizacion({
+      colacion: 50_000,
+      movilizacion: 40_000,
+      sueldoBase: 800_000,
+    });
+    const comoImp = calcularColacionMovilizacion({
+      colacion: 50_000,
+      movilizacion: 40_000,
+      sueldoBase: 800_000,
+      colacionNoImponible: false,
+      movilizacionNoImponible: false,
+    });
+    assert(
+      "SEO title colación y movilización apunta a calcular colación y movilización",
+      /calcular colaci[oó]n y movilizaci[oó]n/i.test(cmTitle) &&
+        !/sueldo l[ií]quido/i.test(cmTitle) &&
+        !/cotizaciones previsionales/i.test(cmTitle) &&
+        !/costo empresa/i.test(cmTitle) &&
+        cmTitle !== sueldoTitle &&
+        cmTitle !== cpTitle &&
+        cmTitle !== ceTitle &&
+        cmTitle !== liqTitle &&
+        cmTitle.length <= 65,
+      cmTitle,
+    );
+    assert(
+      "SEO H1 colación y movilización distinto de /sueldo, cotizaciones y costo empresa",
+      /calcular colaci[oó]n y movilizaci[oó]n/i.test(cmH1) &&
+        cmH1 !== sueldoH1 &&
+        cmH1 !== cpH1 &&
+        cmH1 !== ceH1 &&
+        cmH1 !== liqH1 &&
+        !/sueldo l[ií]quido/i.test(cmH1),
+      cmH1,
+    );
+    assert(
+      "SEO colación y movilización meta distinta de /sueldo",
+      cmDesc && cmDesc !== ((sueldoHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || ""),
+    );
+    assert(
+      "SEO colación y movilización cita CT art. 41",
+      /art[ií]culo 41/i.test(cmHtml) &&
+        /C[oó]digo del Trabajo/.test(cmHtml) &&
+        /bcn\.cl\/leychile\/navegar\?idNorma=207436/.test(cmHtml),
+    );
+    assert(
+      "SEO colación y movilización ejemplo 50000 + 40000 = 90000",
+      demo.totalAsignaciones === 90_000 &&
+        demo.extraImponible === 0 &&
+        demo.extraLiquido === 90_000 &&
+        comoImp.extraLiquido === 73_638 &&
+        /\$50\.000/.test(cmHtml) &&
+        /\$40\.000/.test(cmHtml) &&
+        /\$90\.000/.test(cmHtml) &&
+        /\$73\.638/.test(cmHtml) &&
+        /\$16\.362/.test(cmHtml),
+    );
+    assert("SEO colación y movilización FAQPage", /"@type": "FAQPage"/.test(cmHtml));
+    assert(
+      "SEO colación y movilización no es segunda liquidación",
+      /no arma una segunda liquidaci[oó]n/i.test(cmHtml) &&
+        /no constituyen remuneraci[oó]n/i.test(cmHtml),
+    );
+    assert(
+      "SEO colación y movilización no inventa /colacion",
+      /no abre URLs hermanas/i.test(cmHtml) &&
+        !existsSync(join(root, "colacion.html")) &&
+        !existsSync(join(root, "movilizacion.html")) &&
+        !existsSync(join(root, "asignacion-colacion.html")),
+    );
+    assert(
+      "SEO colación y movilización enlaza sueldo, empresa y guías de liquidación",
+      /href="\/sueldo"/.test(cmHtml) &&
+        /href="\/empresa"/.test(cmHtml) &&
+        /href="\/guias\/liquidacion-de-sueldo"/.test(cmHtml) &&
+        /href="\/guias\/como-leer-una-liquidacion-de-sueldo"/.test(cmHtml) &&
+        /href="\/guias\/formato-de-liquidacion-de-sueldo-chile"/.test(cmHtml) &&
+        /href="\/guias\/liquidacion-de-sueldo-y-previred"/.test(cmHtml),
+    );
+    assert(
+      "SEO guías de liquidación enlazan /colacion-movilizacion",
+      /href="\/colacion-movilizacion"/.test(liqHtml) &&
+        /href="\/colacion-movilizacion"/.test(
+          readFileSync(join(root, "guias/como-leer-una-liquidacion-de-sueldo.html"), "utf8"),
+        ) &&
+        /href="\/colacion-movilizacion"/.test(
+          readFileSync(join(root, "guias/formato-de-liquidacion-de-sueldo-chile.html"), "utf8"),
+        ) &&
+        /href="\/colacion-movilizacion"/.test(
+          readFileSync(join(root, "guias/liquidacion-de-sueldo-y-previred.html"), "utf8"),
+        ),
+    );
+    assert(
+      "home y nav enlazan /colacion-movilizacion",
+      /href="\/colacion-movilizacion"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/colacion-movilizacion" data-nav>Colaci[oó]n y movilizaci[oó]n<\/a>/.test(
+          readFileSync(join(root, "index.html"), "utf8"),
+        ) &&
+        /href="\/colacion-movilizacion" data-nav>Colaci[oó]n y movilizaci[oó]n<\/a>/.test(cmHtml),
+    );
+    assert(
+      "sitemap incluye /colacion-movilizacion",
+      locs.includes("https://www.haberes.cl/colacion-movilizacion") &&
+        lastmodForPath("/colacion-movilizacion") === "2026-09-01",
+    );
+    assert(
+      "seo-map documenta /colacion-movilizacion y no-canibalizar /sueldo",
+      /\/colacion-movilizacion/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no canibalizar `\/sueldo`/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no crear `\/colacion`/i.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")),
+    );
+    assert(
+      "hub /guias enlaza /colacion-movilizacion",
+      /href="\/colacion-movilizacion"/.test(readFileSync(join(root, "guias.html"), "utf8")),
+    );
+    assert(
+      "sueldo enlaza /colacion-movilizacion",
+      /href="\/colacion-movilizacion"/.test(sueldoHtml),
+    );
+  }
+  {
     const scHtml = readFileSync(join(root, "semana-corrida.html"), "utf8");
     const scTitle = (scHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
     const scH1 = (scHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
@@ -7389,6 +7587,7 @@ assert(
       "recargo-domingo-comercio.html",
       "semana-corrida.html",
       "asignacion-familiar.html",
+      "colacion-movilizacion.html",
       "feriado-progresivo.html",
       "indemnizacion-anos-servicio.html",
       "aguinaldo.html",

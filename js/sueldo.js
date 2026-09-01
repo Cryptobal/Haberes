@@ -167,6 +167,76 @@ export function calcularAsignacionFamiliar({
 }
 
 /**
+ * Colación y movilización (art. 41 Código del Trabajo): asignaciones que
+ * no constituyen remuneración cuando cubren el gasto de comida o transporte
+ * para que el trabajador pueda prestar servicios, no como contraprestación.
+ *
+ * Haberes no fija un tope legal (el Código no lo publica). El usuario indica
+ * si cada monto se trata como no imponible. Por defecto sí: es el caso
+ * habitual en la liquidación. Si las desmarca, entran a la base imponible
+ * (AFP Modelo, Fonasa, contrato indefinido, misma cuenta que /sueldo).
+ *
+ * El sueldo base es contexto: no arma una segunda liquidación. Sirve para
+ * estimar el extra de descuentos solo si alguna asignación se trata como
+ * imponible.
+ *
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=207436
+ */
+export function calcularColacionMovilizacion(
+  {
+    colacion = 0,
+    movilizacion = 0,
+    sueldoBase = 0,
+    colacionNoImponible = true,
+    movilizacionNoImponible = true,
+  } = {},
+  indicadores = {},
+) {
+  const col = roundPeso(Math.max(0, Number(colacion) || 0));
+  const mov = roundPeso(Math.max(0, Number(movilizacion) || 0));
+  const sueldo = roundPeso(Math.max(0, Number(sueldoBase) || 0));
+  const colNoImp = colacionNoImponible !== false;
+  const movNoImp = movilizacionNoImponible !== false;
+  const noImponible = roundPeso((colNoImp ? col : 0) + (movNoImp ? mov : 0));
+  const extraImponiblePedido = roundPeso((colNoImp ? 0 : col) + (movNoImp ? 0 : mov));
+  const totalAsignaciones = roundPeso(col + mov);
+
+  const baseInput = {
+    sueldoBase: sueldo,
+    afp: "modelo",
+    salud: "fonasa",
+    contrato: "indefinido",
+  };
+  const sin = calcularSueldo(baseInput, indicadores);
+  const con = calcularSueldo(
+    {
+      ...baseInput,
+      colacion: colNoImp ? col : 0,
+      movilizacion: movNoImp ? mov : 0,
+      otrosImponibles: extraImponiblePedido,
+    },
+    indicadores,
+  );
+
+  return {
+    colacion: col,
+    movilizacion: mov,
+    sueldoBase: sueldo,
+    colacionNoImponible: colNoImp,
+    movilizacionNoImponible: movNoImp,
+    totalAsignaciones,
+    noImponible,
+    extraImponible: con.imponible - sin.imponible,
+    extraLiquido: con.liquido - sin.liquido,
+    extraDescuentos: con.totalDescuentos - sin.totalDescuentos,
+    imponibleSin: sin.imponible,
+    imponibleCon: con.imponible,
+    liquidoSin: sin.liquido,
+    liquidoCon: con.liquido,
+  };
+}
+
+/**
  * Semana corrida (art. 45 Código del Trabajo): remuneración en dinero por
  * domingo y festivos de quien se paga por día o con sueldo mensual más
  * remuneraciones variables (comisiones o tratos).

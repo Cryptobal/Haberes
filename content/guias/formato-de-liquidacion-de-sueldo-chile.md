@@ -39,7 +39,7 @@ Use esta lista al armar o revisar el documento. No sustituye el criterio de su c
 - Gratificación legal art. 50, si corresponde
 - Horas extras
 - Bonos imponibles (cada uno con su nombre)
-- Colación y movilización (art. 41), si se pagan: no imponibles
+- [Colación y movilización](/colacion-movilizacion) (art. 41), si se pagan: no imponibles
 - [Asignación familiar](/asignacion-familiar) legal, si hay cargas acreditadas: no es remuneración
 - Otros no imponibles, si existen
 - Total haberes

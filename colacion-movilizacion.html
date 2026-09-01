@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="es-CL">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script>
+  (function () {
+    try {
+      var t = localStorage.getItem("haberes:theme");
+      if (t !== "day" && t !== "night") t = "day";
+      document.documentElement.setAttribute("data-theme", t);
+    } catch (e) {}
+  })();
+  </script>
+<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-PCR596Z2');</script>
+<!-- End Google Tag Manager -->
+  <title>Calcular colación y movilización Chile 2026 — Haberes</title>
+  <meta name="description" content="Calcule colación y movilización (art. 41): total, efecto en la base imponible y cuándo pasan a ser remuneración. No es el sueldo líquido." />
+  <link rel="canonical" href="https://www.haberes.cl/colacion-movilizacion" />
+  <meta property="og:type" content="website" />
+  <meta property="og:locale" content="es_CL" />
+  <meta property="og:site_name" content="Haberes" />
+  <meta property="og:title" content="Calcular colación y movilización Chile 2026 — Haberes" />
+  <meta property="og:description" content="Calcule colación y movilización (art. 41): total, efecto en la base imponible y cuándo pasan a ser remuneración. No es el sueldo líquido." />
+  <meta property="og:url" content="https://www.haberes.cl/colacion-movilizacion" />
+  <meta property="og:image" content="https://www.haberes.cl/img/og-default.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Calcular colación y movilización Chile 2026 — Haberes" />
+  <meta name="twitter:description" content="Calcule colación y movilización (art. 41): total, efecto en la base imponible y cuándo pasan a ser remuneración. No es el sueldo líquido." />
+  <meta name="twitter:image" content="https://www.haberes.cl/img/og-default.png" />
+  <link rel="icon" href="favicon.ico" sizes="32x32" />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="css/app.css" />
+  <!-- GA4: para activarlo, asigne un ID G-… a window.HABERES_GA4 antes de este script. Vacío = sin peticiones. -->
+  <script src="js/analytics.js" defer></script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "Haberes",
+  "url": "https://www.haberes.cl/",
+  "logo": "https://www.haberes.cl/favicon.svg",
+  "areaServed": "CL",
+  "sameAs": []
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Calcular colación y movilización — Haberes",
+  "url": "https://www.haberes.cl/colacion-movilizacion",
+  "applicationCategory": "FinanceApplication",
+  "operatingSystem": "Web",
+  "inLanguage": "es-CL",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "CLP"
+  }
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "¿La colación y la movilización son imponibles?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Por regla, no, si cubren el gasto de comida o transporte para que el trabajador preste servicios. El artículo 41 del Código del Trabajo dice que esas asignaciones no constituyen remuneración. Si son contraprestación o pierden ese carácter de gasto, sí entran a cotizaciones e impuesto único."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "¿Hay un tope legal de colación o movilización?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "El Código del Trabajo no publica un monto máximo. Haberes no inventa un tope en UF. Un monto desproporcionado respecto del gasto real de comida o transporte puede hacer que la Dirección del Trabajo o el SII las traten como remuneración. Eso lo resuelve su contador o la Inspección, no esta página."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "¿Entran al sueldo líquido y a las cotizaciones?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Si cumplen el artículo 41, suman al líquido y no entran a la base de AFP, salud, cesantía ni impuesto único. No las sume como sueldo imponible ni las reste como cotización. Para el líquido completo use la calculadora de sueldo líquido."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "¿Cómo aparecen en la liquidación?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Como haberes no imponibles, en líneas propias (colación y movilización), aparte del sueldo base. En el Libro de Remuneraciones Electrónico de la Dirección del Trabajo corresponden a los códigos 2301 y 2302. Mal etiquetar un bono como colación distorsiona cotizaciones e impuesto único."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "¿Cuándo dejan de ser no imponibles?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Cuando no cubren un gasto de comida o transporte para el trabajo y pasan a ser contraprestación: un sueldo disfrazado, un monto pactado como remuneración o una cifra que ya no tiene carácter de devolución de gastos. En ese caso desmarque «tratar como no imponible» y use la calculadora de sueldo líquido."
+      }
+    }
+  ]
+}
+  </script>
+</head>
+<body>
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PCR596Z2"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+  <header class="site-header">
+    <nav class="nav">
+      <a class="brand" href="/" data-nav>
+        <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><rect x="8" y="2" width="6" height="4" rx="2"/><rect x="18" y="2" width="6" height="4" rx="2"/><rect x="8" y="8" width="6" height="4" rx="2"/><rect x="18" y="8" width="6" height="4" rx="2"/><rect x="8" y="14" width="6" height="4" rx="2"/><rect x="18" y="14" width="6" height="4" rx="2"/><rect x="8" y="20" width="6" height="4" rx="2"/><rect x="18" y="20" width="6" height="4" rx="2"/><rect x="8" y="26" width="6" height="4" rx="2"/><rect x="18" y="26" width="6" height="4" rx="2"/><rect x="14" y="14" width="4" height="4" rx="2"/></svg></span> Haberes
+      </a>
+      <div class="nav-links">
+        <a href="/como" data-nav>Cómo</a>
+        <a href="/precios" data-nav>Precios</a>
+      </div>
+      <div class="nav-actions">
+        <button type="button" class="theme-toggle" data-theme-toggle aria-label="Cambiar a modo noche" aria-pressed="false">
+          <svg class="ic-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.64 5.64l1.41 1.41M16.95 16.95l1.41 1.41M18.36 5.64l-1.41 1.41M7.05 16.95l-1.41 1.41"/></svg>
+          <svg class="ic-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 14.35A8.4 8.4 0 1 1 9.65 3 6.6 6.6 0 0 0 21 14.35z"/></svg>
+        </button>
+        <a class="btn btn-ghost btn-sm nav-login" href="/empresa">Entrar</a>
+        <a class="btn btn-sm nav-cta" href="/empresa?registro=1">Empezar gratis</a>
+        <button type="button" class="nav-burger" data-nav-burger aria-expanded="false" aria-controls="navDrawer" aria-label="Abrir menú">
+          <i aria-hidden="true"></i>
+        </button>
+      </div>
+    </nav>
+  </header>
+  <div class="nav-drawer" id="navDrawer" data-nav-drawer hidden>
+      <div class="nav-drawer-scrim" data-nav-scrim></div>
+      <div class="nav-drawer-panel" role="dialog" aria-modal="true" aria-label="Menú de navegación">
+        <div class="nav-drawer-grab" aria-hidden="true"></div>
+        <a href="/como" data-nav>Cómo</a>
+        <a href="/precios" data-nav>Precios</a>
+        <a href="/sueldo" data-nav>Sueldo líquido</a>
+        <a href="/sueldo-proporcional" data-nav>Sueldo proporcional</a>
+        <a href="/horas-extras" data-nav>Horas extras</a>
+        <a href="/recargo-domingo-comercio" data-nav>Recargo domingo comercio</a>
+        <a href="/semana-corrida" data-nav>Semana corrida</a>
+        <a href="/gratificacion" data-nav>Gratificación</a>
+        <a href="/aguinaldo" data-nav>Aguinaldo</a>
+        <a href="/impuesto-unico" data-nav>Impuesto único</a>
+        <a href="/cotizaciones-previsionales" data-nav>Cotizaciones previsionales</a>
+        <a href="/costo-empresa" data-nav>Costo empresa</a>
+        <a href="/seguro-cesantia" data-nav>Seguro de cesantía</a>
+        <a href="/asignacion-familiar" data-nav>Asignación familiar</a>
+        <a href="/colacion-movilizacion" data-nav>Colación y movilización</a>
+        <a href="/vacaciones-proporcionales" data-nav>Vacaciones proporcionales</a>
+        <a href="/feriado-progresivo" data-nav>Feriado progresivo</a>
+        <a href="/indemnizacion-anos-servicio" data-nav>Indemnización años de servicio</a>
+        <a href="/indemnizacion-aviso-previo" data-nav>Indemnización aviso previo</a>
+        <a href="/finiquito-casa-particular" data-nav>Finiquito casa particular</a>
+        <a href="/finiquito" data-nav>Finiquito</a>
+        <div class="nav-drawer-foot">
+          <a class="btn" href="/empresa?registro=1">Empezar gratis</a>
+          <button type="button" class="btn btn-ghost" data-nav-close>Cerrar</button>
+        </div>
+      </div>
+    </div>
+
+  <main>
+    <div class="wrap">
+      <p class="kicker">Calculadora</p>
+      <h1>Calcular colación y movilización Chile 2026</h1>
+      <p class="lede">
+        Sume las asignaciones de comida y transporte del
+        <a href="https://www.bcn.cl/leychile/navegar?idNorma=207436">artículo 41 del Código del Trabajo</a>
+        y vea si entran o no a la base imponible.
+        No es el <a href="/sueldo">sueldo líquido</a> ni el
+        <a href="/costo-empresa">costo empresa</a>.
+      </p>
+      <p class="notice">
+        Documento generado por Haberes. No es un cálculo de la Dirección del Trabajo, del SII ni de Previred.
+        No constituye asesoría legal, previsional ni tributaria.
+      </p>
+
+      <div class="layout" style="margin-top: 24px">
+        <form id="formColacion" class="panel">
+          <div class="row">
+            <div class="field">
+              <label for="colacion">Colación mensual</label>
+              <input id="colacion" type="number" min="0" step="1" value="50000" />
+            </div>
+            <div class="field">
+              <label for="movilizacion">Movilización mensual</label>
+              <input id="movilizacion" type="number" min="0" step="1" value="40000" />
+            </div>
+          </div>
+          <div class="field">
+            <label for="sueldoBase">Sueldo base (contexto)</label>
+            <input id="sueldoBase" type="number" min="0" step="1" value="800000" />
+          </div>
+          <p class="hint">
+            El sueldo no se recalcula aquí: solo sirve para estimar el extra de descuentos
+            si alguna asignación se trata como imponible. El líquido completo está en
+            <a href="/sueldo">calcular sueldo líquido</a>.
+          </p>
+          <label class="check">
+            <input id="colacionNoImponible" type="checkbox" checked />
+            Tratar colación como no imponible (art. 41)
+          </label>
+          <label class="check">
+            <input id="movilizacionNoImponible" type="checkbox" checked />
+            Tratar movilización como no imponible (art. 41)
+          </label>
+          <p class="hint">
+            Deje los recuadros marcados si cubren el gasto de comida o transporte para el trabajo.
+            Desmárquelos si son realmente remuneración.
+          </p>
+        </form>
+
+        <aside class="panel sticky">
+          <p class="metric-label">Total asignaciones</p>
+          <p class="metric" id="outTotal">$ 0</p>
+          <p class="hint" id="outNota"></p>
+          <div class="mini">
+            <div><span>Colación</span><strong id="outColacion">$ 0</strong></div>
+            <div><span>Movilización</span><strong id="outMovilizacion">$ 0</strong></div>
+            <div><span>No imponible</span><strong id="outNoImponible">$ 0</strong></div>
+            <div><span>Extra base imponible</span><strong id="outExtraImponible">$ 0</strong></div>
+            <div><span>Extra líquido (contexto)</span><strong id="outExtraLiquido">$ 0</strong></div>
+          </div>
+          <p class="hint">
+            Si cumplen el artículo 41, el extra en la base imponible es $0.
+            Para AFP, salud e impuesto único con su caso use
+            <a href="/sueldo">calcular sueldo líquido</a>.
+          </p>
+          <div class="actions">
+            <a class="btn" href="/sueldo">Ver sueldo líquido</a>
+            <a class="btn btn-ghost" href="/empresa">Cuenta de empresa</a>
+          </div>
+        </aside>
+      </div>
+
+      <section class="prose u-mt-6" aria-labelledby="cm-explica">
+        <h2 id="cm-explica">Qué estima esta página (y qué no)</h2>
+        <p>
+          La colación y la movilización son asignaciones frecuentes en la
+          <a href="/guias/liquidacion-de-sueldo">liquidación de sueldo</a>
+          de una pyme. El
+          <a href="https://www.bcn.cl/leychile/navegar?idNorma=207436">artículo 41 del Código del Trabajo</a>
+          dice que <strong>no constituyen remuneración</strong> las asignaciones de colación y de
+          movilización, ni, en general, las devoluciones de gastos en que se incurra por causa del trabajo.
+          Por eso esta calculadora <strong>no arma una segunda liquidación</strong>: suma los montos
+          y muestra el efecto en la base imponible.
+        </p>
+        <p>
+          La fórmula es simple: <strong>colación + movilización</strong>.
+          Si ambas se tratan como no imponibles, el extra en la base es <strong>$0</strong>
+          y el extra líquido es el total. Si las desmarca, Haberes las pasa a la base
+          (AFP Modelo, Fonasa, contrato indefinido) solo para mostrar el contraste.
+        </p>
+        <h3>Cuándo dejan de ser no imponibles</h3>
+        <p>
+          El artículo 41 las excluye cuando cubren el gasto de comida o transporte
+          <em>para prestar el servicio</em>, no como contraprestación. La Dirección del Trabajo
+          y el <a href="https://www.sii.cl/valores_y_fechas/impuesto_2da_categoria/impuesto2026.htm">SII</a>
+          miran ese carácter: si el pago es en realidad un sueldo disfrazado, un bono
+          o una cifra que ya no se explica por el gasto, entra a cotizaciones e
+          <a href="/impuesto-unico">impuesto único</a>.
+          No hay un tope en pesos o UF en el Código; Haberes no inventa uno.
+          El recuadro «tratar como no imponible» es su calificación, no un dictamen.
+        </p>
+        <h3>Cómo salen en la liquidación</h3>
+        <p>
+          En el comprobante del artículo 54 van como haberes no imponibles, en líneas propias,
+          aparte del sueldo base. En el Libro de Remuneraciones Electrónico de la Dirección del Trabajo
+          corresponden a los códigos <strong>2301</strong> (colación) y <strong>2302</strong> (movilización).
+          Mal etiquetar un bono como colación distorsiona cotizaciones e impuesto único.
+          La <a href="/asignacion-familiar">asignación familiar legal</a> tampoco es remuneración:
+          es otro haber, del D.F.L. N° 150, no de este artículo.
+        </p>
+        <h3>Qué no cubre esta página</h3>
+        <p>
+          No es el <a href="/sueldo">sueldo líquido</a> ni las
+          <a href="/cotizaciones-previsionales">cotizaciones previsionales</a>
+          ni el <a href="/costo-empresa">costo empresa</a>.
+          No declara en Previred ni arma el LRE. No califica su caso ante la Inspección o el SII.
+          No abre URLs hermanas <code>/colacion</code>, <code>/movilizacion</code> ni <code>/asignacion-colacion</code>.
+        </p>
+        <h3>Ejemplo orientativo</h3>
+        <p>
+          Colación $50.000 y movilización $40.000, ambas no imponibles: total $90.000,
+          extra en la base imponible $0, extra líquido $90.000.
+          Si las trata como remuneración con sueldo base $800.000 (AFP Modelo, Fonasa,
+          contrato indefinido), $90.000 entra a la base; el extra líquido es $73.638
+          (descuentos $16.362).
+        </p>
+        <h3>Guías y calculadoras relacionadas</h3>
+        <ul>
+          <li><a href="/sueldo">Calculadora de sueldo líquido</a></li>
+          <li><a href="/guias/liquidacion-de-sueldo">Liquidación de sueldo (guía)</a></li>
+          <li><a href="/guias/como-leer-una-liquidacion-de-sueldo">Cómo leer una liquidación de sueldo</a></li>
+          <li><a href="/guias/formato-de-liquidacion-de-sueldo-chile">Formato de liquidación de sueldo</a></li>
+          <li><a href="/guias/liquidacion-de-sueldo-y-previred">Liquidación de sueldo y Previred</a></li>
+          <li><a href="/asignacion-familiar">Calcular asignación familiar</a></li>
+          <li><a href="/empresa">Cuenta de empresa</a></li>
+        </ul>
+        <h2 id="faq-colacion-movilizacion">Preguntas frecuentes</h2>
+        <h3>¿La colación y la movilización son imponibles?</h3>
+        <p>
+          Por regla, no, si cubren el gasto de comida o transporte para que el trabajador preste servicios. El artículo 41 del Código del Trabajo dice que esas asignaciones no constituyen remuneración. Si son contraprestación o pierden ese carácter de gasto, sí entran a cotizaciones e impuesto único.
+        </p>
+        <h3>¿Hay un tope legal de colación o movilización?</h3>
+        <p>
+          El Código del Trabajo no publica un monto máximo. Haberes no inventa un tope en UF. Un monto desproporcionado respecto del gasto real de comida o transporte puede hacer que la Dirección del Trabajo o el SII las traten como remuneración. Eso lo resuelve su contador o la Inspección, no esta página.
+        </p>
+        <h3>¿Entran al sueldo líquido y a las cotizaciones?</h3>
+        <p>
+          Si cumplen el artículo 41, suman al líquido y no entran a la base de AFP, salud, cesantía ni impuesto único. No las sume como sueldo imponible ni las reste como cotización. Para el líquido completo use la calculadora de sueldo líquido.
+        </p>
+        <h3>¿Cómo aparecen en la liquidación?</h3>
+        <p>
+          Como haberes no imponibles, en líneas propias (colación y movilización), aparte del sueldo base. En el Libro de Remuneraciones Electrónico de la Dirección del Trabajo corresponden a los códigos 2301 y 2302. Mal etiquetar un bono como colación distorsiona cotizaciones e impuesto único.
+        </p>
+        <h3>¿Cuándo dejan de ser no imponibles?</h3>
+        <p>
+          Cuando no cubren un gasto de comida o transporte para el trabajo y pasan a ser contraprestación: un sueldo disfrazado, un monto pactado como remuneración o una cifra que ya no tiene carácter de devolución de gastos. En ese caso desmarque «tratar como no imponible» y use la calculadora de sueldo líquido.
+        </p>
+      </section>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <div><strong>Haberes</strong> · colación y movilización</div>
+      <div class="footer-legal">
+        <a href="/como">Cómo funciona</a>
+        <span aria-hidden="true">·</span>
+        <a href="/precios">Precios</a>
+        <span aria-hidden="true">·</span>
+        <a href="/privacidad">Privacidad</a>
+        <span aria-hidden="true">·</span>
+        <a href="/terminos">Términos</a>
+      </div>
+      <div class="footer-credit">
+        Proyecto desarrollado por <a href="https://lx3.ai" rel="noopener noreferrer">lx3.ai</a>
+        · <a href="mailto:contacto@lx3.ai">contacto@lx3.ai</a>
+      </div>
+      <div data-indicadores>UF y UTM se cargan…</div>
+      <div>
+        Documento generado por Haberes. No es un cálculo de la Dirección del Trabajo, del SII ni de Previred.
+        No constituye asesoría legal, previsional ni tributaria.
+      </div>
+    </div>
+  </footer>
+  <script type="module" src="js/app-colacion-movilizacion.js"></script>
+</body>
+</html>
