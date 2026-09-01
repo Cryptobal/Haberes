@@ -11,7 +11,7 @@ import {
   IUSC_TRAMOS,
   DISCLAIMER,
 } from "./constants.js";
-import { calcularFiniquitoCompleto, feriadoProporcional } from "./finiquito.js";
+import { calcularFiniquitoCompleto, calcularFiniquitoCasaParticular, feriadoProporcional } from "./finiquito.js";
 import { calcularAguinaldo, calcularSueldo, valorHoraExtra, gratificacionArt50 } from "./sueldo.js";
 
 function pesos(n) {
@@ -271,6 +271,50 @@ function mountAguinaldo(root) {
   run();
 }
 
+function mountCasaParticular(root) {
+  root.innerHTML = `
+    <form class="seo-calc__form" novalidate>
+      <p class="seo-calc__title">Estimar finiquito casa particular</p>
+      ${field("Remuneración mensual", "rem", 'type="text" inputmode="numeric" value="500000"')}
+      ${field("Fecha ingreso", "ingreso", 'type="date" value="2023-03-01"')}
+      ${field("Fecha término", "termino", 'type="date" value="2026-03-01"')}
+      ${field("Días del mes", "diasMes", 'type="number" min="0" max="30" value="1"')}
+      ${field("Días feriado pendiente", "ferPend", 'type="number" min="0" value="5"')}
+      ${field("Días feriado proporcional", "ferProp", 'type="number" min="0" value="0"')}
+      <label class="seo-calc__check"><input type="checkbox" name="aviso" /> Hubo aviso previo de 30 días</label>
+      <p class="seo-calc__result" data-out>—</p>
+      <div class="seo-calc__actions">
+        <button type="submit" class="btn">Calcular</button>
+        <a class="btn btn-ghost" href="/finiquito-casa-particular">Abrir calculadora</a>
+        <a class="btn btn-ghost" href="/finiquito">Finiquito genérico</a>
+      </div>
+      <p class="seo-calc__note">Desahucio art. 161. No hay IAS de 30 días. ${DISCLAIMER}</p>
+    </form>`;
+  const form = root.querySelector("form");
+  const out = root.querySelector("[data-out]");
+  const run = () => {
+    const r = calcularFiniquitoCasaParticular(
+      {
+        remuneracion: num(form.rem),
+        ingreso: form.ingreso.value,
+        termino: form.termino.value,
+        diasMes: Number(form.diasMes.value) || 0,
+        diasFeriadoPendiente: Number(form.ferPend.value) || 0,
+        diasFeriadoProporcional: Number(form.ferProp.value) || 0,
+        avisoPrevio: form.aviso.checked,
+        causal: "desahucio",
+      },
+      { uf: FALLBACK_UF },
+    );
+    out.textContent = `Empleador: ${pesos(r.totalEmpleador)} (aviso ${pesos(r.aviso)}). Fondo AFP estimado: ${pesos(r.iteEstimado)}.`;
+  };
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    run();
+  });
+  run();
+}
+
 const MOUNTERS = {
   finiquito: mountFiniquito,
   sueldo: mountSueldo,
@@ -279,6 +323,7 @@ const MOUNTERS = {
   feriado: mountFeriado,
   iusc: mountIusc,
   aguinaldo: mountAguinaldo,
+  "casa-particular": mountCasaParticular,
 };
 
 document.querySelectorAll("[data-seo-calc]").forEach((el) => {

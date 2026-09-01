@@ -17,12 +17,14 @@ Actualizar este archivo antes de crear URLs nuevas para evitar canibalización.
 | Calcular impuesto único | calcular impuesto unico (480/mes), tabla impuesto unico (2.900/mes) | `/impuesto-unico` | Title/H1 «calcular impuesto único»; no canibalizar `/sueldo` ni `/guias/impuesto-unico` |
 | Calcular cotizaciones previsionales | cotizaciones previsionales / tope imponible AFP / comisión AFP | `/cotizaciones-previsionales` | Title/H1 «calcular cotizaciones previsionales»; no canibalizar `/sueldo` ni `/guias/liquidacion-de-sueldo-y-previred`. No crear `/tope-imponible`, `/cotizacion-afp`, `/descuentos-legales` ni `/calculadora-sueldo` |
 | Calcular costo empresa de un sueldo | costo empresa / costo de un trabajador / cuánto cuesta contratar | `/costo-empresa` | Title/H1 «calcular costo empresa de un sueldo»; no canibalizar `/sueldo` ni `/cotizaciones-previsionales`. Responde «cuánto me cuesta contratar», no el líquido. No crear `/costo-trabajador` ni `/aportes-patronales` |
+| Calcular seguro de cesantía | seguro de cesantía / cotización AFC / Ley 19.728 | `/seguro-cesantia` | Title/H1 «calcular seguro de cesantía»; no canibalizar `/cotizaciones-previsionales`, `/costo-empresa` ni `/sueldo`. Cotización mensual AFC (trabajador + empleador, CIC/FCS). No es prestación post-despido ni AFP/salud. No crear `/afc` ni `/cesantia` |
 | Calcular recargo domingo comercio | recargo domingo comercio / recargo 30% domingo / art. 38 N°7 | `/recargo-domingo-comercio` | Title/H1 «calcular recargo domingo comercio»; no canibalizar `/horas-extras` ni `/guias/horas-extras`. No es hora extra (art. 32) ni semana corrida (art. 45). No crear `/horas-extras-domingo` ni `/recargo-festivo` |
 | Calcular semana corrida | semana corrida (1.300/21) — intención calcular | `/semana-corrida` | Title/H1 «calcular semana corrida»; no canibalizar `/guias/semana-corrida`, `/recargo-domingo-comercio` ni `/sueldo`. Art. 45 (pago del descanso), no recargo 30 % art. 38 N°7 ni hora extra art. 32. No crear `/septimo-dia` ni `/pago-domingo-festivo` |
 | Calcular asignación familiar | asignación familiar / tramos asignación familiar / cargas familiares | `/asignacion-familiar` | Title/H1 «calcular asignación familiar»; no canibalizar `/sueldo`, `/cotizaciones-previsionales` ni `/guias/liquidacion-de-sueldo`. Sistema Único (D.F.L. 150), no SUF municipal. No crear `/suf`, `/asignacion-maternal` ni `/cargas-familiares` |
 | Calcular feriado progresivo | feriado progresivo / vacaciones progresivas / calcular feriado progresivo | `/feriado-progresivo` | Title/H1 «calcular feriado progresivo»; no canibalizar `/vacaciones-proporcionales` ni `/finiquito`. Art. 68 (días extra al feriado anual), no art. 73 (plata de días no usados). No crear `/vacaciones-progresivas` ni `/indemnizacion` |
 | Calcular indemnización por años de servicio | indemnizacion por años de servicio (2.400/24) — intención calcular | `/indemnizacion-anos-servicio` | Title/H1 «calcular indemnización por años de servicio»; no canibalizar `/finiquito` ni `/guias/indemnizacion-por-anos-de-servicio`. Art. 163 (IAS), no el finiquito completo. No crear `/indemnizacion` |
 | Calcular aguinaldo Fiestas Patrias | aguinaldo fiestas patrias (5.400/23) — intención presupuestar/calcular monto | `/aguinaldo` | Title/H1 «calcular aguinaldo Fiestas Patrias»; no es obligación legal general del Código; no canibalizar `/gratificacion`, `/sueldo` ni `/guias/aguinaldo-fiestas-patrias`. No crear `/bono-fiestas-patrias` ni `/aguinaldo-navidad` |
+| Calcular finiquito de casa particular | finiquito asesora del hogar / finiquito trabajadora casa particular — intención calcular | `/finiquito-casa-particular` | Title/H1 «calcular finiquito casa particular»; no canibalizar `/finiquito`, `/indemnizacion-anos-servicio` ni `/guias/finiquito-trabajadora-de-casa-particular`. Estatuto propio (art. 163 a todo evento AFP 1,11 %, aviso art. 161). No crear `/finiquito-nana` ni `/asesora-hogar` |
 | Índice de guías | — | `/guias` | Hub: 17 guías, grupo liquidación vs finiquito |
 
 ## Guías pilar (contenido + calculadora embebida)
@@ -39,7 +41,7 @@ Actualizar este archivo antes de crear URLs nuevas para evitar canibalización.
 | Semana corrida | semana corrida (1.300/21) — explainer | `/guias/semana-corrida` | enlace a `/semana-corrida`; embed `/sueldo` para el líquido; no canibalizar title/H1 de la calculadora |
 | Aguinaldo Fiestas Patrias | aguinaldo fiestas patrias (5.400/23), es obligatorio el aguinaldo (480/15), bono fiestas patrias (170) | `/guias/aguinaldo-fiestas-patrias` | guía espesa; el cálculo vive en `/aguinaldo`; no es obligación general del Código; no canibalizar `/gratificacion` ni `/guias/gratificacion-legal` |
 | Carta de aviso | carta de aviso de término de contrato (10–480) | `/guias/carta-aviso-termino-contrato` | plantilla descargable |
-| Casa particular | finiquito asesora del hogar (140/15) | `/guias/finiquito-trabajadora-de-casa-particular` | ya existe; reforzar régimen AFC 4,11 % |
+| Casa particular | finiquito asesora del hogar (140/15) | `/guias/finiquito-trabajadora-de-casa-particular` | explica; el cálculo vive en `/finiquito-casa-particular`; no reescribir la guía como segunda calculadora |
 
 ## Guías de apoyo (ya publicadas — no canibalizar)
 
@@ -98,6 +100,12 @@ No publicar hermanas de cotizaciones: `/tope-imponible`, `/cotizacion-afp`,
 sigue en `/sueldo`. El costo de contratar (aportes del empleador) vive en
 `/costo-empresa`. No publicar `/costo-trabajador` ni `/aportes-patronales`.
 
+No publicar `/afc` ni `/cesantia`. La cotización mensual al Seguro de Cesantía
+(Ley 19.728 / AFC: trabajador y empleador, cuenta individual y fondo solidario)
+vive en `/seguro-cesantia`. AFP y salud siguen en `/cotizaciones-previsionales`.
+El costo completo de contratar sigue en `/costo-empresa`. El líquido, en `/sueldo`.
+La prestación (giros) si hay despido no abre URL propia.
+
 No publicar hermanas del recargo domingo: `/horas-extras-domingo`, `/recargo-festivo`,
 `/trabajo-en-domingo`. El recargo 30 % del comercio (art. 38 N°7) vive en
 `/recargo-domingo-comercio`. Las horas extras (art. 32) siguen en `/horas-extras`.
@@ -111,6 +119,11 @@ No publicar `/vacaciones-progresivas` ni `/indemnizacion`. El feriado progresivo
 `/feriado-progresivo`. El proporcional en dinero vive en `/vacaciones-proporcionales`.
 La IAS (art. 163) se calcula en `/indemnizacion-anos-servicio`. La guía
 `/guias/indemnizacion-por-anos-de-servicio` explica; `/finiquito` sigue siendo el finiquito completo.
+
+No publicar `/finiquito-nana` ni `/asesora-hogar`. El finiquito de casa particular (aviso art. 161
+y fondo AFP 1,11 %, no IAS de 30 días) vive en `/finiquito-casa-particular`. La guía
+`/guias/finiquito-trabajadora-de-casa-particular` explica. No canibalizar `/finiquito` ni
+`/indemnizacion-anos-servicio`.
 
 No publicar hermanas de semana corrida: `/septimo-dia`, `/pago-domingo-festivo`,
 `/semana-corrida-mensual`. El haber del artículo 45 vive en `/semana-corrida`.

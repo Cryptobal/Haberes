@@ -47,12 +47,23 @@ export const CESANTIA_INDEFINIDO = 0.006;
 export const TOPE_CESANTIA_UF = 135.2;
 
 /**
- * Seguro de cesantía de cargo del empleador — Ley 19.728.
- * Indefinido 2,4 %; plazo fijo 3,0 %. Misma base y tope de 135,2 UF que el
- * 0,6 % del trabajador. No se inventa un tope distinto.
+ * Seguro de cesantía — Ley 19.728 art. 5 (AFC / SUSESO / Superintendencia de Pensiones).
+ * Indefinido: trabajador 0,6 % a la cuenta individual (CIC); empleador 2,4 %
+ * (1,6 % CIC + 0,8 % fondo solidario). Plazo fijo u obra o faena: trabajador
+ * 0 %; el empleador cotiza el 3,0 % (2,8 % CIC + 0,2 % fondo solidario).
+ * Misma base y tope de 135,2 UF (distinto del tope AFP de 90 UF). No se inventa
+ * un tope distinto. No modela el tope de 11 años por relación laboral ni el
+ * régimen de casa particular (indemnización a todo evento).
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=189967
+ * @see https://www.suseso.gob.cl/613/w3-propertyvalue-122245.html
+ * @see https://www.spensiones.gob.cl/portal/institucional/594/w3-propertyvalue-9927.html
  */
 export const CESANTIA_EMPLEADOR_INDEFINIDO = 0.024;
+export const CESANTIA_EMPLEADOR_INDEFINIDO_CIC = 0.016;
+export const CESANTIA_EMPLEADOR_INDEFINIDO_FCS = 0.008;
 export const CESANTIA_EMPLEADOR_PLAZO_FIJO = 0.03;
+export const CESANTIA_EMPLEADOR_PLAZO_CIC = 0.028;
+export const CESANTIA_EMPLEADOR_PLAZO_FCS = 0.002;
 
 /**
  * Cotización de cargo del empleador Ley 21.735 (reforma previsional).
@@ -105,6 +116,21 @@ export const ASIGNACION_FAMILIAR_TRAMOS = [
 ];
 
 export const IAS_TOPE_ANIOS = 11;
+
+/**
+ * Indemnización a todo evento de casa particular (art. 163, incisos finales).
+ * Ley 21.269 (1 oct. 2020): el 4,11 % se redistribuyó en 3 % seguro de cesantía
+ * (AFC) + 1,11 % que sigue yendo a la cuenta de indemnización en la AFP.
+ * La obligación de aportar dura 11 años por cada relación laboral.
+ * No se inventa un pago de 30 días por año: la DT indica que no hay IAS legal
+ * del inciso segundo para este estatuto.
+ */
+export const CASA_PARTICULAR_ITE_TASA = 0.0111;
+export const CASA_PARTICULAR_ITE_TASA_PREVIA = 0.0411;
+export const CASA_PARTICULAR_ITE_DESDE = "2020-10-01";
+export const CASA_PARTICULAR_ITE_DESDE_1991 = "1991-01-01";
+export const CASA_PARTICULAR_FERIADO_ANUAL = 15;
+export const CASA_PARTICULAR_PRUEBA_DIAS = 15;
 
 export const DISCLAIMER =
   "Documento generado por Haberes. No es un cálculo de la Dirección del Trabajo ni de Previred. No constituye asesoría legal ni previsional. Verifique con su contador o en los canales oficiales.";

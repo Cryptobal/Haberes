@@ -4,6 +4,10 @@ import {
   AFP_OBLIGATORIO,
   ASIGNACION_FAMILIAR_TRAMOS,
   CESANTIA_EMPLEADOR_INDEFINIDO,
+  CESANTIA_EMPLEADOR_INDEFINIDO_CIC,
+  CESANTIA_EMPLEADOR_INDEFINIDO_FCS,
+  CESANTIA_EMPLEADOR_PLAZO_CIC,
+  CESANTIA_EMPLEADOR_PLAZO_FCS,
   CESANTIA_EMPLEADOR_PLAZO_FIJO,
   CESANTIA_INDEFINIDO,
   FALLBACK_UF,
@@ -583,12 +587,104 @@ export function calcularAguinaldo(
   };
 }
 
+export function esContratoPlazoOObra(contrato) {
+  const c = String(contrato || "")
+    .toLowerCase()
+    .trim()
+    .replace(/[\s-]+/g, "_");
+  return (
+    c === "plazo_fijo" ||
+    c === "fijo" ||
+    c === "determinado" ||
+    c === "obra" ||
+    c === "obra_o_faena" ||
+    c === "obra_faena" ||
+    c === "faena"
+  );
+}
+
 export function tasaCesantiaEmpleador(contrato) {
-  const c = String(contrato || "indefinido").toLowerCase().trim();
-  if (c === "plazo_fijo" || c === "plazo fijo" || c === "fijo") {
-    return CESANTIA_EMPLEADOR_PLAZO_FIJO;
+  return esContratoPlazoOObra(contrato)
+    ? CESANTIA_EMPLEADOR_PLAZO_FIJO
+    : CESANTIA_EMPLEADOR_INDEFINIDO;
+}
+
+/**
+ * Tasas AFC (Ley 19.728 art. 5) según tipo de contrato: trabajador / empleador
+ * y destino cuenta individual (CIC) vs fondo de cesantía solidario (FCS).
+ */
+export function tasasCesantiaPorContrato(contrato) {
+  if (esContratoPlazoOObra(contrato)) {
+    return {
+      tipo: "plazo_fijo",
+      trabajador: { total: 0, cic: 0, fcs: 0 },
+      empleador: {
+        total: CESANTIA_EMPLEADOR_PLAZO_FIJO,
+        cic: CESANTIA_EMPLEADOR_PLAZO_CIC,
+        fcs: CESANTIA_EMPLEADOR_PLAZO_FCS,
+      },
+    };
   }
-  return CESANTIA_EMPLEADOR_INDEFINIDO;
+  return {
+    tipo: "indefinido",
+    trabajador: { total: CESANTIA_INDEFINIDO, cic: CESANTIA_INDEFINIDO, fcs: 0 },
+    empleador: {
+      total: CESANTIA_EMPLEADOR_INDEFINIDO,
+      cic: CESANTIA_EMPLEADOR_INDEFINIDO_CIC,
+      fcs: CESANTIA_EMPLEADOR_INDEFINIDO_FCS,
+    },
+  };
+}
+
+/**
+ * Cotización mensual al Seguro de Cesantía (AFC). Reusa la base y el tope de
+ * cesantía de calcularSueldo y las tasas de tasaCesantiaEmpleador.
+ *
+ * No es AFP/salud, no es el costo empresa completo ni el líquido, y no estima
+ * la prestación (giros) si hay despido.
+ *
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=189967
+ */
+export function calcularSeguroCesantia(input = {}, indicadores = {}) {
+  const contratoRaw = String(input.contrato || "indefinido").toLowerCase().trim();
+  const contrato = esContratoPlazoOObra(contratoRaw) ? "plazo_fijo" : "indefinido";
+  const sueldoBase = Math.max(0, Number(input.sueldoBase ?? input.monto) || 0);
+  const calc = calcularSueldo(
+    { sueldoBase, afp: "modelo", salud: "fonasa", contrato },
+    indicadores,
+  );
+  const tasas = tasasCesantiaPorContrato(contrato);
+  const base = calc.baseCesantia;
+  const trabajadorMonto = calc.cesantia.monto;
+  const empleadorMonto = roundPeso(base * tasas.empleador.total);
+  const trabajadorCic = trabajadorMonto;
+  const trabajadorFcs = 0;
+  const empleadorCic = roundPeso(base * tasas.empleador.cic);
+  const empleadorFcs = empleadorMonto - empleadorCic;
+
+  return {
+    contrato: tasas.tipo,
+    sueldoBase: calc.sueldoBase,
+    imponible: calc.imponible,
+    baseCesantia: base,
+    topeCesantia: calc.topeCesantia,
+    uf: calc.uf,
+    trabajador: {
+      tasa: tasas.trabajador.total,
+      monto: trabajadorMonto,
+      cic: { tasa: tasas.trabajador.cic, monto: trabajadorCic },
+      fcs: { tasa: tasas.trabajador.fcs, monto: trabajadorFcs },
+    },
+    empleador: {
+      tasa: tasas.empleador.total,
+      monto: empleadorMonto,
+      cic: { tasa: tasas.empleador.cic, monto: empleadorCic },
+      fcs: { tasa: tasas.empleador.fcs, monto: empleadorFcs },
+    },
+    cuentaIndividual: { monto: trabajadorCic + empleadorCic },
+    fondoSolidario: { monto: trabajadorFcs + empleadorFcs },
+    total: trabajadorMonto + empleadorMonto,
+  };
 }
 
 /**

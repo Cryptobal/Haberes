@@ -26,10 +26,12 @@ const DRAWER_LINKS = [
   ["/impuesto-unico", "Impuesto único"],
   ["/cotizaciones-previsionales", "Cotizaciones previsionales"],
   ["/costo-empresa", "Costo empresa"],
+  ["/seguro-cesantia", "Seguro de cesantía"],
   ["/asignacion-familiar", "Asignación familiar"],
   ["/vacaciones-proporcionales", "Vacaciones proporcionales"],
   ["/feriado-progresivo", "Feriado progresivo"],
   ["/indemnizacion-anos-servicio", "Indemnización años de servicio"],
+  ["/finiquito-casa-particular", "Finiquito casa particular"],
   ["/finiquito", "Finiquito"],
 ];
 

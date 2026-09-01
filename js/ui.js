@@ -219,10 +219,12 @@ function paintLoggedInNav(emp) {
         <a href="/impuesto-unico" data-nav>Impuesto único</a>
         <a href="/cotizaciones-previsionales" data-nav>Cotizaciones previsionales</a>
         <a href="/costo-empresa" data-nav>Costo empresa</a>
+        <a href="/seguro-cesantia" data-nav>Seguro de cesantía</a>
         <a href="/asignacion-familiar" data-nav>Asignación familiar</a>
         <a href="/vacaciones-proporcionales" data-nav>Vacaciones proporcionales</a>
         <a href="/feriado-progresivo" data-nav>Feriado progresivo</a>
         <a href="/indemnizacion-anos-servicio" data-nav>Indemnización años de servicio</a>
+        <a href="/finiquito-casa-particular" data-nav>Finiquito casa particular</a>
         <a href="/finiquito" data-nav>Finiquito</a>`;
     const anchor = foot || null;
     for (const node of [...mid.childNodes]) {
