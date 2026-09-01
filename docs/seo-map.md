@@ -21,6 +21,7 @@ Actualizar este archivo antes de crear URLs nuevas para evitar canibalización.
 | Calcular recargo domingo comercio | recargo domingo comercio / recargo 30% domingo / art. 38 N°7 | `/recargo-domingo-comercio` | Title/H1 «calcular recargo domingo comercio»; no canibalizar `/horas-extras` ni `/guias/horas-extras`. No es hora extra (art. 32) ni semana corrida (art. 45). No crear `/horas-extras-domingo` ni `/recargo-festivo` |
 | Calcular semana corrida | semana corrida (1.300/21) — intención calcular | `/semana-corrida` | Title/H1 «calcular semana corrida»; no canibalizar `/guias/semana-corrida`, `/recargo-domingo-comercio` ni `/sueldo`. Art. 45 (pago del descanso), no recargo 30 % art. 38 N°7 ni hora extra art. 32. No crear `/septimo-dia` ni `/pago-domingo-festivo` |
 | Calcular asignación familiar | asignación familiar / tramos asignación familiar / cargas familiares | `/asignacion-familiar` | Title/H1 «calcular asignación familiar»; no canibalizar `/sueldo`, `/cotizaciones-previsionales` ni `/guias/liquidacion-de-sueldo`. Sistema Único (D.F.L. 150), no SUF municipal. No crear `/suf`, `/asignacion-maternal` ni `/cargas-familiares` |
+| Calcular colación y movilización | colación / movilización / asignación de colación / no imponible art. 41 | `/colacion-movilizacion` | Title/H1 «calcular colación y movilización»; no canibalizar `/sueldo`, `/costo-empresa` ni `/cotizaciones-previsionales`. Solo montos, imponibilidad y cómo salen en la liquidación. No crear `/colacion`, `/movilizacion` ni `/asignacion-colacion` |
 | Calcular feriado progresivo | feriado progresivo / vacaciones progresivas / calcular feriado progresivo | `/feriado-progresivo` | Title/H1 «calcular feriado progresivo»; no canibalizar `/vacaciones-proporcionales` ni `/finiquito`. Art. 68 (días extra al feriado anual), no art. 73 (plata de días no usados). No crear `/vacaciones-progresivas` ni `/indemnizacion` |
 | Calcular indemnización por años de servicio | indemnizacion por años de servicio (2.400/24) — intención calcular | `/indemnizacion-anos-servicio` | Title/H1 «calcular indemnización por años de servicio»; no canibalizar `/finiquito` ni `/guias/indemnizacion-por-anos-de-servicio`. Art. 163 (IAS), no el finiquito completo. No crear `/indemnizacion` |
 | Calcular sueldo proporcional | sueldo proporcional / días trabajados mes / remuneración proporcional | `/sueldo-proporcional` | Title/H1 «calcular sueldo proporcional»; no canibalizar `/sueldo`, `/vacaciones-proporcionales` ni `/finiquito`. Bruto de un mes incompleto (mensual / 30 × días calendario). No crear `/dias-trabajados` ni `/sueldo-proporcional-dias` |
@@ -116,6 +117,12 @@ No publicar hermanas de asignación familiar: `/suf`, `/asignacion-maternal`,
 `/cargas-familiares`. El SUF municipal (Ley 18.020) no es esta calculadora.
 La asignación maternal comparte tramos con `/asignacion-familiar`; no abre URL propia.
 La intención «calcular sueldo líquido» sigue en `/sueldo`.
+
+No publicar `/colacion`, `/movilizacion` ni `/asignacion-colacion`. Colación y
+movilización del artículo 41 (montos, imponibilidad y cómo salen en la liquidación)
+viven en `/colacion-movilizacion`. El líquido sigue en `/sueldo`. El costo de contratar
+sigue en `/costo-empresa`. AFP, salud y cesantía del trabajador siguen en
+`/cotizaciones-previsionales`.
 
 No publicar `/vacaciones-progresivas` ni `/indemnizacion`. El feriado progresivo (art. 68) vive en
 `/feriado-progresivo`. El proporcional en dinero vive en `/vacaciones-proporcionales`.

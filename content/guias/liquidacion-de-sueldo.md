@@ -48,7 +48,7 @@ En la pyme conviene dejar por escrito el día de pago (por ejemplo, el último d
 La forma de determinar el monto se entiende mejor si la liquidación separa haberes imponibles y no imponibles.
 
 - **Imponibles habituales:** sueldo base, gratificación legal del artículo 50 cuando la empresa usa esa modalidad, horas extras, bonos imponibles y otras asignaciones que la ley o el contrato tratan como remuneración.
-- **No imponibles habituales:** asignación de colación y de movilización cuando cumplen el [artículo 41](https://www.bcn.cl/leychile/navegar?idNorma=207436) (se pagan para el trabajo, no como contraprestación). La [asignación familiar legal](/asignacion-familiar) tampoco es remuneración. Mal clasificar un bono como «no imponible» distorsiona cotizaciones e [impuesto único](/guias/impuesto-unico).
+- **No imponibles habituales:** asignación de [colación y de movilización](/colacion-movilizacion) cuando cumplen el [artículo 41](https://www.bcn.cl/leychile/navegar?idNorma=207436) (se pagan para el trabajo, no como contraprestación). La [asignación familiar legal](/asignacion-familiar) tampoco es remuneración. Mal clasificar un bono como «no imponible» distorsiona cotizaciones e [impuesto único](/guias/impuesto-unico).
 - **Variables:** si hay comisiones u otras remuneraciones variables, el [artículo 54 bis](https://www.bcn.cl/leychile/navegar?idNorma=207436) exige el detalle de cómo se determinaron. El comprobante del 54 y el anexo del 54 bis se leen juntos.
 
 La gratificación legal (artículos 47 y 50) y las horas extras tienen guía propia: [gratificación legal](/guias/gratificacion-legal) y [horas extras](/guias/horas-extras). La [semana corrida](/guias/semana-corrida) importa cuando hay remuneración variable diaria. El [aguinaldo de Fiestas Patrias](/guias/aguinaldo-fiestas-patrias), si se paga, va como haber propio: no es la gratificación legal.
@@ -64,7 +64,7 @@ Los descuentos legales más frecuentes en un contrato indefinido son:
 
 El artículo 58 del Código del Trabajo limita otros descuentos (anticipos, créditos, cuotas sindicales, pensiones de alimentos, etc.). No descuente «multas» o faltantes de caja si no hay base legal o pacto válido. Si hay duda, la vía es la Inspección o un abogado laboral, no un ajuste silencioso en la planilla.
 
-Use [calcular cotizaciones previsionales](/cotizaciones-previsionales), [calcular seguro de cesantía](/seguro-cesantia) y [calcular asignación familiar](/asignacion-familiar).
+Use [calcular cotizaciones previsionales](/cotizaciones-previsionales), [calcular seguro de cesantía](/seguro-cesantia), [calcular asignación familiar](/asignacion-familiar) y [calcular colación y movilización](/colacion-movilizacion).
 
 El **líquido a pago** es haberes menos descuentos. Si ese número no cuadra con el comprobante, el problema no se arregla cambiando el nombre de una línea: hay que recalcular.
 

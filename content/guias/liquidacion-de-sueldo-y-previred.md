@@ -9,7 +9,7 @@ calc: "sueldo"
 
 Haberes estima la liquidación del trabajador. Previred es el canal de declaración y pago de cotizaciones. No son lo mismo: contraste siempre antes de declarar.
 
-El desglose de AFP, salud y cesantía del trabajador está en [calcular cotizaciones previsionales](/cotizaciones-previsionales). El aporte AFC del empleador (cuenta individual y fondo solidario) está en [calcular seguro de cesantía](/seguro-cesantia). Haberes no declara en Previred. La [asignación familiar](/asignacion-familiar) se paga en la liquidación y se recupera aparte; no es una cotización.
+El desglose de AFP, salud y cesantía del trabajador está en [calcular cotizaciones previsionales](/cotizaciones-previsionales). El aporte AFC del empleador (cuenta individual y fondo solidario) está en [calcular seguro de cesantía](/seguro-cesantia). Haberes no declara en Previred. La [asignación familiar](/asignacion-familiar) se paga en la liquidación y se recupera aparte; no es una cotización. [Colación y movilización](/colacion-movilizacion) del artículo 41 van como haberes no imponibles si cubren comida o transporte.
 
 {{calc}}
 

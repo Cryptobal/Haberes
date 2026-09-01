@@ -460,6 +460,48 @@ const META = {
       },
     ],
   },
+  "colacion-movilizacion.html": {
+    path: "/colacion-movilizacion",
+    title: "Calcular colación y movilización Chile 2026 — Haberes",
+    description:
+      "Calcule colación y movilización (art. 41): total, efecto en la base imponible y cuándo pasan a ser remuneración. No es el sueldo líquido.",
+    ogImage: "/img/og-default.png",
+    jsonld: (url) => [
+      ORG,
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        name: "Calcular colación y movilización — Haberes",
+        url,
+        applicationCategory: "FinanceApplication",
+        operatingSystem: "Web",
+        inLanguage: "es-CL",
+        offers: { "@type": "Offer", price: "0", priceCurrency: "CLP" },
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        mainEntity: [
+          {
+            "@type": "Question",
+            name: "¿La colación y la movilización son imponibles?",
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: "Por regla, no, si cubren el gasto de comida o transporte para que el trabajador preste servicios. El artículo 41 del Código del Trabajo dice que esas asignaciones no constituyen remuneración. Si son contraprestación o pierden ese carácter de gasto, sí entran a cotizaciones e impuesto único.",
+            },
+          },
+          {
+            "@type": "Question",
+            name: "¿Hay un tope legal de colación o movilización?",
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: "El Código del Trabajo no publica un monto máximo. Haberes no inventa un tope en UF. Un monto desproporcionado respecto del gasto real de comida o transporte puede hacer que la Dirección del Trabajo o el SII las traten como remuneración. Eso lo resuelve su contador o la Inspección, no esta página.",
+            },
+          },
+        ],
+      },
+    ],
+  },
   "vacaciones-proporcionales.html": {
     path: "/vacaciones-proporcionales",
     title: "Calcular vacaciones proporcionales Chile 2026 — Haberes",
