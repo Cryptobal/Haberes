@@ -13,7 +13,7 @@ El cálculo (días del mes, feriado, aviso y estimación del fondo AFP 1,11 %) e
 
 ## Régimen especial AFC (indemnización a todo evento)
 
-En el régimen de casa particular aplica una cotización especial orientada a la **indemnización a todo evento**. Desde octubre de 2020 (Ley 21.269) el empleador cotiza 1,11 % en la AFP (antes 4,11 %) y 3 % al seguro de cesantía. No se confunde con el 0,6 % del trabajador del régimen general. El detalle y el cálculo están en [calcular finiquito casa particular](/finiquito-casa-particular).
+En el régimen de casa particular aplica una cotización especial orientada a la **indemnización a todo evento**. Desde octubre de 2020 (Ley 21.269) el empleador cotiza 1,11 % en la AFP (antes 4,11 %) y 3 % al seguro de cesantía. No se confunde con el 0,6 % del trabajador del régimen general ni con [calcular seguro de cesantía](/seguro-cesantia) (tasas AFC ordinarias de la Ley 19.728). El detalle y el cálculo de este finiquito están en [calcular finiquito casa particular](/finiquito-casa-particular).
 
 ## Qué debe incluir el finiquito
 

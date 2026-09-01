@@ -11,6 +11,10 @@ import {
   AFP_COMISION,
   ASIGNACION_FAMILIAR_TRAMOS,
   CESANTIA_EMPLEADOR_INDEFINIDO,
+  CESANTIA_EMPLEADOR_INDEFINIDO_CIC,
+  CESANTIA_EMPLEADOR_INDEFINIDO_FCS,
+  CESANTIA_EMPLEADOR_PLAZO_CIC,
+  CESANTIA_EMPLEADOR_PLAZO_FCS,
   CESANTIA_EMPLEADOR_PLAZO_FIJO,
   DISCLAIMER,
   DISCLAIMER_FINIQUITO,
@@ -54,6 +58,7 @@ import {
   calcularFeriadoProgresivo,
   calcularIusc,
   calcularRecargoDomingoComercio,
+  calcularSeguroCesantia,
   calcularSemanaCorrida,
   calcularSueldo,
   brutoDesdeLiquido,
@@ -133,6 +138,15 @@ assert("Tope cesantía 135.2 UF", TOPE_CESANTIA_UF === 135.2);
 assert(
   "Cesantía empleador Ley 19.728",
   CESANTIA_EMPLEADOR_INDEFINIDO === 0.024 && CESANTIA_EMPLEADOR_PLAZO_FIJO === 0.03,
+);
+assert(
+  "Cesantía CIC/FCS Ley 19.728",
+  CESANTIA_EMPLEADOR_INDEFINIDO_CIC === 0.016 &&
+    CESANTIA_EMPLEADOR_INDEFINIDO_FCS === 0.008 &&
+    CESANTIA_EMPLEADOR_PLAZO_CIC === 0.028 &&
+    CESANTIA_EMPLEADOR_PLAZO_FCS === 0.002 &&
+    close(CESANTIA_EMPLEADOR_INDEFINIDO_CIC + CESANTIA_EMPLEADOR_INDEFINIDO_FCS, CESANTIA_EMPLEADOR_INDEFINIDO, 1e-12) &&
+    close(CESANTIA_EMPLEADOR_PLAZO_CIC + CESANTIA_EMPLEADOR_PLAZO_FCS, CESANTIA_EMPLEADOR_PLAZO_FIJO, 1e-12),
 );
 assert(
   "Ley 21.735 ago-2026 3,5 % con SIS incluido",
@@ -623,6 +637,78 @@ assert(
     "app-costo-empresa usa calcularCostoEmpresa",
     /import\s*\{[^}]*calcularCostoEmpresa[^}]*\}\s*from\s*["']\.\/sueldo\.js["']/.test(ceApp) &&
       /calcularCostoEmpresa\s*\(/.test(ceApp),
+  );
+}
+{
+  const ind = { uf: FALLBACK_UF };
+  const demo = calcularSeguroCesantia({ sueldoBase: 800_000, contrato: "indefinido" }, ind);
+  const sueldoDemo = calcularSueldo(
+    { sueldoBase: 800_000, afp: "modelo", salud: "fonasa", contrato: "indefinido" },
+    ind,
+  );
+  const costoDemo = calcularCostoEmpresa(
+    { modo: "bruto", monto: 800_000, contrato: "indefinido" },
+    ind,
+  );
+  assert(
+    "seguro cesantía 800000 indefinido reusa motor",
+    demo.trabajador.monto === sueldoDemo.cesantia.monto &&
+      demo.empleador.monto === costoDemo.cesantiaEmpleador.monto &&
+      demo.trabajador.monto === 4_800 &&
+      demo.empleador.monto === 19_200 &&
+      demo.empleador.cic.monto === 12_800 &&
+      demo.empleador.fcs.monto === 6_400 &&
+      demo.cuentaIndividual.monto === 17_600 &&
+      demo.fondoSolidario.monto === 6_400 &&
+      demo.total === 24_000 &&
+      demo.trabajador.cic.monto === 4_800 &&
+      demo.trabajador.fcs.monto === 0,
+    JSON.stringify({
+      trab: demo.trabajador.monto,
+      emp: demo.empleador.monto,
+      cic: demo.cuentaIndividual.monto,
+      fcs: demo.fondoSolidario.monto,
+    }),
+  );
+  const plazo = calcularSeguroCesantia({ sueldoBase: 800_000, contrato: "plazo_fijo" }, ind);
+  const obra = calcularSeguroCesantia({ sueldoBase: 800_000, contrato: "obra" }, ind);
+  const costoPlazo = calcularCostoEmpresa(
+    { modo: "bruto", monto: 800_000, contrato: "plazo_fijo" },
+    ind,
+  );
+  assert(
+    "seguro cesantía 800000 plazo fijo 3 % empleador",
+    plazo.trabajador.monto === 0 &&
+      plazo.empleador.tasa === 0.03 &&
+      plazo.empleador.monto === 24_000 &&
+      plazo.empleador.cic.monto === 22_400 &&
+      plazo.empleador.fcs.monto === 1_600 &&
+      plazo.cuentaIndividual.monto === 22_400 &&
+      plazo.fondoSolidario.monto === 1_600 &&
+      plazo.total === 24_000 &&
+      plazo.empleador.monto === costoPlazo.cesantiaEmpleador.monto,
+    JSON.stringify({ emp: plazo.empleador.monto, cic: plazo.empleador.cic.monto }),
+  );
+  assert(
+    "seguro cesantía obra = plazo fijo",
+    obra.empleador.monto === plazo.empleador.monto &&
+      obra.trabajador.monto === 0 &&
+      obra.contrato === "plazo_fijo",
+  );
+  const tope = calcularSeguroCesantia({ sueldoBase: 10_000_000, contrato: "indefinido" }, ind);
+  assert(
+    "seguro cesantía respeta tope 135,2 UF",
+    close(tope.baseCesantia, TOPE_CESANTIA_UF * FALLBACK_UF, 0.1) &&
+      tope.empleador.monto === 132_563 &&
+      tope.empleador.cic.monto + tope.empleador.fcs.monto === tope.empleador.monto &&
+      tope.trabajador.monto + tope.empleador.monto === tope.total,
+    `${tope.empleador.monto} ${tope.baseCesantia}`,
+  );
+  const scApp = readFileSync(join(root, "js/app-seguro-cesantia.js"), "utf8");
+  assert(
+    "app-seguro-cesantia usa calcularSeguroCesantia",
+    /import\s*\{[^}]*calcularSeguroCesantia[^}]*\}\s*from\s*["']\.\/sueldo\.js["']/.test(scApp) &&
+      /calcularSeguroCesantia\s*\(/.test(scApp),
   );
 }
 {
@@ -1282,6 +1368,7 @@ const required = [
   "impuesto-unico.html",
   "cotizaciones-previsionales.html",
   "costo-empresa.html",
+  "seguro-cesantia.html",
   "recargo-domingo-comercio.html",
   "semana-corrida.html",
   "asignacion-familiar.html",
@@ -1296,6 +1383,7 @@ const required = [
   "js/app-impuesto-unico.js",
   "js/app-cotizaciones-previsionales.js",
   "js/app-costo-empresa.js",
+  "js/app-seguro-cesantia.js",
   "js/app-recargo-domingo-comercio.js",
   "js/app-semana-corrida.js",
   "js/app-asignacion-familiar.js",
@@ -1437,6 +1525,7 @@ const htmlFiles = [
   "impuesto-unico.html",
   "cotizaciones-previsionales.html",
   "costo-empresa.html",
+  "seguro-cesantia.html",
   "recargo-domingo-comercio.html",
   "semana-corrida.html",
   "asignacion-familiar.html",
@@ -1526,6 +1615,7 @@ const appEntries = [
   "js/app-impuesto-unico.js",
   "js/app-cotizaciones-previsionales.js",
   "js/app-costo-empresa.js",
+  "js/app-seguro-cesantia.js",
   "js/app-recargo-domingo-comercio.js",
   "js/app-semana-corrida.js",
   "js/app-asignacion-familiar.js",
@@ -1565,7 +1655,7 @@ assert("robots Allow /", /Allow:\s*\//.test(robots));
 assert("robots Disallow /admin", /Disallow:\s*\/admin/.test(robots));
 assert("robots Disallow /api", /Disallow:\s*\/api/.test(robots));
 assert("robots Disallow /docs", /Disallow:\s*\/docs/.test(robots));
-assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots));
+assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots));
 assert("robots Sitemap", /Sitemap:\s*https:\/\/www\.haberes\.cl\/sitemap\.xml/.test(robots));
 
 const { seoPaths, GUIDE_SLUGS, GUIDES, CAUSAL_PAGES, BASE_PATHS, lastmodForPath } = await import("../content/registry.js");
@@ -1589,6 +1679,7 @@ assert(
     BASE_PATHS.includes("/impuesto-unico") &&
     BASE_PATHS.includes("/cotizaciones-previsionales") &&
     BASE_PATHS.includes("/costo-empresa") &&
+    BASE_PATHS.includes("/seguro-cesantia") &&
     BASE_PATHS.includes("/recargo-domingo-comercio") &&
     BASE_PATHS.includes("/semana-corrida") &&
     BASE_PATHS.includes("/asignacion-familiar") &&
@@ -1652,13 +1743,13 @@ assert(
     lastmodForPath("/guias/indemnizacion-por-anos-de-servicio") === "2026-08-19" &&
     lastmodForPath("/guias/semana-corrida") === "2026-08-27" &&
     lastmodForPath("/guias/aguinaldo-fiestas-patrias") === "2026-08-30" &&
-    lastmodForPath("/guias") === "2026-08-31" &&
+    lastmodForPath("/guias") === "2026-09-01" &&
     /<loc>https:\/\/www\.haberes\.cl\/guias\/liquidacion-de-sueldo<\/loc>\s*<lastmod>2026-08-18<\/lastmod>/.test(sitemap) &&
     /<loc>https:\/\/www\.haberes\.cl\/guias\/gratificacion-legal<\/loc>\s*<lastmod>2026-08-18<\/lastmod>/.test(sitemap) &&
     /<loc>https:\/\/www\.haberes\.cl\/guias\/indemnizacion-por-anos-de-servicio<\/loc>\s*<lastmod>2026-08-19<\/lastmod>/.test(sitemap) &&
     /<loc>https:\/\/www\.haberes\.cl\/guias\/semana-corrida<\/loc>\s*<lastmod>2026-08-27<\/lastmod>/.test(sitemap) &&
     /<loc>https:\/\/www\.haberes\.cl\/guias\/aguinaldo-fiestas-patrias<\/loc>\s*<lastmod>2026-08-30<\/lastmod>/.test(sitemap) &&
-    /<loc>https:\/\/www\.haberes\.cl\/guias<\/loc>\s*<lastmod>2026-08-31<\/lastmod>/.test(sitemap),
+    /<loc>https:\/\/www\.haberes\.cl\/guias<\/loc>\s*<lastmod>2026-09-01<\/lastmod>/.test(sitemap),
 );
 assert("sin ruta /blog ni /noticias", !existsSync(join(root, "blog.html")) && !existsSync(join(root, "noticias.html")));
 assert("sitemap sin .html (cleanUrls)", !locs.some((u) => u.endsWith(".html")));
@@ -1944,7 +2035,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 60,
+      seoPaths().length === 61,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -1956,7 +2047,7 @@ try {
   const docsSeo = await hitLocal("/docs/seo-map.md");
   assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
   assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
-  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/aguinaldo/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/asignacion-familiar/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/aguinaldo/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/asignacion-familiar/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
   }
@@ -1984,6 +2075,7 @@ try {
     "/impuesto-unico",
     "/cotizaciones-previsionales",
     "/costo-empresa",
+    "/seguro-cesantia",
     "/asignacion-familiar",
     "/guias/liquidacion-de-sueldo",
     "/guias/finiquito",
@@ -5198,6 +5290,7 @@ assert(
     ["impuesto-unico.html", "/impuesto-unico"],
     ["cotizaciones-previsionales.html", "/cotizaciones-previsionales"],
     ["costo-empresa.html", "/costo-empresa"],
+    ["seguro-cesantia.html", "/seguro-cesantia"],
     ["recargo-domingo-comercio.html", "/recargo-domingo-comercio"],
     ["semana-corrida.html", "/semana-corrida"],
     ["asignacion-familiar.html", "/asignacion-familiar"],
@@ -6717,6 +6810,134 @@ assert(
     );
   }
   {
+    const scHtml = readFileSync(join(root, "seguro-cesantia.html"), "utf8");
+    const scTitle = (scHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const scH1 = (scHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const scDesc = (scHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "";
+    const sueldoHtml = readFileSync(join(root, "sueldo.html"), "utf8");
+    const sueldoTitle = (sueldoHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const sueldoH1 = (sueldoHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const cpHtml = readFileSync(join(root, "cotizaciones-previsionales.html"), "utf8");
+    const cpTitle = (cpHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const cpH1 = (cpHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const ceHtml = readFileSync(join(root, "costo-empresa.html"), "utf8");
+    const ceTitle = (ceHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const ceH1 = (ceHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const finiHtml = readFileSync(join(root, "finiquito.html"), "utf8");
+    const finiH1 = (finiHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const demo = calcularSeguroCesantia(
+      { sueldoBase: 800_000, contrato: "indefinido" },
+      { uf: FALLBACK_UF },
+    );
+    const plazo = calcularSeguroCesantia(
+      { sueldoBase: 800_000, contrato: "plazo_fijo" },
+      { uf: FALLBACK_UF },
+    );
+    assert(
+      "SEO title seguro cesantía apunta a calcular seguro de cesantía",
+      /calcular seguro de cesant[ií]a/i.test(scTitle) &&
+        !/sueldo l[ií]quido/i.test(scTitle) &&
+        !/cotizaciones previsionales/i.test(scTitle) &&
+        !/costo empresa/i.test(scTitle) &&
+        scTitle !== sueldoTitle &&
+        scTitle !== cpTitle &&
+        scTitle !== ceTitle &&
+        scTitle.length <= 65,
+      scTitle,
+    );
+    assert(
+      "SEO H1 seguro cesantía exacto y distinto de hermanas",
+      scH1 === "Calcular seguro de cesantía Chile 2026" &&
+        scH1 !== sueldoH1 &&
+        scH1 !== cpH1 &&
+        scH1 !== ceH1 &&
+        scH1 !== finiH1,
+      scH1,
+    );
+    assert(
+      "SEO seguro cesantía meta distinta de /sueldo /cotizaciones /costo-empresa",
+      scDesc &&
+        scDesc !== ((sueldoHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "") &&
+        scDesc !== ((cpHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "") &&
+        scDesc !== ((ceHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || ""),
+    );
+    assert(
+      "SEO seguro cesantía no canibaliza líquido, cotizaciones ni costo empresa",
+      /href="\/sueldo"/.test(scHtml) &&
+        /href="\/cotizaciones-previsionales"/.test(scHtml) &&
+        /href="\/costo-empresa"/.test(scHtml) &&
+        /no es/i.test(scHtml),
+    );
+    assert(
+      "SEO seguro cesantía cita Ley 19.728 y topes",
+      /19\.728/.test(scHtml) &&
+        /135,2 UF/.test(scHtml) &&
+        /90 UF/.test(scHtml) &&
+        /bcn\.cl\/leychile/.test(scHtml) &&
+        /suseso\.gob\.cl/.test(scHtml) &&
+        /spensiones\.gob\.cl/.test(scHtml),
+    );
+    assert(
+      "SEO seguro cesantía ejemplo 800000 indefinido y plazo",
+      demo.total === 24_000 &&
+        demo.trabajador.monto === 4_800 &&
+        demo.empleador.monto === 19_200 &&
+        plazo.trabajador.monto === 0 &&
+        plazo.empleador.monto === 24_000 &&
+        /\$800\.000/.test(scHtml) &&
+        /\$4\.800/.test(scHtml) &&
+        /\$19\.200/.test(scHtml) &&
+        /\$12\.800/.test(scHtml) &&
+        /\$6\.400/.test(scHtml) &&
+        /\$24\.000/.test(scHtml) &&
+        /\$22\.400/.test(scHtml) &&
+        /\$1\.600/.test(scHtml),
+    );
+    assert("SEO seguro cesantía FAQPage", /"@type": "FAQPage"/.test(scHtml));
+    assert(
+      "SEO seguro cesantía disclaimer Haberes / no DT / no Previred",
+      /Documento generado por Haberes/.test(scHtml) &&
+        /Direcci[oó]n del Trabajo/.test(scHtml) &&
+        /Previred/.test(scHtml) &&
+        !/inteligencia artificial/i.test(scHtml),
+    );
+    assert(
+      "home y nav enlazan /seguro-cesantia",
+      /href="\/seguro-cesantia"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/seguro-cesantia" data-nav>Seguro de cesantía<\/a>/.test(
+          readFileSync(join(root, "index.html"), "utf8"),
+        ) &&
+        /href="\/seguro-cesantia" data-nav>Seguro de cesantía<\/a>/.test(scHtml),
+    );
+    assert(
+      "sitemap incluye /seguro-cesantia",
+      locs.includes("https://www.haberes.cl/seguro-cesantia") &&
+        lastmodForPath("/seguro-cesantia") === "2026-09-01",
+    );
+    assert(
+      "seo-map documenta /seguro-cesantia y no-canibalizar hermanas",
+      /\/seguro-cesantia/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no canibalizar `\/cotizaciones-previsionales`/.test(
+          readFileSync(join(root, "docs/seo-map.md"), "utf8"),
+        ) &&
+        /no crear `\/afc`/i.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")),
+    );
+    assert(
+      "no se crean URLs hermanas de seguro cesantía",
+      !existsSync(join(root, "afc.html")) && !existsSync(join(root, "cesantia.html")),
+    );
+    assert(
+      "sueldo, cotizaciones y costo empresa enlazan /seguro-cesantia",
+      /href="\/seguro-cesantia"/.test(sueldoHtml) &&
+        /href="\/seguro-cesantia"/.test(cpHtml) &&
+        /href="\/seguro-cesantia"/.test(ceHtml),
+    );
+    assert(
+      "hub /guias enlaza /seguro-cesantia",
+      /href="\/seguro-cesantia"/.test(readFileSync(join(root, "guias.html"), "utf8")),
+    );
+  }
+  {
     const files = [
       "index.html",
       "sueldo.html",
@@ -6726,6 +6947,7 @@ assert(
       "impuesto-unico.html",
       "cotizaciones-previsionales.html",
       "costo-empresa.html",
+      "seguro-cesantia.html",
       "recargo-domingo-comercio.html",
       "semana-corrida.html",
       "asignacion-familiar.html",
@@ -6904,7 +7126,7 @@ assert(
     return acc;
   }
   const pages = listHtml(root);
-  assert("62 páginas HTML", pages.length === 62, String(pages.length));
+  assert("63 páginas HTML", pages.length === 63, String(pages.length));
   for (const file of pages) {
     const html = readFileSync(file, "utf8");
     const rel = file.slice(root.length + 1);

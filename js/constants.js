@@ -47,12 +47,23 @@ export const CESANTIA_INDEFINIDO = 0.006;
 export const TOPE_CESANTIA_UF = 135.2;
 
 /**
- * Seguro de cesantía de cargo del empleador — Ley 19.728.
- * Indefinido 2,4 %; plazo fijo 3,0 %. Misma base y tope de 135,2 UF que el
- * 0,6 % del trabajador. No se inventa un tope distinto.
+ * Seguro de cesantía — Ley 19.728 art. 5 (AFC / SUSESO / Superintendencia de Pensiones).
+ * Indefinido: trabajador 0,6 % a la cuenta individual (CIC); empleador 2,4 %
+ * (1,6 % CIC + 0,8 % fondo solidario). Plazo fijo u obra o faena: trabajador
+ * 0 %; el empleador cotiza el 3,0 % (2,8 % CIC + 0,2 % fondo solidario).
+ * Misma base y tope de 135,2 UF (distinto del tope AFP de 90 UF). No se inventa
+ * un tope distinto. No modela el tope de 11 años por relación laboral ni el
+ * régimen de casa particular (indemnización a todo evento).
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=189967
+ * @see https://www.suseso.gob.cl/613/w3-propertyvalue-122245.html
+ * @see https://www.spensiones.gob.cl/portal/institucional/594/w3-propertyvalue-9927.html
  */
 export const CESANTIA_EMPLEADOR_INDEFINIDO = 0.024;
+export const CESANTIA_EMPLEADOR_INDEFINIDO_CIC = 0.016;
+export const CESANTIA_EMPLEADOR_INDEFINIDO_FCS = 0.008;
 export const CESANTIA_EMPLEADOR_PLAZO_FIJO = 0.03;
+export const CESANTIA_EMPLEADOR_PLAZO_CIC = 0.028;
+export const CESANTIA_EMPLEADOR_PLAZO_FCS = 0.002;
 
 /**
  * Cotización de cargo del empleador Ley 21.735 (reforma previsional).
