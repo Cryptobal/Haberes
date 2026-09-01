@@ -732,6 +732,8 @@ function calcLinkLabel(calc) {
   if (calc === "/indemnizacion-anos-servicio") return "Calcular indemnización por años de servicio";
   if (calc === "/aguinaldo") return "Calcular aguinaldo de Fiestas Patrias";
   if (calc === "/finiquito-casa-particular") return "Calcular finiquito casa particular";
+  if (calc === "/indemnizacion-aviso-previo") return "Calcular indemnización por aviso previo";
+  if (calc === "/sueldo-proporcional") return "Calcular sueldo proporcional";
   return "Calculadora de sueldo líquido";
 }
 
@@ -748,6 +750,9 @@ function hubList(items) {
             }
             if (g.slug === "finiquito-trabajadora-de-casa-particular") {
               extra = `\n          · <a href="/finiquito">Calculadora de finiquito</a>`;
+            }
+            if (g.slug === "carta-aviso-termino-contrato") {
+              extra = `\n          · <a href="/indemnizacion-aviso-previo">Calcular indemnización por aviso previo</a>`;
             }
             return `<li><a href="/guias/${g.slug}">${esc(g.title)}</a>
           — <a href="${g.calc}">${calcLinkLabel(g.calc)}</a>${extra}</li>`;
@@ -796,7 +801,7 @@ function hubLatest(items, limit = 6) {
       <p>Qué es el comprobante de remuneraciones, descuentos legales e impuesto único. Para estimar el líquido use <a href="/sueldo">/sueldo</a>. Para el bruto de un mes incompleto (días calendario × remuneración / 30), <a href="/sueldo-proporcional">calcular sueldo proporcional</a>. Para AFP, salud y cesantía del trabajador, <a href="/cotizaciones-previsionales">calcular cotizaciones previsionales</a>. Para el desglose AFC de trabajador y empleador, <a href="/seguro-cesantia">calcular seguro de cesantía</a>. Para el monto por cargas acreditadas, <a href="/asignacion-familiar">calcular asignación familiar</a>. Para las horas extras (art. 32, recargo 50 %), <a href="/horas-extras">calcular horas extras</a>. Para el séptimo día (art. 45), <a href="/semana-corrida">calcular semana corrida</a>. Para el aguinaldo de Fiestas Patrias (presupuesto, no obligación legal general), <a href="/aguinaldo">calcular aguinaldo</a>.</p>
       ${hubList(liq)}
       <h2>Finiquito</h2>
-      <p>Causales, plazos del artículo 177, indemnizaciones y qué firmar. Para el finiquito completo use <a href="/finiquito">/finiquito</a>. La IAS sola (art. 163) está en <a href="/indemnizacion-anos-servicio">calcular indemnización por años de servicio</a>. Casa particular (fondo AFP 1,11 %, no IAS de 30 días) está en <a href="/finiquito-casa-particular">calcular finiquito casa particular</a>. Los días extra del artículo 68 están en <a href="/feriado-progresivo">calcular feriado progresivo</a>.</p>
+      <p>Causales, plazos del artículo 177, indemnizaciones y qué firmar. Para el finiquito completo use <a href="/finiquito">/finiquito</a>. La IAS sola (art. 163) está en <a href="/indemnizacion-anos-servicio">calcular indemnización por años de servicio</a>. La sustitutiva del aviso (arts. 161 y 162) está en <a href="/indemnizacion-aviso-previo">calcular indemnización por aviso previo</a>. Casa particular (fondo AFP 1,11 %, no IAS de 30 días) está en <a href="/finiquito-casa-particular">calcular finiquito casa particular</a>. Los días extra del artículo 68 están en <a href="/feriado-progresivo">calcular feriado progresivo</a>.</p>
       ${hubList(fini)}
       <p class="actions"><a class="btn" href="/sueldo">Calcular sueldo líquido</a>
       <a class="btn btn-ghost" href="/finiquito">Calcular finiquito</a></p>

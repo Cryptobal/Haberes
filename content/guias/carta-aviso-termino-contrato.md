@@ -22,7 +22,7 @@ La [Dirección del Trabajo](https://www.dt.gob.cl/portal/1628/w3-article-60543.h
 
 ## Artículo 161: treinta días o indemnización sustitutiva
 
-Cuando el empleador invoca la causal del **inciso primero del artículo 161** (necesidades de la empresa), el artículo 162 exige aviso al trabajador, **con copia a la Inspección del Trabajo**, con **al menos treinta días de anticipación**. Si el preaviso es menor o no existe, el empleador debe pagar una indemnización sustitutiva **equivalente a la última remuneración mensual devengada**.
+Cuando el empleador invoca la causal del **inciso primero del artículo 161** (necesidades de la empresa), el artículo 162 exige aviso al trabajador, **con copia a la Inspección del Trabajo**, con **al menos treinta días de anticipación**. Si el preaviso es menor o no existe, el empleador debe pagar una indemnización sustitutiva **equivalente a la última remuneración mensual devengada**. El monto de esa sustitutiva se estima en [calcular indemnización por aviso previo](/indemnizacion-aviso-previo).
 
 Esa comunicación debe indicar, además, el **monto total a pagar** según el artículo siguiente (163): indemnización por años de servicio cuando proceda. El mismo aviso de treinta días aplica, en los términos del Código, al desahucio que la ley contempla (por ejemplo, trabajadora de casa particular). Detalle de esa figura en [finiquito de trabajadora de casa particular](/guias/finiquito-trabajadora-de-casa-particular).
 

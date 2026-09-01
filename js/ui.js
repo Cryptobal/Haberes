@@ -226,6 +226,7 @@ function paintLoggedInNav(emp) {
         <a href="/vacaciones-proporcionales" data-nav>Vacaciones proporcionales</a>
         <a href="/feriado-progresivo" data-nav>Feriado progresivo</a>
         <a href="/indemnizacion-anos-servicio" data-nav>Indemnización años de servicio</a>
+        <a href="/indemnizacion-aviso-previo" data-nav>Indemnización aviso previo</a>
         <a href="/finiquito-casa-particular" data-nav>Finiquito casa particular</a>
         <a href="/finiquito" data-nav>Finiquito</a>`;
     const anchor = foot || null;

@@ -55,7 +55,7 @@ La gratificación del **artículo 50**, si se paga mes a mes, entra a esa base (
 
 Son partidas distintas y, según el 163, **compatibles**:
 
-- **Aviso de treinta días** (arts. 161 y 162): se avisa con esa anticipación, con copia a la Inspección, o se paga **una** última remuneración (también tope 90 UF). Ver [carta de aviso](/guias/carta-aviso-termino-contrato).
+- **Aviso de treinta días** (arts. 161 y 162): se avisa con esa anticipación, con copia a la Inspección, o se paga **una** última remuneración (también tope 90 UF). El monto está en [calcular indemnización por aviso previo](/indemnizacion-aviso-previo). Ver [carta de aviso](/guias/carta-aviso-termino-contrato).
 - **IAS** (art. 163): treinta días por cada año indemnizable, hasta once.
 
 No dar el aviso no agrega un año extra a la IAS. La casilla «Hubo aviso previo de 30 días» solo enciende o apaga la sustitutiva.

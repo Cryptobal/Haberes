@@ -195,6 +195,57 @@ export function calcularIas(input = {}, indicadores = {}) {
   };
 }
 
+/**
+ * Indemnización sustitutiva del aviso previo (arts. 161 y 162).
+ * Una última remuneración (art. 172, tope 90 UF) si la causal exige aviso
+ * de 30 días y el empleador no lo otorgó. No es la IAS del art. 163.
+ * Reusa calcularFiniquito para el tope y el redondeo.
+ */
+export function calcularAvisoPrevio(input = {}, indicadores = {}) {
+  const causal = causalPorId(input.causal || input.articulo);
+  const articulo = String(input.articulo || causal?.articulo || "161");
+  const aplicaAviso = causal ? Boolean(causal.aplicaAviso) : articulo === "161";
+  const avisoPrevio = Boolean(input.avisoPrevio);
+  const remuneracion = Number(input.remuneracion) || 0;
+  const colacion = Number(input.colacion) || 0;
+  const movilizacion = Number(input.movilizacion) || 0;
+  const baseIngresada = roundPeso(remuneracion + colacion + movilizacion);
+
+  const fin = calcularFiniquito(
+    {
+      articulo: aplicaAviso ? "161" : "159",
+      remuneracion: baseIngresada,
+      avisoPrevio: !aplicaAviso || avisoPrevio,
+      anios: 0,
+      diasFeriado: 0,
+    },
+    indicadores,
+  );
+
+  const aviso = aplicaAviso && !avisoPrevio ? fin.aviso : 0;
+  let motivo = "ok";
+  if (!aplicaAviso) motivo = "sin_derecho";
+  else if (avisoPrevio) motivo = "aviso_otorgado";
+
+  return {
+    articulo: causal?.articulo || articulo,
+    causalId: causal?.id || "",
+    causalLabel: causal?.label || "",
+    aplicaAviso,
+    avisoPrevio,
+    remuneracion: roundPeso(remuneracion),
+    colacion: roundPeso(colacion),
+    movilizacion: roundPeso(movilizacion),
+    baseIngresada,
+    topeMensual: fin.topeMensual,
+    base: fin.baseIas,
+    recortoTopeUf: baseIngresada > fin.topeMensual,
+    aviso,
+    uf: fin.uf,
+    motivo,
+  };
+}
+
 function articuloDesdeCausal(causalId) {
   return causalPorId(causalId)?.articulo || "";
 }

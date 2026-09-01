@@ -34,7 +34,7 @@ export const CAUSAL_PAGES = [
  * group: índice /guias (liquidación vs finiquito).
  * calc: calculadora canónica (no canibalizar titles/H1 de esas URLs).
  * updated: lastmod ISO (YYYY-MM-DD) para sitemap y el bloque «últimas» del hub.
- * @type {{ slug: string, group: "liquidacion" | "finiquito", calc: "/sueldo" | "/finiquito" | "/finiquito-casa-particular" | "/horas-extras" | "/recargo-domingo-comercio" | "/semana-corrida" | "/gratificacion" | "/aguinaldo" | "/vacaciones-proporcionales" | "/impuesto-unico" | "/cotizaciones-previsionales" | "/asignacion-familiar" | "/indemnizacion-anos-servicio" | "/seguro-cesantia", updated: string }[]}
+ * @type {{ slug: string, group: "liquidacion" | "finiquito", calc: "/sueldo" | "/sueldo-proporcional" | "/finiquito" | "/finiquito-casa-particular" | "/horas-extras" | "/recargo-domingo-comercio" | "/semana-corrida" | "/gratificacion" | "/aguinaldo" | "/vacaciones-proporcionales" | "/impuesto-unico" | "/cotizaciones-previsionales" | "/asignacion-familiar" | "/indemnizacion-anos-servicio" | "/indemnizacion-aviso-previo" | "/seguro-cesantia", updated: string }[]}
  */
 export const DEFAULT_LASTMOD = "2026-08-17";
 
@@ -76,6 +76,7 @@ export const PATH_LASTMOD = {
   "/feriado-progresivo": "2026-08-28",
   "/indemnizacion-anos-servicio": "2026-08-28",
   "/sueldo-proporcional": "2026-08-29",
+  "/indemnizacion-aviso-previo": "2026-08-29",
   "/privacidad": "2026-08-18",
   "/terminos": "2026-08-18",
 };
@@ -107,6 +108,7 @@ export const BASE_PATHS = [
   "/horas-extras",
   "/impuesto-unico",
   "/indemnizacion-anos-servicio",
+  "/indemnizacion-aviso-previo",
   "/precios",
   "/privacidad",
   "/recargo-domingo-comercio",
