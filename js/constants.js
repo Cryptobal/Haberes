@@ -106,6 +106,21 @@ export const ASIGNACION_FAMILIAR_TRAMOS = [
 
 export const IAS_TOPE_ANIOS = 11;
 
+/**
+ * Indemnización a todo evento de casa particular (art. 163, incisos finales).
+ * Ley 21.269 (1 oct. 2020): el 4,11 % se redistribuyó en 3 % seguro de cesantía
+ * (AFC) + 1,11 % que sigue yendo a la cuenta de indemnización en la AFP.
+ * La obligación de aportar dura 11 años por cada relación laboral.
+ * No se inventa un pago de 30 días por año: la DT indica que no hay IAS legal
+ * del inciso segundo para este estatuto.
+ */
+export const CASA_PARTICULAR_ITE_TASA = 0.0111;
+export const CASA_PARTICULAR_ITE_TASA_PREVIA = 0.0411;
+export const CASA_PARTICULAR_ITE_DESDE = "2020-10-01";
+export const CASA_PARTICULAR_ITE_DESDE_1991 = "1991-01-01";
+export const CASA_PARTICULAR_FERIADO_ANUAL = 15;
+export const CASA_PARTICULAR_PRUEBA_DIAS = 15;
+
 export const DISCLAIMER =
   "Documento generado por Haberes. No es un cálculo de la Dirección del Trabajo ni de Previred. No constituye asesoría legal ni previsional. Verifique con su contador o en los canales oficiales.";
 

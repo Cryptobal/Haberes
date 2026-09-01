@@ -75,6 +75,7 @@ def check_http():
         ("/feriado-progresivo", 200, "html"),
         ("/indemnizacion-anos-servicio", 200, "html"),
         ("/aguinaldo", 200, "html"),
+        ("/finiquito-casa-particular", 200, "html"),
         ("/blog", 404, None),
         ("/noticias", 404, None),
     ]
@@ -121,6 +122,7 @@ PAGES = [
     ("feriado-progresivo.html", "feriado-progresivo"),
     ("indemnizacion-anos-servicio.html", "indemnizacion-anos-servicio"),
     ("aguinaldo.html", "aguinaldo"),
+    ("finiquito-casa-particular.html", "finiquito-casa-particular"),
     ("finiquito.html", "finiquito"),
     ("empresa.html", "empresa"),
     ("precios.html", "precios"),

@@ -35,6 +35,7 @@ import { parseNovedadesCsv, parseTrabajadoresCsv } from "../js/csv.js";
 import {
   aniosServicio,
   calcularFiniquito,
+  calcularFiniquitoCasaParticular,
   calcularFiniquitoCompleto,
   calcularIas,
   feriadoProporcional,
@@ -831,6 +832,131 @@ assert("Feriado 0 días → 0", feriadoProporcional(0, 900000) === 0);
   );
 }
 
+console.log("\nFiniquito casa particular");
+{
+  const golden = calcularFiniquitoCasaParticular(
+    {
+      ingreso: "2023-03-01",
+      termino: "2026-03-01",
+      remuneracion: 500_000,
+      causal: "desahucio",
+      avisoPrevio: false,
+      diasMes: 1,
+      diasFeriadoPendiente: 5,
+      diasFeriadoProporcional: 0,
+    },
+    { uf: FALLBACK_UF },
+  );
+  assert(
+    "casa particular golden desahucio: empleador $600.000, IAS $0, AFP $199.800",
+    golden.remuneracionMes === 16_667 &&
+      golden.feriadoPendiente === 83_333 &&
+      golden.aviso === 500_000 &&
+      golden.ias === 0 &&
+      golden.totalEmpleador === 600_000 &&
+      golden.iteEstimado === 199_800 &&
+      golden.mesesIte === 36 &&
+      golden.mesesIteActual === 36 &&
+      golden.mesesItePrevia === 0,
+    JSON.stringify({
+      rem: golden.remuneracionMes,
+      fer: golden.feriadoPendiente,
+      aviso: golden.aviso,
+      total: golden.totalEmpleador,
+      ite: golden.iteEstimado,
+    }),
+  );
+  const renuncia = calcularFiniquitoCasaParticular(
+    {
+      ingreso: "2023-03-01",
+      termino: "2026-03-01",
+      remuneracion: 500_000,
+      causal: "renuncia",
+      diasMes: 1,
+      diasFeriadoPendiente: 5,
+      diasFeriadoProporcional: 0,
+    },
+    { uf: FALLBACK_UF },
+  );
+  assert(
+    "casa particular renuncia: sin aviso, total $100.000, mismo fondo AFP",
+    renuncia.aviso === 0 && renuncia.totalEmpleador === 100_000 && renuncia.iteEstimado === 199_800,
+  );
+  const split = calcularFiniquitoCasaParticular(
+    {
+      ingreso: "2019-01-01",
+      termino: "2021-01-01",
+      remuneracion: 500_000,
+      causal: "renuncia",
+      diasMes: 0,
+      diasFeriadoPendiente: 0,
+      diasFeriadoProporcional: 0,
+    },
+    { uf: FALLBACK_UF },
+  );
+  assert(
+    "casa particular ITE 4,11 % hasta oct. 2020 y 1,11 % después",
+    split.mesesIte === 24 &&
+      split.mesesItePrevia === 21 &&
+      split.mesesIteActual === 3 &&
+      split.iteEstimado === 448_200,
+    `${split.mesesItePrevia}+${split.mesesIteActual} ${split.iteEstimado}`,
+  );
+  const cap = calcularFiniquitoCasaParticular(
+    {
+      ingreso: "2000-01-01",
+      termino: "2020-01-01",
+      remuneracion: 500_000,
+      causal: "renuncia",
+      diasMes: 0,
+      diasFeriadoPendiente: 0,
+      diasFeriadoProporcional: 0,
+    },
+    { uf: FALLBACK_UF },
+  );
+  assert(
+    "casa particular ITE tope 11 años (no 20)",
+    cap.mesesIte === 132 && cap.recortoTopeAnios && cap.iteEstimado === 2_712_600,
+  );
+  const prueba = calcularFiniquitoCasaParticular(
+    {
+      ingreso: "2026-03-01",
+      termino: "2026-03-12",
+      remuneracion: 500_000,
+      causal: "desahucio",
+      avisoPrevio: false,
+    },
+    { uf: FALLBACK_UF },
+  );
+  assert(
+    "casa particular período de prueba: sin aviso, solo días",
+    prueba.prueba && prueba.aviso === 0 && prueba.diasMes === 12 && prueba.remuneracionMes === 200_000,
+  );
+  const topeUf = calcularFiniquitoCasaParticular(
+    {
+      ingreso: "2023-03-01",
+      termino: "2026-03-01",
+      remuneracion: 10_000_000,
+      causal: "desahucio",
+      avisoPrevio: false,
+      diasMes: 0,
+      diasFeriadoPendiente: 0,
+      diasFeriadoProporcional: 0,
+    },
+    { uf: FALLBACK_UF },
+  );
+  assert(
+    "casa particular aviso tope 90 UF (no se inventa otro tope)",
+    topeUf.aviso === 3_676_861 && topeUf.recortoTopeUf && topeUf.ias === 0,
+  );
+  const cpApp = readFileSync(join(root, "js/app-finiquito-casa-particular.js"), "utf8");
+  assert(
+    "app-finiquito-casa-particular usa calcularFiniquitoCasaParticular",
+    /import\s*\{[^}]*calcularFiniquitoCasaParticular[^}]*\}\s*from\s*["']\.\/finiquito\.js["']/.test(cpApp) &&
+      /calcularFiniquitoCasaParticular\s*\(/.test(cpApp),
+  );
+}
+
 const f161 = calcularFiniquito(
   {
     articulo: "161",
@@ -1162,6 +1288,7 @@ const required = [
   "feriado-progresivo.html",
   "indemnizacion-anos-servicio.html",
   "aguinaldo.html",
+  "finiquito-casa-particular.html",
   "finiquito.html",
   "js/app-horas-extras.js",
   "js/app-vacaciones-proporcionales.js",
@@ -1175,6 +1302,7 @@ const required = [
   "js/app-feriado-progresivo.js",
   "js/app-indemnizacion-anos-servicio.js",
   "js/app-aguinaldo.js",
+  "js/app-finiquito-casa-particular.js",
   "empresa.html",
   "privacidad.html",
   "terminos.html",
@@ -1315,6 +1443,7 @@ const htmlFiles = [
   "feriado-progresivo.html",
   "indemnizacion-anos-servicio.html",
   "aguinaldo.html",
+  "finiquito-casa-particular.html",
   "finiquito.html",
   "empresa.html",
   "privacidad.html",
@@ -1403,6 +1532,7 @@ const appEntries = [
   "js/app-feriado-progresivo.js",
   "js/app-indemnizacion-anos-servicio.js",
   "js/app-aguinaldo.js",
+  "js/app-finiquito-casa-particular.js",
   "js/app-finiquito.js",
   "js/app-empresa.js",
   "js/app-admin.js",
@@ -1435,7 +1565,7 @@ assert("robots Allow /", /Allow:\s*\//.test(robots));
 assert("robots Disallow /admin", /Disallow:\s*\/admin/.test(robots));
 assert("robots Disallow /api", /Disallow:\s*\/api/.test(robots));
 assert("robots Disallow /docs", /Disallow:\s*\/docs/.test(robots));
-assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots));
+assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots));
 assert("robots Sitemap", /Sitemap:\s*https:\/\/www\.haberes\.cl\/sitemap\.xml/.test(robots));
 
 const { seoPaths, GUIDE_SLUGS, GUIDES, CAUSAL_PAGES, BASE_PATHS, lastmodForPath } = await import("../content/registry.js");
@@ -1464,7 +1594,8 @@ assert(
     BASE_PATHS.includes("/asignacion-familiar") &&
     BASE_PATHS.includes("/feriado-progresivo") &&
     BASE_PATHS.includes("/indemnizacion-anos-servicio") &&
-    BASE_PATHS.includes("/aguinaldo"),
+    BASE_PATHS.includes("/aguinaldo") &&
+    BASE_PATHS.includes("/finiquito-casa-particular"),
   `${locs.length} vs ${expectedFromRegistry.length}`,
 );
 assert(
@@ -1521,13 +1652,13 @@ assert(
     lastmodForPath("/guias/indemnizacion-por-anos-de-servicio") === "2026-08-19" &&
     lastmodForPath("/guias/semana-corrida") === "2026-08-27" &&
     lastmodForPath("/guias/aguinaldo-fiestas-patrias") === "2026-08-30" &&
-    lastmodForPath("/guias") === "2026-08-30" &&
+    lastmodForPath("/guias") === "2026-08-31" &&
     /<loc>https:\/\/www\.haberes\.cl\/guias\/liquidacion-de-sueldo<\/loc>\s*<lastmod>2026-08-18<\/lastmod>/.test(sitemap) &&
     /<loc>https:\/\/www\.haberes\.cl\/guias\/gratificacion-legal<\/loc>\s*<lastmod>2026-08-18<\/lastmod>/.test(sitemap) &&
     /<loc>https:\/\/www\.haberes\.cl\/guias\/indemnizacion-por-anos-de-servicio<\/loc>\s*<lastmod>2026-08-19<\/lastmod>/.test(sitemap) &&
     /<loc>https:\/\/www\.haberes\.cl\/guias\/semana-corrida<\/loc>\s*<lastmod>2026-08-27<\/lastmod>/.test(sitemap) &&
     /<loc>https:\/\/www\.haberes\.cl\/guias\/aguinaldo-fiestas-patrias<\/loc>\s*<lastmod>2026-08-30<\/lastmod>/.test(sitemap) &&
-    /<loc>https:\/\/www\.haberes\.cl\/guias<\/loc>\s*<lastmod>2026-08-30<\/lastmod>/.test(sitemap),
+    /<loc>https:\/\/www\.haberes\.cl\/guias<\/loc>\s*<lastmod>2026-08-31<\/lastmod>/.test(sitemap),
 );
 assert("sin ruta /blog ni /noticias", !existsSync(join(root, "blog.html")) && !existsSync(join(root, "noticias.html")));
 assert("sitemap sin .html (cleanUrls)", !locs.some((u) => u.endsWith(".html")));
@@ -1813,7 +1944,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 59,
+      seoPaths().length === 60,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -1825,7 +1956,7 @@ try {
   const docsSeo = await hitLocal("/docs/seo-map.md");
   assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
   assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
-  for (const p of ["/sueldo/", "/finiquito/", "/horas-extras/", "/recargo-domingo-comercio/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/aguinaldo/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/asignacion-familiar/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/aguinaldo/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/asignacion-familiar/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
   }
@@ -1848,6 +1979,7 @@ try {
     "/feriado-progresivo",
     "/indemnizacion-anos-servicio",
     "/aguinaldo",
+    "/finiquito-casa-particular",
     "/gratificacion",
     "/impuesto-unico",
     "/cotizaciones-previsionales",
@@ -5072,6 +5204,7 @@ assert(
     ["feriado-progresivo.html", "/feriado-progresivo"],
     ["indemnizacion-anos-servicio.html", "/indemnizacion-anos-servicio"],
     ["aguinaldo.html", "/aguinaldo"],
+    ["finiquito-casa-particular.html", "/finiquito-casa-particular"],
     ["finiquito.html", "/finiquito"],
     ["empresa.html", "/empresa"],
     ["como.html", "/como"],
@@ -6353,6 +6486,127 @@ assert(
     );
   }
   {
+    const cpHtml = readFileSync(join(root, "finiquito-casa-particular.html"), "utf8");
+    const cpTitle = (cpHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const cpH1 = (cpHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const cpDesc = (cpHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "";
+    const finiHtml = readFileSync(join(root, "finiquito.html"), "utf8");
+    const finiTitle = (finiHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const finiH1 = (finiHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const iasHtml = readFileSync(join(root, "indemnizacion-anos-servicio.html"), "utf8");
+    const iasTitle = (iasHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const iasH1 = (iasHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const guideHtml = readFileSync(join(root, "guias/finiquito-trabajadora-de-casa-particular.html"), "utf8");
+    const guideTitle = (guideHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const guideH1 = (guideHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const demo = calcularFiniquitoCasaParticular(
+      {
+        ingreso: "2023-03-01",
+        termino: "2026-03-01",
+        remuneracion: 500_000,
+        causal: "desahucio",
+        avisoPrevio: false,
+        diasMes: 1,
+        diasFeriadoPendiente: 5,
+        diasFeriadoProporcional: 0,
+      },
+      { uf: FALLBACK_UF },
+    );
+    assert(
+      "SEO title casa particular apunta a calcular finiquito casa particular",
+      /calcular finiquito casa particular/i.test(cpTitle) &&
+        !/calculadora de finiquito/i.test(cpTitle) &&
+        cpTitle !== finiTitle &&
+        cpTitle !== iasTitle &&
+        cpTitle !== guideTitle &&
+        cpTitle.length <= 65,
+      cpTitle,
+    );
+    assert(
+      "SEO H1 casa particular distinto de /finiquito, IAS y de la guía",
+      cpH1 === "Calcular finiquito casa particular Chile 2026" &&
+        cpH1 !== finiH1 &&
+        cpH1 !== iasH1 &&
+        cpH1 !== guideH1 &&
+        !/calculadora de finiquito/i.test(cpH1),
+      cpH1,
+    );
+    assert(
+      "SEO casa particular meta distinta de /finiquito y de la guía",
+      cpDesc &&
+        cpDesc !== ((finiHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "") &&
+        cpDesc !== ((guideHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || ""),
+    );
+    assert(
+      "SEO casa particular cita art. 161, 163, Ley 21.269, DT y Código",
+      /art[ií]culo 163/i.test(cpHtml) &&
+        /art[ií]culo 161/i.test(cpHtml) &&
+        /Ley 21\.269/.test(cpHtml) &&
+        /C[oó]digo del Trabajo/.test(cpHtml) &&
+        /dt\.gob\.cl\/portal\/1626\/w3-article-98984/.test(cpHtml) &&
+        /dt\.gob\.cl\/portal\/1628\/w3-article-119845/.test(cpHtml) &&
+        /bcn\.cl\/leychile\/navegar\?idNorma=207436/.test(cpHtml) &&
+        /bcn\.cl\/leychile\/navegar\?idLey=21269/.test(cpHtml),
+    );
+    assert(
+      "SEO casa particular golden $600.000 empleador y $199.800 AFP",
+      demo.totalEmpleador === 600_000 &&
+        demo.ias === 0 &&
+        demo.aviso === 500_000 &&
+        demo.iteEstimado === 199_800 &&
+        /\$600\.000/.test(cpHtml) &&
+        /\$199\.800/.test(cpHtml) &&
+        /\$16\.667/.test(cpHtml) &&
+        /\$83\.333/.test(cpHtml) &&
+        /1,11/.test(cpHtml) &&
+        /no aplica/i.test(cpHtml),
+    );
+    assert("SEO casa particular FAQPage", /"@type": "FAQPage"/.test(cpHtml));
+    assert(
+      "SEO casa particular no es finiquito genérico ni IAS de 30 días",
+      /no es la IAS de 30 d[ií]as/i.test(cpHtml) &&
+        /href="\/finiquito"/.test(cpHtml) &&
+        /href="\/guias\/finiquito-trabajadora-de-casa-particular"/.test(cpHtml) &&
+        /href="\/vacaciones-proporcionales"/.test(cpHtml) &&
+        !existsSync(join(root, "finiquito-nana.html")) &&
+        !existsSync(join(root, "asesora-hogar.html")),
+    );
+    assert(
+      "home y nav enlazan /finiquito-casa-particular",
+      /href="\/finiquito-casa-particular"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/finiquito-casa-particular" data-nav>Finiquito casa particular<\/a>/.test(
+          readFileSync(join(root, "index.html"), "utf8"),
+        ) &&
+        /href="\/finiquito-casa-particular" data-nav>Finiquito casa particular<\/a>/.test(cpHtml),
+    );
+    assert(
+      "sitemap incluye /finiquito-casa-particular",
+      locs.includes("https://www.haberes.cl/finiquito-casa-particular") &&
+        lastmodForPath("/finiquito-casa-particular") === "2026-08-31",
+    );
+    assert(
+      "GUIDES casa particular apunta a /finiquito-casa-particular",
+      GUIDES.find((g) => g.slug === "finiquito-trabajadora-de-casa-particular")?.calc ===
+        "/finiquito-casa-particular",
+    );
+    assert(
+      "seo-map documenta /finiquito-casa-particular y no-canibalizar /finiquito",
+      /\/finiquito-casa-particular/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no canibalizar `\/finiquito`/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no crear `\/finiquito-nana`/i.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")),
+    );
+    assert(
+      "guía casa particular y /finiquito enlazan /finiquito-casa-particular",
+      /href="\/finiquito-casa-particular"/.test(guideHtml) &&
+        /href="\/finiquito-casa-particular"/.test(finiHtml),
+    );
+    assert(
+      "seo-calc casa particular CTA apunta a /finiquito-casa-particular",
+      /href="\/finiquito-casa-particular"/.test(readFileSync(join(root, "js/seo-calc.js"), "utf8")) &&
+        /"casa-particular":\s*mountCasaParticular/.test(readFileSync(join(root, "js/seo-calc.js"), "utf8")),
+    );
+  }
+  {
     const ceHtml = readFileSync(join(root, "costo-empresa.html"), "utf8");
     const ceTitle = (ceHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
     const ceH1 = (ceHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
@@ -6478,6 +6732,7 @@ assert(
       "feriado-progresivo.html",
       "indemnizacion-anos-servicio.html",
       "aguinaldo.html",
+      "finiquito-casa-particular.html",
       "finiquito.html",
       "empresa.html",
       "precios.html",
@@ -6649,7 +6904,7 @@ assert(
     return acc;
   }
   const pages = listHtml(root);
-  assert("61 páginas HTML", pages.length === 61, String(pages.length));
+  assert("62 páginas HTML", pages.length === 62, String(pages.length));
   for (const file of pages) {
     const html = readFileSync(file, "utf8");
     const rel = file.slice(root.length + 1);
