@@ -37,7 +37,7 @@ Actualizar este archivo antes de crear URLs nuevas para evitar canibalización.
 | Impuesto único | impuesto único (5.400/28), tabla impuesto único (2.900/22) | `/guias/impuesto-unico` | enlace a `/impuesto-unico`; tabla IUSC desde `js/constants.js`; no reescribir en esta tanda |
 | Gratificación legal | gratificación legal (4.400/17), gratificacion legal chile (1.900/16) | `/guias/gratificacion-legal` | enlace a `/gratificacion`; no reescribir en esta tanda |
 | Indemnización años de servicio | indemnizacion por años de servicio (2.400/24) | `/guias/indemnizacion-por-anos-de-servicio` | explica; el cálculo vive en `/indemnizacion-anos-servicio`; `/finiquito` sigue siendo el finiquito completo |
-| Horas extras (guía) | cálculo horas extras — explainer | `/guias/horas-extras` | enlace a `/horas-extras`; no reescribir en esta tanda |
+| Horas extras (guía) | cálculo horas extras (8.100/17) — explainer | `/guias/horas-extras` | guía espesa art. 32 + fórmula DT; el cálculo vive en `/horas-extras`; no canibalizar title/H1 de esa calculadora ni de `/sueldo` |
 | Vacaciones / feriado proporcional (guía) | vacaciones proporcionales — explainer | `/guias/vacaciones-proporcionales` | enlace a `/vacaciones-proporcionales`; no reescribir en esta tanda |
 | Semana corrida | semana corrida (1.300/21) — explainer | `/guias/semana-corrida` | enlace a `/semana-corrida`; embed `/sueldo` para el líquido; no canibalizar title/H1 de la calculadora |
 | Aguinaldo Fiestas Patrias | aguinaldo fiestas patrias (5.400/23), es obligatorio el aguinaldo (480/15), bono fiestas patrias (170) | `/guias/aguinaldo-fiestas-patrias` | guía espesa; el cálculo vive en `/aguinaldo`; no es obligación general del Código; no canibalizar `/gratificacion` ni `/guias/gratificacion-legal` |

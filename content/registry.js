@@ -42,7 +42,7 @@ export const GUIDES = [
   { slug: "liquidacion-de-sueldo", group: "liquidacion", calc: "/sueldo", updated: "2026-08-18" },
   { slug: "impuesto-unico", group: "liquidacion", calc: "/impuesto-unico", updated: "2026-08-18" },
   { slug: "gratificacion-legal", group: "liquidacion", calc: "/gratificacion", updated: "2026-08-18" },
-  { slug: "horas-extras", group: "liquidacion", calc: "/horas-extras", updated: "2026-08-17" },
+  { slug: "horas-extras", group: "liquidacion", calc: "/horas-extras", updated: "2026-08-31" },
   { slug: "semana-corrida", group: "liquidacion", calc: "/semana-corrida", updated: "2026-08-27" },
   { slug: "aguinaldo-fiestas-patrias", group: "liquidacion", calc: "/aguinaldo", updated: "2026-08-30" },
   { slug: "como-leer-una-liquidacion-de-sueldo", group: "liquidacion", calc: "/sueldo", updated: "2026-08-17" },
