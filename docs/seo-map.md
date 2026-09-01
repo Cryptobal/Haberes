@@ -23,6 +23,7 @@ Actualizar este archivo antes de crear URLs nuevas para evitar canibalización.
 | Calcular asignación familiar | asignación familiar / tramos asignación familiar / cargas familiares | `/asignacion-familiar` | Title/H1 «calcular asignación familiar»; no canibalizar `/sueldo`, `/cotizaciones-previsionales` ni `/guias/liquidacion-de-sueldo`. Sistema Único (D.F.L. 150), no SUF municipal. No crear `/suf`, `/asignacion-maternal` ni `/cargas-familiares` |
 | Calcular feriado progresivo | feriado progresivo / vacaciones progresivas / calcular feriado progresivo | `/feriado-progresivo` | Title/H1 «calcular feriado progresivo»; no canibalizar `/vacaciones-proporcionales` ni `/finiquito`. Art. 68 (días extra al feriado anual), no art. 73 (plata de días no usados). No crear `/vacaciones-progresivas` ni `/indemnizacion` |
 | Calcular indemnización por años de servicio | indemnizacion por años de servicio (2.400/24) — intención calcular | `/indemnizacion-anos-servicio` | Title/H1 «calcular indemnización por años de servicio»; no canibalizar `/finiquito` ni `/guias/indemnizacion-por-anos-de-servicio`. Art. 163 (IAS), no el finiquito completo. No crear `/indemnizacion` |
+| Calcular sueldo proporcional | sueldo proporcional / días trabajados mes / remuneración proporcional | `/sueldo-proporcional` | Title/H1 «calcular sueldo proporcional»; no canibalizar `/sueldo`, `/vacaciones-proporcionales` ni `/finiquito`. Bruto de un mes incompleto (mensual / 30 × días calendario). No crear `/dias-trabajados` ni `/sueldo-proporcional-dias` |
 | Calcular aguinaldo Fiestas Patrias | aguinaldo fiestas patrias (5.400/23) — intención presupuestar/calcular monto | `/aguinaldo` | Title/H1 «calcular aguinaldo Fiestas Patrias»; no es obligación legal general del Código; no canibalizar `/gratificacion`, `/sueldo` ni `/guias/aguinaldo-fiestas-patrias`. No crear `/bono-fiestas-patrias` ni `/aguinaldo-navidad` |
 | Calcular finiquito de casa particular | finiquito asesora del hogar / finiquito trabajadora casa particular — intención calcular | `/finiquito-casa-particular` | Title/H1 «calcular finiquito casa particular»; no canibalizar `/finiquito`, `/indemnizacion-anos-servicio` ni `/guias/finiquito-trabajadora-de-casa-particular`. Estatuto propio (art. 163 a todo evento AFP 1,11 %, aviso art. 161). No crear `/finiquito-nana` ni `/asesora-hogar` |
 | Índice de guías | — | `/guias` | Hub: 17 guías, grupo liquidación vs finiquito |
@@ -124,6 +125,11 @@ No publicar `/finiquito-nana` ni `/asesora-hogar`. El finiquito de casa particul
 y fondo AFP 1,11 %, no IAS de 30 días) vive en `/finiquito-casa-particular`. La guía
 `/guias/finiquito-trabajadora-de-casa-particular` explica. No canibalizar `/finiquito` ni
 `/indemnizacion-anos-servicio`.
+
+No publicar `/dias-trabajados` ni `/sueldo-proporcional-dias`. El bruto de un mes incompleto
+(remuneración mensual / 30 × días calendario) vive en `/sueldo-proporcional`. El líquido
+sigue en `/sueldo`. El feriado en dinero sigue en `/vacaciones-proporcionales`. El finiquito
+completo sigue en `/finiquito`.
 
 No publicar hermanas de semana corrida: `/septimo-dia`, `/pago-domingo-festivo`,
 `/semana-corrida-mensual`. El haber del artículo 45 vive en `/semana-corrida`.

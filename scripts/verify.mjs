@@ -61,6 +61,8 @@ import {
   calcularSeguroCesantia,
   calcularSemanaCorrida,
   calcularSueldo,
+  calcularSueldoProporcional,
+  diasCalendarioFraccionMes,
   brutoDesdeLiquido,
   gratificacionArt50,
   tasaAfp,
@@ -421,6 +423,56 @@ assert(
   "10 años solo actuales → 0 extra (falta el tramo de 3 nuevos)",
   calcularFeriadoProgresivo({ aniosEmpleadoresAnteriores: 0, aniosEmpleadorActual: 10 }).diasExtra === 0,
 );
+
+console.log("\nSueldo proporcional (mes incompleto, DT /30)");
+{
+  assert("600000 × 15 días → 300000", calcularSueldoProporcional({ remuneracion: 600_000, dias: 15 }).bruto === 300_000);
+  assert("900000 × 15 días → 450000", calcularSueldoProporcional({ remuneracion: 900_000, dias: 15 }).bruto === 450_000);
+  assert(
+    "1000000 × 10 días → 333333 (roundPeso de Haberes)",
+    calcularSueldoProporcional({ remuneracion: 1_000_000, dias: 10 }).bruto === 333_333 &&
+      proporcional(1_000_000, 10) === 333_333,
+  );
+  assert(
+    "mes completo 31 días → 600000 (no 31/30)",
+    calcularSueldoProporcional({ remuneracion: 600_000, dias: 31, mesCompleto: true }).bruto === 600_000,
+  );
+  assert(
+    "mes completo febrero 28 días → 600000",
+    calcularSueldoProporcional({ remuneracion: 600_000, dias: 28, mesCompleto: true }).bruto === 600_000 &&
+      proporcional(600_000, 28) === 560_000,
+  );
+  const ene25 = calcularSueldoProporcional({ remuneracion: 600_000, ingreso: "2026-01-25" });
+  assert(
+    "ingreso 25-ene mes 31 → 7 días → 140000",
+    ene25.dias === 7 && ene25.bruto === 140_000 && diasCalendarioFraccionMes({ ingreso: "2026-01-25" }).dias === 7,
+    JSON.stringify(ene25),
+  );
+  const feb16 = calcularSueldoProporcional({ remuneracion: 600_000, ingreso: "2026-02-16" });
+  assert(
+    "ingreso 16-feb no bisiesto → 13 días → 260000",
+    feb16.dias === 13 && feb16.bruto === 260_000 && diasCalendarioFraccionMes({ ingreso: "2026-02-16" }).dias === 13,
+    JSON.stringify(feb16),
+  );
+  assert("0 días → 0", calcularSueldoProporcional({ remuneracion: 600_000, dias: 0 }).bruto === 0);
+  assert(
+    "fracción >30 usa el motor proporcional (d≥30 = pactado, no 31/30)",
+    calcularSueldoProporcional({ remuneracion: 600_000, dias: 31 }).bruto === 600_000 &&
+      proporcional(600_000, 31) === 600_000 &&
+      proporcional(600_000, 31) !== Math.round((600_000 * 31) / 30),
+  );
+  assert(
+    "liquidación 31−D no se usa aquí (25-ene sigue siendo 6 en diasBaseDelPeriodo)",
+    diasDelPeriodo({ periodo: "2026-01", fechaIngreso: "2026-01-25" }).diasBase === 6,
+  );
+  const spApp = readFileSync(join(root, "js/app-sueldo-proporcional.js"), "utf8");
+  assert(
+    "app-sueldo-proporcional usa calcularSueldoProporcional",
+    /import\s*\{[^}]*calcularSueldoProporcional[^}]*\}\s*from\s*["']\.\/sueldo\.js["']/.test(spApp) &&
+      /calcularSueldoProporcional\s*\(/.test(spApp),
+  );
+}
+
 {
   const fpApp = readFileSync(join(root, "js/app-feriado-progresivo.js"), "utf8");
   assert(
@@ -1376,6 +1428,7 @@ const required = [
   "indemnizacion-anos-servicio.html",
   "aguinaldo.html",
   "finiquito-casa-particular.html",
+  "sueldo-proporcional.html",
   "finiquito.html",
   "js/app-horas-extras.js",
   "js/app-vacaciones-proporcionales.js",
@@ -1391,6 +1444,7 @@ const required = [
   "js/app-indemnizacion-anos-servicio.js",
   "js/app-aguinaldo.js",
   "js/app-finiquito-casa-particular.js",
+  "js/app-sueldo-proporcional.js",
   "empresa.html",
   "privacidad.html",
   "terminos.html",
@@ -1533,6 +1587,7 @@ const htmlFiles = [
   "indemnizacion-anos-servicio.html",
   "aguinaldo.html",
   "finiquito-casa-particular.html",
+  "sueldo-proporcional.html",
   "finiquito.html",
   "empresa.html",
   "privacidad.html",
@@ -1623,6 +1678,7 @@ const appEntries = [
   "js/app-indemnizacion-anos-servicio.js",
   "js/app-aguinaldo.js",
   "js/app-finiquito-casa-particular.js",
+  "js/app-sueldo-proporcional.js",
   "js/app-finiquito.js",
   "js/app-empresa.js",
   "js/app-admin.js",
@@ -1655,7 +1711,7 @@ assert("robots Allow /", /Allow:\s*\//.test(robots));
 assert("robots Disallow /admin", /Disallow:\s*\/admin/.test(robots));
 assert("robots Disallow /api", /Disallow:\s*\/api/.test(robots));
 assert("robots Disallow /docs", /Disallow:\s*\/docs/.test(robots));
-assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots));
+assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots));
 assert("robots Sitemap", /Sitemap:\s*https:\/\/www\.haberes\.cl\/sitemap\.xml/.test(robots));
 
 const { seoPaths, GUIDE_SLUGS, GUIDES, CAUSAL_PAGES, BASE_PATHS, lastmodForPath } = await import("../content/registry.js");
@@ -1686,7 +1742,8 @@ assert(
     BASE_PATHS.includes("/feriado-progresivo") &&
     BASE_PATHS.includes("/indemnizacion-anos-servicio") &&
     BASE_PATHS.includes("/aguinaldo") &&
-    BASE_PATHS.includes("/finiquito-casa-particular"),
+    BASE_PATHS.includes("/finiquito-casa-particular") &&
+    BASE_PATHS.includes("/sueldo-proporcional"),
   `${locs.length} vs ${expectedFromRegistry.length}`,
 );
 assert(
@@ -2035,7 +2092,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 61,
+      seoPaths().length === 62,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -2047,7 +2104,7 @@ try {
   const docsSeo = await hitLocal("/docs/seo-map.md");
   assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
   assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
-  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/aguinaldo/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/asignacion-familiar/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/aguinaldo/", "/sueldo-proporcional/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/asignacion-familiar/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
   }
@@ -2071,6 +2128,7 @@ try {
     "/indemnizacion-anos-servicio",
     "/aguinaldo",
     "/finiquito-casa-particular",
+    "/sueldo-proporcional",
     "/gratificacion",
     "/impuesto-unico",
     "/cotizaciones-previsionales",
@@ -5298,6 +5356,7 @@ assert(
     ["indemnizacion-anos-servicio.html", "/indemnizacion-anos-servicio"],
     ["aguinaldo.html", "/aguinaldo"],
     ["finiquito-casa-particular.html", "/finiquito-casa-particular"],
+    ["sueldo-proporcional.html", "/sueldo-proporcional"],
     ["finiquito.html", "/finiquito"],
     ["empresa.html", "/empresa"],
     ["como.html", "/como"],
@@ -5684,6 +5743,117 @@ assert(
     assert(
       "SEO guía IAS sigue enlazando /finiquito",
       /href="\/finiquito"/.test(guideHtml),
+    );
+  }
+  {
+    const spHtml = readFileSync(join(root, "sueldo-proporcional.html"), "utf8");
+    const spTitle = (spHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const spH1 = (spHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const spDesc = (spHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "";
+    const sueldoHtml = readFileSync(join(root, "sueldo.html"), "utf8");
+    const sueldoTitle = (sueldoHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const sueldoH1 = (sueldoHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const vpHtml = readFileSync(join(root, "vacaciones-proporcionales.html"), "utf8");
+    const vpTitle = (vpHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const vpH1 = (vpHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const finiHtml = readFileSync(join(root, "finiquito.html"), "utf8");
+    const finiTitle = (finiHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const finiH1 = (finiHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const demo15 = calcularSueldoProporcional({ remuneracion: 600_000, dias: 15 });
+    const demoEne = calcularSueldoProporcional({ remuneracion: 600_000, ingreso: "2026-01-25" });
+    const demoFeb = calcularSueldoProporcional({ remuneracion: 600_000, ingreso: "2026-02-16" });
+    assert(
+      "SEO title sueldo proporcional apunta a calcular sueldo proporcional",
+      /calcular sueldo proporcional/i.test(spTitle) &&
+        !/sueldo l[ií]quido/i.test(spTitle) &&
+        !/vacaciones proporcionales/i.test(spTitle) &&
+        !/calculadora de finiquito/i.test(spTitle) &&
+        spTitle !== sueldoTitle &&
+        spTitle !== vpTitle &&
+        spTitle !== finiTitle &&
+        spTitle.length <= 65,
+      spTitle,
+    );
+    assert(
+      "SEO H1 sueldo proporcional distinto de /sueldo, /vacaciones-proporcionales y /finiquito",
+      spH1 === "Calcular sueldo proporcional Chile 2026" &&
+        spH1 !== sueldoH1 &&
+        spH1 !== vpH1 &&
+        spH1 !== finiH1 &&
+        !/sueldo l[ií]quido/i.test(spH1) &&
+        !/vacaciones proporcionales/i.test(spH1),
+      spH1,
+    );
+    assert(
+      "SEO sueldo proporcional meta distinta de /sueldo y /vacaciones-proporcionales",
+      spDesc &&
+        spDesc !== ((sueldoHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "") &&
+        spDesc !== ((vpHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || ""),
+    );
+    assert(
+      "SEO sueldo proporcional cita DT /30 y ORD. 5715 / 3754",
+      /ORD\.\s*N°5715/.test(spHtml) &&
+        /ORD\.\s*N°3754/.test(spHtml) &&
+        /dt\.gob\.cl\/legislacion\/1624\/w3-article-108020/.test(spHtml) &&
+        /remuneraci[oó]n(?: mensual)? \/ 30/.test(spHtml),
+    );
+    assert(
+      "SEO sueldo proporcional gold 15×600000, 31 no extra, blogs 28/31",
+      demo15.bruto === 300_000 &&
+        demoEne.dias === 7 &&
+        demoEne.bruto === 140_000 &&
+        demoFeb.dias === 13 &&
+        demoFeb.bruto === 260_000 &&
+        /\$300\.000/.test(spHtml) &&
+        /\$600\.000/.test(spHtml) &&
+        /\$140\.000/.test(spHtml) &&
+        /\$260\.000/.test(spHtml) &&
+        /15\s*×\s*600\.000\s*\/\s*30/.test(spHtml) &&
+        /no 31\/30/.test(spHtml) &&
+        /blogs dividen/.test(spHtml),
+    );
+    assert("SEO sueldo proporcional FAQPage", /"@type": "FAQPage"/.test(spHtml));
+    assert(
+      "SEO sueldo proporcional no es líquido, feriado ni finiquito",
+      /href="\/sueldo"/.test(spHtml) &&
+        /href="\/vacaciones-proporcionales"/.test(spHtml) &&
+        /href="\/finiquito"/.test(spHtml) &&
+        /no es el/.test(spHtml.toLowerCase()) &&
+        !existsSync(join(root, "dias-trabajados.html")) &&
+        !existsSync(join(root, "sueldo-proporcional-dias.html")) &&
+        !existsSync(join(root, "guias/sueldo-proporcional.html")),
+    );
+    assert(
+      "SEO sueldo proporcional métrica principal es el bruto del mes incompleto",
+      /Sueldo proporcional \(bruto\)/.test(spHtml) &&
+        !/<p class="metric-label">Feriado proporcional<\/p>/.test(spHtml) &&
+        !/<p class="metric-label">L[ií]quido/.test(spHtml),
+    );
+    assert(
+      "home y nav enlazan /sueldo-proporcional",
+      /href="\/sueldo-proporcional"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/sueldo-proporcional" data-nav>Sueldo proporcional<\/a>/.test(
+          readFileSync(join(root, "index.html"), "utf8"),
+        ) &&
+        /href="\/sueldo-proporcional" data-nav>Sueldo proporcional<\/a>/.test(spHtml),
+    );
+    assert(
+      "sitemap incluye /sueldo-proporcional",
+      locs.includes("https://www.haberes.cl/sueldo-proporcional") &&
+        lastmodForPath("/sueldo-proporcional") === "2026-08-29",
+    );
+    assert(
+      "seo-map documenta /sueldo-proporcional y no-canibalizar /sueldo",
+      /\/sueldo-proporcional/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no canibalizar `\/sueldo`/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no crear `\/dias-trabajados`/i.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")),
+    );
+    assert(
+      "hub /guias enlaza /sueldo-proporcional en el cluster de liquidación",
+      /href="\/sueldo-proporcional"/.test(readFileSync(join(root, "guias.html"), "utf8")) &&
+        !/<h2>Finiquito<\/h2>[\s\S]*href="\/sueldo-proporcional"/.test(
+          readFileSync(join(root, "guias.html"), "utf8"),
+        ),
     );
   }
   {
@@ -6955,6 +7125,7 @@ assert(
       "indemnizacion-anos-servicio.html",
       "aguinaldo.html",
       "finiquito-casa-particular.html",
+      "sueldo-proporcional.html",
       "finiquito.html",
       "empresa.html",
       "precios.html",
@@ -6987,6 +7158,7 @@ assert(
         /Liquidaci[oó]n de sueldo/.test(hub) &&
         /<h2>Finiquito<\/h2>/.test(hub) &&
         /href="\/sueldo"/.test(hub) &&
+        /href="\/sueldo-proporcional"/.test(hub) &&
         /href="\/finiquito"/.test(hub),
     );
     assert(
@@ -7126,7 +7298,7 @@ assert(
     return acc;
   }
   const pages = listHtml(root);
-  assert("63 páginas HTML", pages.length === 63, String(pages.length));
+  assert("64 páginas HTML", pages.length === 64, String(pages.length));
   for (const file of pages) {
     const html = readFileSync(file, "utf8");
     const rel = file.slice(root.length + 1);
