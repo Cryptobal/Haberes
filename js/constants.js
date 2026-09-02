@@ -7,8 +7,23 @@ export const UF_MAX = 80000;
 export const INDICADORES_CACHE_MS = 12 * 60 * 60 * 1000;
 export const MINDICADOR_URL = "https://mindicador.cl/api";
 
-/** Ingreso mínimo mensual — Ley 21.830 */
+/**
+ * Ingreso mínimo mensual — Ley 21.830 (D.O. 22.06.2026), vigencia 1-may-2026.
+ * Tramo general: trabajadores de 18 a 65 años.
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=1225354
+ * @see https://www.dt.gob.cl/portal/1628/w3-article-60141.html
+ */
 export const IMM = 553553;
+/** IMM menores de 18 y mayores de 65 — Ley 21.830 art. 2 */
+export const IMM_MENOR_MAYOR = 412938;
+/** IMM para fines no remuneracionales — Ley 21.830 art. 3. No es sueldo base. */
+export const IMM_NO_REMUNERACIONAL = 356815;
+/**
+ * IMM previo (Ley 21.751, desde 1-ene-2026). Sirve para estimar la reliquidación
+ * de mayo–junio 2026: la 21.830 se publicó el 22-jun con efecto desde el 1-may.
+ */
+export const IMM_ANTERIOR = 539000;
+export const IMM_ANTERIOR_MENOR_MAYOR = 402082;
 
 /** Tope mensual gratificación art. 50 (4,75 IMM / 12) */
 export const GRATIFICACION_TASA = 0.25;

@@ -14,6 +14,11 @@ import {
   GRATIFICACION_TASA,
   GRATIFICACION_TOPE,
   HORAS_EXTRA_FACTOR,
+  IMM,
+  IMM_ANTERIOR,
+  IMM_ANTERIOR_MENOR_MAYOR,
+  IMM_MENOR_MAYOR,
+  IMM_NO_REMUNERACIONAL,
   IUSC_TRAMOS,
   JORNADA_DEFAULT,
   LEY_21735_CRP,
@@ -233,6 +238,75 @@ export function calcularColacionMovilizacion(
     imponibleCon: con.imponible,
     liquidoSin: sin.liquido,
     liquidoCon: con.liquido,
+  };
+}
+
+/**
+ * Piso legal del sueldo base (IMM / sueldo mínimo) — Ley 21.830 y art. 44 CT.
+ *
+ * Tramo 18–65: $553.553. Menores de 18 y mayores de 65: $412.938.
+ * El IMM para fines no remuneracionales ($356.815) no es sueldo base.
+ *
+ * Jornada parcial: IMM × min(horas pactadas / jornada ordinaria, 1).
+ * La jornada ordinaria vigente (Ley 21.561, etapa desde el 26-abr-2026) es
+ * JORNADA_DEFAULT (42 h). No se usa 45 h. Horas sobre la ordinaria no suben
+ * el piso: el excedente, si existe, se paga como extra (art. 32), no como IMM.
+ *
+ * Colación y movilización (art. 41) no cuentan para este piso.
+ *
+ * Reliquidación mayo–junio 2026: estimación educativa si se pagó el IMM
+ * anterior (Ley 21.751, $539.000 / $402.082). Suma el delta de sueldo base y
+ * el 25 % art. 50 sobre ese delta. No es un dictamen de la DT.
+ *
+ * El tope mensual art. 50 siempre sale del IMM general ($553.553 → $219.115),
+ * no del tramo etario reducido.
+ *
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=1225354
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=207436
+ * @see https://www.dt.gob.cl/portal/1628/w3-article-60141.html
+ * @see https://www.dt.gob.cl/legislacion/1624/w3-article-129410.html
+ */
+export function calcularSueldoMinimo({
+  tramo = "general",
+  horasSemana = JORNADA_DEFAULT,
+  sueldoBase = 0,
+  mesesReliquidacion = 0,
+} = {}) {
+  const jornadaOrdinaria = JORNADA_DEFAULT;
+  const horas = Math.max(0, Number(horasSemana) || 0);
+  const factor = jornadaOrdinaria > 0 ? Math.min(horas / jornadaOrdinaria, 1) : 0;
+  const menorMayor = tramo === "menorMayor";
+  const imm = menorMayor ? IMM_MENOR_MAYOR : IMM;
+  const immAnterior = menorMayor ? IMM_ANTERIOR_MENOR_MAYOR : IMM_ANTERIOR;
+  const immProporcional = roundPeso(imm * factor);
+  const immAnteriorProporcional = roundPeso(immAnterior * factor);
+  const base = roundPeso(Math.max(0, Number(sueldoBase) || 0));
+  const tieneBase = base > 0;
+  const gap = tieneBase ? roundPeso(immProporcional - base) : 0;
+  const meses = Math.max(0, Math.min(2, Math.floor(Number(mesesReliquidacion) || 0)));
+  const deltaVsAnterior = Math.max(0, roundPeso(immProporcional - immAnteriorProporcional));
+  const deltaReliquidacion = tieneBase ? Math.max(0, gap) : deltaVsAnterior;
+  const gratificacionSobreDelta = roundPeso(deltaReliquidacion * GRATIFICACION_TASA);
+  const reliquidacionMes = deltaReliquidacion + gratificacionSobreDelta;
+  return {
+    tramo: menorMayor ? "menorMayor" : "general",
+    horas,
+    jornadaOrdinaria,
+    factor,
+    imm,
+    immProporcional,
+    immNoRemuneracional: IMM_NO_REMUNERACIONAL,
+    sueldoBase: tieneBase ? base : 0,
+    gap,
+    cumplePiso: !tieneBase || gap <= 0,
+    topeGratificacionArt50: GRATIFICACION_TOPE,
+    mesesReliquidacion: meses,
+    immAnterior,
+    immAnteriorProporcional,
+    deltaReliquidacion,
+    gratificacionSobreDelta,
+    reliquidacionMes,
+    reliquidacionTotal: reliquidacionMes * meses,
   };
 }
 

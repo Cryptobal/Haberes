@@ -213,6 +213,7 @@ function paintLoggedInNav(emp) {
         <a href="/empresa" data-nav>Mi empresa</a>
         <a href="/sueldo" data-nav>Sueldo líquido</a>
         <a href="/sueldo-proporcional" data-nav>Sueldo proporcional</a>
+        <a href="/sueldo-minimo" data-nav>Sueldo mínimo</a>
         <a href="/horas-extras" data-nav>Horas extras</a>
         <a href="/recargo-domingo-comercio" data-nav>Recargo domingo comercio</a>
         <a href="/semana-corrida" data-nav>Semana corrida</a>
