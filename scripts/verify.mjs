@@ -22,6 +22,9 @@ import {
   FALLBACK_UTM,
   GRATIFICACION_TOPE,
   IMM,
+  IMM_ANTERIOR,
+  IMM_MENOR_MAYOR,
+  IMM_NO_REMUNERACIONAL,
   IUSC_TRAMOS,
   LEY_21735_CRP,
   LEY_21735_CUENTA_INDIVIDUAL,
@@ -63,6 +66,7 @@ import {
   calcularSeguroCesantia,
   calcularSemanaCorrida,
   calcularSueldo,
+  calcularSueldoMinimo,
   calcularSueldoProporcional,
   diasCalendarioFraccionMes,
   brutoDesdeLiquido,
@@ -126,6 +130,9 @@ console.log("Constantes oficiales");
 assert("UF fallback", FALLBACK_UF === 40854.01, String(FALLBACK_UF));
 assert("UTM fallback", FALLBACK_UTM === 71649, String(FALLBACK_UTM));
 assert("IMM Ley 21.830", IMM === 553553, String(IMM));
+assert("IMM menor/mayor Ley 21.830", IMM_MENOR_MAYOR === 412938, String(IMM_MENOR_MAYOR));
+assert("IMM no remuneracional Ley 21.830", IMM_NO_REMUNERACIONAL === 356815, String(IMM_NO_REMUNERACIONAL));
+assert("IMM anterior Ley 21.751 ene-2026", IMM_ANTERIOR === 539000, String(IMM_ANTERIOR));
 assert("Tope gratificación art.50", GRATIFICACION_TOPE === 219115, String(GRATIFICACION_TOPE));
 assert(
   "AFP Circular 2414",
@@ -351,6 +358,59 @@ assert(
     "app-asignacion-familiar usa calcularAsignacionFamiliar",
     /import\s*\{[^}]*calcularAsignacionFamiliar[^}]*\}\s*from\s*["']\.\/sueldo\.js["']/.test(afApp) &&
       /calcularAsignacionFamiliar\s*\(/.test(afApp),
+  );
+}
+
+console.log("\nSueldo mínimo IMM Ley 21.830");
+{
+  const smApp = readFileSync(join(root, "js/app-sueldo-minimo.js"), "utf8");
+  assert(
+    "app-sueldo-minimo usa calcularSueldoMinimo",
+    /import\s*\{[^}]*calcularSueldoMinimo[^}]*\}\s*from\s*["']\.\/sueldo\.js["']/.test(smApp) &&
+      /calcularSueldoMinimo\s*\(/.test(smApp),
+  );
+  const full = calcularSueldoMinimo({
+    tramo: "general",
+    horasSemana: 42,
+    sueldoBase: 539_000,
+    mesesReliquidacion: 2,
+  });
+  assert(
+    "IMM 18-65 / 42h / base 539000 → gap 14553 grat 3638 reliquidación 36382",
+    full.imm === 553553 &&
+      full.immProporcional === 553553 &&
+      full.gap === 14553 &&
+      full.gratificacionSobreDelta === 3638 &&
+      full.reliquidacionMes === 18191 &&
+      full.reliquidacionTotal === 36382 &&
+      full.topeGratificacionArt50 === 219115 &&
+      full.immNoRemuneracional === 356815 &&
+      full.jornadaOrdinaria === 42,
+    JSON.stringify({
+      gap: full.gap,
+      grat: full.gratificacionSobreDelta,
+      total: full.reliquidacionTotal,
+    }),
+  );
+  const mitad = calcularSueldoMinimo({ tramo: "general", horasSemana: 21 });
+  assert(
+    "IMM 18-65 / 21h → proporcional 276777",
+    mitad.immProporcional === 276777 && mitad.factor === 0.5,
+    String(mitad.immProporcional),
+  );
+  const historica = calcularSueldoMinimo({ tramo: "general", horasSemana: 22.5 });
+  assert(
+    "IMM 18-65 / 22.5h sobre 42h → 296546 (no la mitad de 45h)",
+    historica.immProporcional === 296546,
+    String(historica.immProporcional),
+  );
+  const cap = calcularSueldoMinimo({ tramo: "general", horasSemana: 45 });
+  assert("horas sobre 42 no suben el IMM", cap.immProporcional === 553553 && cap.factor === 1);
+  const menor = calcularSueldoMinimo({ tramo: "menorMayor", horasSemana: 42 });
+  assert(
+    "tramo menor/mayor jornada completa 412938",
+    menor.imm === 412938 && menor.immProporcional === 412938,
+    String(menor.immProporcional),
   );
 }
 
@@ -1550,6 +1610,7 @@ const required = [
   "semana-corrida.html",
   "asignacion-familiar.html",
   "colacion-movilizacion.html",
+  "sueldo-minimo.html",
   "feriado-progresivo.html",
   "indemnizacion-anos-servicio.html",
   "aguinaldo.html",
@@ -1568,6 +1629,7 @@ const required = [
   "js/app-semana-corrida.js",
   "js/app-asignacion-familiar.js",
   "js/app-colacion-movilizacion.js",
+  "js/app-sueldo-minimo.js",
   "js/app-feriado-progresivo.js",
   "js/app-indemnizacion-anos-servicio.js",
   "js/app-aguinaldo.js",
@@ -1713,6 +1775,7 @@ const htmlFiles = [
   "semana-corrida.html",
   "asignacion-familiar.html",
   "colacion-movilizacion.html",
+  "sueldo-minimo.html",
   "feriado-progresivo.html",
   "indemnizacion-anos-servicio.html",
   "aguinaldo.html",
@@ -1806,6 +1869,7 @@ const appEntries = [
   "js/app-semana-corrida.js",
   "js/app-asignacion-familiar.js",
   "js/app-colacion-movilizacion.js",
+  "js/app-sueldo-minimo.js",
   "js/app-feriado-progresivo.js",
   "js/app-indemnizacion-anos-servicio.js",
   "js/app-aguinaldo.js",
@@ -1844,7 +1908,7 @@ assert("robots Allow /", /Allow:\s*\//.test(robots));
 assert("robots Disallow /admin", /Disallow:\s*\/admin/.test(robots));
 assert("robots Disallow /api", /Disallow:\s*\/api/.test(robots));
 assert("robots Disallow /docs", /Disallow:\s*\/docs/.test(robots));
-assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots));
+assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots));
 assert("robots Sitemap", /Sitemap:\s*https:\/\/www\.haberes\.cl\/sitemap\.xml/.test(robots));
 
 const { seoPaths, GUIDE_SLUGS, GUIDES, CAUSAL_PAGES, BASE_PATHS, lastmodForPath } = await import("../content/registry.js");
@@ -1878,6 +1942,7 @@ assert(
     BASE_PATHS.includes("/aguinaldo") &&
     BASE_PATHS.includes("/finiquito-casa-particular") &&
     BASE_PATHS.includes("/sueldo-proporcional") &&
+    BASE_PATHS.includes("/sueldo-minimo") &&
     BASE_PATHS.includes("/indemnizacion-aviso-previo"),
   `${locs.length} vs ${expectedFromRegistry.length}`,
 );
@@ -2229,7 +2294,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 64,
+      seoPaths().length === 65,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -2241,7 +2306,7 @@ try {
   const docsSeo = await hitLocal("/docs/seo-map.md");
   assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
   assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
-  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/aguinaldo/", "/sueldo-proporcional/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/asignacion-familiar/", "/colacion-movilizacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/asignacion-familiar/", "/colacion-movilizacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
   }
@@ -2266,6 +2331,7 @@ try {
     "/aguinaldo",
     "/finiquito-casa-particular",
     "/sueldo-proporcional",
+    "/sueldo-minimo",
     "/indemnizacion-aviso-previo",
     "/gratificacion",
     "/impuesto-unico",
@@ -5492,6 +5558,7 @@ assert(
     ["semana-corrida.html", "/semana-corrida"],
     ["asignacion-familiar.html", "/asignacion-familiar"],
     ["colacion-movilizacion.html", "/colacion-movilizacion"],
+    ["sueldo-minimo.html", "/sueldo-minimo"],
     ["feriado-progresivo.html", "/feriado-progresivo"],
     ["indemnizacion-anos-servicio.html", "/indemnizacion-anos-servicio"],
     ["aguinaldo.html", "/aguinaldo"],
@@ -6730,6 +6797,134 @@ assert(
     );
   }
   {
+    const smHtml = readFileSync(join(root, "sueldo-minimo.html"), "utf8");
+    const smTitle = (smHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const smH1 = (smHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const smDesc = (smHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "";
+    const sueldoHtml = readFileSync(join(root, "sueldo.html"), "utf8");
+    const sueldoTitle = (sueldoHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const sueldoH1 = (sueldoHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const grHtml = readFileSync(join(root, "gratificacion.html"), "utf8");
+    const grTitle = (grHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const grH1 = (grHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const ceHtml = readFileSync(join(root, "costo-empresa.html"), "utf8");
+    const ceTitle = (ceHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const ceH1 = (ceHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const cmHtml = readFileSync(join(root, "colacion-movilizacion.html"), "utf8");
+    const demo = calcularSueldoMinimo({
+      tramo: "general",
+      horasSemana: 42,
+      sueldoBase: 539_000,
+      mesesReliquidacion: 2,
+    });
+    const mitad = calcularSueldoMinimo({ tramo: "general", horasSemana: 21 });
+    assert(
+      "SEO title sueldo mínimo apunta a calcular sueldo mínimo",
+      /calcular sueldo m[ií]nimo/i.test(smTitle) &&
+        !/sueldo l[ií]quido/i.test(smTitle) &&
+        !/gratificaci[oó]n/i.test(smTitle) &&
+        smTitle !== sueldoTitle &&
+        smTitle !== grTitle &&
+        smTitle !== ceTitle &&
+        smTitle.length <= 65,
+      smTitle,
+    );
+    assert(
+      "SEO H1 sueldo mínimo distinto de /sueldo y /gratificacion",
+      /calcular sueldo m[ií]nimo/i.test(smH1) &&
+        smH1 !== sueldoH1 &&
+        smH1 !== grH1 &&
+        smH1 !== ceH1 &&
+        !/sueldo l[ií]quido/i.test(smH1),
+      smH1,
+    );
+    assert(
+      "SEO sueldo mínimo meta distinta de /sueldo",
+      smDesc && smDesc !== ((sueldoHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || ""),
+    );
+    assert(
+      "SEO sueldo mínimo cita Ley 21.830, art. 44 y CT",
+      /21\.830/.test(smHtml) &&
+        /art[ií]culo 44/i.test(smHtml) &&
+        /C[oó]digo del Trabajo/.test(smHtml) &&
+        /bcn\.cl\/leychile\/navegar\?idNorma=1225354/.test(smHtml) &&
+        /dt\.gob\.cl\/portal\/1628\/w3-article-60141/.test(smHtml),
+    );
+    assert(
+      "SEO sueldo mínimo montos IMM 2026",
+      /553\.553/.test(smHtml) && /412\.938/.test(smHtml) && /356\.815/.test(smHtml) && /219\.115/.test(smHtml),
+    );
+    assert(
+      "SEO sueldo mínimo jornada 42 no 45 como ordinaria",
+      /42 horas/.test(smHtml) &&
+        /Ley 21\.561/.test(smHtml) &&
+        /no se usa 45/i.test(smHtml),
+    );
+    assert(
+      "SEO sueldo mínimo ejemplo 539000 → gap 14553 y 21h = 276777",
+      demo.gap === 14553 &&
+        demo.gratificacionSobreDelta === 3638 &&
+        demo.reliquidacionTotal === 36382 &&
+        mitad.immProporcional === 276777 &&
+        /\$539\.000/.test(smHtml) &&
+        /\$14\.553/.test(smHtml) &&
+        /\$3\.638/.test(smHtml) &&
+        /\$276\.777/.test(smHtml) &&
+        /\$36\.382/.test(smHtml),
+    );
+    assert("SEO sueldo mínimo FAQPage", /"@type": "FAQPage"/.test(smHtml));
+    assert(
+      "SEO sueldo mínimo no es segunda liquidación",
+      /no arma una liquidaci[oó]n/i.test(smHtml) &&
+        /no descuenta AFP/i.test(smHtml),
+    );
+    assert(
+      "SEO sueldo mínimo no inventa /imm",
+      /no abre URLs hermanas/i.test(smHtml) &&
+        !existsSync(join(root, "imm.html")) &&
+        !existsSync(join(root, "ingreso-minimo.html")) &&
+        !existsSync(join(root, "sueldo-minimo-2026.html")),
+    );
+    assert(
+      "SEO sueldo mínimo enlaza sueldo, gratificación, colación, costo empresa y empresa",
+      /href="\/sueldo"/.test(smHtml) &&
+        /href="\/gratificacion"/.test(smHtml) &&
+        /href="\/colacion-movilizacion"/.test(smHtml) &&
+        /href="\/costo-empresa"/.test(smHtml) &&
+        /href="\/empresa"/.test(smHtml),
+    );
+    assert(
+      "home y nav enlazan /sueldo-minimo",
+      /href="\/sueldo-minimo"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/sueldo-minimo" data-nav>Sueldo m[ií]nimo<\/a>/.test(
+          readFileSync(join(root, "index.html"), "utf8"),
+        ) &&
+        /href="\/sueldo-minimo" data-nav>Sueldo m[ií]nimo<\/a>/.test(smHtml),
+    );
+    assert(
+      "sitemap incluye /sueldo-minimo",
+      locs.includes("https://www.haberes.cl/sueldo-minimo") &&
+        lastmodForPath("/sueldo-minimo") === "2026-09-02",
+    );
+    assert(
+      "seo-map documenta /sueldo-minimo y no-canibalizar /sueldo",
+      /\/sueldo-minimo/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no canibalizar `\/sueldo`/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no crear `\/imm`/i.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")),
+    );
+    assert(
+      "hub /guias enlaza /sueldo-minimo",
+      /href="\/sueldo-minimo"/.test(readFileSync(join(root, "guias.html"), "utf8")),
+    );
+    assert(
+      "sueldo, gratificación, colación y costo empresa enlazan /sueldo-minimo",
+      /href="\/sueldo-minimo"/.test(sueldoHtml) &&
+        /href="\/sueldo-minimo"/.test(grHtml) &&
+        /href="\/sueldo-minimo"/.test(cmHtml) &&
+        /href="\/sueldo-minimo"/.test(ceHtml),
+    );
+  }
+  {
     const scHtml = readFileSync(join(root, "semana-corrida.html"), "utf8");
     const scTitle = (scHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
     const scH1 = (scHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
@@ -7588,6 +7783,7 @@ assert(
       "semana-corrida.html",
       "asignacion-familiar.html",
       "colacion-movilizacion.html",
+      "sueldo-minimo.html",
       "feriado-progresivo.html",
       "indemnizacion-anos-servicio.html",
       "aguinaldo.html",
@@ -7768,7 +7964,7 @@ assert(
     return acc;
   }
   const pages = listHtml(root);
-  assert("66 páginas HTML", pages.length === 66, String(pages.length));
+  assert("67 páginas HTML", pages.length === 67, String(pages.length));
   for (const file of pages) {
     const html = readFileSync(file, "utf8");
     const rel = file.slice(root.length + 1);

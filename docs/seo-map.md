@@ -11,6 +11,7 @@ Actualizar este archivo antes de crear URLs nuevas para evitar canibalización.
 | Producto pymes | liquidaciones / finiquitos pymes | `/` | Title de producto, no segunda calculadora |
 | Calcular finiquito | calcular finiquito (18.100/28), calculadora finiquito (1.900/23), como calcular finiquito (4.400/23) | `/finiquito` | Reforzar title/H1/FAQ; no crear `/calculadora-finiquito` |
 | Calcular sueldo líquido | calcular sueldo líquido / liquido (5.400/38), sueldo líquido (4.400/35), calculadora de sueldo liquido (1.300/32) | `/sueldo` | H1 calculadora Chile 2026; no crear `/calculadora-sueldo` |
+| Calcular sueldo mínimo | sueldo mínimo / ingreso mínimo mensual / IMM 2026 | `/sueldo-minimo` | Title/H1 «calcular sueldo mínimo»; no canibalizar `/sueldo`, `/gratificacion`, `/colacion-movilizacion` ni `/costo-empresa`. Piso legal del IMM (Ley 21.830), jornada parcial y tope art. 50. No es el líquido. No crear `/imm`, `/ingreso-minimo` ni `/sueldo-minimo-2026` |
 | Calcular horas extras | calcular horas extras / cálculo horas extras (8.100/17) | `/horas-extras` | Title/H1 «calcular horas extras»; no canibalizar `/sueldo` ni `/guias/horas-extras` |
 | Calcular vacaciones proporcionales | vacaciones proporcionales (1.300/16), feriado proporcional (590/13), calcular feriado proporcional (320/14) | `/vacaciones-proporcionales` | Title/H1 «calcular vacaciones proporcionales»; no canibalizar `/finiquito` ni `/guias/vacaciones-proporcionales` |
 | Calcular gratificación | gratificación legal (4.400/17) — intención calcular | `/gratificacion` | Title/H1 «calcular gratificación»; no canibalizar `/sueldo` ni `/guias/gratificacion-legal` |
@@ -147,6 +148,13 @@ No publicar hermanas de semana corrida: `/septimo-dia`, `/pago-domingo-festivo`,
 `/semana-corrida-mensual`. El haber del artículo 45 vive en `/semana-corrida`.
 El recargo 30 % del comercio (art. 38 N°7) sigue en `/recargo-domingo-comercio`.
 La guía editorial sigue en `/guias/semana-corrida`.
+
+No publicar `/imm`, `/ingreso-minimo` ni `/sueldo-minimo-2026`. El piso legal del
+IMM (Ley 21.830: tramos, jornada parcial art. 44 y tope art. 50) vive en
+`/sueldo-minimo`. El líquido (AFP, salud, IUSC) sigue en `/sueldo`. La
+gratificación del 25 % con tope sigue en `/gratificacion`. Colación y
+movilización del artículo 41 siguen en `/colacion-movilizacion`. El costo de
+contratar sigue en `/costo-empresa`.
 
 No publicar hermanas de aguinaldo: `/bono-fiestas-patrias`, `/aguinaldo-navidad`,
 `/aguinaldo-18`. El presupuesto (monto fijo o % del sueldo, planilla e impacto

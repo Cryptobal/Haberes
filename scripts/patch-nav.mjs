@@ -19,6 +19,7 @@ const DRAWER_LINKS = [
   ["/precios", "Precios"],
   ["/sueldo", "Sueldo líquido"],
   ["/sueldo-proporcional", "Sueldo proporcional"],
+  ["/sueldo-minimo", "Sueldo mínimo"],
   ["/horas-extras", "Horas extras"],
   ["/recargo-domingo-comercio", "Recargo domingo comercio"],
   ["/semana-corrida", "Semana corrida"],

@@ -502,6 +502,48 @@ const META = {
       },
     ],
   },
+  "sueldo-minimo.html": {
+    path: "/sueldo-minimo",
+    title: "Calcular sueldo mínimo Chile 2026 — Haberes",
+    description:
+      "Calcule el IMM 2026 (Ley 21.830): piso legal del sueldo base, jornada parcial y tope art. 50. No es el sueldo líquido con AFP ni salud.",
+    ogImage: "/img/og-default.png",
+    jsonld: (url) => [
+      ORG,
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        name: "Calcular sueldo mínimo — Haberes",
+        url,
+        applicationCategory: "FinanceApplication",
+        operatingSystem: "Web",
+        inLanguage: "es-CL",
+        offers: { "@type": "Offer", price: "0", priceCurrency: "CLP" },
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        mainEntity: [
+          {
+            "@type": "Question",
+            name: "¿Cuál es el sueldo mínimo en Chile en 2026?",
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: "Desde el 1 de mayo de 2026, la Ley 21.830 (Diario Oficial 22 de junio de 2026) fija el ingreso mínimo mensual en $553.553 para trabajadores de 18 a 65 años; $412.938 para menores de 18 y mayores de 65; y $356.815 para fines no remuneracionales. Ese último monto no es sueldo base.",
+            },
+          },
+          {
+            "@type": "Question",
+            name: "¿Esta página calcula el sueldo líquido?",
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: "No. Esta página estima el piso legal del sueldo base (IMM), la proporcionalidad por jornada parcial y el tope del artículo 50. No descuenta AFP, salud, cesantía ni impuesto único. Para el líquido use la calculadora de sueldo líquido. No abre /imm ni /ingreso-minimo.",
+            },
+          },
+        ],
+      },
+    ],
+  },
   "vacaciones-proporcionales.html": {
     path: "/vacaciones-proporcionales",
     title: "Calcular vacaciones proporcionales Chile 2026 — Haberes",
