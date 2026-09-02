@@ -33,7 +33,7 @@ El 32 pide **pacto escrito**, solo para necesidades **temporales**, hasta **tres
 
 El [artículo 29](https://www.bcn.cl/leychile/navegar?idNorma=207436) permite exceder la jornada, en la medida indispensable, por **fuerza mayor**, caso fortuito, o para impedir accidentes o hacer reparaciones impostergables. Esas horas **se pagan como extraordinarias**. No es un recargo del 100 %.
 
-El recargo por **trabajar** un domingo en comercio o servicios al público ([calcular recargo domingo comercio](/recargo-domingo-comercio), artículo 38 N°7) **no es** hora extra. El 30 % no es «hora extra al 100 %». Si en ese domingo además hay extras, son **dos** cuentas: no las fusione aquí.
+El recargo por **trabajar** un domingo en comercio o servicios al público ([calcular recargo domingo comercio](/recargo-domingo-comercio), artículo 38 N°7) **no es** hora extra. El 30 % no es «hora extra al 100 %». Si en ese domingo además hay extras, son **dos** cuentas: no las fusione aquí. El pago de un feriado irrenunciable (Ley 19.973, recargo 50 % del artículo 32) se estima en [calcular pago feriado irrenunciable](/feriado-irrenunciable); no es esta guía.
 
 ## Cómo se calcula a grandes rasgos
 

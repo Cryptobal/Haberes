@@ -74,6 +74,49 @@ export function valorHoraExtra(sueldo, jornada = JORNADA_DEFAULT) {
 }
 
 /**
+ * Pago educativo de horas trabajadas en un feriado irrenunciable.
+ * Misma base DT que la hora extra (art. 32):
+ * sueldo / 30 × 28 / (jornada × 4) × factor (mínimo 1,5).
+ *
+ * No es liquidación (no AFP/salud/IUSC). No autoriza abrir el comercio.
+ * El descanso compensatorio (acuerdo escrito) se muestra en horas/días,
+ * sin inventar un monto distinto de esta fórmula.
+ *
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=207436 art. 32
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=220220 Ley 19.973
+ * @see https://www.dt.gob.cl/legislacion/1624/w3-article-110218.html
+ */
+export function calcularFeriadoIrrenunciable({
+  sueldoBase,
+  jornada = JORNADA_DEFAULT,
+  horasTrabajadas = 0,
+  factorRecargo = HORAS_EXTRA_FACTOR,
+} = {}) {
+  const horaOrd = valorHoraOrdinaria(sueldoBase, jornada);
+  const rawFactor = Number(factorRecargo);
+  const factor = Math.max(
+    HORAS_EXTRA_FACTOR,
+    Number.isFinite(rawFactor) && rawFactor > 0 ? rawFactor : HORAS_EXTRA_FACTOR,
+  );
+  const horaConRecargo = horaOrd * factor;
+  const horas = Math.max(0, Number(horasTrabajadas) || 0);
+  const jornadaNum = Number(jornada) || JORNADA_DEFAULT;
+  const horasDiaEstimadas = jornadaNum > 0 ? jornadaNum / 5 : 0;
+  const diasDescansoEquivalentes = horasDiaEstimadas > 0 ? horas / horasDiaEstimadas : 0;
+  return {
+    valorHoraOrdinaria: horaOrd,
+    horaConRecargo,
+    total: horaConRecargo * horas,
+    horas,
+    factor,
+    jornada: jornadaNum,
+    horasDescansoEquivalentes: horas,
+    diasDescansoEquivalentes,
+    horasDiaEstimadas,
+  };
+}
+
+/**
  * Recargo art. 38 N°7 / Ley 20.823: horas ordinarias trabajadas en domingo
  * en establecimientos de comercio y de servicios que atiendan al público.
  * Mínimo 30 % sobre el sueldo convenido (valor hora ordinaria DT).
