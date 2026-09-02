@@ -216,6 +216,7 @@ function paintLoggedInNav(emp) {
         <a href="/sueldo-minimo" data-nav>Sueldo mínimo</a>
         <a href="/horas-extras" data-nav>Horas extras</a>
         <a href="/recargo-domingo-comercio" data-nav>Recargo domingo comercio</a>
+        <a href="/feriado-irrenunciable" data-nav>Feriado irrenunciable</a>
         <a href="/semana-corrida" data-nav>Semana corrida</a>
         <a href="/gratificacion" data-nav>Gratificación</a>
         <a href="/aguinaldo" data-nav>Aguinaldo</a>

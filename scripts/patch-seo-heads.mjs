@@ -384,6 +384,72 @@ const META = {
       },
     ],
   },
+  "feriado-irrenunciable.html": {
+    path: "/feriado-irrenunciable",
+    title: "Calcular pago feriado irrenunciable Chile 2026 — Haberes",
+    description:
+      "Estime el pago por un feriado irrenunciable 2026 (1 ene, 1 may, 18–19 sep, 25 dic): recargo 50 % art. 32. No es liquidación ni recargo domingo.",
+    ogImage: "/img/og-default.png",
+    jsonld: (url) => [
+      ORG,
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        name: "Calcular pago feriado irrenunciable — Haberes",
+        url,
+        applicationCategory: "FinanceApplication",
+        operatingSystem: "Web",
+        inLanguage: "es-CL",
+        offers: { "@type": "Offer", price: "0", priceCurrency: "CLP" },
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        mainEntity: [
+          {
+            "@type": "Question",
+            name: "¿Cómo se paga un feriado irrenunciable?",
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: "Si la ley permite trabajar ese día, Haberes estima las horas con la fórmula de la Dirección del Trabajo y el recargo mínimo 50 % del artículo 32: sueldo / 30 × 28 / (jornada × 4) × 1,5 × horas. No es una liquidación completa: no descuenta AFP, salud ni impuesto único.",
+            },
+          },
+          {
+            "@type": "Question",
+            name: "¿Es lo mismo que hora extra?",
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: "Usa la misma base y el mismo recargo 50 % del artículo 32, pero no reemplaza la calculadora de horas extras. Las extras son las que exceden la jornada ordinaria en un día hábil. Esta página estima horas de un feriado irrenunciable (Ley 19.973), si se puede trabajar.",
+            },
+          },
+          {
+            "@type": "Question",
+            name: "¿Puedo exigir descanso compensatorio?",
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: "Las partes pueden acordar por escrito remunerar el festivo con recargo 50 % o compensarlo con descanso. Haberes muestra el equivalente en horas y días (jornada semanal ÷ 5) sin inventar otro monto. No asesora su caso.",
+            },
+          },
+          {
+            "@type": "Question",
+            name: "¿Aplica al comercio el 18–19 de septiembre?",
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: "Para la mayoría del comercio, el 18 y el 19 de septiembre son feriado obligatorio e irrenunciable: no se puede trabajar ni aunque se ofrezca un recargo. Solo rigen las excepciones de la Ley 19.973 (restaurantes, combustibles, farmacias de turno y otras). Haberes no dice que todo el comercio pueda abrir.",
+            },
+          },
+          {
+            "@type": "Question",
+            name: "¿Usa jornada 42 o 45?",
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: "El valor por defecto es 42 horas semanales, la jornada ordinaria vigente desde el 26 de abril de 2026 (Ley 21.561). Si el contrato pactó otra jornada (45 u otra), ingrésela: el divisor es jornada × 4, no 168.",
+            },
+          },
+        ],
+      },
+    ],
+  },
   "semana-corrida.html": {
     path: "/semana-corrida",
     title: "Calcular semana corrida Chile 2026 — Haberes",

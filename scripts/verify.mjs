@@ -63,6 +63,7 @@ import {
   calcularFeriadoProgresivo,
   calcularIusc,
   calcularRecargoDomingoComercio,
+  calcularFeriadoIrrenunciable,
   calcularSeguroCesantia,
   calcularSemanaCorrida,
   calcularSueldo,
@@ -254,6 +255,67 @@ assert(
     "app-recargo-domingo-comercio usa calcularRecargoDomingoComercio",
     /import\s*\{[^}]*calcularRecargoDomingoComercio[^}]*\}\s*from\s*["']\.\/sueldo\.js["']/.test(rdApp) &&
       /calcularRecargoDomingoComercio\s*\(/.test(rdApp),
+  );
+}
+
+console.log("\nFeriado irrenunciable art. 32 + Ley 19.973");
+{
+  const fi = calcularFeriadoIrrenunciable({
+    sueldoBase: 800000,
+    jornada: 42,
+    horasTrabajadas: 8,
+  });
+  assert(
+    "800000/42 hora ordinaria ≈ 4444.44",
+    close(fi.valorHoraOrdinaria, 4444.44, 0.01),
+    String(fi.valorHoraOrdinaria),
+  );
+  assert(
+    "hora con recargo = valorHoraExtra",
+    close(fi.horaConRecargo, valorHoraExtra(800000, 42), 0.0001),
+  );
+  assert(
+    "800000/42/8h total ≈ 53333.33",
+    close(fi.total, 53333.33, 0.01) && Math.round(fi.total) === 53333,
+    String(fi.total),
+  );
+  assert(
+    "descanso 8 h ≈ 0.95 días (jornada/5)",
+    close(fi.horasDescansoEquivalentes, 8, 0.0001) && close(fi.diasDescansoEquivalentes, 8 / (42 / 5), 0.0001),
+    String(fi.diasDescansoEquivalentes),
+  );
+  assert(
+    "factor bajo el mínimo se clampa a 1,5",
+    close(
+      calcularFeriadoIrrenunciable({ sueldoBase: 800000, jornada: 42, horasTrabajadas: 8, factorRecargo: 1.2 })
+        .factor,
+      1.5,
+      0.0001,
+    ),
+  );
+  const doble = calcularFeriadoIrrenunciable({
+    sueldoBase: 800000,
+    jornada: 42,
+    horasTrabajadas: 8,
+    factorRecargo: 2,
+  });
+  assert(
+    "factor 2,0 = hora ordinaria × 2",
+    close(doble.horaConRecargo, fi.valorHoraOrdinaria * 2, 0.0001) && doble.factor === 2,
+  );
+  assert(
+    "sueldo 0 → total 0",
+    calcularFeriadoIrrenunciable({ sueldoBase: 0, jornada: 42, horasTrabajadas: 8 }).total === 0,
+  );
+  assert(
+    "0 horas → total 0",
+    calcularFeriadoIrrenunciable({ sueldoBase: 800000, jornada: 42, horasTrabajadas: 0 }).total === 0,
+  );
+  const fiApp = readFileSync(join(root, "js/app-feriado-irrenunciable.js"), "utf8");
+  assert(
+    "app-feriado-irrenunciable usa calcularFeriadoIrrenunciable",
+    /import\s*\{[^}]*calcularFeriadoIrrenunciable[^}]*\}\s*from\s*["']\.\/sueldo\.js["']/.test(fiApp) &&
+      /calcularFeriadoIrrenunciable\s*\(/.test(fiApp),
   );
 }
 
@@ -1607,6 +1669,7 @@ const required = [
   "costo-empresa.html",
   "seguro-cesantia.html",
   "recargo-domingo-comercio.html",
+  "feriado-irrenunciable.html",
   "semana-corrida.html",
   "asignacion-familiar.html",
   "colacion-movilizacion.html",
@@ -1626,6 +1689,7 @@ const required = [
   "js/app-costo-empresa.js",
   "js/app-seguro-cesantia.js",
   "js/app-recargo-domingo-comercio.js",
+  "js/app-feriado-irrenunciable.js",
   "js/app-semana-corrida.js",
   "js/app-asignacion-familiar.js",
   "js/app-colacion-movilizacion.js",
@@ -1772,6 +1836,7 @@ const htmlFiles = [
   "costo-empresa.html",
   "seguro-cesantia.html",
   "recargo-domingo-comercio.html",
+  "feriado-irrenunciable.html",
   "semana-corrida.html",
   "asignacion-familiar.html",
   "colacion-movilizacion.html",
@@ -1866,6 +1931,7 @@ const appEntries = [
   "js/app-costo-empresa.js",
   "js/app-seguro-cesantia.js",
   "js/app-recargo-domingo-comercio.js",
+  "js/app-feriado-irrenunciable.js",
   "js/app-semana-corrida.js",
   "js/app-asignacion-familiar.js",
   "js/app-colacion-movilizacion.js",
@@ -1908,7 +1974,7 @@ assert("robots Allow /", /Allow:\s*\//.test(robots));
 assert("robots Disallow /admin", /Disallow:\s*\/admin/.test(robots));
 assert("robots Disallow /api", /Disallow:\s*\/api/.test(robots));
 assert("robots Disallow /docs", /Disallow:\s*\/docs/.test(robots));
-assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots));
+assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots));
 assert("robots Sitemap", /Sitemap:\s*https:\/\/www\.haberes\.cl\/sitemap\.xml/.test(robots));
 
 const { seoPaths, GUIDE_SLUGS, GUIDES, CAUSAL_PAGES, BASE_PATHS, lastmodForPath } = await import("../content/registry.js");
@@ -1934,6 +2000,7 @@ assert(
     BASE_PATHS.includes("/costo-empresa") &&
     BASE_PATHS.includes("/seguro-cesantia") &&
     BASE_PATHS.includes("/recargo-domingo-comercio") &&
+    BASE_PATHS.includes("/feriado-irrenunciable") &&
     BASE_PATHS.includes("/semana-corrida") &&
     BASE_PATHS.includes("/asignacion-familiar") &&
     BASE_PATHS.includes("/colacion-movilizacion") &&
@@ -2294,7 +2361,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 65,
+      seoPaths().length === 66,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -2306,7 +2373,7 @@ try {
   const docsSeo = await hitLocal("/docs/seo-map.md");
   assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
   assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
-  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/asignacion-familiar/", "/colacion-movilizacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/asignacion-familiar/", "/colacion-movilizacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
   }
@@ -2324,6 +2391,7 @@ try {
   for (const p of [
     "/horas-extras",
     "/recargo-domingo-comercio",
+    "/feriado-irrenunciable",
     "/semana-corrida",
     "/vacaciones-proporcionales",
     "/feriado-progresivo",
@@ -5555,6 +5623,7 @@ assert(
     ["costo-empresa.html", "/costo-empresa"],
     ["seguro-cesantia.html", "/seguro-cesantia"],
     ["recargo-domingo-comercio.html", "/recargo-domingo-comercio"],
+    ["feriado-irrenunciable.html", "/feriado-irrenunciable"],
     ["semana-corrida.html", "/semana-corrida"],
     ["asignacion-familiar.html", "/asignacion-familiar"],
     ["colacion-movilizacion.html", "/colacion-movilizacion"],
@@ -6542,6 +6611,142 @@ assert(
       "seo-map documenta /recargo-domingo-comercio y no-canibalizar /horas-extras",
       /\/recargo-domingo-comercio/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
         /no canibalizar `\/horas-extras`/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")),
+    );
+  }
+  {
+    const fiHtml = readFileSync(join(root, "feriado-irrenunciable.html"), "utf8");
+    const fiTitle = (fiHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const fiH1 = (fiHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const fiDesc = (fiHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "";
+    const heHtml = readFileSync(join(root, "horas-extras.html"), "utf8");
+    const heTitle = (heHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const heH1 = (heHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const rdHtml = readFileSync(join(root, "recargo-domingo-comercio.html"), "utf8");
+    const rdTitle = (rdHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const rdH1 = (rdHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const agHtml = readFileSync(join(root, "aguinaldo.html"), "utf8");
+    const sueldoHtml = readFileSync(join(root, "sueldo.html"), "utf8");
+    const sueldoTitle = (sueldoHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const sueldoH1 = (sueldoHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const fpHtml = readFileSync(join(root, "feriado-progresivo.html"), "utf8");
+    const fpH1 = (fpHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const demo = calcularFeriadoIrrenunciable({ sueldoBase: 800000, jornada: 42, horasTrabajadas: 8 });
+    assert(
+      "SEO title feriado irrenunciable apunta a calcular pago feriado irrenunciable",
+      /calcular pago feriado irrenunciable/i.test(fiTitle) &&
+        !/horas extras/i.test(fiTitle) &&
+        !/sueldo l[ií]quido/i.test(fiTitle) &&
+        !/recargo domingo/i.test(fiTitle) &&
+        fiTitle !== heTitle &&
+        fiTitle !== rdTitle &&
+        fiTitle !== sueldoTitle &&
+        fiTitle.length <= 65,
+      fiTitle,
+    );
+    assert(
+      "SEO H1 feriado irrenunciable distinto de hermanas",
+      /calcular pago feriado irrenunciable/i.test(fiH1) &&
+        fiH1 !== heH1 &&
+        fiH1 !== rdH1 &&
+        fiH1 !== sueldoH1 &&
+        fiH1 !== fpH1 &&
+        !/horas extras/i.test(fiH1) &&
+        !/sueldo l[ií]quido/i.test(fiH1),
+      fiH1,
+    );
+    assert(
+      "SEO feriado irrenunciable meta distinta de /horas-extras y /recargo-domingo-comercio",
+      fiDesc &&
+        fiDesc !== ((heHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "") &&
+        fiDesc !== ((rdHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || ""),
+    );
+    assert(
+      "SEO feriado irrenunciable cita art. 32, Ley 19.973 y DT",
+      /art[ií]culo 32/i.test(fiHtml) &&
+        /19\.973/.test(fiHtml) &&
+        /C[oó]digo del Trabajo/.test(fiHtml) &&
+        /bcn\.cl\/leychile\/navegar\?idNorma=207436/.test(fiHtml) &&
+        /bcn\.cl\/leychile\/navegar\?idNorma=220220/.test(fiHtml) &&
+        /dt\.gob\.cl\/portal\/1628\/w3-article-95017/.test(fiHtml) &&
+        /dt\.gob\.cl\/legislacion\/1624\/w3-article-110218/.test(fiHtml),
+    );
+    assert(
+      "SEO feriado irrenunciable lista 2026 y Fiestas Patrias viernes/sábado",
+      /1 de enero/.test(fiHtml) &&
+        /1 de mayo/.test(fiHtml) &&
+        /18/.test(fiHtml) &&
+        /19 de septiembre/.test(fiHtml) &&
+        /25 de diciembre/.test(fiHtml) &&
+        /viernes/.test(fiHtml) &&
+        /s[aá]bado/.test(fiHtml),
+    );
+    assert(
+      "SEO feriado irrenunciable jornada 42 y Ley 21.561",
+      /42 horas/.test(fiHtml) && /Ley 21\.561/.test(fiHtml),
+    );
+    assert(
+      "SEO feriado irrenunciable no dice que todo el comercio puede abrir",
+      /no dice que todo el comercio pueda abrir/i.test(fiHtml) &&
+        /no puede trabajar ese d[ií]a/i.test(fiHtml),
+    );
+    assert(
+      "SEO feriado irrenunciable ejemplo 800000/42/8h = 53333",
+      Math.round(demo.total) === 53333 &&
+        /\$800\.000/.test(fiHtml) &&
+        /\$53\.333/.test(fiHtml) &&
+        /42 horas/.test(fiHtml),
+    );
+    assert("SEO feriado irrenunciable FAQPage", /"@type": "FAQPage"/.test(fiHtml));
+    assert(
+      "SEO feriado irrenunciable no es liquidación completa",
+      /no es una liquidaci[oó]n completa/i.test(fiHtml) &&
+        /no descuenta AFP/i.test(fiHtml),
+    );
+    assert(
+      "SEO feriado irrenunciable no inventa URLs hermanas",
+      /no abre URLs hermanas/i.test(fiHtml) &&
+        !existsSync(join(root, "pago-feriado.html")) &&
+        !existsSync(join(root, "trabajo-feriado.html")) &&
+        !existsSync(join(root, "feriados.html")) &&
+        !existsSync(join(root, "irrenunciable.html")),
+    );
+    assert(
+      "SEO feriado irrenunciable enlaza horas extras, recargo domingo, sueldo, aguinaldo y empresa",
+      /href="\/horas-extras"/.test(fiHtml) &&
+        /href="\/recargo-domingo-comercio"/.test(fiHtml) &&
+        /href="\/sueldo"/.test(fiHtml) &&
+        /href="\/aguinaldo"/.test(fiHtml) &&
+        /href="\/empresa"/.test(fiHtml),
+    );
+    assert(
+      "SEO hermanas enlazan /feriado-irrenunciable",
+      /href="\/feriado-irrenunciable"/.test(heHtml) &&
+        /href="\/feriado-irrenunciable"/.test(rdHtml) &&
+        /href="\/feriado-irrenunciable"/.test(sueldoHtml) &&
+        /href="\/feriado-irrenunciable"/.test(agHtml),
+    );
+    assert(
+      "home y nav enlazan /feriado-irrenunciable",
+      /href="\/feriado-irrenunciable"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/feriado-irrenunciable" data-nav>Feriado irrenunciable<\/a>/.test(
+          readFileSync(join(root, "index.html"), "utf8"),
+        ) &&
+        /href="\/feriado-irrenunciable" data-nav>Feriado irrenunciable<\/a>/.test(fiHtml),
+    );
+    assert(
+      "sitemap incluye /feriado-irrenunciable",
+      locs.includes("https://www.haberes.cl/feriado-irrenunciable") &&
+        lastmodForPath("/feriado-irrenunciable") === "2026-09-02",
+    );
+    assert(
+      "seo-map documenta /feriado-irrenunciable y no-canibalizar /horas-extras",
+      /\/feriado-irrenunciable/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no canibalizar `\/horas-extras`/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no crear `\/pago-feriado`/i.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")),
+    );
+    assert(
+      "hub /guias enlaza /feriado-irrenunciable",
+      /href="\/feriado-irrenunciable"/.test(readFileSync(join(root, "guias.html"), "utf8")),
     );
   }
   {
@@ -7780,6 +7985,7 @@ assert(
       "costo-empresa.html",
       "seguro-cesantia.html",
       "recargo-domingo-comercio.html",
+      "feriado-irrenunciable.html",
       "semana-corrida.html",
       "asignacion-familiar.html",
       "colacion-movilizacion.html",

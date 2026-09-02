@@ -20,6 +20,7 @@ Actualizar este archivo antes de crear URLs nuevas para evitar canibalización.
 | Calcular costo empresa de un sueldo | costo empresa / costo de un trabajador / cuánto cuesta contratar | `/costo-empresa` | Title/H1 «calcular costo empresa de un sueldo»; no canibalizar `/sueldo` ni `/cotizaciones-previsionales`. Responde «cuánto me cuesta contratar», no el líquido. No crear `/costo-trabajador` ni `/aportes-patronales` |
 | Calcular seguro de cesantía | seguro de cesantía / cotización AFC / Ley 19.728 | `/seguro-cesantia` | Title/H1 «calcular seguro de cesantía»; no canibalizar `/cotizaciones-previsionales`, `/costo-empresa` ni `/sueldo`. Cotización mensual AFC (trabajador + empleador, CIC/FCS). No es prestación post-despido ni AFP/salud. No crear `/afc` ni `/cesantia` |
 | Calcular recargo domingo comercio | recargo domingo comercio / recargo 30% domingo / art. 38 N°7 | `/recargo-domingo-comercio` | Title/H1 «calcular recargo domingo comercio»; no canibalizar `/horas-extras` ni `/guias/horas-extras`. No es hora extra (art. 32) ni semana corrida (art. 45). No crear `/horas-extras-domingo` ni `/recargo-festivo` |
+| Calcular pago feriado irrenunciable | feriado irrenunciable / pago feriado 18 septiembre / trabajar feriado | `/feriado-irrenunciable` | Title/H1 «calcular pago feriado irrenunciable»; no canibalizar `/horas-extras`, `/recargo-domingo-comercio` ni `/aguinaldo`. Art. 32 + Ley 19.973 (1 ene, 1 may, 18–19 sep, 25 dic). Jornada 42 por defecto. No crear `/pago-feriado`, `/trabajo-feriado`, `/feriados` ni `/irrenunciable` |
 | Calcular semana corrida | semana corrida (1.300/21) — intención calcular | `/semana-corrida` | Title/H1 «calcular semana corrida»; no canibalizar `/guias/semana-corrida`, `/recargo-domingo-comercio` ni `/sueldo`. Art. 45 (pago del descanso), no recargo 30 % art. 38 N°7 ni hora extra art. 32. No crear `/septimo-dia` ni `/pago-domingo-festivo` |
 | Calcular asignación familiar | asignación familiar / tramos asignación familiar / cargas familiares | `/asignacion-familiar` | Title/H1 «calcular asignación familiar»; no canibalizar `/sueldo`, `/cotizaciones-previsionales` ni `/guias/liquidacion-de-sueldo`. Sistema Único (D.F.L. 150), no SUF municipal. No crear `/suf`, `/asignacion-maternal` ni `/cargas-familiares` |
 | Calcular colación y movilización | colación / movilización / asignación de colación / no imponible art. 41 | `/colacion-movilizacion` | Title/H1 «calcular colación y movilización»; no canibalizar `/sueldo`, `/costo-empresa` ni `/cotizaciones-previsionales`. Solo montos, imponibilidad y cómo salen en la liquidación. No crear `/colacion`, `/movilizacion` ni `/asignacion-colacion` |
@@ -113,6 +114,13 @@ La prestación (giros) si hay despido no abre URL propia.
 No publicar hermanas del recargo domingo: `/horas-extras-domingo`, `/recargo-festivo`,
 `/trabajo-en-domingo`. El recargo 30 % del comercio (art. 38 N°7) vive en
 `/recargo-domingo-comercio`. Las horas extras (art. 32) siguen en `/horas-extras`.
+
+No publicar `/pago-feriado`, `/trabajo-feriado`, `/feriados` ni `/irrenunciable`.
+El pago educativo de un feriado irrenunciable (Ley 19.973 + recargo 50 % art. 32)
+vive en `/feriado-irrenunciable`. Las extras de un día hábil siguen en `/horas-extras`.
+El recargo 30 % del domingo comercio sigue en `/recargo-domingo-comercio`.
+El aguinaldo de Fiestas Patrias sigue en `/aguinaldo`.
+El feriado progresivo (art. 68) sigue en `/feriado-progresivo`.
 
 No publicar hermanas de asignación familiar: `/suf`, `/asignacion-maternal`,
 `/cargas-familiares`. El SUF municipal (Ley 18.020) no es esta calculadora.
