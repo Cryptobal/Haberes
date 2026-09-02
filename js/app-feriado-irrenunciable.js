@@ -3,12 +3,20 @@ import { clp, num } from "./format.js";
 import { calcularFeriadoIrrenunciable } from "./sueldo.js";
 import { el, mountIndicadores, numVal, wireNav } from "./ui.js";
 
+/** type=number usa punto decimal; no recortar puntos como miles. */
+function decimalVal(id) {
+  const raw = el(id)?.value;
+  if (raw == null || raw === "") return 0;
+  const n = Number(String(raw).trim().replace(",", "."));
+  return Number.isFinite(n) ? n : 0;
+}
+
 function leer() {
-  const rawFactor = numVal("factorRecargo");
+  const rawFactor = decimalVal("factorRecargo");
   return {
     sueldoBase: numVal("sueldoBase"),
-    jornada: numVal("jornada") || JORNADA_DEFAULT,
-    horasTrabajadas: numVal("horasFeriado"),
+    jornada: decimalVal("jornada") || JORNADA_DEFAULT,
+    horasTrabajadas: decimalVal("horasFeriado"),
     factorRecargo: rawFactor > 0 ? rawFactor : HORAS_EXTRA_FACTOR,
     descanso: Boolean(document.getElementById("compensarDescanso")?.checked),
   };

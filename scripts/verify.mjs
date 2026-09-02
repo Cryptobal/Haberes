@@ -317,6 +317,12 @@ console.log("\nFeriado irrenunciable art. 32 + Ley 19.973");
     /import\s*\{[^}]*calcularFeriadoIrrenunciable[^}]*\}\s*from\s*["']\.\/sueldo\.js["']/.test(fiApp) &&
       /calcularFeriadoIrrenunciable\s*\(/.test(fiApp),
   );
+  assert(
+    "app-feriado-irrenunciable no usa numVal para factor ni horas (punto decimal)",
+    !/numVal\s*\(\s*["']factorRecargo["']/.test(fiApp) &&
+      !/numVal\s*\(\s*["']horasFeriado["']/.test(fiApp) &&
+      /decimalVal/.test(fiApp),
+  );
 }
 
 console.log("\nAsignación familiar Ley 21.830");
