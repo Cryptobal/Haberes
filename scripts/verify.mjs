@@ -704,9 +704,9 @@ console.log("\nDescuento atrasos e inasistencias (DT /30, valor hora)");
   );
   assert(
     "descuento no excede remuneración",
-    calcularDescuentoAtrasosInasistencias({ remuneracion: 100_000, diasInasistencia: 10 }).descuentoTotal ===
+    calcularDescuentoAtrasosInasistencias({ remuneracion: 100_000, diasInasistencia: 31 }).descuentoTotal ===
       100_000 &&
-      calcularDescuentoAtrasosInasistencias({ remuneracion: 100_000, diasInasistencia: 10 }).brutoRestante === 0,
+      calcularDescuentoAtrasosInasistencias({ remuneracion: 100_000, diasInasistencia: 31 }).brutoRestante === 0,
   );
   assert(
     "inputs negativos → 0",
@@ -2441,7 +2441,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 66,
+      seoPaths().length === 67,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -6331,7 +6331,7 @@ assert(
     assert(
       "seo-map documenta /descuento-atrasos y no-canibalizar /sueldo-proporcional",
       /\/descuento-atrasos/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
-        /no canibalizar `\/sueldo-proporcional`/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no canibalizar.*`\/sueldo-proporcional`/i.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
         /no crear `\/descuento-inasistencias`/i.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")),
     );
     assert(
@@ -8379,7 +8379,7 @@ assert(
     return acc;
   }
   const pages = listHtml(root);
-  assert("68 páginas HTML", pages.length === 68, String(pages.length));
+  assert("69 páginas HTML", pages.length === 69, String(pages.length));
   for (const file of pages) {
     const html = readFileSync(file, "utf8");
     const rel = file.slice(root.length + 1);
