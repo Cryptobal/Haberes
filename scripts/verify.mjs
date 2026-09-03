@@ -67,6 +67,7 @@ import {
   calcularSeguroCesantia,
   calcularSemanaCorrida,
   calcularSueldo,
+  calcularDescuentoAtrasosInasistencias,
   calcularSueldoMinimo,
   calcularSueldoProporcional,
   diasCalendarioFraccionMes,
@@ -653,6 +654,74 @@ console.log("\nSueldo proporcional (mes incompleto, DT /30)");
     "app-sueldo-proporcional usa calcularSueldoProporcional",
     /import\s*\{[^}]*calcularSueldoProporcional[^}]*\}\s*from\s*["']\.\/sueldo\.js["']/.test(spApp) &&
       /calcularSueldoProporcional\s*\(/.test(spApp),
+  );
+}
+
+console.log("\nDescuento atrasos e inasistencias (DT /30, valor hora)");
+{
+  const g1 = calcularDescuentoAtrasosInasistencias({
+    remuneracion: 800_000,
+    jornada: 42,
+    diasInasistencia: 1,
+    horasAtraso: 1,
+    minutosAtraso: 0,
+  });
+  assert(
+    "800000, 42h, 1 día + 60 min → valor día 26666.67, hora 4444.44, descuento 31111, bruto 768889",
+    close(g1.valorDiario, 800_000 / 30) &&
+      close(g1.valorHora, (800_000 / 30) * 28 / (42 * 4)) &&
+      close(g1.descuentoTotalRaw, 31_111.111111) &&
+      g1.descuentoTotal === 31_111 &&
+      g1.brutoRestante === 768_889,
+    JSON.stringify(g1),
+  );
+  const g2 = calcularDescuentoAtrasosInasistencias({
+    remuneracion: 600_000,
+    jornada: 42,
+    minutosAtraso: 30,
+  });
+  assert(
+    "600000, 42h, 30 min → hora 3333.33, descuento 1667, bruto 598333",
+    close(g2.valorHora, 3_333.333333) &&
+      close(g2.descuentoTotalRaw, 1_666.666667) &&
+      g2.descuentoTotal === 1_667 &&
+      g2.brutoRestante === 598_333,
+    JSON.stringify(g2),
+  );
+  const g3 = calcularDescuentoAtrasosInasistencias({
+    remuneracion: 900_000,
+    jornada: 40,
+    horasAtraso: 2,
+    minutosAtraso: 15,
+  });
+  assert(
+    "900000, 40h, 2h15 → hora 5250, descuento 11813, bruto 888187",
+    close(g3.valorHora, 5_250) &&
+      close(g3.descuentoTotalRaw, 11_812.5) &&
+      g3.descuentoTotal === 11_813 &&
+      g3.brutoRestante === 888_187,
+    JSON.stringify(g3),
+  );
+  assert(
+    "descuento no excede remuneración",
+    calcularDescuentoAtrasosInasistencias({ remuneracion: 100_000, diasInasistencia: 31 }).descuentoTotal ===
+      100_000 &&
+      calcularDescuentoAtrasosInasistencias({ remuneracion: 100_000, diasInasistencia: 31 }).brutoRestante === 0,
+  );
+  assert(
+    "inputs negativos → 0",
+    calcularDescuentoAtrasosInasistencias({
+      remuneracion: -1,
+      diasInasistencia: -2,
+      horasAtraso: -1,
+      minutosAtraso: -5,
+    }).descuentoTotal === 0,
+  );
+  const daApp = readFileSync(join(root, "js/app-descuento-atrasos.js"), "utf8");
+  assert(
+    "app-descuento-atrasos usa calcularDescuentoAtrasosInasistencias",
+    /import\s*\{[^}]*calcularDescuentoAtrasosInasistencias[^}]*\}\s*from\s*["']\.\/sueldo\.js["']/.test(daApp) &&
+      /calcularDescuentoAtrasosInasistencias\s*\(/.test(daApp),
   );
 }
 
@@ -1680,6 +1749,7 @@ const required = [
   "asignacion-familiar.html",
   "colacion-movilizacion.html",
   "sueldo-minimo.html",
+  "descuento-atrasos.html",
   "feriado-progresivo.html",
   "indemnizacion-anos-servicio.html",
   "aguinaldo.html",
@@ -1700,6 +1770,7 @@ const required = [
   "js/app-asignacion-familiar.js",
   "js/app-colacion-movilizacion.js",
   "js/app-sueldo-minimo.js",
+  "js/app-descuento-atrasos.js",
   "js/app-feriado-progresivo.js",
   "js/app-indemnizacion-anos-servicio.js",
   "js/app-aguinaldo.js",
@@ -1847,6 +1918,7 @@ const htmlFiles = [
   "asignacion-familiar.html",
   "colacion-movilizacion.html",
   "sueldo-minimo.html",
+  "descuento-atrasos.html",
   "feriado-progresivo.html",
   "indemnizacion-anos-servicio.html",
   "aguinaldo.html",
@@ -1942,6 +2014,7 @@ const appEntries = [
   "js/app-asignacion-familiar.js",
   "js/app-colacion-movilizacion.js",
   "js/app-sueldo-minimo.js",
+  "js/app-descuento-atrasos.js",
   "js/app-feriado-progresivo.js",
   "js/app-indemnizacion-anos-servicio.js",
   "js/app-aguinaldo.js",
@@ -1980,7 +2053,7 @@ assert("robots Allow /", /Allow:\s*\//.test(robots));
 assert("robots Disallow /admin", /Disallow:\s*\/admin/.test(robots));
 assert("robots Disallow /api", /Disallow:\s*\/api/.test(robots));
 assert("robots Disallow /docs", /Disallow:\s*\/docs/.test(robots));
-assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots));
+assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots));
 assert("robots Sitemap", /Sitemap:\s*https:\/\/www\.haberes\.cl\/sitemap\.xml/.test(robots));
 
 const { seoPaths, GUIDE_SLUGS, GUIDES, CAUSAL_PAGES, BASE_PATHS, lastmodForPath } = await import("../content/registry.js");
@@ -2016,6 +2089,7 @@ assert(
     BASE_PATHS.includes("/finiquito-casa-particular") &&
     BASE_PATHS.includes("/sueldo-proporcional") &&
     BASE_PATHS.includes("/sueldo-minimo") &&
+    BASE_PATHS.includes("/descuento-atrasos") &&
     BASE_PATHS.includes("/indemnizacion-aviso-previo"),
   `${locs.length} vs ${expectedFromRegistry.length}`,
 );
@@ -2367,7 +2441,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 66,
+      seoPaths().length === 67,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -2379,7 +2453,7 @@ try {
   const docsSeo = await hitLocal("/docs/seo-map.md");
   assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
   assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
-  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/asignacion-familiar/", "/colacion-movilizacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/asignacion-familiar/", "/colacion-movilizacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
   }
@@ -2406,6 +2480,7 @@ try {
     "/finiquito-casa-particular",
     "/sueldo-proporcional",
     "/sueldo-minimo",
+    "/descuento-atrasos",
     "/indemnizacion-aviso-previo",
     "/gratificacion",
     "/impuesto-unico",
@@ -5634,6 +5709,7 @@ assert(
     ["asignacion-familiar.html", "/asignacion-familiar"],
     ["colacion-movilizacion.html", "/colacion-movilizacion"],
     ["sueldo-minimo.html", "/sueldo-minimo"],
+    ["descuento-atrasos.html", "/descuento-atrasos"],
     ["feriado-progresivo.html", "/feriado-progresivo"],
     ["indemnizacion-anos-servicio.html", "/indemnizacion-anos-servicio"],
     ["aguinaldo.html", "/aguinaldo"],
@@ -6135,6 +6211,133 @@ assert(
       "hub /guias enlaza /sueldo-proporcional en el cluster de liquidación",
       /href="\/sueldo-proporcional"/.test(readFileSync(join(root, "guias.html"), "utf8")) &&
         !/<h2>Finiquito<\/h2>[\s\S]*href="\/sueldo-proporcional"/.test(
+          readFileSync(join(root, "guias.html"), "utf8"),
+        ),
+    );
+  }
+  {
+    const daHtml = readFileSync(join(root, "descuento-atrasos.html"), "utf8");
+    const daTitle = (daHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const daH1 = (daHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const daDesc = (daHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "";
+    const sueldoHtml = readFileSync(join(root, "sueldo.html"), "utf8");
+    const sueldoTitle = (sueldoHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const sueldoH1 = (sueldoHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const spHtml = readFileSync(join(root, "sueldo-proporcional.html"), "utf8");
+    const spTitle = (spHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const spH1 = (spHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const heHtml = readFileSync(join(root, "horas-extras.html"), "utf8");
+    const heTitle = (heHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const heH1 = (heHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const g1 = calcularDescuentoAtrasosInasistencias({
+      remuneracion: 800_000,
+      jornada: 42,
+      diasInasistencia: 1,
+      horasAtraso: 1,
+    });
+    const g2 = calcularDescuentoAtrasosInasistencias({ remuneracion: 600_000, jornada: 42, minutosAtraso: 30 });
+    const g3 = calcularDescuentoAtrasosInasistencias({
+      remuneracion: 900_000,
+      jornada: 40,
+      horasAtraso: 2,
+      minutosAtraso: 15,
+    });
+    assert(
+      "SEO title descuento atrasos apunta a calcular descuento",
+      /calcular descuento/i.test(daTitle) &&
+        !/sueldo l[ií]quido/i.test(daTitle) &&
+        !/sueldo proporcional/i.test(daTitle) &&
+        !/horas extras/i.test(daTitle) &&
+        daTitle !== sueldoTitle &&
+        daTitle !== spTitle &&
+        daTitle !== heTitle &&
+        daTitle.length <= 65,
+      daTitle,
+    );
+    assert(
+      "SEO H1 descuento atrasos distinto de /sueldo, /sueldo-proporcional y /horas-extras",
+      daH1 === "Calcular descuento por atrasos e inasistencias Chile 2026" &&
+        daH1 !== sueldoH1 &&
+        daH1 !== spH1 &&
+        daH1 !== heH1 &&
+        !/sueldo l[ií]quido/i.test(daH1) &&
+        !/horas extras/i.test(daH1),
+      daH1,
+    );
+    assert(
+      "SEO descuento atrasos meta distinta de /sueldo y /sueldo-proporcional",
+      daDesc &&
+        daDesc !== ((sueldoHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "") &&
+        daDesc !== ((spHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || ""),
+    );
+    assert(
+      "SEO descuento atrasos cita ORD. 5816, Dictamen 5308/230, ausencias DT y ORD. 1445",
+      /ORD\.\s*N°5816/.test(daHtml) &&
+        /Dictamen N°5308\/230/.test(daHtml) &&
+        /dt\.gob\.cl\/portal\/1628\/w3-article-60221/.test(daHtml) &&
+        /ORD\.\s*N°1445/.test(daHtml) &&
+        /remuneraci[oó]n(?: mensual)? \/ 30/.test(daHtml),
+    );
+    assert(
+      "SEO descuento atrasos gold 800k/600k/900k",
+      g1.descuentoTotal === 31_111 &&
+        g1.brutoRestante === 768_889 &&
+        g2.descuentoTotal === 1_667 &&
+        g2.brutoRestante === 598_333 &&
+        g3.descuentoTotal === 11_813 &&
+        g3.brutoRestante === 888_187 &&
+        /\$31\.111/.test(daHtml) &&
+        /\$768\.889/.test(daHtml) &&
+        /\$1\.667/.test(daHtml) &&
+        /\$11\.813/.test(daHtml),
+    );
+    assert("SEO descuento atrasos FAQPage", /"@type": "FAQPage"/.test(daHtml));
+    assert(
+      "SEO descuento atrasos no es líquido, proporcional ni horas extras",
+      /href="\/sueldo"/.test(daHtml) &&
+        /href="\/sueldo-proporcional"/.test(daHtml) &&
+        /href="\/horas-extras"/.test(daHtml) &&
+        /href="\/cotizaciones-previsionales"/.test(daHtml) &&
+        /no es el/.test(daHtml.toLowerCase()) &&
+        !existsSync(join(root, "descuento-inasistencias.html")) &&
+        !existsSync(join(root, "atrasos.html")) &&
+        !existsSync(join(root, "ausencias.html")),
+    );
+    assert(
+      "SEO descuento atrasos no califica licencia ni calcula SIL",
+      /licencia m[eé]dica/i.test(daHtml) &&
+        /no califica el caso/i.test(daHtml) &&
+        /no se calcula aqu[ií]/i.test(daHtml),
+    );
+    assert(
+      "SEO descuento atrasos métrica principal es total descuento bruto",
+      /Total descuento bruto/.test(daHtml) &&
+        !/<p class="metric-label">Sueldo proporcional/.test(daHtml) &&
+        !/<p class="metric-label">L[ií]quido/.test(daHtml),
+    );
+    assert(
+      "home y nav enlazan /descuento-atrasos",
+      /href="\/descuento-atrasos"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/descuento-atrasos" data-nav>Descuento atrasos<\/a>/.test(
+          readFileSync(join(root, "index.html"), "utf8"),
+        ) &&
+        /href="\/descuento-atrasos" data-nav>Descuento atrasos<\/a>/.test(daHtml),
+    );
+    assert(
+      "sitemap incluye /descuento-atrasos",
+      locs.includes("https://www.haberes.cl/descuento-atrasos") &&
+        lastmodForPath("/descuento-atrasos") === "2026-09-03",
+    );
+    assert(
+      "seo-map documenta /descuento-atrasos y no-canibalizar /sueldo-proporcional",
+      /\/descuento-atrasos/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no canibalizar.*`\/sueldo-proporcional`/i.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no crear `\/descuento-inasistencias`/i.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")),
+    );
+    assert(
+      "hub /guias enlaza /descuento-atrasos en el cluster de liquidación",
+      /href="\/descuento-atrasos"/.test(readFileSync(join(root, "guias.html"), "utf8")) &&
+        !/<h2>Finiquito<\/h2>[\s\S]*href="\/descuento-atrasos"/.test(
           readFileSync(join(root, "guias.html"), "utf8"),
         ),
     );
@@ -8176,7 +8379,7 @@ assert(
     return acc;
   }
   const pages = listHtml(root);
-  assert("68 páginas HTML", pages.length === 68, String(pages.length));
+  assert("69 páginas HTML", pages.length === 69, String(pages.length));
   for (const file of pages) {
     const html = readFileSync(file, "utf8");
     const rel = file.slice(root.length + 1);

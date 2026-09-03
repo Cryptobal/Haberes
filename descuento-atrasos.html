@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="es-CL">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script>
+  (function () {
+    try {
+      var t = localStorage.getItem("haberes:theme");
+      if (t !== "day" && t !== "night") t = "day";
+      document.documentElement.setAttribute("data-theme", t);
+    } catch (e) {}
+  })();
+  </script>
+<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-PCR596Z2');</script>
+<!-- End Google Tag Manager -->
+  <title>Calcular descuento atrasos e inasistencias 2026 — Haberes</title>
+  <meta name="description" content="Descuento bruto por atrasos e inasistencias injustificadas: valor día /30, hora DT y bruto restante. No es sueldo líquido ni liquidación completa." />
+  <link rel="canonical" href="https://www.haberes.cl/descuento-atrasos" />
+  <meta property="og:type" content="website" />
+  <meta property="og:locale" content="es_CL" />
+  <meta property="og:site_name" content="Haberes" />
+  <meta property="og:title" content="Calcular descuento atrasos e inasistencias 2026 — Haberes" />
+  <meta property="og:description" content="Descuento bruto por atrasos e inasistencias injustificadas: valor día /30, hora DT y bruto restante. No es sueldo líquido ni liquidación completa." />
+  <meta property="og:url" content="https://www.haberes.cl/descuento-atrasos" />
+  <meta property="og:image" content="https://www.haberes.cl/img/og-default.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Calcular descuento atrasos e inasistencias 2026 — Haberes" />
+  <meta name="twitter:description" content="Descuento bruto por atrasos e inasistencias injustificadas: valor día /30, hora DT y bruto restante. No es sueldo líquido ni liquidación completa." />
+  <meta name="twitter:image" content="https://www.haberes.cl/img/og-default.png" />
+  <link rel="icon" href="favicon.ico" sizes="32x32" />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="css/app.css" />
+  <!-- GA4: para activarlo, asigne un ID G-… a window.HABERES_GA4 antes de este script. Vacío = sin peticiones. -->
+  <script src="js/analytics.js" defer></script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "Haberes",
+  "url": "https://www.haberes.cl/",
+  "logo": "https://www.haberes.cl/favicon.svg",
+  "areaServed": "CL",
+  "sameAs": []
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Calcular descuento por atrasos e inasistencias — Haberes",
+  "url": "https://www.haberes.cl/descuento-atrasos",
+  "applicationCategory": "FinanceApplication",
+  "operatingSystem": "Web",
+  "inLanguage": "es-CL",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "CLP"
+  }
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "¿Cómo se calcula un minuto de atraso?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Se obtiene el valor hora con (remuneración mensual / 30 × 28) / (jornada semanal × 4) y se divide entre 60. Un minuto de atraso equivale a valor hora / 60, según la doctrina de la Dirección del Trabajo para tiempo no trabajado (ORD. N°5816)."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "¿Se descuenta por 30 días?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Sí. Para remuneración mensual fija, el valor del día es remuneración / 30, cualquiera sea la cantidad de días del mes calendario. Lo mismo aplica en licencias médicas (ORD. N°1445)."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "¿Qué pasa si el mes tiene 28 o 31 días?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No cambia el divisor. El valor diario siempre es remuneración / 30; febrero de 28 días y enero de 31 usan la misma fórmula para el descuento diario."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "¿El atraso afecta la base imponible?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "La ORD. N°5816 indica que la base imponible refleja la remuneración efectivamente devengada tras el tiempo no trabajado. Esta herramienta solo estima el descuento bruto; no calcula AFP, salud, cesantía ni impuesto único."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "¿Se puede descontar una licencia médica?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No como inasistencia injustificada. En licencia médica el empleador no paga los días cubiertos por la licencia; puede corresponder subsidio de la entidad de salud (SIL). Esta calculadora no califica el caso ni calcula SIL."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "¿Jornada 42 horas u otra pactada?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Desde el 26-04-2026 la jornada ordinaria máxima es 42 horas semanales (Ley 21.561). Si el contrato pacta otra jornada válida, ingrésela: el valor hora depende de jornada semanal × 4."
+      }
+    }
+  ]
+}
+  </script>
+</head>
+<body>
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PCR596Z2"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+  <header class="site-header">
+    <nav class="nav">
+      <a class="brand" href="/" data-nav>
+        <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><rect x="8" y="2" width="6" height="4" rx="2"/><rect x="18" y="2" width="6" height="4" rx="2"/><rect x="8" y="8" width="6" height="4" rx="2"/><rect x="18" y="8" width="6" height="4" rx="2"/><rect x="8" y="14" width="6" height="4" rx="2"/><rect x="18" y="14" width="6" height="4" rx="2"/><rect x="8" y="20" width="6" height="4" rx="2"/><rect x="18" y="20" width="6" height="4" rx="2"/><rect x="8" y="26" width="6" height="4" rx="2"/><rect x="18" y="26" width="6" height="4" rx="2"/><rect x="14" y="14" width="4" height="4" rx="2"/></svg></span> Haberes
+      </a>
+      <div class="nav-links">
+        <a href="/como" data-nav>Cómo</a>
+        <a href="/precios" data-nav>Precios</a>
+      </div>
+      <div class="nav-actions">
+        <button type="button" class="theme-toggle" data-theme-toggle aria-label="Cambiar a modo noche" aria-pressed="false">
+          <svg class="ic-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.64 5.64l1.41 1.41M16.95 16.95l1.41 1.41M18.36 5.64l-1.41 1.41M7.05 16.95l-1.41 1.41"/></svg>
+          <svg class="ic-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 14.35A8.4 8.4 0 1 1 9.65 3 6.6 6.6 0 0 0 21 14.35z"/></svg>
+        </button>
+        <a class="btn btn-ghost btn-sm nav-login" href="/empresa">Entrar</a>
+        <a class="btn btn-sm nav-cta" href="/empresa?registro=1">Empezar gratis</a>
+        <button type="button" class="nav-burger" data-nav-burger aria-expanded="false" aria-controls="navDrawer" aria-label="Abrir menú">
+          <i aria-hidden="true"></i>
+        </button>
+      </div>
+    </nav>
+  </header>
+  <div class="nav-drawer" id="navDrawer" data-nav-drawer hidden>
+      <div class="nav-drawer-scrim" data-nav-scrim></div>
+      <div class="nav-drawer-panel" role="dialog" aria-modal="true" aria-label="Menú de navegación">
+        <div class="nav-drawer-grab" aria-hidden="true"></div>
+        <a href="/como" data-nav>Cómo</a>
+        <a href="/precios" data-nav>Precios</a>
+        <a href="/sueldo" data-nav>Sueldo líquido</a>
+        <a href="/sueldo-proporcional" data-nav>Sueldo proporcional</a>
+        <a href="/sueldo-minimo" data-nav>Sueldo mínimo</a>
+        <a href="/descuento-atrasos" data-nav>Descuento atrasos</a>
+        <a href="/horas-extras" data-nav>Horas extras</a>
+        <a href="/recargo-domingo-comercio" data-nav>Recargo domingo comercio</a>
+        <a href="/feriado-irrenunciable" data-nav>Feriado irrenunciable</a>
+        <a href="/semana-corrida" data-nav>Semana corrida</a>
+        <a href="/gratificacion" data-nav>Gratificación</a>
+        <a href="/aguinaldo" data-nav>Aguinaldo</a>
+        <a href="/impuesto-unico" data-nav>Impuesto único</a>
+        <a href="/cotizaciones-previsionales" data-nav>Cotizaciones previsionales</a>
+        <a href="/costo-empresa" data-nav>Costo empresa</a>
+        <a href="/seguro-cesantia" data-nav>Seguro de cesantía</a>
+        <a href="/asignacion-familiar" data-nav>Asignación familiar</a>
+        <a href="/colacion-movilizacion" data-nav>Colación y movilización</a>
+        <a href="/vacaciones-proporcionales" data-nav>Vacaciones proporcionales</a>
+        <a href="/feriado-progresivo" data-nav>Feriado progresivo</a>
+        <a href="/indemnizacion-anos-servicio" data-nav>Indemnización años de servicio</a>
+        <a href="/indemnizacion-aviso-previo" data-nav>Indemnización aviso previo</a>
+        <a href="/finiquito-casa-particular" data-nav>Finiquito casa particular</a>
+        <a href="/finiquito" data-nav>Finiquito</a>
+        <div class="nav-drawer-foot">
+          <a class="btn" href="/empresa?registro=1">Empezar gratis</a>
+          <button type="button" class="btn btn-ghost" data-nav-close>Cerrar</button>
+        </div>
+      </div>
+    </div>
+
+  <main>
+    <div class="wrap">
+      <p class="kicker">Calculadora</p>
+      <h1>Calcular descuento por atrasos e inasistencias Chile 2026</h1>
+      <p class="lede">
+        Estime el descuento bruto por minutos u horas no trabajadas (atraso) y por días de
+        inasistencia injustificada en una remuneración mensual fija. Fórmulas de la
+        <a href="https://www.dt.gob.cl/legislacion/1624/w3-article-110702.html">Dirección del Trabajo (ORD. N°5816)</a>
+        y el
+        <a href="https://www.dt.gob.cl/legislacion/1624/w3-article-88632.html">Dictamen N°5308/230</a>.
+        No es el
+        <a href="/sueldo">sueldo líquido</a>,
+        ni el
+        <a href="/sueldo-proporcional">sueldo proporcional</a>
+        de un mes incompleto,
+        ni
+        <a href="/horas-extras">horas extras</a>
+        (aquí el tiempo no se trabajó, sin recargo 50 %).
+      </p>
+      <p class="notice">
+        Documento generado por Haberes. No es un cálculo de la Dirección del Trabajo ni de Previred.
+        No constituye asesoría legal ni previsional.
+      </p>
+
+      <div class="layout" style="margin-top: 24px">
+        <form id="formDescuentoAtrasos" class="panel">
+          <div class="field">
+            <label for="remuneracion">Remuneración mensual fija (CLP)</label>
+            <input id="remuneracion" type="number" min="0" step="1" value="800000" />
+          </div>
+          <p class="hint">
+            Sueldo mensual pactado. El valor del día es siempre esa cifra / 30
+            (<a href="https://www.dt.gob.cl/legislacion/1624/w3-article-125257.html">ORD. N°1445</a>
+            usa el mismo divisor en licencias).
+          </p>
+          <div class="field">
+            <label for="jornada">Jornada semanal pactada (horas)</label>
+            <input id="jornada" type="number" min="1" step="0.5" value="42" />
+          </div>
+          <p class="hint">
+            Por defecto 42 h (Ley 21.561, vigente desde 26-04-2026). Si el contrato pacta otra
+            jornada válida, cámbiela: el valor hora es (mensual / 30 × 28) / (jornada × 4).
+          </p>
+          <div class="field">
+            <label for="diasInasistencia">Días de inasistencia injustificada</label>
+            <input id="diasInasistencia" type="number" min="0" step="1" value="0" />
+          </div>
+          <p class="hint">
+            Solo cuando corresponda aplicar descuento diario. Licencias médicas, feriado legal,
+            permisos pagados, huelga u otras causas tienen reglas propias —
+            <a href="https://www.dt.gob.cl/portal/1628/w3-article-60221.html">consultas DT sobre ausencias</a>.
+            Esta herramienta no califica el caso.
+          </p>
+          <div class="row">
+            <div class="field">
+              <label for="horasAtraso">Horas de atraso / no trabajadas</label>
+              <input id="horasAtraso" type="number" min="0" step="1" value="0" />
+            </div>
+            <div class="field">
+              <label for="minutosAtraso">Minutos adicionales</label>
+              <input id="minutosAtraso" type="number" min="0" max="59" step="1" value="0" />
+            </div>
+          </div>
+          <p class="hint">
+            Tiempo no trabajado dentro del mes (atraso, salida anticipada, etc.). Un minuto =
+            valor hora / 60. No use horas extras: aquí no hay recargo del artículo 32.
+          </p>
+        </form>
+
+        <aside class="panel sticky">
+          <p class="metric-label">Total descuento bruto</p>
+          <p class="metric" id="outTotal">$ 0</p>
+          <p class="hint" id="outNota"></p>
+          <div class="mini">
+            <div><span>Valor día (÷ 30)</span><strong id="outDiario">$ 0</strong></div>
+            <div><span>Valor hora</span><strong id="outHora">$ 0</strong></div>
+            <div><span>Descuento inasistencia</span><strong id="outDescInasistencia">$ 0</strong></div>
+            <div><span>Descuento atraso</span><strong id="outDescAtraso">$ 0</strong></div>
+            <div><span>Remuneración pactada</span><strong id="outRem">$ 0</strong></div>
+            <div><span>Bruto restante</span><strong id="outBruto">$ 0</strong></div>
+            <div><span>Jornada</span><strong id="outJornada">42 h</strong></div>
+          </div>
+          <p class="hint">
+            Valor día y hora muestran decimales; los descuentos se redondean al peso
+            (<code>Math.round</code>, igual que el motor de liquidación). Para AFP, salud e
+            impuesto use
+            <a href="/sueldo">sueldo líquido</a>
+            y
+            <a href="/cotizaciones-previsionales">cotizaciones previsionales</a>.
+          </p>
+          <div class="actions">
+            <a class="btn" href="/sueldo">Ver sueldo líquido</a>
+            <a class="btn btn-ghost" href="/empresa">Cuenta de empresa</a>
+          </div>
+        </aside>
+      </div>
+
+      <section class="prose u-mt-6" aria-labelledby="da-explica">
+        <h2 id="da-explica">Cómo se calcula el descuento (DT: día / 30, hora proporcional)</h2>
+        <p>
+          Para trabajadores con remuneración mensual fija, la
+          <a href="https://www.dt.gob.cl/legislacion/1624/w3-article-110702.html">ORD. N°5816</a>
+          fija que la base imponible refleja la remuneración devengada tras descontar el tiempo no
+          trabajado. El
+          <a href="https://www.dt.gob.cl/legislacion/1624/w3-article-88632.html">Dictamen N°5308/230</a>
+          distingue el día completo no trabajado (valor diario) de las horas o minutos no
+          trabajados (valor hora).
+        </p>
+        <ul>
+          <li><strong>Valor día</strong> = remuneración mensual / 30 (da igual si el mes tiene 28, 29, 30 o 31 días).</li>
+          <li><strong>Valor hora</strong> = (remuneración mensual / 30 × 28) / (jornada semanal × 4).</li>
+          <li><strong>Descuento inasistencia</strong> = valor día × días no trabajados (solo si corresponde descuento diario).</li>
+          <li><strong>Descuento atraso</strong> = valor hora × minutos no trabajados / 60.</li>
+          <li><strong>Total descuento bruto</strong> = inasistencia + atraso (sin doble conteo del mismo tiempo).</li>
+          <li><strong>Bruto restante</strong> = max(0, remuneración − total descuento).</li>
+        </ul>
+        <p>
+          Si la distribución diaria de horas no es uniforme, puede corresponder calcular las horas
+          efectivamente no trabajadas en lugar del valor día; esta página no inventa una
+          simplificación. No trata licencias médicas como inasistencias: el empleador no paga los
+          días cubiertos por licencia y puede corresponder subsidio (SIL) de la entidad de salud —
+          no se calcula aquí (
+          <a href="https://www.dt.gob.cl/legislacion/1624/w3-article-125257.html">ORD. N°1445</a>).
+        </p>
+        <h3>Ejemplos orientativos</h3>
+        <ul>
+          <li>$800.000, 42 h, 1 día y 60 min → valor día $26.666,67; valor hora $4.444,44; descuento <strong>$31.111</strong>; bruto restante <strong>$768.889</strong>.</li>
+          <li>$600.000, 42 h, 0 días y 30 min → hora $3.333,33; descuento <strong>$1.667</strong>; bruto restante <strong>$598.333</strong>.</li>
+          <li>$900.000, 40 h, 0 días y 2 h 15 min → hora $5.250; descuento <strong>$11.813</strong>; bruto restante <strong>$888.187</strong>.</li>
+        </ul>
+        <p>
+          No es
+          <a href="/sueldo-proporcional">sueldo proporcional</a>
+          (bruto por fracción de mes por ingreso, salida o licencia), ni
+          <a href="/horas-extras">horas extras</a>
+          (recargo 50 %). No inventa sanciones ni facultades disciplinarias.
+        </p>
+        <h3>Guías relacionadas</h3>
+        <ul>
+          <li><a href="/sueldo">Calculadora de sueldo líquido</a></li>
+          <li><a href="/sueldo-proporcional">Calcular sueldo proporcional</a></li>
+          <li><a href="/horas-extras">Calcular horas extras</a></li>
+          <li><a href="/cotizaciones-previsionales">Calcular cotizaciones previsionales</a></li>
+          <li><a href="/guias/liquidacion-de-sueldo">Qué debe mostrar una liquidación de sueldo</a></li>
+        </ul>
+        <h2 id="faq-descuento-atrasos">Preguntas frecuentes</h2>
+        <h3>¿Cómo se calcula un minuto de atraso?</h3>
+        <p>
+          Obtenga el valor hora con (remuneración / 30 × 28) / (jornada × 4) y divídalo entre 60.
+          Esa es la base DT para tiempo no trabajado (
+          <a href="https://www.dt.gob.cl/legislacion/1624/w3-article-110702.html">ORD. N°5816</a>).
+        </p>
+        <h3>¿Se descuenta por 30?</h3>
+        <p>
+          Sí. El valor del día es remuneración mensual / 30, con independencia de los días del mes
+          calendario. La misma regla aparece en licencias (
+          <a href="https://www.dt.gob.cl/legislacion/1624/w3-article-125257.html">ORD. N°1445</a>).
+        </p>
+        <h3>¿Qué pasa con un mes de 28 o 31 días?</h3>
+        <p>
+          No cambia el divisor 30 para el valor diario ni para derivar el valor hora. Febrero y
+          enero usan la misma fórmula.
+        </p>
+        <h3>¿El atraso afecta imponible y cotizaciones?</h3>
+        <p>
+          La ORD. N°5816 indica que la base imponible debe reflejar la remuneración tras el tiempo
+          no trabajado. Aquí solo se estima el descuento bruto; AFP, salud, cesantía e impuesto único
+          van en
+          <a href="/sueldo">sueldo líquido</a>
+          y
+          <a href="/cotizaciones-previsionales">cotizaciones previsionales</a>.
+        </p>
+        <h3>¿Se puede descontar una licencia médica?</h3>
+        <p>
+          No como inasistencia injustificada. En licencia el empleador no paga los días cubiertos;
+          puede corresponder SIL de la entidad de salud. Consulte las
+          <a href="https://www.dt.gob.cl/portal/1628/w3-article-60221.html">consultas DT sobre ausencias</a>
+          si hay duda sobre la causa.
+        </p>
+        <h3>¿Jornada 42 horas u otra pactada?</h3>
+        <p>
+          Desde el 26-04-2026 la jornada ordinaria máxima es 42 h semanales (Ley 21.561). Si el
+          contrato tiene otra jornada válida, ingrésela: el valor hora depende de jornada × 4.
+        </p>
+        <p class="notice">
+          No abre URLs hermanas como <code>/descuento-inasistencias</code>, <code>/atrasos</code>
+          ni <code>/ausencias</code>. El descuento por fracción de mes (ingreso, salida, licencia)
+          sigue en
+          <a href="/sueldo-proporcional">sueldo proporcional</a>.
+        </p>
+      </section>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <div><strong>Haberes</strong> · descuento por atrasos e inasistencias</div>
+      <div class="footer-legal">
+        <a href="/como">Cómo funciona</a>
+        <span aria-hidden="true">·</span>
+        <a href="/precios">Precios</a>
+        <span aria-hidden="true">·</span>
+        <a href="/privacidad">Privacidad</a>
+        <span aria-hidden="true">·</span>
+        <a href="/terminos">Términos</a>
+      </div>
+      <div class="footer-credit">
+        Proyecto desarrollado por <a href="https://lx3.ai" rel="noopener noreferrer">lx3.ai</a>
+        · <a href="mailto:contacto@lx3.ai">contacto@lx3.ai</a>
+      </div>
+      <div data-indicadores>UF y UTM se cargan…</div>
+      <div>
+        Documento generado por Haberes. No es un cálculo de la Dirección del Trabajo ni de Previred.
+        No constituye asesoría legal ni previsional.
+      </div>
+    </div>
+  </footer>
+  <script type="module" src="js/app-descuento-atrasos.js"></script>
+</body>
+</html>
