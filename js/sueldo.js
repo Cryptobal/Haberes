@@ -546,6 +546,64 @@ export function diasCalendarioFraccionMes({ ingreso = "", salida = "" } = {}) {
 }
 
 /**
+ * Descuento bruto por atrasos (minutos no trabajados) e inasistencias injustificadas
+ * en remuneración mensual fija. No calcula líquido ni califica la causa.
+ *
+ * Valor día = remuneración / 30 (ORD. N°5816; divisor 30 también en licencias, ORD. N°1445).
+ * Valor hora = (remuneración / 30 × 28) / (jornada × 4) — misma base DT que hora extra.
+ * Descuento atraso = valor hora × minutos / 60.
+ * Descuento inasistencia = valor día × días (solo si corresponde descuento diario).
+ *
+ * Los montos finales usan `roundPeso` (Math.round al peso). Valor día y hora mantienen decimales.
+ *
+ * @see https://www.dt.gob.cl/legislacion/1624/w3-article-110702.html ORD. N°5816
+ * @see https://www.dt.gob.cl/legislacion/1624/w3-article-88632.html Dictamen N°5308/230
+ * @see https://www.dt.gob.cl/portal/1628/w3-article-60221.html ausencias DT
+ * @see https://www.dt.gob.cl/legislacion/1624/w3-article-125257.html ORD. N°1445
+ */
+export function calcularDescuentoAtrasosInasistencias({
+  remuneracion = 0,
+  jornada = JORNADA_DEFAULT,
+  diasInasistencia = 0,
+  horasAtraso = 0,
+  minutosAtraso = 0,
+} = {}) {
+  const rem = Math.max(0, Number(remuneracion) || 0);
+  const j = Math.max(0, Number(jornada) || JORNADA_DEFAULT) || JORNADA_DEFAULT;
+  const dias = Math.max(0, Math.trunc(Number(diasInasistencia) || 0));
+  const horas = Math.max(0, Number(horasAtraso) || 0);
+  const mins = Math.max(0, Number(minutosAtraso) || 0);
+  const minutosTotales = Math.max(0, Math.round(horas * 60 + mins));
+
+  const valorDiario = rem > 0 ? rem / DIAS_MES_CONVENCIONAL : 0;
+  const valorHora = valorHoraOrdinaria(rem, j);
+
+  const descuentoInasistenciaRaw = valorDiario * dias;
+  const descuentoAtrasoRaw = valorHora * (minutosTotales / 60);
+  const descuentoTotalRaw = descuentoInasistenciaRaw + descuentoAtrasoRaw;
+  const descuentoTotal = rem > 0 ? Math.min(rem, roundPeso(descuentoTotalRaw)) : 0;
+  const brutoRestante = Math.max(0, rem - descuentoTotal);
+
+  return {
+    remuneracion: roundPeso(rem),
+    jornada: j,
+    diasInasistencia: dias,
+    horasAtraso: horas,
+    minutosAtraso: mins,
+    minutosTotales,
+    valorDiario,
+    valorHora,
+    descuentoInasistenciaRaw,
+    descuentoAtrasoRaw,
+    descuentoTotalRaw,
+    descuentoInasistencia: roundPeso(descuentoInasistenciaRaw),
+    descuentoAtraso: roundPeso(descuentoAtrasoRaw),
+    descuentoTotal,
+    brutoRestante,
+  };
+}
+
+/**
  * Bruto de un sueldo mensual fijo por fracción de mes.
  *
  * Reutiliza `proporcional` de liquidación: ÷ 30 × días, `roundPeso`
