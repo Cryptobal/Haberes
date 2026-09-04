@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="es-CL">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script>
+  (function () {
+    try {
+      var t = localStorage.getItem("haberes:theme");
+      if (t !== "day" && t !== "night") t = "day";
+      document.documentElement.setAttribute("data-theme", t);
+    } catch (e) {}
+  })();
+  </script>
+<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-PCR596Z2');</script>
+<!-- End Google Tag Manager -->
+  <title>Calcular sueldo con licencia médica Chile 2026 — Haberes</title>
+  <meta name="description" content="Estime el bruto del empleador por días trabajados (rem/30) y el SIL diario (promedio de 3 rentas netas). No es sueldo líquido ni liquidación COMPIN." />
+  <link rel="canonical" href="https://www.haberes.cl/licencia-medica" />
+  <meta property="og:type" content="website" />
+  <meta property="og:locale" content="es_CL" />
+  <meta property="og:site_name" content="Haberes" />
+  <meta property="og:title" content="Calcular sueldo con licencia médica Chile 2026 — Haberes" />
+  <meta property="og:description" content="Estime el bruto del empleador por días trabajados (rem/30) y el SIL diario (promedio de 3 rentas netas). No es sueldo líquido ni liquidación COMPIN." />
+  <meta property="og:url" content="https://www.haberes.cl/licencia-medica" />
+  <meta property="og:image" content="https://www.haberes.cl/img/og-default.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Calcular sueldo con licencia médica Chile 2026 — Haberes" />
+  <meta name="twitter:description" content="Estime el bruto del empleador por días trabajados (rem/30) y el SIL diario (promedio de 3 rentas netas). No es sueldo líquido ni liquidación COMPIN." />
+  <meta name="twitter:image" content="https://www.haberes.cl/img/og-default.png" />
+  <link rel="icon" href="favicon.ico" sizes="32x32" />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="css/app.css" />
+  <!-- GA4: para activarlo, asigne un ID G-… a window.HABERES_GA4 antes de este script. Vacío = sin peticiones. -->
+  <script src="js/analytics.js" defer></script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "Haberes",
+  "url": "https://www.haberes.cl/",
+  "logo": "https://www.haberes.cl/favicon.svg",
+  "areaServed": "CL",
+  "sameAs": []
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Calcular sueldo con licencia médica — Haberes",
+  "url": "https://www.haberes.cl/licencia-medica",
+  "applicationCategory": "FinanceApplication",
+  "operatingSystem": "Web",
+  "inLanguage": "es-CL",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "CLP"
+  }
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "¿El empleador paga la licencia médica?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. Durante la licencia médica aprobada el empleador no está obligado a pagar remuneración de esos días; los cubre el subsidio por incapacidad laboral (SIL) de cargo de la entidad de salud (ORD. N°4260 y ORD. N°1445). El empleador sí paga los días efectivamente trabajados del mes."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "¿Se usa divisor 30?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Sí. Para remuneración mensual fija, el valor del día es remuneración / 30, cualquiera sea la cantidad de días del mes calendario (ORD. N°1445). Esta herramienta usa el mes convencional de 30: días trabajados = 30 − días de licencia. No divide por 28 ni por 31."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "¿Qué rentas entran al promedio del SIL?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "La base del SIL es el promedio de la remuneración mensual neta (y/o subsidio) de los tres meses calendario más próximos al mes en que se inicia la licencia (D.F.L. N°44 art. 8). Neta, para este cálculo, es la remuneración imponible menos cotizaciones personales e impuestos (art. 7), no el líquido de la liquidación."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "¿Entran horas extras, aguinaldo o gratificación?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No las remuneraciones ocasionales ni las de un período mayor a un mes: gratificaciones, aguinaldos de Navidad o Fiestas Patrias y horas extraordinarias ocasionales (D.F.L. N°44 art. 10). Las rentas variables habituales (comisiones, metas) sí pueden entrar; esta página no las clasifica."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "¿En qué se diferencia de una inasistencia?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "La inasistencia injustificada es tiempo no trabajado que el empleador puede descontar. La licencia médica aprobada no se trata como inasistencia: esos días no los paga el empleador y pueden cubrirse con SIL. El descuento por atrasos e inasistencias vive en otra calculadora."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "¿Sirve para licencia maternal?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. El prenatal, postnatal y parental (arts. 195, 196 y 197 bis del Código del Trabajo) tienen tope y base propios en el D.F.L. N°44 art. 8. Esta herramienta estima licencia común / SIL del sector privado, no el subsidio maternal."
+      }
+    }
+  ]
+}
+  </script>
+</head>
+<body>
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PCR596Z2"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+  <header class="site-header">
+    <nav class="nav">
+      <a class="brand" href="/" data-nav>
+        <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><rect x="8" y="2" width="6" height="4" rx="2"/><rect x="18" y="2" width="6" height="4" rx="2"/><rect x="8" y="8" width="6" height="4" rx="2"/><rect x="18" y="8" width="6" height="4" rx="2"/><rect x="8" y="14" width="6" height="4" rx="2"/><rect x="18" y="14" width="6" height="4" rx="2"/><rect x="8" y="20" width="6" height="4" rx="2"/><rect x="18" y="20" width="6" height="4" rx="2"/><rect x="8" y="26" width="6" height="4" rx="2"/><rect x="18" y="26" width="6" height="4" rx="2"/><rect x="14" y="14" width="4" height="4" rx="2"/></svg></span> Haberes
+      </a>
+      <div class="nav-links">
+        <a href="/como" data-nav>Cómo</a>
+        <a href="/precios" data-nav>Precios</a>
+      </div>
+      <div class="nav-actions">
+        <button type="button" class="theme-toggle" data-theme-toggle aria-label="Cambiar a modo noche" aria-pressed="false">
+          <svg class="ic-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.64 5.64l1.41 1.41M16.95 16.95l1.41 1.41M18.36 5.64l-1.41 1.41M7.05 16.95l-1.41 1.41"/></svg>
+          <svg class="ic-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 14.35A8.4 8.4 0 1 1 9.65 3 6.6 6.6 0 0 0 21 14.35z"/></svg>
+        </button>
+        <a class="btn btn-ghost btn-sm nav-login" href="/empresa">Entrar</a>
+        <a class="btn btn-sm nav-cta" href="/empresa?registro=1">Empezar gratis</a>
+        <button type="button" class="nav-burger" data-nav-burger aria-expanded="false" aria-controls="navDrawer" aria-label="Abrir menú">
+          <i aria-hidden="true"></i>
+        </button>
+      </div>
+    </nav>
+  </header>
+  <div class="nav-drawer" id="navDrawer" data-nav-drawer hidden>
+      <div class="nav-drawer-scrim" data-nav-scrim></div>
+      <div class="nav-drawer-panel" role="dialog" aria-modal="true" aria-label="Menú de navegación">
+        <div class="nav-drawer-grab" aria-hidden="true"></div>
+        <a href="/como" data-nav>Cómo</a>
+        <a href="/precios" data-nav>Precios</a>
+        <a href="/sueldo" data-nav>Sueldo líquido</a>
+        <a href="/sueldo-proporcional" data-nav>Sueldo proporcional</a>
+        <a href="/sueldo-minimo" data-nav>Sueldo mínimo</a>
+        <a href="/descuento-atrasos" data-nav>Descuento atrasos</a>
+        <a href="/licencia-medica" data-nav>Licencia médica</a>
+        <a href="/horas-extras" data-nav>Horas extras</a>
+        <a href="/recargo-domingo-comercio" data-nav>Recargo domingo comercio</a>
+        <a href="/feriado-irrenunciable" data-nav>Feriado irrenunciable</a>
+        <a href="/semana-corrida" data-nav>Semana corrida</a>
+        <a href="/gratificacion" data-nav>Gratificación</a>
+        <a href="/aguinaldo" data-nav>Aguinaldo</a>
+        <a href="/impuesto-unico" data-nav>Impuesto único</a>
+        <a href="/cotizaciones-previsionales" data-nav>Cotizaciones previsionales</a>
+        <a href="/costo-empresa" data-nav>Costo empresa</a>
+        <a href="/seguro-cesantia" data-nav>Seguro de cesantía</a>
+        <a href="/asignacion-familiar" data-nav>Asignación familiar</a>
+        <a href="/colacion-movilizacion" data-nav>Colación y movilización</a>
+        <a href="/vacaciones-proporcionales" data-nav>Vacaciones proporcionales</a>
+        <a href="/feriado-progresivo" data-nav>Feriado progresivo</a>
+        <a href="/indemnizacion-anos-servicio" data-nav>Indemnización años de servicio</a>
+        <a href="/indemnizacion-aviso-previo" data-nav>Indemnización aviso previo</a>
+        <a href="/finiquito-casa-particular" data-nav>Finiquito casa particular</a>
+        <a href="/finiquito" data-nav>Finiquito</a>
+        <div class="nav-drawer-foot">
+          <a class="btn" href="/empresa?registro=1">Empezar gratis</a>
+          <button type="button" class="btn btn-ghost" data-nav-close>Cerrar</button>
+        </div>
+      </div>
+    </div>
+
+  <main>
+    <div class="wrap">
+      <p class="kicker">Calculadora</p>
+      <h1>Calcular sueldo con licencia médica Chile 2026</h1>
+      <p class="lede">
+        Estime cuánto debe pagar el empleador por los días trabajados del mes cuando hay
+        licencia médica, y la base/monto diario del subsidio por incapacidad laboral (SIL)
+        que paga la entidad de salud. El valor día es remuneración / 30
+        (<a href="https://www.dt.gob.cl/legislacion/1624/w3-article-125257.html">ORD. N°1445</a>).
+        El SIL se estima con el promedio de las remuneraciones netas de los tres meses
+        calendario más próximos
+        (<a href="https://www.bcn.cl/leychile/navegar?idNorma=4252">D.F.L. N°44 art. 8</a>).
+        No es el
+        <a href="/sueldo">sueldo líquido</a>,
+        ni el
+        <a href="/sueldo-proporcional">sueldo proporcional</a>
+        de un mes incompleto por ingreso o salida,
+        ni el
+        <a href="/descuento-atrasos">descuento por atrasos e inasistencias</a>.
+      </p>
+      <p class="notice">
+        Documento generado por Haberes. No es un cálculo de la Dirección del Trabajo ni de Previred.
+        No constituye asesoría legal ni previsional.
+      </p>
+
+      <div class="layout" style="margin-top: 24px">
+        <form id="formLicenciaMedica" class="panel">
+          <div class="field">
+            <label for="remuneracion">Remuneración mensual fija del mes en curso (CLP)</label>
+            <input id="remuneracion" type="number" min="0" step="1" value="800000" />
+          </div>
+          <p class="hint">
+            Sueldo mensual pactado. El valor del día es siempre esa cifra / 30
+            (<a href="https://www.dt.gob.cl/legislacion/1624/w3-article-125257.html">ORD. N°1445</a>),
+            da igual si el mes tiene 28 o 31 días.
+          </p>
+          <div class="field">
+            <label for="diasLicencia">Días de licencia médica en el mes</label>
+            <input id="diasLicencia" type="number" min="0" max="30" step="1" value="7" />
+          </div>
+          <p class="hint">
+            Entero de 0 a 30. Días trabajados = 30 − este recuento (mes convencional DT).
+            No use inasistencias injustificadas:
+            <a href="/descuento-atrasos">descuento por atrasos</a>.
+          </p>
+          <div class="field">
+            <label for="neta1">Remuneración neta del 1.er mes previo (CLP)</label>
+            <input id="neta1" type="number" min="0" step="1" value="650000" />
+          </div>
+          <div class="field">
+            <label for="neta2">Remuneración neta del 2.º mes previo (CLP)</label>
+            <input id="neta2" type="number" min="0" step="1" value="650000" />
+          </div>
+          <div class="field">
+            <label for="neta3">Remuneración neta del 3.er mes previo (CLP)</label>
+            <input id="neta3" type="number" min="0" step="1" value="650000" />
+          </div>
+          <p class="hint">
+            Tres rentas netas de los meses calendario más próximos al mes en que se inicia
+            la licencia
+            (<a href="https://www.suseso.gob.cl/612/w3-propertyvalue-222048.html">D.F.L. N°44 art. 8</a>).
+            Neta = imponible − cotizaciones personales − impuestos
+            (<a href="https://www.suseso.gob.cl/612/w3-propertyvalue-222047.html">art. 7</a>),
+            no el líquido de la liquidación. Si falta alguna, se calcula solo el lado empleador.
+          </p>
+          <label class="check">
+            <input id="excluirOcasionales" type="checkbox" checked />
+            Las rentas netas ya excluyen horas extras ocasionales, aguinaldos y gratificaciones (art. 10)
+          </label>
+          <p class="hint">
+            El
+            <a href="https://www.suseso.gob.cl/612/w3-propertyvalue-222050.html">D.F.L. N°44 art. 10</a>
+            manda no incluir remuneraciones ocasionales ni de período mayor a un mes.
+          </p>
+        </form>
+
+        <aside class="panel sticky">
+          <p class="metric-label">Bruto a cargo del empleador</p>
+          <p class="metric" id="outBruto">$ 0</p>
+          <p class="hint" id="outNota"></p>
+          <div class="mini">
+            <div><span>Valor día (÷ 30)</span><strong id="outDiario">$ 0</strong></div>
+            <div><span>Días trabajados</span><strong id="outDiasTrab">0</strong></div>
+            <div><span>Días de licencia</span><strong id="outDiasLic">0</strong></div>
+            <div><span>Remuneración pactada</span><strong id="outRem">$ 0</strong></div>
+            <div><span>Base SIL (promedio 3 meses)</span><strong id="outBaseSil">$ 0</strong></div>
+            <div><span>Diario SIL (÷ 30)</span><strong id="outDiarioSil">$ 0</strong></div>
+            <div><span>SIL estimado del tramo</span><strong id="outSil">$ 0</strong></div>
+          </div>
+          <p class="hint">
+            Valor día y diario SIL muestran decimales; el bruto empleador y el SIL del tramo
+            se redondean al peso (<code>Math.round</code>, igual que el motor de liquidación).
+            El pago real del SIL lo define COMPIN, Isapre o mutual. Para AFP, salud e impuesto
+            use
+            <a href="/sueldo">sueldo líquido</a>
+            y
+            <a href="/cotizaciones-previsionales">cotizaciones previsionales</a>.
+          </p>
+          <div class="actions">
+            <a class="btn" href="/sueldo">Ver sueldo líquido</a>
+            <a class="btn btn-ghost" href="/empresa">Cuenta de empresa</a>
+          </div>
+        </aside>
+      </div>
+
+      <section class="prose u-mt-6" aria-labelledby="lm-explica">
+        <h2 id="lm-explica">Cómo se calcula (empleador /30 y SIL D.F.L. N°44)</h2>
+        <p>
+          Hay dos bolsillos distintos. El empleador paga solo los días efectivamente
+          trabajados del mes. Los días de licencia médica aprobada los cubre el SIL de la
+          entidad de salud, no el empleador
+          (<a href="https://www.dt.gob.cl/legislacion/1624/w3-article-107078.html">ORD. N°4260</a>,
+          <a href="https://www.dt.gob.cl/legislacion/1624/w3-article-125257.html">ORD. N°1445</a>).
+        </p>
+        <ul>
+          <li><strong>Valor día empleador</strong> = remuneración mensual / 30 (da igual si el mes tiene 28, 29, 30 o 31 días).</li>
+          <li><strong>Días trabajados</strong> = max(0, 30 − días de licencia en el mes). Mes convencional de 30, no el calendario.</li>
+          <li><strong>Bruto a cargo del empleador</strong> = valor día × días trabajados (redondeo al peso).</li>
+          <li><strong>Base mensual SIL</strong> = promedio de las 3 remuneraciones netas de los 3 meses calendario más próximos al mes de inicio
+            (<a href="https://www.suseso.gob.cl/612/w3-propertyvalue-222048.html">D.F.L. N°44 art. 8</a>).</li>
+          <li><strong>Monto diario SIL</strong> = base mensual / 30 (equivalente a la suma de los 3 meses / 90).</li>
+          <li><strong>SIL estimado del tramo</strong> = diario SIL × días de licencia (redondeo al peso).</li>
+        </ul>
+        <p>
+          Esta página usa el divisor 30 también para contar los días a pagar
+          (30 − licencia). La
+          <a href="https://www.dt.gob.cl/legislacion/1624/w3-article-107324.html">ORD. N°4940</a>
+          recuerda que el 30 fija el <em>valor</em> del día y que, en un mes de 31, los días
+          restantes pueden contarse en calendario (15 días de licencia → 16 × rem/30).
+          No usamos 28 ni 31 como divisor del valor día; el recuento calendario no está en
+          esta estimación. Consulte el
+          <a href="https://www.dt.gob.cl/portal/1628/w3-article-60221.html">centro de consultas DT</a>
+          si hay duda sobre ausencias.
+        </p>
+        <p>
+          El SIL real puede aplicar carencia, topes y reglas de COMPIN, Isapre o mutual.
+          No se inventan topes en UF ni tablas de Isapre. La
+          <a href="https://www.bcn.cl/leychile/navegar?idNorma=4252">versión BCN del D.F.L. N°44</a>
+          es el texto legal; SUSESO publica el articulado comentado
+          (<a href="https://www.suseso.gob.cl/612/w3-propertyvalue-222048.html">art. 8</a>,
+          <a href="https://www.suseso.gob.cl/612/w3-propertyvalue-222050.html">art. 10</a>).
+        </p>
+        <h3>Ejemplos orientativos</h3>
+        <ul>
+          <li>$900.000 y 10 días de licencia → valor día $30.000; 20 días trabajados; bruto empleador <strong>$600.000</strong>.</li>
+          <li>$600.000 y 0 días de licencia → bruto empleador <strong>$600.000</strong>; SIL del tramo <strong>$0</strong>.</li>
+          <li>$800.000 y 30 días de licencia → bruto empleador <strong>$0</strong>. Con 3 netas de $700.000 → base SIL <strong>$700.000</strong>; diario $23.333,33; SIL del tramo <strong>$700.000</strong> (30 × base / 30, redondeo al peso).</li>
+        </ul>
+        <p>
+          No es
+          <a href="/sueldo-proporcional">sueldo proporcional</a>
+          (mes incompleto por ingreso, salida o permiso), ni
+          <a href="/descuento-atrasos">descuento por atrasos e inasistencias</a>
+          (tiempo no trabajado sin licencia). No calcula AFP, salud, AFC ni impuesto único:
+          eso está en
+          <a href="/sueldo">sueldo líquido</a>
+          y
+          <a href="/cotizaciones-previsionales">cotizaciones previsionales</a>.
+        </p>
+        <h3>Guías relacionadas</h3>
+        <ul>
+          <li><a href="/sueldo">Calculadora de sueldo líquido</a></li>
+          <li><a href="/sueldo-proporcional">Calcular sueldo proporcional</a></li>
+          <li><a href="/descuento-atrasos">Calcular descuento por atrasos e inasistencias</a></li>
+          <li><a href="/cotizaciones-previsionales">Calcular cotizaciones previsionales</a></li>
+          <li><a href="/guias/liquidacion-de-sueldo">Qué debe mostrar una liquidación de sueldo</a></li>
+        </ul>
+        <h2 id="faq-licencia-medica">Preguntas frecuentes</h2>
+        <h3>¿El empleador paga la licencia médica?</h3>
+        <p>
+          No. Durante la licencia aprobada el empleador no paga remuneración de esos días;
+          los cubre el SIL de la entidad de salud
+          (<a href="https://www.dt.gob.cl/legislacion/1624/w3-article-107078.html">ORD. N°4260</a>,
+          <a href="https://www.dt.gob.cl/legislacion/1624/w3-article-125257.html">ORD. N°1445</a>).
+          Sí paga los días efectivamente trabajados del mes.
+        </p>
+        <h3>¿Se usa divisor 30?</h3>
+        <p>
+          Sí. El valor del día es remuneración mensual / 30, con independencia de los días
+          del mes calendario
+          (<a href="https://www.dt.gob.cl/legislacion/1624/w3-article-125257.html">ORD. N°1445</a>).
+          Aquí los días trabajados son 30 − días de licencia (mes convencional). No se
+          divide por 28 ni por 31.
+        </p>
+        <h3>¿Qué rentas entran al promedio del SIL?</h3>
+        <p>
+          El promedio de la remuneración mensual neta (y/o subsidio) de los tres meses
+          calendario más próximos al mes en que se inicia la licencia
+          (<a href="https://www.suseso.gob.cl/612/w3-propertyvalue-222048.html">D.F.L. N°44 art. 8</a>).
+          Neta es imponible menos cotizaciones personales e impuestos
+          (<a href="https://www.suseso.gob.cl/612/w3-propertyvalue-222047.html">art. 7</a>),
+          no el líquido de la liquidación.
+        </p>
+        <h3>¿Entran horas extras, aguinaldo o gratificación?</h3>
+        <p>
+          No las ocasionales ni las de un período mayor a un mes: gratificaciones, aguinaldos
+          de Navidad o Fiestas Patrias y horas extraordinarias ocasionales
+          (<a href="https://www.suseso.gob.cl/612/w3-propertyvalue-222050.html">D.F.L. N°44 art. 10</a>).
+          Las variables habituales (comisiones, metas) pueden entrar; esta página no las clasifica.
+        </p>
+        <h3>¿En qué se diferencia de una inasistencia?</h3>
+        <p>
+          La inasistencia injustificada puede descontarse como tiempo no trabajado
+          (<a href="/descuento-atrasos">descuento por atrasos e inasistencias</a>).
+          La licencia médica aprobada no es inasistencia: el empleador no paga esos días y
+          puede corresponder SIL.
+        </p>
+        <h3>¿Sirve para licencia maternal?</h3>
+        <p>
+          No. Prenatal, postnatal y parental (arts. 195, 196 y 197 bis del Código del Trabajo)
+          tienen tope y base propios en el D.F.L. N°44 art. 8. Esta herramienta es para
+          licencia común / SIL del sector privado, no el subsidio maternal.
+        </p>
+        <p class="notice">
+          No abre URLs hermanas como <code>/sil</code>, <code>/subsidio-incapacidad</code>
+          ni <code>/licencia</code>. El mes incompleto por ingreso o salida sigue en
+          <a href="/sueldo-proporcional">sueldo proporcional</a>.
+          El atraso o la inasistencia injustificada siguen en
+          <a href="/descuento-atrasos">descuento por atrasos</a>.
+        </p>
+      </section>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <div><strong>Haberes</strong> · sueldo con licencia médica</div>
+      <div class="footer-legal">
+        <a href="/como">Cómo funciona</a>
+        <span aria-hidden="true">·</span>
+        <a href="/precios">Precios</a>
+        <span aria-hidden="true">·</span>
+        <a href="/privacidad">Privacidad</a>
+        <span aria-hidden="true">·</span>
+        <a href="/terminos">Términos</a>
+      </div>
+      <div class="footer-credit">
+        Proyecto desarrollado por <a href="https://lx3.ai" rel="noopener noreferrer">lx3.ai</a>
+        · <a href="mailto:contacto@lx3.ai">contacto@lx3.ai</a>
+      </div>
+      <div data-indicadores>UF y UTM se cargan…</div>
+      <div>
+        Documento generado por Haberes. No es un cálculo de la Dirección del Trabajo ni de Previred.
+        No constituye asesoría legal ni previsional.
+      </div>
+    </div>
+  </footer>
+  <script type="module" src="js/app-licencia-medica.js"></script>
+</body>
+</html>

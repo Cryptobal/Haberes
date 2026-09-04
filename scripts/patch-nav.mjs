@@ -20,6 +20,8 @@ const DRAWER_LINKS = [
   ["/sueldo", "Sueldo líquido"],
   ["/sueldo-proporcional", "Sueldo proporcional"],
   ["/sueldo-minimo", "Sueldo mínimo"],
+  ["/descuento-atrasos", "Descuento atrasos"],
+  ["/licencia-medica", "Licencia médica"],
   ["/horas-extras", "Horas extras"],
   ["/recargo-domingo-comercio", "Recargo domingo comercio"],
   ["/feriado-irrenunciable", "Feriado irrenunciable"],
