@@ -10,7 +10,7 @@ faq:
 
 # Vacaciones y feriado proporcional
 
-Al término del contrato se liquidan el feriado pendiente (días ya devengados no gozados) y el proporcional del periodo incompleto. Haberes estima ambos en el [finiquito](/finiquito). El feriado progresivo del artículo 68 (días extra al feriado anual) no es este proporcional: use [calcular feriado progresivo](/feriado-progresivo).
+Al término del contrato se liquidan el feriado pendiente (días ya devengados no gozados) y el proporcional del periodo incompleto. Haberes estima ambos en el [finiquito](/finiquito). El feriado progresivo del artículo 68 (días extra al feriado anual) no es este proporcional: use [calcular feriado progresivo](/feriado-progresivo). Las fechas de un tramo de feriado anual (término y reintegro, no pesos) están en [calcular feriado anual](/feriado-anual).
 
 {{calc}}
 

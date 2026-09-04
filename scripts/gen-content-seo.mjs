@@ -745,7 +745,7 @@ function hubList(items) {
           .map((g) => {
             let extra = "";
             if (g.slug === "vacaciones-proporcionales") {
-              extra = `\n          · <a href="/feriado-progresivo">Calcular feriado progresivo</a>`;
+              extra = `\n          · <a href="/feriado-anual">Calcular feriado anual</a>\n          · <a href="/feriado-progresivo">Calcular feriado progresivo</a>`;
             }
             if (g.slug === "indemnizacion-por-anos-de-servicio") {
               extra = `\n          · <a href="/finiquito">Calculadora de finiquito</a>`;
@@ -803,7 +803,7 @@ function hubLatest(items, limit = 6) {
       <p>Qué es el comprobante de remuneraciones, descuentos legales e impuesto único. Para estimar el líquido use <a href="/sueldo">/sueldo</a>. Para el bruto de un mes incompleto (días calendario × remuneración / 30), <a href="/sueldo-proporcional">calcular sueldo proporcional</a>. Para el piso legal del IMM (Ley 21.830), <a href="/sueldo-minimo">calcular sueldo mínimo</a>. Para AFP, salud y cesantía del trabajador, <a href="/cotizaciones-previsionales">calcular cotizaciones previsionales</a>. Para el desglose AFC de trabajador y empleador, <a href="/seguro-cesantia">calcular seguro de cesantía</a>. Para el monto por cargas acreditadas, <a href="/asignacion-familiar">calcular asignación familiar</a>. Para colación y movilización del artículo 41, <a href="/colacion-movilizacion">calcular colación y movilización</a>. Para las horas extras (art. 32, recargo 50 %), <a href="/horas-extras">calcular horas extras</a>. Para el pago de un feriado irrenunciable (Ley 19.973 + recargo 50 % art. 32), <a href="/feriado-irrenunciable">calcular pago feriado irrenunciable</a>. Para el séptimo día (art. 45), <a href="/semana-corrida">calcular semana corrida</a>. Para el aguinaldo de Fiestas Patrias (presupuesto, no obligación legal general), <a href="/aguinaldo">calcular aguinaldo</a>.</p>
       ${hubList(liq)}
       <h2>Finiquito</h2>
-      <p>Causales, plazos del artículo 177, indemnizaciones y qué firmar. Para el finiquito completo use <a href="/finiquito">/finiquito</a>. La IAS sola (art. 163) está en <a href="/indemnizacion-anos-servicio">calcular indemnización por años de servicio</a>. La sustitutiva del aviso (arts. 161 y 162) está en <a href="/indemnizacion-aviso-previo">calcular indemnización por aviso previo</a>. Casa particular (fondo AFP 1,11 %, no IAS de 30 días) está en <a href="/finiquito-casa-particular">calcular finiquito casa particular</a>. Los días extra del artículo 68 están en <a href="/feriado-progresivo">calcular feriado progresivo</a>.</p>
+      <p>Causales, plazos del artículo 177, indemnizaciones y qué firmar. Para el finiquito completo use <a href="/finiquito">/finiquito</a>. La IAS sola (art. 163) está en <a href="/indemnizacion-anos-servicio">calcular indemnización por años de servicio</a>. La sustitutiva del aviso (arts. 161 y 162) está en <a href="/indemnizacion-aviso-previo">calcular indemnización por aviso previo</a>. Casa particular (fondo AFP 1,11 %, no IAS de 30 días) está en <a href="/finiquito-casa-particular">calcular finiquito casa particular</a>. Las fechas del feriado anual (art. 67) están en <a href="/feriado-anual">calcular feriado anual</a>. Los días extra del artículo 68 están en <a href="/feriado-progresivo">calcular feriado progresivo</a>.</p>
       ${hubList(fini)}
       <p class="actions"><a class="btn" href="/sueldo">Calcular sueldo líquido</a>
       <a class="btn btn-ghost" href="/finiquito">Calcular finiquito</a></p>

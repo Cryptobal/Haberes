@@ -35,6 +35,7 @@ const DRAWER_LINKS = [
   ["/asignacion-familiar", "Asignación familiar"],
   ["/colacion-movilizacion", "Colación y movilización"],
   ["/vacaciones-proporcionales", "Vacaciones proporcionales"],
+  ["/feriado-anual", "Feriado anual"],
   ["/feriado-progresivo", "Feriado progresivo"],
   ["/indemnizacion-anos-servicio", "Indemnización años de servicio"],
   ["/indemnizacion-aviso-previo", "Indemnización aviso previo"],
