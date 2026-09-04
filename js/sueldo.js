@@ -603,6 +603,84 @@ export function calcularDescuentoAtrasosInasistencias({
   };
 }
 
+function netaSil(v) {
+  if (v == null || v === "") return null;
+  const n = Number(v);
+  if (!Number.isFinite(n)) return null;
+  return Math.max(0, n);
+}
+
+/**
+ * Bruto a cargo del empleador en un mes con licencia médica, más estimación
+ * educativa del SIL (subsidio por incapacidad laboral) de la entidad de salud.
+ *
+ * Lado empleador (remuneración fija mensual):
+ * Valor día = remuneración / 30 (ORD. N°1445; el divisor no es 28 ni 31).
+ * Días trabajados = max(0, 30 − días de licencia), mes convencional de 30.
+ * Bruto empleador = `proporcional` (÷ 30 × días, `roundPeso`).
+ * El empleador no paga los días de licencia aprobada (ORD. N°4260); esos días
+ * los cubre el SIL. Esta herramienta no usa el recuento calendario 28/31
+ * (ORD. N°4940) para los días a pagar: documenta el mes de 30.
+ *
+ * Lado SIL (D.F.L. N°44 arts. 7, 8 y 10):
+ * Base mensual = promedio de las 3 remuneraciones netas (imponible −
+ * cotizaciones personales − impuestos) de los tres meses calendario más
+ * próximos al mes de inicio. Diario = base / 30 (equivalente a suma / 90).
+ * Tramo = roundPeso(diario × días de licencia). Si falta alguna de las 3
+ * netas, solo se calcula el lado empleador (`silCompleto: false`).
+ * No aplica topes UF, carencia, Isapre, ni licencia maternal (arts. 195/196).
+ *
+ * @see https://www.dt.gob.cl/legislacion/1624/w3-article-125257.html ORD. N°1445
+ * @see https://www.dt.gob.cl/legislacion/1624/w3-article-107078.html ORD. N°4260
+ * @see https://www.dt.gob.cl/legislacion/1624/w3-article-107324.html ORD. N°4940
+ * @see https://www.dt.gob.cl/portal/1628/w3-article-60221.html consultas DT
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=4252 D.F.L. N°44
+ * @see https://www.suseso.gob.cl/612/w3-propertyvalue-222047.html art. 7
+ * @see https://www.suseso.gob.cl/612/w3-propertyvalue-222048.html art. 8
+ * @see https://www.suseso.gob.cl/612/w3-propertyvalue-222050.html art. 10
+ */
+export function calcularLicenciaMedica({
+  remuneracion = 0,
+  diasLicencia = 0,
+  neta1 = null,
+  neta2 = null,
+  neta3 = null,
+  excluirOcasionales = true,
+} = {}) {
+  const rem = Math.max(0, Number(remuneracion) || 0);
+  const diasLic = Math.min(
+    DIAS_MES_CONVENCIONAL,
+    Math.max(0, Math.trunc(Number(diasLicencia) || 0)),
+  );
+  const diasTrabajados = Math.max(0, DIAS_MES_CONVENCIONAL - diasLic);
+  const valorDiario = rem > 0 ? rem / DIAS_MES_CONVENCIONAL : 0;
+  const brutoEmpleador = proporcional(rem, diasTrabajados);
+
+  const n1 = netaSil(neta1);
+  const n2 = netaSil(neta2);
+  const n3 = netaSil(neta3);
+  const silCompleto = n1 != null && n2 != null && n3 != null;
+  const baseSil = silCompleto ? roundPeso((n1 + n2 + n3) / 3) : 0;
+  const diarioSil = silCompleto && baseSil > 0 ? baseSil / DIAS_MES_CONVENCIONAL : 0;
+  const silTramo = silCompleto ? roundPeso(diarioSil * diasLic) : 0;
+
+  return {
+    remuneracion: roundPeso(rem),
+    diasLicencia: diasLic,
+    diasTrabajados,
+    valorDiario,
+    brutoEmpleador,
+    neta1: n1,
+    neta2: n2,
+    neta3: n3,
+    silCompleto,
+    baseSil,
+    diarioSil,
+    silTramo,
+    excluirOcasionales: Boolean(excluirOcasionales),
+  };
+}
+
 /**
  * Bruto de un sueldo mensual fijo por fracción de mes.
  *

@@ -68,6 +68,7 @@ import {
   calcularSemanaCorrida,
   calcularSueldo,
   calcularDescuentoAtrasosInasistencias,
+  calcularLicenciaMedica,
   calcularSueldoMinimo,
   calcularSueldoProporcional,
   diasCalendarioFraccionMes,
@@ -722,6 +723,71 @@ console.log("\nDescuento atrasos e inasistencias (DT /30, valor hora)");
     "app-descuento-atrasos usa calcularDescuentoAtrasosInasistencias",
     /import\s*\{[^}]*calcularDescuentoAtrasosInasistencias[^}]*\}\s*from\s*["']\.\/sueldo\.js["']/.test(daApp) &&
       /calcularDescuentoAtrasosInasistencias\s*\(/.test(daApp),
+  );
+}
+
+console.log("\nLicencia médica (empleador /30 + SIL D.F.L. 44)");
+{
+  const g1 = calcularLicenciaMedica({ remuneracion: 900_000, diasLicencia: 10 });
+  assert(
+    "900000, 10 días licencia → valor día 30000, 20 trabajados, bruto empleador 600000",
+    close(g1.valorDiario, 30_000) &&
+      g1.diasTrabajados === 20 &&
+      g1.brutoEmpleador === 600_000 &&
+      proporcional(900_000, 20) === 600_000,
+    JSON.stringify(g1),
+  );
+  const g2 = calcularLicenciaMedica({
+    remuneracion: 600_000,
+    diasLicencia: 0,
+    neta1: 650_000,
+    neta2: 650_000,
+    neta3: 650_000,
+  });
+  assert(
+    "600000, 0 días licencia → bruto empleador 600000, SIL 0",
+    g2.diasTrabajados === 30 &&
+      g2.brutoEmpleador === 600_000 &&
+      g2.silCompleto &&
+      g2.silTramo === 0,
+    JSON.stringify(g2),
+  );
+  const g3 = calcularLicenciaMedica({
+    remuneracion: 800_000,
+    diasLicencia: 30,
+    neta1: 700_000,
+    neta2: 700_000,
+    neta3: 700_000,
+  });
+  assert(
+    "800000, 30 días, 3 netas 700000 → bruto 0, base SIL 700000, diario 23333.33, tramo 700000",
+    g3.diasTrabajados === 0 &&
+      g3.brutoEmpleador === 0 &&
+      g3.silCompleto &&
+      g3.baseSil === 700_000 &&
+      close(g3.diarioSil, 700_000 / 30) &&
+      g3.silTramo === 700_000,
+    JSON.stringify(g3),
+  );
+  assert(
+    "sin las 3 netas → SIL incompleto, empleador sí se calcula",
+    calcularLicenciaMedica({ remuneracion: 800_000, diasLicencia: 7, neta1: 650_000, neta2: 650_000 })
+      .silCompleto === false &&
+      calcularLicenciaMedica({ remuneracion: 800_000, diasLicencia: 7, neta1: 650_000, neta2: 650_000 })
+        .brutoEmpleador === proporcional(800_000, 23) &&
+      calcularLicenciaMedica({ remuneracion: 800_000, diasLicencia: 7, neta1: 650_000, neta2: 650_000 })
+        .silTramo === 0,
+  );
+  assert(
+    "días licencia >30 se recortan a 30; negativos → 0",
+    calcularLicenciaMedica({ remuneracion: 800_000, diasLicencia: 31 }).diasTrabajados === 0 &&
+      calcularLicenciaMedica({ remuneracion: -1, diasLicencia: -4 }).brutoEmpleador === 0,
+  );
+  const lmApp = readFileSync(join(root, "js/app-licencia-medica.js"), "utf8");
+  assert(
+    "app-licencia-medica usa calcularLicenciaMedica",
+    /import\s*\{[^}]*calcularLicenciaMedica[^}]*\}\s*from\s*["']\.\/sueldo\.js["']/.test(lmApp) &&
+      /calcularLicenciaMedica\s*\(/.test(lmApp),
   );
 }
 
@@ -1750,6 +1816,7 @@ const required = [
   "colacion-movilizacion.html",
   "sueldo-minimo.html",
   "descuento-atrasos.html",
+  "licencia-medica.html",
   "feriado-progresivo.html",
   "indemnizacion-anos-servicio.html",
   "aguinaldo.html",
@@ -1771,6 +1838,7 @@ const required = [
   "js/app-colacion-movilizacion.js",
   "js/app-sueldo-minimo.js",
   "js/app-descuento-atrasos.js",
+  "js/app-licencia-medica.js",
   "js/app-feriado-progresivo.js",
   "js/app-indemnizacion-anos-servicio.js",
   "js/app-aguinaldo.js",
@@ -1919,6 +1987,7 @@ const htmlFiles = [
   "colacion-movilizacion.html",
   "sueldo-minimo.html",
   "descuento-atrasos.html",
+  "licencia-medica.html",
   "feriado-progresivo.html",
   "indemnizacion-anos-servicio.html",
   "aguinaldo.html",
@@ -2015,6 +2084,7 @@ const appEntries = [
   "js/app-colacion-movilizacion.js",
   "js/app-sueldo-minimo.js",
   "js/app-descuento-atrasos.js",
+  "js/app-licencia-medica.js",
   "js/app-feriado-progresivo.js",
   "js/app-indemnizacion-anos-servicio.js",
   "js/app-aguinaldo.js",
@@ -2053,7 +2123,7 @@ assert("robots Allow /", /Allow:\s*\//.test(robots));
 assert("robots Disallow /admin", /Disallow:\s*\/admin/.test(robots));
 assert("robots Disallow /api", /Disallow:\s*\/api/.test(robots));
 assert("robots Disallow /docs", /Disallow:\s*\/docs/.test(robots));
-assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots));
+assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/licencia-medica/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots));
 assert("robots Sitemap", /Sitemap:\s*https:\/\/www\.haberes\.cl\/sitemap\.xml/.test(robots));
 
 const { seoPaths, GUIDE_SLUGS, GUIDES, CAUSAL_PAGES, BASE_PATHS, lastmodForPath } = await import("../content/registry.js");
@@ -2090,6 +2160,7 @@ assert(
     BASE_PATHS.includes("/sueldo-proporcional") &&
     BASE_PATHS.includes("/sueldo-minimo") &&
     BASE_PATHS.includes("/descuento-atrasos") &&
+    BASE_PATHS.includes("/licencia-medica") &&
     BASE_PATHS.includes("/indemnizacion-aviso-previo"),
   `${locs.length} vs ${expectedFromRegistry.length}`,
 );
@@ -2441,7 +2512,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 67,
+      seoPaths().length === 68,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -2453,7 +2524,7 @@ try {
   const docsSeo = await hitLocal("/docs/seo-map.md");
   assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
   assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
-  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/asignacion-familiar/", "/colacion-movilizacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/asignacion-familiar/", "/colacion-movilizacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
   }
@@ -2481,6 +2552,7 @@ try {
     "/sueldo-proporcional",
     "/sueldo-minimo",
     "/descuento-atrasos",
+    "/licencia-medica",
     "/indemnizacion-aviso-previo",
     "/gratificacion",
     "/impuesto-unico",
@@ -5710,6 +5782,7 @@ assert(
     ["colacion-movilizacion.html", "/colacion-movilizacion"],
     ["sueldo-minimo.html", "/sueldo-minimo"],
     ["descuento-atrasos.html", "/descuento-atrasos"],
+    ["licencia-medica.html", "/licencia-medica"],
     ["feriado-progresivo.html", "/feriado-progresivo"],
     ["indemnizacion-anos-servicio.html", "/indemnizacion-anos-servicio"],
     ["aguinaldo.html", "/aguinaldo"],
@@ -6304,10 +6377,10 @@ assert(
         !existsSync(join(root, "ausencias.html")),
     );
     assert(
-      "SEO descuento atrasos no califica licencia ni calcula SIL",
+      "SEO descuento atrasos no califica licencia; SIL vive en /licencia-medica",
       /licencia m[eé]dica/i.test(daHtml) &&
         /no califica el caso/i.test(daHtml) &&
-        /no se calcula aqu[ií]/i.test(daHtml),
+        /href="\/licencia-medica"/.test(daHtml),
     );
     assert(
       "SEO descuento atrasos métrica principal es total descuento bruto",
@@ -6338,6 +6411,140 @@ assert(
       "hub /guias enlaza /descuento-atrasos en el cluster de liquidación",
       /href="\/descuento-atrasos"/.test(readFileSync(join(root, "guias.html"), "utf8")) &&
         !/<h2>Finiquito<\/h2>[\s\S]*href="\/descuento-atrasos"/.test(
+          readFileSync(join(root, "guias.html"), "utf8"),
+        ),
+    );
+  }
+  {
+    const lmHtml = readFileSync(join(root, "licencia-medica.html"), "utf8");
+    const lmTitle = (lmHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const lmH1 = (lmHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const lmDesc = (lmHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "";
+    const sueldoHtml = readFileSync(join(root, "sueldo.html"), "utf8");
+    const sueldoTitle = (sueldoHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const sueldoH1 = (sueldoHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const spHtml = readFileSync(join(root, "sueldo-proporcional.html"), "utf8");
+    const spTitle = (spHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const spH1 = (spHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const daHtml = readFileSync(join(root, "descuento-atrasos.html"), "utf8");
+    const daTitle = (daHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const daH1 = (daHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const g1 = calcularLicenciaMedica({ remuneracion: 900_000, diasLicencia: 10 });
+    const g2 = calcularLicenciaMedica({
+      remuneracion: 600_000,
+      diasLicencia: 0,
+      neta1: 650_000,
+      neta2: 650_000,
+      neta3: 650_000,
+    });
+    const g3 = calcularLicenciaMedica({
+      remuneracion: 800_000,
+      diasLicencia: 30,
+      neta1: 700_000,
+      neta2: 700_000,
+      neta3: 700_000,
+    });
+    assert(
+      "SEO title licencia médica apunta a calcular sueldo con licencia médica",
+      /calcular sueldo con licencia m[eé]dica/i.test(lmTitle) &&
+        !/sueldo l[ií]quido/i.test(lmTitle) &&
+        !/sueldo proporcional/i.test(lmTitle) &&
+        !/descuento atrasos/i.test(lmTitle) &&
+        lmTitle !== sueldoTitle &&
+        lmTitle !== spTitle &&
+        lmTitle !== daTitle &&
+        lmTitle.length <= 65,
+      lmTitle,
+    );
+    assert(
+      "SEO H1 licencia médica distinto de /sueldo, /sueldo-proporcional y /descuento-atrasos",
+      lmH1 === "Calcular sueldo con licencia médica Chile 2026" &&
+        lmH1 !== sueldoH1 &&
+        lmH1 !== spH1 &&
+        lmH1 !== daH1 &&
+        !/sueldo l[ií]quido/i.test(lmH1) &&
+        !/sueldo proporcional/i.test(lmH1),
+      lmH1,
+    );
+    assert(
+      "SEO licencia médica meta distinta de /sueldo y /sueldo-proporcional",
+      lmDesc &&
+        lmDesc !== ((sueldoHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "") &&
+        lmDesc !== ((spHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || ""),
+    );
+    assert(
+      "SEO licencia médica cita D.F.L. 44 arts. 8 y 10, ORD. 1445 y ORD. 4260",
+      /D\.F\.L\.\s*N°44 art\. 8/.test(lmHtml) &&
+        /D\.F\.L\.\s*N°44 art\. 10/.test(lmHtml) &&
+        /ORD\.\s*N°1445/.test(lmHtml) &&
+        /ORD\.\s*N°4260/.test(lmHtml) &&
+        /bcn\.cl\/leychile\/navegar\?idNorma=4252/.test(lmHtml) &&
+        /suseso\.gob\.cl\/612\/w3-propertyvalue-222048/.test(lmHtml) &&
+        /suseso\.gob\.cl\/612\/w3-propertyvalue-222050/.test(lmHtml) &&
+        /dt\.gob\.cl\/legislacion\/1624\/w3-article-125257/.test(lmHtml) &&
+        /dt\.gob\.cl\/legislacion\/1624\/w3-article-107078/.test(lmHtml) &&
+        /remuneraci[oó]n(?: mensual)? \/ 30/.test(lmHtml),
+    );
+    assert(
+      "SEO licencia médica gold 900k/10, 600k/0 y 800k/30 con SIL 700k",
+      g1.valorDiario === 30_000 &&
+        g1.diasTrabajados === 20 &&
+        g1.brutoEmpleador === 600_000 &&
+        g2.brutoEmpleador === 600_000 &&
+        g2.silTramo === 0 &&
+        g3.brutoEmpleador === 0 &&
+        g3.baseSil === 700_000 &&
+        close(g3.diarioSil, 700_000 / 30) &&
+        g3.silTramo === 700_000 &&
+        /\$600\.000/.test(lmHtml) &&
+        /\$30\.000/.test(lmHtml) &&
+        /\$23\.333,33/.test(lmHtml) &&
+        /\$700\.000/.test(lmHtml),
+    );
+    assert("SEO licencia médica FAQPage", /"@type": "FAQPage"/.test(lmHtml));
+    assert(
+      "SEO licencia médica no es líquido, proporcional ni atrasos",
+      /href="\/sueldo"/.test(lmHtml) &&
+        /href="\/sueldo-proporcional"/.test(lmHtml) &&
+        /href="\/descuento-atrasos"/.test(lmHtml) &&
+        /href="\/cotizaciones-previsionales"/.test(lmHtml) &&
+        /no es el/.test(lmHtml.toLowerCase()) &&
+        !existsSync(join(root, "sil.html")) &&
+        !existsSync(join(root, "subsidio-incapacidad.html")) &&
+        !existsSync(join(root, "licencia.html")),
+    );
+    assert(
+      "SEO licencia médica métrica principal es bruto a cargo del empleador",
+      /Bruto a cargo del empleador/.test(lmHtml) &&
+        !/<p class="metric-label">Sueldo proporcional/.test(lmHtml) &&
+        !/<p class="metric-label">L[ií]quido/.test(lmHtml) &&
+        !/<p class="metric-label">Total descuento bruto/.test(lmHtml),
+    );
+    assert(
+      "home y nav enlazan /licencia-medica",
+      /href="\/licencia-medica"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/licencia-medica" data-nav>Licencia m[eé]dica<\/a>/.test(
+          readFileSync(join(root, "index.html"), "utf8"),
+        ) &&
+        /href="\/licencia-medica" data-nav>Licencia m[eé]dica<\/a>/.test(lmHtml),
+    );
+    assert(
+      "sitemap incluye /licencia-medica",
+      locs.includes("https://www.haberes.cl/licencia-medica") &&
+        lastmodForPath("/licencia-medica") === "2026-09-04",
+    );
+    assert(
+      "seo-map documenta /licencia-medica y no-canibalizar /sueldo-proporcional",
+      /\/licencia-medica/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no canibalizar `\/sueldo`, `\/sueldo-proporcional` ni `\/descuento-atrasos`/.test(
+          readFileSync(join(root, "docs/seo-map.md"), "utf8"),
+        ) &&
+        /no crear `\/sil`/i.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")),
+    );
+    assert(
+      "hub /guias enlaza /licencia-medica en el cluster de liquidación",
+      /href="\/licencia-medica"/.test(readFileSync(join(root, "guias.html"), "utf8")) &&
+        !/<h2>Finiquito<\/h2>[\s\S]*href="\/licencia-medica"/.test(
           readFileSync(join(root, "guias.html"), "utf8"),
         ),
     );
@@ -8199,6 +8406,8 @@ assert(
       "asignacion-familiar.html",
       "colacion-movilizacion.html",
       "sueldo-minimo.html",
+      "descuento-atrasos.html",
+      "licencia-medica.html",
       "feriado-progresivo.html",
       "indemnizacion-anos-servicio.html",
       "aguinaldo.html",
@@ -8379,7 +8588,7 @@ assert(
     return acc;
   }
   const pages = listHtml(root);
-  assert("69 páginas HTML", pages.length === 69, String(pages.length));
+  assert("70 páginas HTML", pages.length === 70, String(pages.length));
   for (const file of pages) {
     const html = readFileSync(file, "utf8");
     const rel = file.slice(root.length + 1);
