@@ -290,7 +290,7 @@ def run():
             errors = []
             page.on("console", lambda m: errors.append(m.text) if m.type == "error" else None)
             page.on("pageerror", lambda e: errors.append(f"pageerror: {e}"))
-            ignore = ("googletagmanager", "fonts.g", "/api/")
+            ignore = ("googletagmanager", "google-analytics", "fonts.g", "/api/")
             page.on(
                 "requestfailed",
                 lambda r: errors.append(f"request failed: {r.url}")
