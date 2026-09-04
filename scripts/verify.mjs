@@ -61,6 +61,7 @@ import {
   calcularColacionMovilizacion,
   calcularCostoEmpresa,
   calcularFeriadoProgresivo,
+  calcularFeriadoAnual,
   calcularIusc,
   calcularRecargoDomingoComercio,
   calcularFeriadoIrrenunciable,
@@ -797,6 +798,55 @@ console.log("\nLicencia médica (empleador /30 + SIL D.F.L. 44)");
     "app-feriado-progresivo usa calcularFeriadoProgresivo",
     /import\s*\{[^}]*calcularFeriadoProgresivo[^}]*\}\s*from\s*["']\.\/sueldo\.js["']/.test(fpApp) &&
       /calcularFeriadoProgresivo\s*\(/.test(fpApp),
+  );
+}
+
+console.log("\nFeriado anual art. 67 (días hábiles)");
+{
+  const g1 = calcularFeriadoAnual({ fechaInicio: "2026-01-05", diasHabiles: 15 });
+  assert(
+    "lunes 5 ene 2026 / 15 hábiles → viernes 23, reintegro lunes 26, 21 corridos",
+    g1.ok &&
+      g1.fechaTermino === "2026-01-23" &&
+      g1.fechaReintegro === "2026-01-26" &&
+      g1.diasCorridos === 21 &&
+      g1.diasHabilesConsumidos === 15 &&
+      g1.feriados.length === 0 &&
+      g1.domingos.length === 3,
+    JSON.stringify(g1),
+  );
+  const g2 = calcularFeriadoAnual({ fechaInicio: "2026-04-20", diasHabiles: 15 });
+  assert(
+    "lunes 20 abr 2026 / 15 hábiles: 1 may no consume; término 11 may, reintegro 12 may",
+    g2.ok &&
+      g2.fechaTermino === "2026-05-11" &&
+      g2.fechaReintegro === "2026-05-12" &&
+      g2.diasCorridos === 22 &&
+      g2.feriados.some((f) => f.fecha === "2026-05-01") &&
+      !g2.feriados.some((f) => f.fecha === "2026-04-03"),
+    JSON.stringify(g2),
+  );
+  const sur = calcularFeriadoAnual({ fechaInicio: "2026-01-05", diasHabiles: 20 });
+  assert(
+    "extremo sur 20 hábiles desde 5 ene → 30 ene / reintegro 2 feb / 28 corridos",
+    sur.fechaTermino === "2026-01-30" && sur.fechaReintegro === "2026-02-02" && sur.diasCorridos === 28,
+    JSON.stringify(sur),
+  );
+  const extra = calcularFeriadoAnual({
+    fechaInicio: "2026-01-05",
+    diasHabiles: 15,
+    diasProgresivos: 1,
+  });
+  assert(
+    "15 + 1 progresivo indicado (no recalculado) → 16 hábiles, término 26 ene",
+    extra.diasATomar === 16 && extra.fechaTermino === "2026-01-26" && extra.fechaReintegro === "2026-01-27",
+    JSON.stringify(extra),
+  );
+  const faApp = readFileSync(join(root, "js/app-feriado-anual.js"), "utf8");
+  assert(
+    "app-feriado-anual usa calcularFeriadoAnual",
+    /import\s*\{[^}]*calcularFeriadoAnual[^}]*\}\s*from\s*["']\.\/sueldo\.js["']/.test(faApp) &&
+      /calcularFeriadoAnual\s*\(/.test(faApp),
   );
 }
 
@@ -1817,6 +1867,7 @@ const required = [
   "sueldo-minimo.html",
   "descuento-atrasos.html",
   "licencia-medica.html",
+  "feriado-anual.html",
   "feriado-progresivo.html",
   "indemnizacion-anos-servicio.html",
   "aguinaldo.html",
@@ -1839,6 +1890,7 @@ const required = [
   "js/app-sueldo-minimo.js",
   "js/app-descuento-atrasos.js",
   "js/app-licencia-medica.js",
+  "js/app-feriado-anual.js",
   "js/app-feriado-progresivo.js",
   "js/app-indemnizacion-anos-servicio.js",
   "js/app-aguinaldo.js",
@@ -1854,6 +1906,7 @@ const required = [
   "css/app.css",
   "js/constants.js",
   "js/sueldo.js",
+  "js/feriados.js",
   "js/causales.js",
   "js/finiquito.js",
   "js/indicadores.js",
@@ -1988,6 +2041,7 @@ const htmlFiles = [
   "sueldo-minimo.html",
   "descuento-atrasos.html",
   "licencia-medica.html",
+  "feriado-anual.html",
   "feriado-progresivo.html",
   "indemnizacion-anos-servicio.html",
   "aguinaldo.html",
@@ -2085,6 +2139,7 @@ const appEntries = [
   "js/app-sueldo-minimo.js",
   "js/app-descuento-atrasos.js",
   "js/app-licencia-medica.js",
+  "js/app-feriado-anual.js",
   "js/app-feriado-progresivo.js",
   "js/app-indemnizacion-anos-servicio.js",
   "js/app-aguinaldo.js",
@@ -2123,7 +2178,7 @@ assert("robots Allow /", /Allow:\s*\//.test(robots));
 assert("robots Disallow /admin", /Disallow:\s*\/admin/.test(robots));
 assert("robots Disallow /api", /Disallow:\s*\/api/.test(robots));
 assert("robots Disallow /docs", /Disallow:\s*\/docs/.test(robots));
-assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/licencia-medica/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots));
+assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/feriado-anual/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/licencia-medica/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots));
 assert("robots Sitemap", /Sitemap:\s*https:\/\/www\.haberes\.cl\/sitemap\.xml/.test(robots));
 
 const { seoPaths, GUIDE_SLUGS, GUIDES, CAUSAL_PAGES, BASE_PATHS, lastmodForPath } = await import("../content/registry.js");
@@ -2150,6 +2205,7 @@ assert(
     BASE_PATHS.includes("/seguro-cesantia") &&
     BASE_PATHS.includes("/recargo-domingo-comercio") &&
     BASE_PATHS.includes("/feriado-irrenunciable") &&
+    BASE_PATHS.includes("/feriado-anual") &&
     BASE_PATHS.includes("/semana-corrida") &&
     BASE_PATHS.includes("/asignacion-familiar") &&
     BASE_PATHS.includes("/colacion-movilizacion") &&
@@ -2512,7 +2568,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 68,
+      seoPaths().length === 69,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -2524,7 +2580,7 @@ try {
   const docsSeo = await hitLocal("/docs/seo-map.md");
   assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
   assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
-  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/asignacion-familiar/", "/colacion-movilizacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/asignacion-familiar/", "/colacion-movilizacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
   }
@@ -2543,6 +2599,7 @@ try {
     "/horas-extras",
     "/recargo-domingo-comercio",
     "/feriado-irrenunciable",
+    "/feriado-anual",
     "/semana-corrida",
     "/vacaciones-proporcionales",
     "/feriado-progresivo",
@@ -5783,6 +5840,7 @@ assert(
     ["sueldo-minimo.html", "/sueldo-minimo"],
     ["descuento-atrasos.html", "/descuento-atrasos"],
     ["licencia-medica.html", "/licencia-medica"],
+    ["feriado-anual.html", "/feriado-anual"],
     ["feriado-progresivo.html", "/feriado-progresivo"],
     ["indemnizacion-anos-servicio.html", "/indemnizacion-anos-servicio"],
     ["aguinaldo.html", "/aguinaldo"],
@@ -6546,6 +6604,127 @@ assert(
       /href="\/licencia-medica"/.test(readFileSync(join(root, "guias.html"), "utf8")) &&
         !/<h2>Finiquito<\/h2>[\s\S]*href="\/licencia-medica"/.test(
           readFileSync(join(root, "guias.html"), "utf8"),
+        ),
+    );
+  }
+  {
+    const faHtml = readFileSync(join(root, "feriado-anual.html"), "utf8");
+    const faTitle = (faHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const faH1 = (faHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const faDesc = (faHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "";
+    const vpHtml = readFileSync(join(root, "vacaciones-proporcionales.html"), "utf8");
+    const vpTitle = (vpHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const vpH1 = (vpHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const fpHtml = readFileSync(join(root, "feriado-progresivo.html"), "utf8");
+    const fpTitle = (fpHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const fpH1 = (fpHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const fiHtml = readFileSync(join(root, "feriado-irrenunciable.html"), "utf8");
+    const g1 = calcularFeriadoAnual({ fechaInicio: "2026-01-05", diasHabiles: 15 });
+    const g2 = calcularFeriadoAnual({ fechaInicio: "2026-04-20", diasHabiles: 15 });
+    assert(
+      "SEO title feriado anual apunta a calcular feriado anual",
+      /calcular feriado anual/i.test(faTitle) &&
+        !/vacaciones proporcionales/i.test(faTitle) &&
+        !/feriado progresivo/i.test(faTitle) &&
+        !/irrenunciable/i.test(faTitle) &&
+        faTitle !== vpTitle &&
+        faTitle !== fpTitle &&
+        faTitle.length <= 65,
+      faTitle,
+    );
+    assert(
+      "SEO H1 feriado anual es vacaciones legales Chile 2026 distinto de proporcional y progresivo",
+      faH1 === "Calcular feriado anual y vacaciones legales Chile 2026" &&
+        faH1 !== vpH1 &&
+        faH1 !== fpH1 &&
+        /art[ií]culo 67/i.test(faHtml) &&
+        !/calcular vacaciones proporcionales/i.test(faH1) &&
+        !/calcular feriado progresivo/i.test(faH1),
+      faH1,
+    );
+    assert(
+      "SEO feriado anual meta distinta de /vacaciones-proporcionales y /feriado-progresivo",
+      faDesc &&
+        faDesc !== ((vpHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "") &&
+        faDesc !== ((fpHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || ""),
+    );
+    assert(
+      "SEO feriado anual cita art. 67, 69, 70 y DT 60177",
+      /art[ií]culo 67/i.test(faHtml) &&
+        /art[ií]culo 69/i.test(faHtml) &&
+        /art[ií]culo 70/i.test(faHtml) &&
+        /C[oó]digo del Trabajo/.test(faHtml) &&
+        /bcn\.cl\/leychile\/navegar\?idNorma=207436/.test(faHtml) &&
+        /dt\.gob\.cl\/portal\/1628\/w3-article-60177/.test(faHtml) &&
+        /15 d[ií]as h[aá]biles/i.test(faHtml) &&
+        /20 d[ií]as h[aá]biles/i.test(faHtml) &&
+        /Magallanes/.test(faHtml) &&
+        /Palena/.test(faHtml),
+    );
+    assert(
+      "SEO feriado anual gold 5 ene 15 hábiles = 21 corridos y 1 may no consume",
+      g1.diasCorridos === 21 &&
+        g1.fechaTermino === "2026-01-23" &&
+        g1.fechaReintegro === "2026-01-26" &&
+        g2.feriados.some((f) => f.fecha === "2026-05-01") &&
+        g2.fechaTermino === "2026-05-11" &&
+        /21 d[ií]as corridos/.test(faHtml) &&
+        /23 de enero/.test(faHtml) &&
+        /1 de mayo/.test(faHtml) &&
+        /11 de mayo/.test(faHtml),
+    );
+    assert("SEO feriado anual FAQPage", /"@type": "FAQPage"/.test(faHtml));
+    assert(
+      "SEO feriado anual no es proporcional, progresivo ni irrenunciable",
+      /href="\/vacaciones-proporcionales"/.test(faHtml) &&
+        /href="\/feriado-progresivo"/.test(faHtml) &&
+        /href="\/finiquito"/.test(faHtml) &&
+        /href="\/guias\/vacaciones-proporcionales"/.test(faHtml) &&
+        /href="\/feriado-irrenunciable"/.test(faHtml) &&
+        !existsSync(join(root, "vacaciones.html")) &&
+        !existsSync(join(root, "calendario-vacaciones.html")),
+    );
+    assert(
+      "SEO feriado anual métrica principal es fecha de reintegro",
+      /Fecha de reintegro/.test(faHtml) && !/<p class="metric-label">Feriado proporcional<\/p>/.test(faHtml),
+    );
+    assert(
+      "home y nav enlazan /feriado-anual",
+      /href="\/feriado-anual"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/feriado-anual" data-nav>Feriado anual<\/a>/.test(
+          readFileSync(join(root, "index.html"), "utf8"),
+        ) &&
+        /href="\/feriado-anual" data-nav>Feriado anual<\/a>/.test(faHtml),
+    );
+    assert(
+      "sitemap incluye /feriado-anual",
+      locs.includes("https://www.haberes.cl/feriado-anual") &&
+        lastmodForPath("/feriado-anual") === "2026-09-04",
+    );
+    assert(
+      "seo-map documenta /feriado-anual y no-canibalizar /vacaciones-proporcionales",
+      /\/feriado-anual/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no canibalizar `\/vacaciones-proporcionales` ni `\/feriado-progresivo`/.test(
+          readFileSync(join(root, "docs/seo-map.md"), "utf8"),
+        ) &&
+        /no crear `\/vacaciones` ni `\/calendario-vacaciones`/i.test(
+          readFileSync(join(root, "docs/seo-map.md"), "utf8"),
+        ),
+    );
+    assert(
+      "hub /guias enlaza /feriado-anual en el cluster de finiquito",
+      /href="\/feriado-anual"/.test(readFileSync(join(root, "guias.html"), "utf8")) &&
+        /<h2>Finiquito<\/h2>[\s\S]*href="\/feriado-anual"/.test(
+          readFileSync(join(root, "guias.html"), "utf8"),
+        ),
+    );
+    assert(
+      "hermanas de vacaciones enlazan /feriado-anual",
+      /href="\/feriado-anual"/.test(vpHtml) &&
+        /href="\/feriado-anual"/.test(fpHtml) &&
+        /href="\/feriado-anual"/.test(fiHtml) &&
+        /href="\/feriado-anual"/.test(
+          readFileSync(join(root, "guias/vacaciones-proporcionales.html"), "utf8"),
         ),
     );
   }
@@ -8408,6 +8587,7 @@ assert(
       "sueldo-minimo.html",
       "descuento-atrasos.html",
       "licencia-medica.html",
+      "feriado-anual.html",
       "feriado-progresivo.html",
       "indemnizacion-anos-servicio.html",
       "aguinaldo.html",
@@ -8588,7 +8768,7 @@ assert(
     return acc;
   }
   const pages = listHtml(root);
-  assert("70 páginas HTML", pages.length === 70, String(pages.length));
+  assert("71 páginas HTML", pages.length === 71, String(pages.length));
   for (const file of pages) {
     const html = readFileSync(file, "utf8");
     const rel = file.slice(root.length + 1);

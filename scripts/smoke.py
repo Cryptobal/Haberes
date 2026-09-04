@@ -78,6 +78,7 @@ def check_http():
         ("/sueldo-minimo", 200, "html"),
         ("/descuento-atrasos", 200, "html"),
         ("/licencia-medica", 200, "html"),
+        ("/feriado-anual", 200, "html"),
         ("/feriado-progresivo", 200, "html"),
         ("/indemnizacion-anos-servicio", 200, "html"),
         ("/aguinaldo", 200, "html"),
@@ -138,6 +139,7 @@ PAGES = [
     ("sueldo-proporcional.html", "sueldo-proporcional"),
     ("descuento-atrasos.html", "descuento-atrasos"),
     ("licencia-medica.html", "licencia-medica"),
+    ("feriado-anual.html", "feriado-anual"),
     ("indemnizacion-aviso-previo.html", "indemnizacion-aviso-previo"),
     ("finiquito.html", "finiquito"),
     ("empresa.html", "empresa"),
@@ -288,7 +290,7 @@ def run():
             errors = []
             page.on("console", lambda m: errors.append(m.text) if m.type == "error" else None)
             page.on("pageerror", lambda e: errors.append(f"pageerror: {e}"))
-            ignore = ("googletagmanager", "fonts.g", "/api/")
+            ignore = ("googletagmanager", "google-analytics", "fonts.g", "/api/")
             page.on(
                 "requestfailed",
                 lambda r: errors.append(f"request failed: {r.url}")

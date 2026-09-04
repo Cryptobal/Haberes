@@ -393,6 +393,13 @@ export function calcularSemanaCorrida({
   };
 }
 
+export {
+  calcularFeriadoAnual,
+  esDiaHabilFeriadoAnual,
+  feriadoLegal,
+  FERIADOS_LEGALES_CL,
+} from "./feriados.js";
+
 /** Feriado anual básico art. 67 (días hábiles; sábado inhábil, art. 69). */
 export const FERIADO_ANUAL_DIAS = 15;
 /** Art. 67: Magallanes, Aysén y Palena. */
