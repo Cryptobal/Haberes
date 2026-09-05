@@ -23,9 +23,9 @@ function leer() {
 }
 
 function pct(n) {
-  const p = Number(n) * 100;
-  const digits = Number.isInteger(p) ? 0 : Math.round(p * 10) === p * 10 ? 1 : 2;
-  return `${num(p, digits)} %`;
+  const bp = Math.round(Number(n) * 1e4);
+  const digits = bp % 100 === 0 ? 0 : bp % 10 === 0 ? 1 : 2;
+  return `${num(bp / 100, digits)} %`;
 }
 
 function render(calc) {
