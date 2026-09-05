@@ -118,6 +118,22 @@ export const IUSC_TRAMOS = [
 ];
 
 /**
+ * Retención / PPM de boletas de honorarios — Ley 21.133, calendario SII
+ * por año comercial de emisión (no inventar tasas fuera de esta tabla).
+ * Un solo porcentaje sobre el bruto; no desglosa AFP ni salud.
+ * @see https://www.sii.cl/preguntas_frecuentes/declaracion_renta/001_140_7297.htm
+ * @see https://www.sii.cl/noticias/2025/261225noti01smn.htm
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=1128420
+ */
+export const RETENCION_BOLETA_HONORARIOS = {
+  2025: 0.145,
+  2026: 0.1525,
+  2027: 0.16,
+  2028: 0.17,
+};
+export const RETENCION_BOLETA_ANIO_DEFAULT = 2026;
+
+/**
  * Asignación familiar y maternal — tramos a contar del 1 de mayo de 2026.
  * Ley N° 21.830 (D.O. 22.06.2026) modifica el inciso primero del art. 1° de la Ley N° 18.987.
  * SUSESO dictamen O-01-S-02728-2026; DT consulta «¿Cuál es el valor de la asignación familiar?».

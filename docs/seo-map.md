@@ -16,6 +16,7 @@ Actualizar este archivo antes de crear URLs nuevas para evitar canibalización.
 | Calcular vacaciones proporcionales | vacaciones proporcionales (1.300/16), feriado proporcional (590/13), calcular feriado proporcional (320/14) | `/vacaciones-proporcionales` | Title/H1 «calcular vacaciones proporcionales»; no canibalizar `/finiquito` ni `/guias/vacaciones-proporcionales` |
 | Calcular gratificación | gratificación legal (4.400/17) — intención calcular | `/gratificacion` | Title/H1 «calcular gratificación»; no canibalizar `/sueldo` ni `/guias/gratificacion-legal` |
 | Calcular impuesto único | calcular impuesto unico (480/mes), tabla impuesto unico (2.900/mes) | `/impuesto-unico` | Title/H1 «calcular impuesto único»; no canibalizar `/sueldo` ni `/guias/impuesto-unico` |
+| Calcular retención boleta de honorarios | boleta de honorarios / retención honorarios / líquido boleta | `/boleta-honorarios` | Title/H1 «calcular retención boleta de honorarios»; no canibalizar `/sueldo`, `/impuesto-unico`, `/cotizaciones-previsionales` ni `/costo-empresa`. Independientes, retención Ley 21.133 (15,25 % en 2026). No es IUSC ni sueldo de dependiente. No crear `/retencion-honorarios`, `/boleta` ni `/honorarios` |
 | Calcular cotizaciones previsionales | cotizaciones previsionales / tope imponible AFP / comisión AFP | `/cotizaciones-previsionales` | Title/H1 «calcular cotizaciones previsionales»; no canibalizar `/sueldo` ni `/guias/liquidacion-de-sueldo-y-previred`. No crear `/tope-imponible`, `/cotizacion-afp`, `/descuentos-legales` ni `/calculadora-sueldo` |
 | Calcular costo empresa de un sueldo | costo empresa / costo de un trabajador / cuánto cuesta contratar | `/costo-empresa` | Title/H1 «calcular costo empresa de un sueldo»; no canibalizar `/sueldo` ni `/cotizaciones-previsionales`. Responde «cuánto me cuesta contratar», no el líquido. No crear `/costo-trabajador` ni `/aportes-patronales` |
 | Calcular seguro de cesantía | seguro de cesantía / cotización AFC / Ley 19.728 | `/seguro-cesantia` | Title/H1 «calcular seguro de cesantía»; no canibalizar `/cotizaciones-previsionales`, `/costo-empresa` ni `/sueldo`. Cotización mensual AFC (trabajador + empleador, CIC/FCS). No es prestación post-despido ni AFP/salud. No crear `/afc` ni `/cesantia` |
@@ -156,6 +157,12 @@ del mes con licencia médica (empleador /30 + estimación SIL D.F.L. 44) vive en
 `/licencia-medica`. No publicar `/sil`, `/subsidio-incapacidad` ni `/licencia`. El líquido
 sigue en `/sueldo`. El feriado en dinero sigue en `/vacaciones-proporcionales`. El finiquito
 completo sigue en `/finiquito`.
+
+No publicar `/retencion-honorarios`, `/boleta` ni `/honorarios`. La retención de boleta de
+honorarios de independientes (Ley 21.133, un % sobre el bruto del año de emisión) vive en
+`/boleta-honorarios`. El líquido de un dependiente sigue en `/sueldo`. El IUSC sigue en
+`/impuesto-unico`. AFP/salud de un contrato siguen en `/cotizaciones-previsionales`. El costo
+de contratar sigue en `/costo-empresa`.
 
 No publicar `/dias-aviso` ni `/aviso-previo`. La indemnización sustitutiva del aviso de treinta días
 (arts. 161 y 162) vive en `/indemnizacion-aviso-previo`. La carta (formalidades) sigue en
