@@ -35,6 +35,8 @@ import {
   TEXTO_LEGAL_MAX,
   TOPE_AFP_SALUD_UF,
   TOPE_CESANTIA_UF,
+  RETENCION_BOLETA_ANIO_DEFAULT,
+  RETENCION_BOLETA_HONORARIOS,
   resumirTextoLegal,
 } from "../js/constants.js";
 import { CAUSALES, causalPorId } from "../js/causales.js";
@@ -70,6 +72,7 @@ import {
   calcularSueldo,
   calcularDescuentoAtrasosInasistencias,
   calcularLicenciaMedica,
+  calcularBoletaHonorarios,
   calcularSueldoMinimo,
   calcularSueldoProporcional,
   diasCalendarioFraccionMes,
@@ -789,6 +792,62 @@ console.log("\nLicencia médica (empleador /30 + SIL D.F.L. 44)");
     "app-licencia-medica usa calcularLicenciaMedica",
     /import\s*\{[^}]*calcularLicenciaMedica[^}]*\}\s*from\s*["']\.\/sueldo\.js["']/.test(lmApp) &&
       /calcularLicenciaMedica\s*\(/.test(lmApp),
+  );
+}
+
+console.log("\nBoleta de honorarios (retención Ley 21.133 / SII)");
+{
+  assert(
+    "tasas boleta 2025–2028 Ley 21.133 / SII, sin inventar otros años",
+    RETENCION_BOLETA_ANIO_DEFAULT === 2026 &&
+      RETENCION_BOLETA_HONORARIOS[2025] === 0.145 &&
+      RETENCION_BOLETA_HONORARIOS[2026] === 0.1525 &&
+      RETENCION_BOLETA_HONORARIOS[2027] === 0.16 &&
+      RETENCION_BOLETA_HONORARIOS[2028] === 0.17 &&
+      RETENCION_BOLETA_HONORARIOS[2024] == null &&
+      RETENCION_BOLETA_HONORARIOS[2029] == null,
+  );
+  const g1 = calcularBoletaHonorarios({ modo: "bruto", monto: 1_000_000, anio: 2026 });
+  assert(
+    "gold 2026 bruto 1000000 → retención 152500, líquido 847500",
+    g1.ok &&
+      g1.tasa === 0.1525 &&
+      g1.bruto === 1_000_000 &&
+      g1.retencion === 152_500 &&
+      g1.liquido === 847_500,
+    JSON.stringify(g1),
+  );
+  const g2 = calcularBoletaHonorarios({ modo: "liquido", monto: 847_500, anio: 2026 });
+  assert(
+    "gold 2026 líquido 847500 → bruto 1000000, retención 152500",
+    g2.ok && g2.bruto === 1_000_000 && g2.retencion === 152_500 && g2.liquido === 847_500,
+    JSON.stringify(g2),
+  );
+  const g3 = calcularBoletaHonorarios({ modo: "bruto", monto: 100_000, anio: 2026 });
+  assert(
+    "ejemplo SII 2026 bruto 100000 → retención 15250, líquido 84750",
+    g3.retencion === 15_250 && g3.liquido === 84_750,
+    JSON.stringify(g3),
+  );
+  assert(
+    "2025/2027/2028 sobre 1000000",
+    calcularBoletaHonorarios({ monto: 1_000_000, anio: 2025 }).retencion === 145_000 &&
+      calcularBoletaHonorarios({ monto: 1_000_000, anio: 2025 }).liquido === 855_000 &&
+      calcularBoletaHonorarios({ monto: 1_000_000, anio: 2027 }).retencion === 160_000 &&
+      calcularBoletaHonorarios({ monto: 1_000_000, anio: 2028 }).retencion === 170_000,
+  );
+  assert(
+    "inputs negativos → 0; año desconocido usa 2026",
+    calcularBoletaHonorarios({ monto: -1, anio: 2026 }).bruto === 0 &&
+      calcularBoletaHonorarios({ monto: 1_000_000, anio: 2019 }).ok === false &&
+      calcularBoletaHonorarios({ monto: 1_000_000, anio: 2019 }).anio === 2026 &&
+      calcularBoletaHonorarios({ monto: 1_000_000, anio: 2019 }).retencion === 152_500,
+  );
+  const bhApp = readFileSync(join(root, "js/app-boleta-honorarios.js"), "utf8");
+  assert(
+    "app-boleta-honorarios usa calcularBoletaHonorarios",
+    /import\s*\{[^}]*calcularBoletaHonorarios[^}]*\}\s*from\s*["']\.\/sueldo\.js["']/.test(bhApp) &&
+      /calcularBoletaHonorarios\s*\(/.test(bhApp),
   );
 }
 
@@ -1867,6 +1926,7 @@ const required = [
   "sueldo-minimo.html",
   "descuento-atrasos.html",
   "licencia-medica.html",
+  "boleta-honorarios.html",
   "feriado-anual.html",
   "feriado-progresivo.html",
   "indemnizacion-anos-servicio.html",
@@ -1890,6 +1950,7 @@ const required = [
   "js/app-sueldo-minimo.js",
   "js/app-descuento-atrasos.js",
   "js/app-licencia-medica.js",
+  "js/app-boleta-honorarios.js",
   "js/app-feriado-anual.js",
   "js/app-feriado-progresivo.js",
   "js/app-indemnizacion-anos-servicio.js",
@@ -2041,6 +2102,7 @@ const htmlFiles = [
   "sueldo-minimo.html",
   "descuento-atrasos.html",
   "licencia-medica.html",
+  "boleta-honorarios.html",
   "feriado-anual.html",
   "feriado-progresivo.html",
   "indemnizacion-anos-servicio.html",
@@ -2139,6 +2201,7 @@ const appEntries = [
   "js/app-sueldo-minimo.js",
   "js/app-descuento-atrasos.js",
   "js/app-licencia-medica.js",
+  "js/app-boleta-honorarios.js",
   "js/app-feriado-anual.js",
   "js/app-feriado-progresivo.js",
   "js/app-indemnizacion-anos-servicio.js",
@@ -2178,7 +2241,7 @@ assert("robots Allow /", /Allow:\s*\//.test(robots));
 assert("robots Disallow /admin", /Disallow:\s*\/admin/.test(robots));
 assert("robots Disallow /api", /Disallow:\s*\/api/.test(robots));
 assert("robots Disallow /docs", /Disallow:\s*\/docs/.test(robots));
-assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/feriado-anual/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/licencia-medica/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots));
+assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/feriado-anual/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/licencia-medica/.test(robots) && !/Disallow:\s*\/boleta-honorarios/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots));
 assert("robots Sitemap", /Sitemap:\s*https:\/\/www\.haberes\.cl\/sitemap\.xml/.test(robots));
 
 const { seoPaths, GUIDE_SLUGS, GUIDES, CAUSAL_PAGES, BASE_PATHS, lastmodForPath } = await import("../content/registry.js");
@@ -2217,6 +2280,7 @@ assert(
     BASE_PATHS.includes("/sueldo-minimo") &&
     BASE_PATHS.includes("/descuento-atrasos") &&
     BASE_PATHS.includes("/licencia-medica") &&
+    BASE_PATHS.includes("/boleta-honorarios") &&
     BASE_PATHS.includes("/indemnizacion-aviso-previo"),
   `${locs.length} vs ${expectedFromRegistry.length}`,
 );
@@ -2568,7 +2632,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 69,
+      seoPaths().length === 70,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -2580,7 +2644,7 @@ try {
   const docsSeo = await hitLocal("/docs/seo-map.md");
   assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
   assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
-  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/asignacion-familiar/", "/colacion-movilizacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/asignacion-familiar/", "/colacion-movilizacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
   }
@@ -2610,6 +2674,7 @@ try {
     "/sueldo-minimo",
     "/descuento-atrasos",
     "/licencia-medica",
+    "/boleta-honorarios",
     "/indemnizacion-aviso-previo",
     "/gratificacion",
     "/impuesto-unico",
@@ -5840,6 +5905,7 @@ assert(
     ["sueldo-minimo.html", "/sueldo-minimo"],
     ["descuento-atrasos.html", "/descuento-atrasos"],
     ["licencia-medica.html", "/licencia-medica"],
+    ["boleta-honorarios.html", "/boleta-honorarios"],
     ["feriado-anual.html", "/feriado-anual"],
     ["feriado-progresivo.html", "/feriado-progresivo"],
     ["indemnizacion-anos-servicio.html", "/indemnizacion-anos-servicio"],
@@ -6603,6 +6669,120 @@ assert(
       "hub /guias enlaza /licencia-medica en el cluster de liquidación",
       /href="\/licencia-medica"/.test(readFileSync(join(root, "guias.html"), "utf8")) &&
         !/<h2>Finiquito<\/h2>[\s\S]*href="\/licencia-medica"/.test(
+          readFileSync(join(root, "guias.html"), "utf8"),
+        ),
+    );
+  }
+  {
+    const bhHtml = readFileSync(join(root, "boleta-honorarios.html"), "utf8");
+    const bhTitle = (bhHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const bhH1 = (bhHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const bhDesc = (bhHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "";
+    const sueldoHtml = readFileSync(join(root, "sueldo.html"), "utf8");
+    const sueldoTitle = (sueldoHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const sueldoH1 = (sueldoHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const iuHtml = readFileSync(join(root, "impuesto-unico.html"), "utf8");
+    const iuTitle = (iuHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const iuH1 = (iuHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const cpHtml = readFileSync(join(root, "cotizaciones-previsionales.html"), "utf8");
+    const cpTitle = (cpHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const cpH1 = (cpHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const gold = calcularBoletaHonorarios({ modo: "bruto", monto: 1_000_000, anio: 2026 });
+    const fromLiq = calcularBoletaHonorarios({ modo: "liquido", monto: 847_500, anio: 2026 });
+    const siiEj = calcularBoletaHonorarios({ modo: "bruto", monto: 100_000, anio: 2026 });
+    assert(
+      "SEO title boleta honorarios apunta a calcular boleta de honorarios",
+      /calcular boleta de honorarios/i.test(bhTitle) &&
+        !/sueldo l[ií]quido/i.test(bhTitle) &&
+        !/impuesto [uú]nico/i.test(bhTitle) &&
+        bhTitle !== sueldoTitle &&
+        bhTitle !== iuTitle &&
+        bhTitle !== cpTitle &&
+        bhTitle.length <= 65,
+      bhTitle,
+    );
+    assert(
+      "SEO H1 boleta honorarios distinto de /sueldo y /impuesto-unico",
+      bhH1 === "Calcular retención boleta de honorarios Chile 2026" &&
+        bhH1 !== sueldoH1 &&
+        bhH1 !== iuH1 &&
+        bhH1 !== cpH1 &&
+        !/sueldo l[ií]quido/i.test(bhH1) &&
+        !/impuesto [uú]nico/i.test(bhH1),
+      bhH1,
+    );
+    assert(
+      "SEO boleta honorarios meta distinta de /sueldo y /impuesto-unico",
+      bhDesc &&
+        bhDesc !== ((sueldoHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "") &&
+        bhDesc !== ((iuHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || ""),
+    );
+    assert(
+      "SEO boleta honorarios cita Ley 21.133, SII y tasas 2025–2028",
+      /Ley 21\.133/.test(bhHtml) &&
+        /bcn\.cl\/leychile\/navegar\?idNorma=1128420/.test(bhHtml) &&
+        /sii\.cl\/preguntas_frecuentes\/declaracion_renta\/001_140_7297/.test(bhHtml) &&
+        /sii\.cl\/noticias\/2025\/261225noti01smn/.test(bhHtml) &&
+        /14,5\s*%/.test(bhHtml) &&
+        /15,25\s*%/.test(bhHtml) &&
+        /16\s*%/.test(bhHtml) &&
+        /17\s*%/.test(bhHtml),
+    );
+    assert(
+      "SEO boleta honorarios gold 2026 1.000.000 → 152.500 / 847.500",
+      gold.retencion === 152_500 &&
+        gold.liquido === 847_500 &&
+        fromLiq.bruto === 1_000_000 &&
+        siiEj.retencion === 15_250 &&
+        /\$1\.000\.000/.test(bhHtml) &&
+        /\$152\.500/.test(bhHtml) &&
+        /\$847\.500/.test(bhHtml),
+    );
+    assert("SEO boleta honorarios FAQPage", /"@type": "FAQPage"/.test(bhHtml));
+    assert(
+      "SEO boleta honorarios no es sueldo, IUSC ni cotizaciones de dependiente",
+      /href="\/sueldo"/.test(bhHtml) &&
+        /href="\/impuesto-unico"/.test(bhHtml) &&
+        /href="\/cotizaciones-previsionales"/.test(bhHtml) &&
+        /href="\/costo-empresa"/.test(bhHtml) &&
+        /independiente/.test(bhHtml.toLowerCase()) &&
+        /no reparte/.test(bhHtml.toLowerCase()) &&
+        !/Operación Renta advice/i.test(bhHtml) &&
+        !existsSync(join(root, "retencion-honorarios.html")) &&
+        !existsSync(join(root, "boleta.html")) &&
+        !existsSync(join(root, "honorarios.html")),
+    );
+    assert(
+      "SEO boleta honorarios métrica principal es líquido de la boleta",
+      /L[ií]quido de la boleta/.test(bhHtml) &&
+        !/<p class="metric-label">Sueldo l[ií]quido/.test(bhHtml) &&
+        !/<p class="metric-label">Impuesto del mes/.test(bhHtml),
+    );
+    assert(
+      "home y nav enlazan /boleta-honorarios",
+      /href="\/boleta-honorarios"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/boleta-honorarios" data-nav>Boleta honorarios<\/a>/.test(
+          readFileSync(join(root, "index.html"), "utf8"),
+        ) &&
+        /href="\/boleta-honorarios" data-nav>Boleta honorarios<\/a>/.test(bhHtml),
+    );
+    assert(
+      "sitemap incluye /boleta-honorarios",
+      locs.includes("https://www.haberes.cl/boleta-honorarios") &&
+        lastmodForPath("/boleta-honorarios") === "2026-09-05",
+    );
+    assert(
+      "seo-map documenta /boleta-honorarios y no-canibalizar /sueldo e /impuesto-unico",
+      /\/boleta-honorarios/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no canibalizar `\/sueldo`, `\/impuesto-unico`/.test(
+          readFileSync(join(root, "docs/seo-map.md"), "utf8"),
+        ) &&
+        /no crear `\/retencion-honorarios`/i.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")),
+    );
+    assert(
+      "hub /guias enlaza /boleta-honorarios en el cluster de liquidación",
+      /href="\/boleta-honorarios"/.test(readFileSync(join(root, "guias.html"), "utf8")) &&
+        !/<h2>Finiquito<\/h2>[\s\S]*href="\/boleta-honorarios"/.test(
           readFileSync(join(root, "guias.html"), "utf8"),
         ),
     );
@@ -8587,6 +8767,7 @@ assert(
       "sueldo-minimo.html",
       "descuento-atrasos.html",
       "licencia-medica.html",
+      "boleta-honorarios.html",
       "feriado-anual.html",
       "feriado-progresivo.html",
       "indemnizacion-anos-servicio.html",
@@ -8768,7 +8949,7 @@ assert(
     return acc;
   }
   const pages = listHtml(root);
-  assert("71 páginas HTML", pages.length === 71, String(pages.length));
+  assert("72 páginas HTML", pages.length === 72, String(pages.length));
   for (const file of pages) {
     const html = readFileSync(file, "utf8");
     const rel = file.slice(root.length + 1);

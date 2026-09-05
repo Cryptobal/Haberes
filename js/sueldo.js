@@ -27,6 +27,8 @@ import {
   LEY_21735_TASA,
   MUTUAL_TASA_BASICA,
   RECARGO_DOMINGO_COMERCIO_MIN,
+  RETENCION_BOLETA_ANIO_DEFAULT,
+  RETENCION_BOLETA_HONORARIOS,
   SALUD_TASA,
   SANNA_TASA,
   TOPE_AFP_SALUD_UF,
@@ -685,6 +687,53 @@ export function calcularLicenciaMedica({
     diarioSil,
     silTramo,
     excluirOcasionales: Boolean(excluirOcasionales),
+  };
+}
+
+/**
+ * Retención de una boleta de honorarios (independientes).
+ * Un solo % sobre el bruto según el año de emisión (Ley 21.133 / SII).
+ * No simula AFP, salud ni Operación Renta.
+ *
+ * De bruto: retención = round(bruto × tasa); líquido = bruto − retención.
+ * De líquido deseado: bruto = round(líquido / (1 − tasa)), luego la misma retención.
+ *
+ * @see https://www.sii.cl/preguntas_frecuentes/declaracion_renta/001_140_7297.htm
+ * @see https://www.sii.cl/noticias/2025/261225noti01smn.htm
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=1128420
+ */
+export function calcularBoletaHonorarios({
+  modo = "bruto",
+  monto = 0,
+  anio = RETENCION_BOLETA_ANIO_DEFAULT,
+} = {}) {
+  const anioNum = Math.trunc(Number(anio));
+  const ok = Object.prototype.hasOwnProperty.call(RETENCION_BOLETA_HONORARIOS, anioNum);
+  const anioUsado = ok ? anioNum : RETENCION_BOLETA_ANIO_DEFAULT;
+  const tasa = RETENCION_BOLETA_HONORARIOS[anioUsado];
+  const modoNorm = String(modo || "bruto").toLowerCase() === "liquido" ? "liquido" : "bruto";
+  const m = Math.max(0, Number(monto) || 0);
+
+  let bruto;
+  if (modoNorm === "liquido") {
+    bruto = tasa < 1 ? roundPeso(m / (1 - tasa)) : 0;
+  } else {
+    bruto = roundPeso(m);
+  }
+  const retencion = roundPeso(bruto * tasa);
+  const liquido = Math.max(0, bruto - retencion);
+
+  return {
+    modo: modoNorm,
+    anio: anioUsado,
+    anioSolicitado: Number.isFinite(anioNum) ? anioNum : anio,
+    ok,
+    tasa,
+    tasaPct: tasa * 100,
+    monto: roundPeso(m),
+    bruto,
+    retencion,
+    liquido,
   };
 }
 
