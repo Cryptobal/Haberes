@@ -29,6 +29,7 @@ Actualizar este archivo antes de crear URLs nuevas para evitar canibalización.
 | Calcular indemnización por años de servicio | indemnizacion por años de servicio (2.400/24) — intención calcular | `/indemnizacion-anos-servicio` | Title/H1 «calcular indemnización por años de servicio»; no canibalizar `/finiquito` ni `/guias/indemnizacion-por-anos-de-servicio`. Art. 163 (IAS), no el finiquito completo. No crear `/indemnizacion` |
 | Calcular descuento por atrasos e inasistencias | descuento atrasos / descuento inasistencias / ausencias injustificadas | `/descuento-atrasos` | Title/H1 «calcular descuento por atrasos e inasistencias»; no canibalizar `/sueldo`, `/sueldo-proporcional`, `/horas-extras` ni `/cotizaciones-previsionales`. Descuento bruto por minutos no trabajados e inasistencias injustificadas (DT /30). No es líquido ni liquidación. No crear `/descuento-inasistencias`, `/atrasos` ni `/ausencias` |
 | Calcular sueldo con licencia médica | licencia médica / subsidio incapacidad laboral / SIL / sueldo con licencia | `/licencia-medica` | Title/H1 «calcular sueldo con licencia médica»; no canibalizar `/sueldo`, `/sueldo-proporcional` ni `/descuento-atrasos`. Bruto empleador (días trabajados × rem/30) + estimación SIL (promedio 3 netas / 30). No es líquido ni liquidación COMPIN/Isapre. No crear `/sil`, `/subsidio-incapacidad` ni `/licencia` |
+| Calcular retención judicial de pensión de alimentos | retención judicial / pensión de alimentos / descuento judicial alimentos | `/retencion-judicial` | Title/H1 «calcular retención judicial» + pensión de alimentos Chile 2026; no canibalizar `/sueldo` ni `/descuento-atrasos`. Aritmética de nómina (Ley 14.908 art. 8 / Ley 21.389): monto fijo o % sobre el líquido del mes, remanente al trabajador. No es líquido ni atrasos. No crear `/pension-alimenticia`, `/alimentos`, `/descuento-judicial` ni `/retencion-alimentos` |
 | Calcular sueldo proporcional | sueldo proporcional / días trabajados mes / remuneración proporcional | `/sueldo-proporcional` | Title/H1 «calcular sueldo proporcional»; no canibalizar `/sueldo`, `/vacaciones-proporcionales` ni `/finiquito`. Bruto de un mes incompleto (mensual / 30 × días calendario). No crear `/dias-trabajados` ni `/sueldo-proporcional-dias` |
 | Calcular aguinaldo Fiestas Patrias | aguinaldo fiestas patrias (5.400/23) — intención presupuestar/calcular monto | `/aguinaldo` | Title/H1 «calcular aguinaldo Fiestas Patrias»; no es obligación legal general del Código; no canibalizar `/gratificacion`, `/sueldo` ni `/guias/aguinaldo-fiestas-patrias`. No crear `/bono-fiestas-patrias` ni `/aguinaldo-navidad` |
 | Calcular finiquito de casa particular | finiquito asesora del hogar / finiquito trabajadora casa particular — intención calcular | `/finiquito-casa-particular` | Title/H1 «calcular finiquito casa particular»; no canibalizar `/finiquito`, `/indemnizacion-anos-servicio` ni `/guias/finiquito-trabajadora-de-casa-particular`. Estatuto propio (art. 163 a todo evento AFP 1,11 %, aviso art. 161). No crear `/finiquito-nana` ni `/asesora-hogar` |
@@ -153,9 +154,12 @@ No publicar `/dias-trabajados` ni `/sueldo-proporcional-dias`. El bruto de un me
 por atrasos e inasistencias injustificadas (valor día / 30, valor hora DT) vive en
 `/descuento-atrasos`. No publicar `/descuento-inasistencias`, `/atrasos` ni `/ausencias`. El bruto
 del mes con licencia médica (empleador /30 + estimación SIL D.F.L. 44) vive en
-`/licencia-medica`. No publicar `/sil`, `/subsidio-incapacidad` ni `/licencia`. El líquido
-sigue en `/sueldo`. El feriado en dinero sigue en `/vacaciones-proporcionales`. El finiquito
-completo sigue en `/finiquito`.
+`/licencia-medica`. No publicar `/sil`, `/subsidio-incapacidad` ni `/licencia`. La retención
+judicial de pensión de alimentos (Ley 14.908 art. 8) vive en `/retencion-judicial`.
+No publicar `/pension-alimenticia`, `/alimentos`, `/descuento-judicial` ni
+`/retencion-alimentos`. El líquido sigue en `/sueldo`. El descuento por atrasos e
+inasistencias sigue en `/descuento-atrasos`. El feriado en dinero sigue en
+`/vacaciones-proporcionales`. El finiquito completo sigue en `/finiquito`.
 
 No publicar `/dias-aviso` ni `/aviso-previo`. La indemnización sustitutiva del aviso de treinta días
 (arts. 161 y 162) vive en `/indemnizacion-aviso-previo`. La carta (formalidades) sigue en
