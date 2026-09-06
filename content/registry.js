@@ -78,6 +78,7 @@ export const PATH_LASTMOD = {
   "/descuento-atrasos": "2026-09-03",
   "/licencia-medica": "2026-09-04",
   "/retencion-judicial": "2026-09-05",
+  "/apv": "2026-09-06",
   "/feriado-anual": "2026-09-04",
   "/feriado-irrenunciable": "2026-09-02",
   "/feriado-progresivo": "2026-08-28",
@@ -102,6 +103,7 @@ export const GUIDE_SLUGS = GUIDES.map((g) => g.slug);
 export const BASE_PATHS = [
   "/",
   "/aguinaldo",
+  "/apv",
   "/asignacion-familiar",
   "/colacion-movilizacion",
   "/como",
