@@ -30,6 +30,7 @@ import {
   SALUD_TASA,
   SANNA_TASA,
   TOPE_AFP_SALUD_UF,
+  TOPE_APV_REGIMEN_B_UF,
   TOPE_CESANTIA_UF,
 } from "./constants.js";
 import {
@@ -1016,6 +1017,72 @@ export function calcularSueldo(input = {}, indicadores = {}) {
       (diasInfo.diasLicencia || 0) > 0
         ? "El subsidio lo paga Fonasa, la Isapre o la CCAF; no se incluye en esta liquidación."
         : "",
+  };
+}
+
+/**
+ * Efecto del APV Régimen B (art. 42 bis LIR) en la liquidación del mes.
+ *
+ * El depósito se resta de la renta líquida imponible del IUSC, después de AFP,
+ * salud y cesantía del trabajador. No cambia la base previsional (AFP/salud/
+ * cesantía). Tope mensual de depósito: 50 UF (D.L. 3.500). El tope anual de
+ * 600 UF y la bonificación del Régimen A (15 %, tope 6 UTM en Operación Renta)
+ * no se simulan aquí.
+ *
+ * Reusa `calcularSueldo` (mismos topes, comisiones AFP y tabla IUSC).
+ *
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=6368 art. 42 bis
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=7147 D.L. 3.500
+ */
+export function calcularApv(input = {}, indicadores = {}) {
+  const apvPedido = roundPeso(Math.max(0, Number(input.apvRegimenB ?? input.apv) || 0));
+  const sin = calcularSueldo(
+    {
+      sueldoBase: input.sueldoBase ?? input.rentaImponible ?? 0,
+      afp: input.afp,
+      salud: input.salud,
+      contrato: input.contrato,
+      isaprePactado: input.isaprePactado,
+    },
+    indicadores,
+  );
+  const uf = Number(indicadores.uf) || sin.uf || FALLBACK_UF;
+  const topeMensual = roundPeso(TOPE_APV_REGIMEN_B_UF * uf);
+  const apvDescontado = Math.min(apvPedido, topeMensual);
+  const apvTributable = Math.min(apvDescontado, sin.baseTributable);
+  const baseTributableConApv = Math.max(0, sin.baseTributable - apvTributable);
+  const iuscConApv = calcularIusc(baseTributableConApv);
+  const ahorroIusc = Math.max(0, sin.iusc - iuscConApv);
+  const totalDescuentosConApv =
+    sin.afp.monto + sin.salud.monto + sin.cesantia.monto + iuscConApv + apvDescontado;
+  const liquidoConApv = sin.totalHaberes - totalDescuentosConApv;
+
+  return {
+    sueldoBase: sin.sueldoBase,
+    apvPedido,
+    apvDescontado,
+    apvTributable,
+    topeMensualUf: TOPE_APV_REGIMEN_B_UF,
+    topeMensual,
+    topeUfAplicado: apvPedido > topeMensual,
+    afp: sin.afp,
+    salud: sin.salud,
+    cesantia: sin.cesantia,
+    imponible: sin.imponible,
+    cotizacionesLegales: roundPeso(sin.afp.monto + sin.salud.monto + sin.cesantia.monto),
+    baseTributableSinApv: sin.baseTributable,
+    baseTributableConApv,
+    iuscSinApv: sin.iusc,
+    iuscConApv,
+    ahorroIusc,
+    liquidoSinApv: sin.liquido,
+    liquidoConApv,
+    costoLiquido: roundPeso(sin.liquido - liquidoConApv),
+    totalDescuentosConApv,
+    liquidoNegativo: liquidoConApv < 0,
+    sinAhorroIusc: ahorroIusc === 0,
+    uf,
+    contrato: sin.contrato,
   };
 }
 
