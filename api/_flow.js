@@ -1,5 +1,5 @@
 import { createHmac, randomBytes } from "node:crypto";
-import { publicOrigin, sendPlanDowngradeEmail } from "./_lib.js";
+import { notifyProActivated, publicOrigin, sendPlanDowngradeEmail } from "./_lib.js";
 import { PRO_AMOUNT_CLP, PRO_DAYS, header, queryParam } from "./_mp.js";
 
 export const FLOW_PLAN_ID = "haberespro";
@@ -405,7 +405,7 @@ async function findCompanyByFlow(client, { customerId, subscriptionId, companyId
   return null;
 }
 
-export async function activateFlowSubscription(client, row, { customerId, subscriptionId, planId }) {
+export async function activateFlowSubscription(client, row, { customerId, subscriptionId, planId, notify, eventId } = {}) {
   await client.query(
     `UPDATE companies
      SET plan = 'pro', plan_until = NULL,
@@ -416,6 +416,11 @@ export async function activateFlowSubscription(client, row, { customerId, subscr
      WHERE id = $1`,
     [row.id, customerId || null, subscriptionId || null, planId || null],
   );
+  await notifyProActivated(row, {
+    provider: "flow",
+    eventId: eventId || subscriptionId || customerId || row.id,
+    notify,
+  });
   return { applied: true, plan: "pro" };
 }
 
@@ -428,6 +433,11 @@ export async function applyFlowCardRegistered(client, register, deps = {}) {
   const row = await findCompanyByFlow(client, { customerId });
   if (!row) return { applied: false, reason: "not_found" };
   if (row.flow_subscription_id && String(row.plan || "").toLowerCase() === "pro") {
+    await notifyProActivated(row, {
+      provider: "flow",
+      eventId: row.flow_subscription_id,
+      notify: deps.notifyPro,
+    });
     return { applied: true, reason: "idempotent", plan: "pro" };
   }
 
@@ -442,7 +452,13 @@ export async function applyFlowCardRegistered(client, register, deps = {}) {
   if (!created.ok || !subscriptionId) {
     return { applied: false, reason: "flow_subscription_unavailable" };
   }
-  return activateFlowSubscription(client, row, { customerId, subscriptionId, planId });
+  return activateFlowSubscription(client, row, {
+    customerId,
+    subscriptionId,
+    planId,
+    notify: deps.notifyPro,
+    eventId: subscriptionId,
+  });
 }
 
 export async function applyFetchedFlowInvoice(client, invoice, deps = {}) {
@@ -460,7 +476,14 @@ export async function applyFetchedFlowInvoice(client, invoice, deps = {}) {
     if (Number.isFinite(amount) && amount + 0.5 < PRO_AMOUNT_CLP) {
       return { applied: false, reason: "amount" };
     }
-    return activateFlowSubscription(client, row, { customerId, subscriptionId, planId: row.flow_plan_id });
+    const invoiceId = String(invoice?.invoiceId || invoice?.id || "").trim();
+    return activateFlowSubscription(client, row, {
+      customerId,
+      subscriptionId,
+      planId: row.flow_plan_id,
+      notify: deps.notifyPro,
+      eventId: invoiceId || subscriptionId,
+    });
   }
 
   if (invoiceIsFailed(invoice)) {
@@ -494,6 +517,8 @@ export async function applyFetchedFlowSubscription(client, subscription, deps = 
       customerId,
       subscriptionId,
       planId: subscription.planId || row.flow_plan_id,
+      notify: deps.notifyPro,
+      eventId: subscriptionId,
     });
   }
 
@@ -527,12 +552,13 @@ export async function applyFetchedFlowStatus(client, status, token, deps = {}) {
       return { applied: false, reason: "amount" };
     }
     const found = await client.query(
-      `SELECT id, plan, flow_token, flow_subscription_id, plan_until FROM companies WHERE id = $1 LIMIT 1`,
+      `SELECT id, plan, flow_token, flow_subscription_id, plan_until, email, rut, razon_social FROM companies WHERE id = $1 LIMIT 1`,
       [companyId],
     );
     const row = found.rows[0];
     if (!row) return { applied: false, reason: "not_found" };
     if (String(row.flow_token || "") === flowToken && String(row.plan || "").toLowerCase() === "pro") {
+      await notifyProActivated(row, { provider: "flow", eventId: flowToken, notify: deps.notifyPro });
       return { applied: true, reason: "idempotent", plan: "pro" };
     }
     if (row.flow_subscription_id) {
@@ -543,6 +569,7 @@ export async function applyFetchedFlowStatus(client, status, token, deps = {}) {
          WHERE id = $1`,
         [companyId, flowToken, flowOrder || null, commerceOrder || null],
       );
+      await notifyProActivated(row, { provider: "flow", eventId: flowToken, notify: deps.notifyPro });
       return { applied: true, plan: "pro" };
     }
     const now = new Date();
@@ -557,6 +584,7 @@ export async function applyFetchedFlowStatus(client, status, token, deps = {}) {
        WHERE id = $1`,
       [companyId, flowToken, flowOrder || null, commerceOrder || null, until.toISOString()],
     );
+    await notifyProActivated(row, { provider: "flow", eventId: flowToken, notify: deps.notifyPro });
     return { applied: true, plan: "pro", until: until.toISOString() };
   }
 

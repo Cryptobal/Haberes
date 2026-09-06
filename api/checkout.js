@@ -3,13 +3,14 @@ import {
   hasDatabaseUrl,
   json,
   noBackend,
+  notifyCheckoutStarted,
   rateLimited,
   readJson,
   readSessionToken,
   requireCompany,
+  withDb,
 } from "./_lib.js";
 import { createFlowCheckout, hasFlow } from "./_flow.js";
-import { withDb } from "./_lib.js";
 import { createProCheckout, hasMp } from "./_mp.js";
 
 export function configuredProviders() {
@@ -50,6 +51,7 @@ export async function handleCheckout(req, res, deps = {}) {
   const createMp = deps.createMp || createProCheckout;
   const createFlow = deps.createFlow || createFlowCheckout;
   const persist = deps.persistFlowIds || persistFlowIds;
+  const aviso = deps.notifyCheckout || notifyCheckoutStarted;
 
   if (provider === "flow") {
     if (!flowOn()) return json(res, 501, { ok: false, reason: "flow_unavailable" });
@@ -70,6 +72,11 @@ export async function handleCheckout(req, res, deps = {}) {
           planId: created.planId,
         });
         if (!saved) return json(res, 502, { ok: false, reason: "flow_error" });
+      }
+      try {
+        await aviso(company, { provider: "flow" });
+      } catch {
+        /* el correo es opcional: el checkout no depende de Resend */
       }
       return json(res, 200, {
         ok: true,
@@ -93,6 +100,11 @@ export async function handleCheckout(req, res, deps = {}) {
             ? 502
             : 502;
       return json(res, status, { ok: false, reason: created.reason || "mp_error" });
+    }
+    try {
+      await aviso(company, { provider: "mp" });
+    } catch {
+      /* el correo es opcional: el checkout no depende de Resend */
     }
     return json(res, 200, {
       ok: true,

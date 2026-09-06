@@ -1,5 +1,5 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
-import { publicOrigin, sendPlanDowngradeEmail } from "./_lib.js";
+import { notifyProActivated, publicOrigin, sendPlanDowngradeEmail } from "./_lib.js";
 
 export const PRO_NET_CLP = 14990;
 export const PRO_IVA_RATE = 0.19;
@@ -251,12 +251,13 @@ export async function applyFetchedPayment(client, payment, deps = {}) {
       return { applied: false, reason: "amount" };
     }
     const found = await client.query(
-      `SELECT id, plan, mp_payment_id, mp_preapproval_id, plan_until FROM companies WHERE id = $1 LIMIT 1`,
+      `SELECT id, plan, mp_payment_id, mp_preapproval_id, plan_until, email, rut, razon_social FROM companies WHERE id = $1 LIMIT 1`,
       [companyId],
     );
     const row = found.rows[0];
     if (!row) return { applied: false, reason: "not_found" };
     if (String(row.mp_payment_id || "") === paymentId && String(row.plan || "").toLowerCase() === "pro") {
+      await notifyProActivated(row, { provider: "mp", eventId: paymentId, notify: deps.notifyPro });
       return { applied: true, reason: "idempotent", plan: "pro" };
     }
     const recurring = Boolean(row.mp_preapproval_id) || paymentLooksRecurring(payment);
@@ -267,6 +268,7 @@ export async function applyFetchedPayment(client, payment, deps = {}) {
          WHERE id = $1`,
         [companyId, paymentId],
       );
+      await notifyProActivated(row, { provider: "mp", eventId: paymentId, notify: deps.notifyPro });
       return { applied: true, plan: "pro" };
     }
     const now = new Date();
@@ -280,6 +282,7 @@ export async function applyFetchedPayment(client, payment, deps = {}) {
        WHERE id = $1`,
       [companyId, paymentId, until.toISOString()],
     );
+    await notifyProActivated(row, { provider: "mp", eventId: paymentId, notify: deps.notifyPro });
     return { applied: true, plan: "pro", until: until.toISOString() };
   }
 
@@ -308,12 +311,20 @@ export async function applyFetchedPreapproval(client, preapproval, deps = {}) {
   if (!client || !companyId || !preId) return { applied: false, reason: "invalid" };
 
   if (status === "authorized" || status === "approved") {
-    await client.query(
+    const updated = await client.query(
       `UPDATE companies
        SET plan = 'pro', mp_preapproval_id = $2, plan_until = NULL, updated_at = NOW()
-       WHERE id = $1`,
+       WHERE id = $1
+       RETURNING id, email, rut, razon_social`,
       [companyId, preId],
     );
+    if (updated.rowCount > 0) {
+      await notifyProActivated(updated.rows[0], {
+        provider: "mp",
+        eventId: preId,
+        notify: deps.notifyPro,
+      });
+    }
     return { applied: true, plan: "pro" };
   }
 
