@@ -62,6 +62,15 @@ export const CESANTIA_INDEFINIDO = 0.006;
 export const TOPE_CESANTIA_UF = 135.2;
 
 /**
+ * Tope mensual de cotización voluntaria / APV que entra a la cuenta (D.L. 3.500).
+ * 50 UF al mes. El tope anual de rebaja tributaria Régimen B es 600 UF (art. 42 bis
+ * LIR); esta herramienta no arrastra meses ni simula Operación Renta.
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=7147
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=6368 art. 42 bis
+ */
+export const TOPE_APV_REGIMEN_B_UF = 50;
+
+/**
  * Seguro de cesantía — Ley 19.728 art. 5 (AFC / SUSESO / Superintendencia de Pensiones).
  * Indefinido: trabajador 0,6 % a la cuenta individual (CIC); empleador 2,4 %
  * (1,6 % CIC + 0,8 % fondo solidario). Plazo fijo u obra o faena: trabajador
@@ -116,6 +125,22 @@ export const IUSC_TRAMOS = [
   { hasta: 22211190, tasa: 0.35, rebaja: 1670854.68 },
   { hasta: Infinity, tasa: 0.4, rebaja: 2781414.18 },
 ];
+
+/**
+ * Retención / PPM de boletas de honorarios — Ley 21.133, calendario SII
+ * por año comercial de emisión (no inventar tasas fuera de esta tabla).
+ * Un solo porcentaje sobre el bruto; no desglosa AFP ni salud.
+ * @see https://www.sii.cl/preguntas_frecuentes/declaracion_renta/001_140_7297.htm
+ * @see https://www.sii.cl/noticias/2025/261225noti01smn.htm
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=1128420
+ */
+export const RETENCION_BOLETA_HONORARIOS = {
+  2025: 0.145,
+  2026: 0.1525,
+  2027: 0.16,
+  2028: 0.17,
+};
+export const RETENCION_BOLETA_ANIO_DEFAULT = 2026;
 
 /**
  * Asignación familiar y maternal — tramos a contar del 1 de mayo de 2026.

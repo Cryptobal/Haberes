@@ -16,6 +16,7 @@ Actualizar este archivo antes de crear URLs nuevas para evitar canibalización.
 | Calcular vacaciones proporcionales | vacaciones proporcionales (1.300/16), feriado proporcional (590/13), calcular feriado proporcional (320/14) | `/vacaciones-proporcionales` | Title/H1 «calcular vacaciones proporcionales»; no canibalizar `/finiquito` ni `/guias/vacaciones-proporcionales` |
 | Calcular gratificación | gratificación legal (4.400/17) — intención calcular | `/gratificacion` | Title/H1 «calcular gratificación»; no canibalizar `/sueldo` ni `/guias/gratificacion-legal` |
 | Calcular impuesto único | calcular impuesto unico (480/mes), tabla impuesto unico (2.900/mes) | `/impuesto-unico` | Title/H1 «calcular impuesto único»; no canibalizar `/sueldo` ni `/guias/impuesto-unico` |
+| Calcular retención boleta de honorarios | boleta de honorarios / retención honorarios / líquido boleta | `/boleta-honorarios` | Title/H1 «calcular retención boleta de honorarios»; no canibalizar `/sueldo`, `/impuesto-unico`, `/cotizaciones-previsionales` ni `/costo-empresa`. Independientes, retención Ley 21.133 (15,25 % en 2026). No es IUSC ni sueldo de dependiente. No crear `/retencion-honorarios`, `/boleta` ni `/honorarios` |
 | Calcular cotizaciones previsionales | cotizaciones previsionales / tope imponible AFP / comisión AFP | `/cotizaciones-previsionales` | Title/H1 «calcular cotizaciones previsionales»; no canibalizar `/sueldo` ni `/guias/liquidacion-de-sueldo-y-previred`. No crear `/tope-imponible`, `/cotizacion-afp`, `/descuentos-legales` ni `/calculadora-sueldo` |
 | Calcular costo empresa de un sueldo | costo empresa / costo de un trabajador / cuánto cuesta contratar | `/costo-empresa` | Title/H1 «calcular costo empresa de un sueldo»; no canibalizar `/sueldo` ni `/cotizaciones-previsionales`. Responde «cuánto me cuesta contratar», no el líquido. No crear `/costo-trabajador` ni `/aportes-patronales` |
 | Calcular seguro de cesantía | seguro de cesantía / cotización AFC / Ley 19.728 | `/seguro-cesantia` | Title/H1 «calcular seguro de cesantía»; no canibalizar `/cotizaciones-previsionales`, `/costo-empresa` ni `/sueldo`. Cotización mensual AFC (trabajador + empleador, CIC/FCS). No es prestación post-despido ni AFP/salud. No crear `/afc` ni `/cesantia` |
@@ -30,6 +31,7 @@ Actualizar este archivo antes de crear URLs nuevas para evitar canibalización.
 | Calcular descuento por atrasos e inasistencias | descuento atrasos / descuento inasistencias / ausencias injustificadas | `/descuento-atrasos` | Title/H1 «calcular descuento por atrasos e inasistencias»; no canibalizar `/sueldo`, `/sueldo-proporcional`, `/horas-extras` ni `/cotizaciones-previsionales`. Descuento bruto por minutos no trabajados e inasistencias injustificadas (DT /30). No es líquido ni liquidación. No crear `/descuento-inasistencias`, `/atrasos` ni `/ausencias` |
 | Calcular sueldo con licencia médica | licencia médica / subsidio incapacidad laboral / SIL / sueldo con licencia | `/licencia-medica` | Title/H1 «calcular sueldo con licencia médica»; no canibalizar `/sueldo`, `/sueldo-proporcional` ni `/descuento-atrasos`. Bruto empleador (días trabajados × rem/30) + estimación SIL (promedio 3 netas / 30). No es líquido ni liquidación COMPIN/Isapre. No crear `/sil`, `/subsidio-incapacidad` ni `/licencia` |
 | Calcular retención judicial de pensión de alimentos | retención judicial / pensión de alimentos / descuento judicial alimentos | `/retencion-judicial` | Title/H1 «calcular retención judicial» + pensión de alimentos Chile 2026; no canibalizar `/sueldo` ni `/descuento-atrasos`. Aritmética de nómina (Ley 14.908 art. 8 / Ley 21.389): monto fijo o % sobre el líquido del mes, remanente al trabajador. No es líquido ni atrasos. No crear `/pension-alimenticia`, `/alimentos`, `/descuento-judicial` ni `/retencion-alimentos` |
+| Calcular APV Régimen B en la liquidación | APV / ahorro previsional voluntario / régimen B / art. 42 bis | `/apv` | Title/H1 «calcular APV Régimen B»; no canibalizar `/sueldo`, `/impuesto-unico` ni `/cotizaciones-previsionales`. Efecto del Régimen B en el mes: baja de la renta líquida imponible del IUSC, ahorro de impuesto y líquido. Régimen A (15 %, tope 6 UTM) solo FAQ. No es portal AFP/SII ni Operación Renta. No crear `/ahorro-previsional` ni `/regimen-b` |
 | Calcular sueldo proporcional | sueldo proporcional / días trabajados mes / remuneración proporcional | `/sueldo-proporcional` | Title/H1 «calcular sueldo proporcional»; no canibalizar `/sueldo`, `/vacaciones-proporcionales` ni `/finiquito`. Bruto de un mes incompleto (mensual / 30 × días calendario). No crear `/dias-trabajados` ni `/sueldo-proporcional-dias` |
 | Calcular aguinaldo Fiestas Patrias | aguinaldo fiestas patrias (5.400/23) — intención presupuestar/calcular monto | `/aguinaldo` | Title/H1 «calcular aguinaldo Fiestas Patrias»; no es obligación legal general del Código; no canibalizar `/gratificacion`, `/sueldo` ni `/guias/aguinaldo-fiestas-patrias`. No crear `/bono-fiestas-patrias` ni `/aguinaldo-navidad` |
 | Calcular finiquito de casa particular | finiquito asesora del hogar / finiquito trabajadora casa particular — intención calcular | `/finiquito-casa-particular` | Title/H1 «calcular finiquito casa particular»; no canibalizar `/finiquito`, `/indemnizacion-anos-servicio` ni `/guias/finiquito-trabajadora-de-casa-particular`. Estatuto propio (art. 163 a todo evento AFP 1,11 %, aviso art. 161). No crear `/finiquito-nana` ni `/asesora-hogar` |
@@ -157,9 +159,19 @@ del mes con licencia médica (empleador /30 + estimación SIL D.F.L. 44) vive en
 `/licencia-medica`. No publicar `/sil`, `/subsidio-incapacidad` ni `/licencia`. La retención
 judicial de pensión de alimentos (Ley 14.908 art. 8) vive en `/retencion-judicial`.
 No publicar `/pension-alimenticia`, `/alimentos`, `/descuento-judicial` ni
-`/retencion-alimentos`. El líquido sigue en `/sueldo`. El descuento por atrasos e
+`/retencion-alimentos`. El efecto del APV Régimen B (art. 42 bis LIR) en el
+IUSC y el líquido del mes vive en `/apv`. No publicar `/ahorro-previsional`
+ni `/regimen-b`. El líquido sigue en `/sueldo`. El impuesto único sigue en
+`/impuesto-unico`. Las cotizaciones del trabajador siguen en
+`/cotizaciones-previsionales`. El descuento por atrasos e
 inasistencias sigue en `/descuento-atrasos`. El feriado en dinero sigue en
 `/vacaciones-proporcionales`. El finiquito completo sigue en `/finiquito`.
+
+No publicar `/retencion-honorarios`, `/boleta` ni `/honorarios`. La retención de boleta de
+honorarios de independientes (Ley 21.133, un % sobre el bruto del año de emisión) vive en
+`/boleta-honorarios`. El líquido de un dependiente sigue en `/sueldo`. El IUSC sigue en
+`/impuesto-unico`. AFP/salud de un contrato siguen en `/cotizaciones-previsionales`. El costo
+de contratar sigue en `/costo-empresa`.
 
 No publicar `/dias-aviso` ni `/aviso-previo`. La indemnización sustitutiva del aviso de treinta días
 (arts. 161 y 162) vive en `/indemnizacion-aviso-previo`. La carta (formalidades) sigue en
