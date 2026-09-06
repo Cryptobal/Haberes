@@ -31,6 +31,7 @@ const DRAWER_LINKS = [
   ["/gratificacion", "Gratificación"],
   ["/aguinaldo", "Aguinaldo"],
   ["/impuesto-unico", "Impuesto único"],
+  ["/boleta-honorarios", "Boleta honorarios"],
   ["/cotizaciones-previsionales", "Cotizaciones previsionales"],
   ["/costo-empresa", "Costo empresa"],
   ["/seguro-cesantia", "Seguro de cesantía"],
