@@ -32,6 +32,7 @@ import {
   SALUD_TASA,
   SANNA_TASA,
   TOPE_AFP_SALUD_UF,
+  TOPE_APV_REGIMEN_B_UF,
   TOPE_CESANTIA_UF,
 } from "./constants.js";
 import {
@@ -738,6 +739,61 @@ export function calcularBoletaHonorarios({
 }
 
 /**
+ * Retención judicial de pensión de alimentos (Ley 14.908 art. 8, reformas
+ * de la Ley 21.389): aritmética de nómina para el empleador.
+ *
+ * Base práctica: remuneración líquida del mes (después de cotizaciones e
+ * IUSC), salvo que la resolución fije otra. Modalidad: monto fijo en CLP
+ * o porcentaje de esa base. Otras retenciones judiciales fijas del mismo
+ * mes son opcionales; la pensión de alimentos tiene prioridad.
+ *
+ * Si lo ordenado supera la base disponible, se retiene hasta la base
+ * (remanente nunca negativo). No se inventa un tope legal de %: manda la
+ * resolución. El art. 58 del Código del Trabajo exceptúa los alimentos del
+ * límite general del 15 % de descuentos; esta herramienta no aplica un
+ * segundo tope. No cubre AFP, cuentas ni Ley 21.484.
+ *
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=28483 Ley 14.908
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=1168463 Ley 21.389
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=207436 Código del Trabajo
+ */
+export function calcularRetencionJudicial({
+  base = 0,
+  modo = "fijo",
+  montoFijo = 0,
+  porcentaje = 0,
+  otrasRetenciones = 0,
+} = {}) {
+  const baseMes = Math.max(0, Number(base) || 0);
+  const fijo = Math.max(0, Number(montoFijo) || 0);
+  const pct = Math.max(0, Number(porcentaje) || 0);
+  const otras = Math.max(0, Number(otrasRetenciones) || 0);
+  const modoNorm = modo === "porcentaje" ? "porcentaje" : "fijo";
+
+  const ordenadaRaw = modoNorm === "porcentaje" ? (baseMes * pct) / 100 : fijo;
+  const baseRedondeada = roundPeso(baseMes);
+  const ordenada = roundPeso(ordenadaRaw);
+  const retencionAlimentos = Math.min(ordenada, baseRedondeada);
+  const disponibleTrasAlimentos = Math.max(0, baseRedondeada - retencionAlimentos);
+  const otrasAplicadas = Math.min(roundPeso(otras), disponibleTrasAlimentos);
+  const remanente = Math.max(0, baseRedondeada - retencionAlimentos - otrasAplicadas);
+
+  return {
+    base: baseRedondeada,
+    modo: modoNorm,
+    montoFijo: roundPeso(fijo),
+    porcentaje: pct,
+    otrasRetenciones: roundPeso(otras),
+    ordenada,
+    retencionAlimentos,
+    otrasAplicadas,
+    remanente,
+    topeAplicado: ordenada > retencionAlimentos || otras > otrasAplicadas,
+    ordenExcedeBase: ordenada > baseRedondeada,
+  };
+}
+
+/**
  * Bruto de un sueldo mensual fijo por fracción de mes.
  *
  * Reutiliza `proporcional` de liquidación: ÷ 30 × días, `roundPeso`
@@ -1010,6 +1066,72 @@ export function calcularSueldo(input = {}, indicadores = {}) {
       (diasInfo.diasLicencia || 0) > 0
         ? "El subsidio lo paga Fonasa, la Isapre o la CCAF; no se incluye en esta liquidación."
         : "",
+  };
+}
+
+/**
+ * Efecto del APV Régimen B (art. 42 bis LIR) en la liquidación del mes.
+ *
+ * El depósito se resta de la renta líquida imponible del IUSC, después de AFP,
+ * salud y cesantía del trabajador. No cambia la base previsional (AFP/salud/
+ * cesantía). Tope mensual de depósito: 50 UF (D.L. 3.500). El tope anual de
+ * 600 UF y la bonificación del Régimen A (15 %, tope 6 UTM en Operación Renta)
+ * no se simulan aquí.
+ *
+ * Reusa `calcularSueldo` (mismos topes, comisiones AFP y tabla IUSC).
+ *
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=6368 art. 42 bis
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=7147 D.L. 3.500
+ */
+export function calcularApv(input = {}, indicadores = {}) {
+  const apvPedido = roundPeso(Math.max(0, Number(input.apvRegimenB ?? input.apv) || 0));
+  const sin = calcularSueldo(
+    {
+      sueldoBase: input.sueldoBase ?? input.rentaImponible ?? 0,
+      afp: input.afp,
+      salud: input.salud,
+      contrato: input.contrato,
+      isaprePactado: input.isaprePactado,
+    },
+    indicadores,
+  );
+  const uf = Number(indicadores.uf) || sin.uf || FALLBACK_UF;
+  const topeMensual = roundPeso(TOPE_APV_REGIMEN_B_UF * uf);
+  const apvDescontado = Math.min(apvPedido, topeMensual);
+  const apvTributable = Math.min(apvDescontado, sin.baseTributable);
+  const baseTributableConApv = Math.max(0, sin.baseTributable - apvTributable);
+  const iuscConApv = calcularIusc(baseTributableConApv);
+  const ahorroIusc = Math.max(0, sin.iusc - iuscConApv);
+  const totalDescuentosConApv =
+    sin.afp.monto + sin.salud.monto + sin.cesantia.monto + iuscConApv + apvDescontado;
+  const liquidoConApv = sin.totalHaberes - totalDescuentosConApv;
+
+  return {
+    sueldoBase: sin.sueldoBase,
+    apvPedido,
+    apvDescontado,
+    apvTributable,
+    topeMensualUf: TOPE_APV_REGIMEN_B_UF,
+    topeMensual,
+    topeUfAplicado: apvPedido > topeMensual,
+    afp: sin.afp,
+    salud: sin.salud,
+    cesantia: sin.cesantia,
+    imponible: sin.imponible,
+    cotizacionesLegales: roundPeso(sin.afp.monto + sin.salud.monto + sin.cesantia.monto),
+    baseTributableSinApv: sin.baseTributable,
+    baseTributableConApv,
+    iuscSinApv: sin.iusc,
+    iuscConApv,
+    ahorroIusc,
+    liquidoSinApv: sin.liquido,
+    liquidoConApv,
+    costoLiquido: roundPeso(sin.liquido - liquidoConApv),
+    totalDescuentosConApv,
+    liquidoNegativo: liquidoConApv < 0,
+    sinAhorroIusc: ahorroIusc === 0,
+    uf,
+    contrato: sin.contrato,
   };
 }
 

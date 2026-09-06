@@ -22,6 +22,8 @@ const DRAWER_LINKS = [
   ["/sueldo-minimo", "Sueldo mínimo"],
   ["/descuento-atrasos", "Descuento atrasos"],
   ["/licencia-medica", "Licencia médica"],
+  ["/retencion-judicial", "Retención judicial"],
+  ["/apv", "APV Régimen B"],
   ["/horas-extras", "Horas extras"],
   ["/recargo-domingo-comercio", "Recargo domingo comercio"],
   ["/feriado-irrenunciable", "Feriado irrenunciable"],

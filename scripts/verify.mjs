@@ -34,6 +34,7 @@ import {
   SANNA_TASA,
   TEXTO_LEGAL_MAX,
   TOPE_AFP_SALUD_UF,
+  TOPE_APV_REGIMEN_B_UF,
   TOPE_CESANTIA_UF,
   RETENCION_BOLETA_ANIO_DEFAULT,
   RETENCION_BOLETA_HONORARIOS,
@@ -73,6 +74,8 @@ import {
   calcularDescuentoAtrasosInasistencias,
   calcularLicenciaMedica,
   calcularBoletaHonorarios,
+  calcularRetencionJudicial,
+  calcularApv,
   calcularSueldoMinimo,
   calcularSueldoProporcional,
   diasCalendarioFraccionMes,
@@ -153,6 +156,7 @@ assert(
 );
 assert("Tope AFP/salud 90 UF", TOPE_AFP_SALUD_UF === 90);
 assert("Tope cesantía 135.2 UF", TOPE_CESANTIA_UF === 135.2);
+assert("Tope APV Régimen B 50 UF", TOPE_APV_REGIMEN_B_UF === 50);
 assert(
   "Cesantía empleador Ley 19.728",
   CESANTIA_EMPLEADOR_INDEFINIDO === 0.024 && CESANTIA_EMPLEADOR_PLAZO_FIJO === 0.03,
@@ -848,6 +852,206 @@ console.log("\nBoleta de honorarios (retención Ley 21.133 / SII)");
     "app-boleta-honorarios usa calcularBoletaHonorarios",
     /import\s*\{[^}]*calcularBoletaHonorarios[^}]*\}\s*from\s*["']\.\/sueldo\.js["']/.test(bhApp) &&
       /calcularBoletaHonorarios\s*\(/.test(bhApp),
+  );
+}
+
+console.log("\nRetención judicial (Ley 14.908 art. 8, pensión de alimentos)");
+{
+  const g1 = calcularRetencionJudicial({
+    base: 900_000,
+    modo: "fijo",
+    montoFijo: 250_000,
+  });
+  assert(
+    "900000 líquido, orden fija 250000 → retención 250000, remanente 650000",
+    g1.retencionAlimentos === 250_000 &&
+      g1.remanente === 650_000 &&
+      g1.ordenada === 250_000 &&
+      g1.topeAplicado === false,
+    JSON.stringify(g1),
+  );
+  const g2 = calcularRetencionJudicial({
+    base: 1_000_000,
+    modo: "porcentaje",
+    porcentaje: 30,
+  });
+  assert(
+    "1000000 base, 30% → retención 300000, remanente 700000",
+    g2.retencionAlimentos === 300_000 &&
+      g2.remanente === 700_000 &&
+      g2.ordenada === 300_000 &&
+      g2.modo === "porcentaje",
+    JSON.stringify(g2),
+  );
+  const cap = calcularRetencionJudicial({
+    base: 200_000,
+    modo: "fijo",
+    montoFijo: 250_000,
+  });
+  assert(
+    "orden fija mayor que la base → retiene la base, remanente 0, tope",
+    cap.retencionAlimentos === 200_000 &&
+      cap.remanente === 0 &&
+      cap.topeAplicado === true &&
+      cap.ordenExcedeBase === true,
+    JSON.stringify(cap),
+  );
+  const otras = calcularRetencionJudicial({
+    base: 900_000,
+    modo: "fijo",
+    montoFijo: 250_000,
+    otrasRetenciones: 100_000,
+  });
+  assert(
+    "otras retenciones 100000 tras alimentos → remanente 550000",
+    otras.retencionAlimentos === 250_000 &&
+      otras.otrasAplicadas === 100_000 &&
+      otras.remanente === 550_000 &&
+      otras.topeAplicado === false,
+    JSON.stringify(otras),
+  );
+  assert(
+    "60% de 1000000 no se recorta a un tope legal inventado",
+    calcularRetencionJudicial({ base: 1_000_000, modo: "porcentaje", porcentaje: 60 })
+      .retencionAlimentos === 600_000 &&
+      calcularRetencionJudicial({ base: 1_000_000, modo: "porcentaje", porcentaje: 60 })
+        .remanente === 400_000,
+  );
+  assert(
+    "inputs negativos → 0; modo desconocido se trata como fijo",
+    calcularRetencionJudicial({
+      base: -1,
+      modo: "otro",
+      montoFijo: -50,
+      porcentaje: -10,
+      otrasRetenciones: -1,
+    }).retencionAlimentos === 0 &&
+      calcularRetencionJudicial({ base: 100_000, modo: "otro", montoFijo: 40_000 }).modo ===
+        "fijo",
+  );
+  const rjApp = readFileSync(join(root, "js/app-retencion-judicial.js"), "utf8");
+  assert(
+    "app-retencion-judicial usa calcularRetencionJudicial",
+    /import\s*\{[^}]*calcularRetencionJudicial[^}]*\}\s*from\s*["']\.\/sueldo\.js["']/.test(rjApp) &&
+      /calcularRetencionJudicial\s*\(/.test(rjApp),
+  );
+}
+
+console.log("\nAPV Régimen B (art. 42 bis LIR, liquidación del mes)");
+{
+  const g = calcularApv(
+    {
+      sueldoBase: 2_000_000,
+      apvRegimenB: 100_000,
+      afp: "modelo",
+      salud: "fonasa",
+      contrato: "indefinido",
+    },
+    { uf: FALLBACK_UF },
+  );
+  assert(
+    "gold 2000000 bruto, APV B 100000 → IUSC 26766→22766, ahorro 4000, líquido 1513634",
+    g.afp.monto === 211_600 &&
+      g.salud.monto === 140_000 &&
+      g.cesantia.monto === 12_000 &&
+      g.cotizacionesLegales === 363_600 &&
+      g.baseTributableSinApv === 1_636_400 &&
+      g.baseTributableConApv === 1_536_400 &&
+      g.iuscSinApv === 26_766 &&
+      g.iuscConApv === 22_766 &&
+      g.ahorroIusc === 4_000 &&
+      g.liquidoSinApv === 1_609_634 &&
+      g.liquidoConApv === 1_513_634 &&
+      g.apvDescontado === 100_000 &&
+      g.costoLiquido === 96_000 &&
+      g.sinAhorroIusc === false,
+    JSON.stringify({
+      afp: g.afp.monto,
+      salud: g.salud.monto,
+      cesantia: g.cesantia.monto,
+      baseSin: g.baseTributableSinApv,
+      baseCon: g.baseTributableConApv,
+      iuscSin: g.iuscSinApv,
+      iuscCon: g.iuscConApv,
+      ahorro: g.ahorroIusc,
+      liqSin: g.liquidoSinApv,
+      liqCon: g.liquidoConApv,
+    }),
+  );
+  const sin = calcularSueldo(
+    { sueldoBase: 2_000_000, afp: "modelo", salud: "fonasa", contrato: "indefinido" },
+    { uf: FALLBACK_UF },
+  );
+  assert(
+    "APV no cambia AFP/salud/cesantía ni la base previsional",
+    g.afp.monto === sin.afp.monto &&
+      g.salud.monto === sin.salud.monto &&
+      g.cesantia.monto === sin.cesantia.monto &&
+      g.imponible === sin.imponible &&
+      g.baseTributableSinApv === sin.baseTributable &&
+      g.iuscSinApv === sin.iusc &&
+      g.liquidoSinApv === sin.liquido,
+  );
+  const low = calcularApv(
+    {
+      sueldoBase: IMM,
+      apvRegimenB: 50_000,
+      afp: "modelo",
+      salud: "fonasa",
+      contrato: "indefinido",
+    },
+    { uf: FALLBACK_UF },
+  );
+  assert(
+    "IMM 553553 + APV B 50000 → IUSC 0, aviso sin ahorro, sí descuenta líquido",
+    low.iuscSinApv === 0 &&
+      low.iuscConApv === 0 &&
+      low.ahorroIusc === 0 &&
+      low.sinAhorroIusc === true &&
+      low.apvDescontado === 50_000 &&
+      low.liquidoConApv === low.liquidoSinApv - 50_000 &&
+      low.baseTributableSinApv === 452_917,
+    JSON.stringify({
+      iusc: low.iuscSinApv,
+      base: low.baseTributableSinApv,
+      liqSin: low.liquidoSinApv,
+      liqCon: low.liquidoConApv,
+    }),
+  );
+  const mid = calcularApv({ sueldoBase: 900_000, apvRegimenB: 80_000 }, { uf: FALLBACK_UF });
+  assert(
+    "900000 bruto (bajo IUSC) + APV no reduce impuesto",
+    mid.iuscSinApv === 0 && mid.ahorroIusc === 0 && mid.sinAhorroIusc === true,
+  );
+  const cap = calcularApv(
+    { sueldoBase: 2_000_000, apvRegimenB: 3_000_000 },
+    { uf: FALLBACK_UF },
+  );
+  assert(
+    "APV sobre 50 UF se corta al tope mensual",
+    cap.topeUfAplicado === true &&
+      cap.topeMensual === 2_042_701 &&
+      cap.apvDescontado === 2_042_701 &&
+      cap.apvTributable === 1_636_400 &&
+      cap.baseTributableConApv === 0 &&
+      cap.iuscConApv === 0,
+    JSON.stringify({
+      tope: cap.topeMensual,
+      desc: cap.apvDescontado,
+      trib: cap.apvTributable,
+    }),
+  );
+  assert(
+    "APV 0 no cambia líquido ni IUSC",
+    calcularApv({ sueldoBase: 2_000_000, apvRegimenB: 0 }, { uf: FALLBACK_UF }).liquidoConApv ===
+      sin.liquido &&
+      calcularApv({ sueldoBase: 2_000_000, apvRegimenB: 0 }, { uf: FALLBACK_UF }).ahorroIusc === 0,
+  );
+  const apvApp = readFileSync(join(root, "js/app-apv.js"), "utf8");
+  assert(
+    "app-apv usa calcularApv",
+    /import\s*\{[^}]*calcularApv[^}]*\}\s*from\s*["']\.\/sueldo\.js["']/.test(apvApp) &&
+      /calcularApv\s*\(/.test(apvApp),
   );
 }
 
@@ -1927,6 +2131,8 @@ const required = [
   "descuento-atrasos.html",
   "licencia-medica.html",
   "boleta-honorarios.html",
+  "retencion-judicial.html",
+  "apv.html",
   "feriado-anual.html",
   "feriado-progresivo.html",
   "indemnizacion-anos-servicio.html",
@@ -1951,6 +2157,8 @@ const required = [
   "js/app-descuento-atrasos.js",
   "js/app-licencia-medica.js",
   "js/app-boleta-honorarios.js",
+  "js/app-retencion-judicial.js",
+  "js/app-apv.js",
   "js/app-feriado-anual.js",
   "js/app-feriado-progresivo.js",
   "js/app-indemnizacion-anos-servicio.js",
@@ -2103,6 +2311,8 @@ const htmlFiles = [
   "descuento-atrasos.html",
   "licencia-medica.html",
   "boleta-honorarios.html",
+  "retencion-judicial.html",
+  "apv.html",
   "feriado-anual.html",
   "feriado-progresivo.html",
   "indemnizacion-anos-servicio.html",
@@ -2202,6 +2412,8 @@ const appEntries = [
   "js/app-descuento-atrasos.js",
   "js/app-licencia-medica.js",
   "js/app-boleta-honorarios.js",
+  "js/app-retencion-judicial.js",
+  "js/app-apv.js",
   "js/app-feriado-anual.js",
   "js/app-feriado-progresivo.js",
   "js/app-indemnizacion-anos-servicio.js",
@@ -2241,7 +2453,7 @@ assert("robots Allow /", /Allow:\s*\//.test(robots));
 assert("robots Disallow /admin", /Disallow:\s*\/admin/.test(robots));
 assert("robots Disallow /api", /Disallow:\s*\/api/.test(robots));
 assert("robots Disallow /docs", /Disallow:\s*\/docs/.test(robots));
-assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/feriado-anual/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/licencia-medica/.test(robots) && !/Disallow:\s*\/boleta-honorarios/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots));
+assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/feriado-anual/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/licencia-medica/.test(robots) && !/Disallow:\s*\/boleta-honorarios/.test(robots) && !/Disallow:\s*\/retencion-judicial/.test(robots) && !/Disallow:\s*\/apv/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots));
 assert("robots Sitemap", /Sitemap:\s*https:\/\/www\.haberes\.cl\/sitemap\.xml/.test(robots));
 
 const { seoPaths, GUIDE_SLUGS, GUIDES, CAUSAL_PAGES, BASE_PATHS, lastmodForPath } = await import("../content/registry.js");
@@ -2281,6 +2493,8 @@ assert(
     BASE_PATHS.includes("/descuento-atrasos") &&
     BASE_PATHS.includes("/licencia-medica") &&
     BASE_PATHS.includes("/boleta-honorarios") &&
+    BASE_PATHS.includes("/retencion-judicial") &&
+    BASE_PATHS.includes("/apv") &&
     BASE_PATHS.includes("/indemnizacion-aviso-previo"),
   `${locs.length} vs ${expectedFromRegistry.length}`,
 );
@@ -2632,7 +2846,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 70,
+      seoPaths().length === 72,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -2644,7 +2858,7 @@ try {
   const docsSeo = await hitLocal("/docs/seo-map.md");
   assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
   assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
-  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/asignacion-familiar/", "/colacion-movilizacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/apv/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/asignacion-familiar/", "/colacion-movilizacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
   }
@@ -2675,6 +2889,8 @@ try {
     "/descuento-atrasos",
     "/licencia-medica",
     "/boleta-honorarios",
+    "/retencion-judicial",
+    "/apv",
     "/indemnizacion-aviso-previo",
     "/gratificacion",
     "/impuesto-unico",
@@ -5906,6 +6122,8 @@ assert(
     ["descuento-atrasos.html", "/descuento-atrasos"],
     ["licencia-medica.html", "/licencia-medica"],
     ["boleta-honorarios.html", "/boleta-honorarios"],
+    ["retencion-judicial.html", "/retencion-judicial"],
+    ["apv.html", "/apv"],
     ["feriado-anual.html", "/feriado-anual"],
     ["feriado-progresivo.html", "/feriado-progresivo"],
     ["indemnizacion-anos-servicio.html", "/indemnizacion-anos-servicio"],
@@ -6785,6 +7003,258 @@ assert(
         !/<h2>Finiquito<\/h2>[\s\S]*href="\/boleta-honorarios"/.test(
           readFileSync(join(root, "guias.html"), "utf8"),
         ),
+    );
+  }
+  {
+    const rjHtml = readFileSync(join(root, "retencion-judicial.html"), "utf8");
+    const rjTitle = (rjHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const rjH1 = (rjHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const rjDesc = (rjHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "";
+    const sueldoHtml = readFileSync(join(root, "sueldo.html"), "utf8");
+    const sueldoTitle = (sueldoHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const sueldoH1 = (sueldoHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const daHtml = readFileSync(join(root, "descuento-atrasos.html"), "utf8");
+    const daTitle = (daHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const daH1 = (daHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const g1 = calcularRetencionJudicial({
+      base: 900_000,
+      modo: "fijo",
+      montoFijo: 250_000,
+    });
+    const g2 = calcularRetencionJudicial({
+      base: 1_000_000,
+      modo: "porcentaje",
+      porcentaje: 30,
+    });
+    assert(
+      "SEO title retención judicial apunta a calcular retención judicial",
+      /calcular retenci[oó]n judicial/i.test(rjTitle) &&
+        !/sueldo l[ií]quido/i.test(rjTitle) &&
+        !/descuento atrasos/i.test(rjTitle) &&
+        rjTitle !== sueldoTitle &&
+        rjTitle !== daTitle &&
+        rjTitle.length <= 65,
+      rjTitle,
+    );
+    assert(
+      "SEO H1 retención judicial distinto de /sueldo y /descuento-atrasos",
+      rjH1 === "Calcular retención judicial de pensión de alimentos Chile 2026" &&
+        rjH1 !== sueldoH1 &&
+        rjH1 !== daH1 &&
+        !/sueldo l[ií]quido/i.test(rjH1) &&
+        !/descuento por atrasos/i.test(rjH1),
+      rjH1,
+    );
+    assert(
+      "SEO retención judicial meta distinta de /sueldo y /descuento-atrasos",
+      rjDesc &&
+        rjDesc !== ((sueldoHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "") &&
+        rjDesc !== ((daHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || ""),
+    );
+    assert(
+      "SEO retención judicial cita Ley 14.908 art. 8, Ley 21.389 y art. 58 CT",
+      /Ley 14\.908 art\. 8/.test(rjHtml) &&
+        /Ley 21\.389/.test(rjHtml) &&
+        /art[ií]culo 58 del C[oó]digo del Trabajo/.test(rjHtml) &&
+        /bcn\.cl\/leychile\/navegar\?idNorma=28483/.test(rjHtml) &&
+        /bcn\.cl\/leychile\/navegar\?idNorma=1168463/.test(rjHtml) &&
+        /bcn\.cl\/leychile\/navegar\?idNorma=207436/.test(rjHtml),
+    );
+    assert(
+      "SEO retención judicial gold 900k/250k y 1M/30%",
+      g1.retencionAlimentos === 250_000 &&
+        g1.remanente === 650_000 &&
+        g2.retencionAlimentos === 300_000 &&
+        g2.remanente === 700_000 &&
+        /\$250\.000/.test(rjHtml) &&
+        /\$650\.000/.test(rjHtml) &&
+        /\$300\.000/.test(rjHtml) &&
+        /\$700\.000/.test(rjHtml) &&
+        /\$900\.000/.test(rjHtml),
+    );
+    assert("SEO retención judicial FAQPage", /"@type": "FAQPage"/.test(rjHtml));
+    assert(
+      "SEO retención judicial no canibaliza /sueldo ni /descuento-atrasos",
+      /href="\/sueldo"/.test(rjHtml) &&
+        /href="\/descuento-atrasos"/.test(rjHtml) &&
+        /no es el sueldo l[ií]quido/i.test(rjHtml) &&
+        /descuento por atrasos e inasistencias/.test(rjHtml) &&
+        !existsSync(join(root, "pension-alimenticia.html")) &&
+        !existsSync(join(root, "alimentos.html")) &&
+        !existsSync(join(root, "descuento-judicial.html")) &&
+        !existsSync(join(root, "retencion-alimentos.html")),
+    );
+    assert(
+      "SEO retención judicial métrica principal es monto a retener alimentos",
+      /Monto a retener \(alimentos\)/.test(rjHtml) &&
+        !/<p class="metric-label">L[ií]quido/.test(rjHtml) &&
+        !/<p class="metric-label">Total descuento bruto/.test(rjHtml),
+    );
+    assert(
+      "SEO retención judicial no es portal judicial ni AFP/bancos",
+      /Poder Judicial/.test(rjHtml) &&
+        /Ley 21\.484/.test(rjHtml) &&
+        /no es el portal/i.test(rjHtml),
+    );
+    assert(
+      "home y nav enlazan /retencion-judicial",
+      /href="\/retencion-judicial"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/retencion-judicial" data-nav>Retenci[oó]n judicial<\/a>/.test(
+          readFileSync(join(root, "index.html"), "utf8"),
+        ) &&
+        /href="\/retencion-judicial" data-nav>Retenci[oó]n judicial<\/a>/.test(rjHtml),
+    );
+    assert(
+      "sitemap incluye /retencion-judicial",
+      locs.includes("https://www.haberes.cl/retencion-judicial") &&
+        lastmodForPath("/retencion-judicial") === "2026-09-05",
+    );
+    assert(
+      "seo-map documenta /retencion-judicial y no-canibalizar /sueldo y /descuento-atrasos",
+      /\/retencion-judicial/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no canibalizar `\/sueldo` ni `\/descuento-atrasos`/.test(
+          readFileSync(join(root, "docs/seo-map.md"), "utf8"),
+        ) &&
+        /no crear `\/pension-alimenticia`/i.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")),
+    );
+    assert(
+      "hub /guias enlaza /retencion-judicial en el cluster de liquidación",
+      /href="\/retencion-judicial"/.test(readFileSync(join(root, "guias.html"), "utf8")) &&
+        !/<h2>Finiquito<\/h2>[\s\S]*href="\/retencion-judicial"/.test(
+          readFileSync(join(root, "guias.html"), "utf8"),
+        ),
+    );
+    assert(
+      "/sueldo y /descuento-atrasos enlazan /retencion-judicial",
+      /href="\/retencion-judicial"/.test(sueldoHtml) && /href="\/retencion-judicial"/.test(daHtml),
+    );
+  }
+  {
+    const apvHtml = readFileSync(join(root, "apv.html"), "utf8");
+    const apvTitle = (apvHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const apvH1 = (apvHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const apvDesc = (apvHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "";
+    const sueldoHtml = readFileSync(join(root, "sueldo.html"), "utf8");
+    const sueldoTitle = (sueldoHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const sueldoH1 = (sueldoHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const iuHtml = readFileSync(join(root, "impuesto-unico.html"), "utf8");
+    const iuTitle = (iuHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const iuH1 = (iuHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const cpHtml = readFileSync(join(root, "cotizaciones-previsionales.html"), "utf8");
+    const cpTitle = (cpHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const cpH1 = (cpHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const gold = calcularApv(
+      {
+        sueldoBase: 2_000_000,
+        apvRegimenB: 100_000,
+        afp: "modelo",
+        salud: "fonasa",
+        contrato: "indefinido",
+      },
+      { uf: FALLBACK_UF },
+    );
+    assert(
+      "SEO title APV apunta a calcular APV Régimen B",
+      /calcular APV R[eé]gimen B/i.test(apvTitle) &&
+        !/sueldo l[ií]quido/i.test(apvTitle) &&
+        !/impuesto [uú]nico/i.test(apvTitle) &&
+        !/cotizaciones previsionales/i.test(apvTitle) &&
+        apvTitle !== sueldoTitle &&
+        apvTitle !== iuTitle &&
+        apvTitle !== cpTitle &&
+        apvTitle.length <= 65,
+      apvTitle,
+    );
+    assert(
+      "SEO H1 APV distinto de /sueldo, /impuesto-unico y /cotizaciones-previsionales",
+      apvH1 === "Calcular APV Régimen B en la liquidación Chile 2026" &&
+        apvH1 !== sueldoH1 &&
+        apvH1 !== iuH1 &&
+        apvH1 !== cpH1 &&
+        !/sueldo l[ií]quido/i.test(apvH1) &&
+        !/cotizaciones previsionales/i.test(apvH1),
+      apvH1,
+    );
+    assert(
+      "SEO APV meta distinta de hermanas",
+      apvDesc &&
+        apvDesc !== ((sueldoHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "") &&
+        apvDesc !== ((iuHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "") &&
+        apvDesc !== ((cpHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || ""),
+    );
+    assert(
+      "SEO APV cita art. 42 bis LIR, D.L. 3.500 y Régimen A 15 % / 6 UTM",
+      /art\. 42 bis LIR/.test(apvHtml) &&
+        /D\.L\. N° 3\.500/.test(apvHtml) &&
+        /bcn\.cl\/leychile\/navegar\?idNorma=6368/.test(apvHtml) &&
+        /bcn\.cl\/leychile\/navegar\?idNorma=7147/.test(apvHtml) &&
+        /15 %/.test(apvHtml) &&
+        /6 UTM/.test(apvHtml) &&
+        /Operación Renta/.test(apvHtml),
+    );
+    assert(
+      "SEO APV gold 2.000.000 / 100.000 y caso IMM sin IUSC",
+      gold.ahorroIusc === 4_000 &&
+        gold.iuscSinApv === 26_766 &&
+        gold.iuscConApv === 22_766 &&
+        gold.liquidoConApv === 1_513_634 &&
+        /\$2\.000\.000/.test(apvHtml) &&
+        /\$100\.000/.test(apvHtml) &&
+        /\$4\.000/.test(apvHtml) &&
+        /\$1\.513\.634/.test(apvHtml) &&
+        /\$26\.766/.test(apvHtml) &&
+        /\$22\.766/.test(apvHtml) &&
+        /\$553\.553/.test(apvHtml) &&
+        /\$50\.000/.test(apvHtml),
+    );
+    assert("SEO APV FAQPage", /"@type": "FAQPage"/.test(apvHtml));
+    assert(
+      "SEO APV no canibaliza /sueldo, /impuesto-unico ni /cotizaciones-previsionales",
+      /href="\/sueldo"/.test(apvHtml) &&
+        /href="\/impuesto-unico"/.test(apvHtml) &&
+        /href="\/cotizaciones-previsionales"/.test(apvHtml) &&
+        /href="\/costo-empresa"/.test(apvHtml) &&
+        /no es portal de AFP/i.test(apvHtml) &&
+        !existsSync(join(root, "ahorro-previsional.html")) &&
+        !existsSync(join(root, "regimen-b.html")),
+    );
+    assert(
+      "SEO APV métrica principal es ahorro de IUSC del mes",
+      /Ahorro de IUSC del mes/.test(apvHtml) &&
+        !/<p class="metric-label">L[ií]quido<\/p>/.test(apvHtml) &&
+        !/<p class="metric-label">Descuentos previsionales/.test(apvHtml),
+    );
+    assert(
+      "home y nav enlazan /apv",
+      /href="\/apv"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/apv" data-nav>APV R[eé]gimen B<\/a>/.test(
+          readFileSync(join(root, "index.html"), "utf8"),
+        ) &&
+        /href="\/apv" data-nav>APV R[eé]gimen B<\/a>/.test(apvHtml),
+    );
+    assert(
+      "sitemap incluye /apv",
+      locs.includes("https://www.haberes.cl/apv") && lastmodForPath("/apv") === "2026-09-06",
+    );
+    assert(
+      "seo-map documenta /apv y no-canibalizar hermanas",
+      /\/apv/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no canibalizar `\/sueldo`, `\/impuesto-unico` ni `\/cotizaciones-previsionales`/.test(
+          readFileSync(join(root, "docs/seo-map.md"), "utf8"),
+        ) &&
+        /no crear `\/ahorro-previsional`/i.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")),
+    );
+    assert(
+      "hub /guias enlaza /apv en el cluster de liquidación",
+      /href="\/apv"/.test(readFileSync(join(root, "guias.html"), "utf8")) &&
+        !/<h2>Finiquito<\/h2>[\s\S]*href="\/apv"/.test(readFileSync(join(root, "guias.html"), "utf8")),
+    );
+    assert(
+      "hermanas enlazan /apv",
+      /href="\/apv"/.test(sueldoHtml) &&
+        /href="\/apv"/.test(iuHtml) &&
+        /href="\/apv"/.test(cpHtml) &&
+        /href="\/apv"/.test(readFileSync(join(root, "costo-empresa.html"), "utf8")),
     );
   }
   {
@@ -8768,6 +9238,8 @@ assert(
       "descuento-atrasos.html",
       "licencia-medica.html",
       "boleta-honorarios.html",
+      "retencion-judicial.html",
+      "apv.html",
       "feriado-anual.html",
       "feriado-progresivo.html",
       "indemnizacion-anos-servicio.html",
@@ -8949,7 +9421,7 @@ assert(
     return acc;
   }
   const pages = listHtml(root);
-  assert("72 páginas HTML", pages.length === 72, String(pages.length));
+  assert("74 páginas HTML", pages.length === 74, String(pages.length));
   for (const file of pages) {
     const html = readFileSync(file, "utf8");
     const rel = file.slice(root.length + 1);
