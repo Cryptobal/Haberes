@@ -38,6 +38,7 @@ import {
   TOPE_CESANTIA_UF,
   RETENCION_BOLETA_ANIO_DEFAULT,
   RETENCION_BOLETA_HONORARIOS,
+  UMBRAL_SALA_CUNA,
   resumirTextoLegal,
 } from "../js/constants.js";
 import { CAUSALES, causalPorId } from "../js/causales.js";
@@ -76,6 +77,7 @@ import {
   calcularBoletaHonorarios,
   calcularRetencionJudicial,
   calcularApv,
+  calcularSalaCuna,
   calcularSueldoMinimo,
   calcularSueldoProporcional,
   diasCalendarioFraccionMes,
@@ -1052,6 +1054,60 @@ console.log("\nAPV Régimen B (art. 42 bis LIR, liquidación del mes)");
     "app-apv usa calcularApv",
     /import\s*\{[^}]*calcularApv[^}]*\}\s*from\s*["']\.\/sueldo\.js["']/.test(apvApp) &&
       /calcularApv\s*\(/.test(apvApp),
+  );
+}
+
+console.log("\nSala cuna art. 203 (umbral 20 y costo al establecimiento)");
+{
+  const g = calcularSalaCuna({
+    trabajadoras: 22,
+    ninos: 2,
+    costoUnitario: 350_000,
+  });
+  assert(
+    "gold 22 trabajadoras, 2 niños, 350000 → obligada sí, costo 700000",
+    g.obligada === true &&
+      g.simulacion === false &&
+      g.umbral === 20 &&
+      g.umbral === UMBRAL_SALA_CUNA &&
+      g.trabajadoras === 22 &&
+      g.ninos === 2 &&
+      g.costoUnitario === 350_000 &&
+      g.costoMensual === 700_000,
+    JSON.stringify(g),
+  );
+  const bajo = calcularSalaCuna({
+    trabajadoras: 19,
+    ninos: 2,
+    costoUnitario: 350_000,
+  });
+  assert(
+    "19 trabajadoras → no obligada; costo simulado 700000",
+    bajo.obligada === false &&
+      bajo.simulacion === true &&
+      bajo.costoMensual === 700_000,
+    JSON.stringify(bajo),
+  );
+  assert(
+    "umbral inclusivo: 20 trabajadoras obliga",
+    calcularSalaCuna({ trabajadoras: 20, ninos: 1, costoUnitario: 350_000 }).obligada === true,
+  );
+  assert(
+    "22 trabajadoras y 0 niños: obliga, costo 0",
+    calcularSalaCuna({ trabajadoras: 22, ninos: 0, costoUnitario: 350_000 }).obligada === true &&
+      calcularSalaCuna({ trabajadoras: 22, ninos: 0, costoUnitario: 350_000 }).costoMensual === 0,
+  );
+  assert(
+    "inputs negativos → 0 y no obliga",
+    calcularSalaCuna({ trabajadoras: -5, ninos: -2, costoUnitario: -100 }).obligada === false &&
+      calcularSalaCuna({ trabajadoras: -5, ninos: -2, costoUnitario: -100 }).costoMensual === 0 &&
+      calcularSalaCuna({ trabajadoras: -5, ninos: -2, costoUnitario: -100 }).trabajadoras === 0,
+  );
+  const scApp = readFileSync(join(root, "js/app-sala-cuna.js"), "utf8");
+  assert(
+    "app-sala-cuna usa calcularSalaCuna",
+    /import\s*\{[^}]*calcularSalaCuna[^}]*\}\s*from\s*["']\.\/sueldo\.js["']/.test(scApp) &&
+      /calcularSalaCuna\s*\(/.test(scApp),
   );
 }
 
@@ -2133,6 +2189,7 @@ const required = [
   "boleta-honorarios.html",
   "retencion-judicial.html",
   "apv.html",
+  "sala-cuna.html",
   "feriado-anual.html",
   "feriado-progresivo.html",
   "indemnizacion-anos-servicio.html",
@@ -2159,6 +2216,7 @@ const required = [
   "js/app-boleta-honorarios.js",
   "js/app-retencion-judicial.js",
   "js/app-apv.js",
+  "js/app-sala-cuna.js",
   "js/app-feriado-anual.js",
   "js/app-feriado-progresivo.js",
   "js/app-indemnizacion-anos-servicio.js",
@@ -2313,6 +2371,7 @@ const htmlFiles = [
   "boleta-honorarios.html",
   "retencion-judicial.html",
   "apv.html",
+  "sala-cuna.html",
   "feriado-anual.html",
   "feriado-progresivo.html",
   "indemnizacion-anos-servicio.html",
@@ -2414,6 +2473,7 @@ const appEntries = [
   "js/app-boleta-honorarios.js",
   "js/app-retencion-judicial.js",
   "js/app-apv.js",
+  "js/app-sala-cuna.js",
   "js/app-feriado-anual.js",
   "js/app-feriado-progresivo.js",
   "js/app-indemnizacion-anos-servicio.js",
@@ -2453,7 +2513,7 @@ assert("robots Allow /", /Allow:\s*\//.test(robots));
 assert("robots Disallow /admin", /Disallow:\s*\/admin/.test(robots));
 assert("robots Disallow /api", /Disallow:\s*\/api/.test(robots));
 assert("robots Disallow /docs", /Disallow:\s*\/docs/.test(robots));
-assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/feriado-anual/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/licencia-medica/.test(robots) && !/Disallow:\s*\/boleta-honorarios/.test(robots) && !/Disallow:\s*\/retencion-judicial/.test(robots) && !/Disallow:\s*\/apv/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots));
+assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/feriado-anual/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/licencia-medica/.test(robots) && !/Disallow:\s*\/boleta-honorarios/.test(robots) && !/Disallow:\s*\/retencion-judicial/.test(robots) && !/Disallow:\s*\/apv/.test(robots) && !/Disallow:\s*\/sala-cuna/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots));
 assert("robots Sitemap", /Sitemap:\s*https:\/\/www\.haberes\.cl\/sitemap\.xml/.test(robots));
 
 const { seoPaths, GUIDE_SLUGS, GUIDES, CAUSAL_PAGES, BASE_PATHS, lastmodForPath } = await import("../content/registry.js");
@@ -2495,6 +2555,7 @@ assert(
     BASE_PATHS.includes("/boleta-honorarios") &&
     BASE_PATHS.includes("/retencion-judicial") &&
     BASE_PATHS.includes("/apv") &&
+    BASE_PATHS.includes("/sala-cuna") &&
     BASE_PATHS.includes("/indemnizacion-aviso-previo"),
   `${locs.length} vs ${expectedFromRegistry.length}`,
 );
@@ -2846,7 +2907,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 72,
+      seoPaths().length === 73,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -2858,7 +2919,7 @@ try {
   const docsSeo = await hitLocal("/docs/seo-map.md");
   assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
   assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
-  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/apv/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/asignacion-familiar/", "/colacion-movilizacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/apv/", "/sala-cuna/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/asignacion-familiar/", "/colacion-movilizacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
   }
@@ -2891,6 +2952,7 @@ try {
     "/boleta-honorarios",
     "/retencion-judicial",
     "/apv",
+    "/sala-cuna",
     "/indemnizacion-aviso-previo",
     "/gratificacion",
     "/impuesto-unico",
@@ -6622,6 +6684,7 @@ assert(
     ["boleta-honorarios.html", "/boleta-honorarios"],
     ["retencion-judicial.html", "/retencion-judicial"],
     ["apv.html", "/apv"],
+    ["sala-cuna.html", "/sala-cuna"],
     ["feriado-anual.html", "/feriado-anual"],
     ["feriado-progresivo.html", "/feriado-progresivo"],
     ["indemnizacion-anos-servicio.html", "/indemnizacion-anos-servicio"],
@@ -7753,6 +7816,125 @@ assert(
         /href="\/apv"/.test(iuHtml) &&
         /href="\/apv"/.test(cpHtml) &&
         /href="\/apv"/.test(readFileSync(join(root, "costo-empresa.html"), "utf8")),
+    );
+  }
+  {
+    const scHtml = readFileSync(join(root, "sala-cuna.html"), "utf8");
+    const scTitle = (scHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const scH1 = (scHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const scDesc = (scHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "";
+    const afHtml = readFileSync(join(root, "asignacion-familiar.html"), "utf8");
+    const ceHtmlSala = readFileSync(join(root, "costo-empresa.html"), "utf8");
+    const cmHtmlSala = readFileSync(join(root, "colacion-movilizacion.html"), "utf8");
+    const agHtmlSala = readFileSync(join(root, "aguinaldo.html"), "utf8");
+    const gold = calcularSalaCuna({
+      trabajadoras: 22,
+      ninos: 2,
+      costoUnitario: 350_000,
+    });
+    const bajo = calcularSalaCuna({
+      trabajadoras: 19,
+      ninos: 2,
+      costoUnitario: 350_000,
+    });
+    assert(
+      "SEO sala cuna title único y corto",
+      /calcular sala cuna/i.test(scTitle) &&
+        !/asignaci[oó]n familiar/i.test(scTitle) &&
+        !/costo empresa/i.test(scTitle) &&
+        !/colaci[oó]n/i.test(scTitle) &&
+        !/aguinaldo/i.test(scTitle) &&
+        scTitle !== ((afHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "") &&
+        scTitle !== ((ceHtmlSala.match(/<title>([^<]*)<\/title>/) || [])[1] || "") &&
+        scTitle.length <= 65,
+      scTitle,
+    );
+    assert(
+      "SEO sala cuna H1 único art. 203",
+      scH1 === "Calcular sala cuna art. 203 Chile 2026" &&
+        scH1 !== ((afHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "") &&
+        !/asignaci[oó]n familiar/i.test(scH1),
+      scH1,
+    );
+    assert(
+      "SEO sala cuna description propia",
+      scDesc &&
+        scDesc !== ((afHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "") &&
+        scDesc !== ((ceHtmlSala.match(/meta name="description" content="([^"]*)"/) || [])[1] || ""),
+      scDesc,
+    );
+    assert(
+      "SEO sala cuna cita art. 203 y DT",
+      /art[ií]culo 203/.test(scHtml) &&
+        /20 o m[aá]s trabajadoras/.test(scHtml) &&
+        /bcn\.cl\/leychile\/navegar\?idNorma=207436/.test(scHtml) &&
+        /dt\.gob\.cl\/portal\/1626\/w3-article-59956/.test(scHtml) &&
+        /bono compensatorio/.test(scHtml) &&
+        /no<\/strong> es la regla general/.test(scHtml),
+    );
+    assert(
+      "SEO sala cuna gold 22/2/350000 y 19 no obliga",
+      gold.obligada === true &&
+        gold.costoMensual === 700_000 &&
+        bajo.obligada === false &&
+        bajo.costoMensual === 700_000 &&
+        /22 trabajadoras/.test(scHtml) &&
+        /\$350\.000/.test(scHtml) &&
+        /\$700\.000/.test(scHtml) &&
+        /19 trabajadoras/.test(scHtml),
+    );
+    assert("SEO sala cuna FAQPage", /"@type": "FAQPage"/.test(scHtml));
+    assert(
+      "SEO sala cuna no canibaliza hermanas vetadas",
+      /href="\/asignacion-familiar"/.test(scHtml) &&
+        /href="\/costo-empresa"/.test(scHtml) &&
+        /href="\/colacion-movilizacion"/.test(scHtml) &&
+        /href="\/aguinaldo"/.test(scHtml) &&
+        /no constituye asesor[ií]a legal/i.test(scHtml) &&
+        !existsSync(join(root, "bono-sala-cuna.html")) &&
+        !existsSync(join(root, "jardín-infantil.html")) &&
+        !existsSync(join(root, "jardin-infantil.html")),
+    );
+    assert(
+      "SEO sala cuna métrica principal es obligación art. 203",
+      /¿Obligada a sala cuna\?/.test(scHtml) &&
+        /Costo mensual estimado/.test(scHtml) &&
+        !/<p class="metric-label">L[ií]quido<\/p>/.test(scHtml),
+    );
+    assert(
+      "home y nav enlazan /sala-cuna",
+      /href="\/sala-cuna"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/sala-cuna" data-nav>Sala cuna<\/a>/.test(
+          readFileSync(join(root, "index.html"), "utf8"),
+        ) &&
+        /href="\/sala-cuna" data-nav>Sala cuna<\/a>/.test(scHtml),
+    );
+    assert(
+      "sitemap incluye /sala-cuna",
+      locs.includes("https://www.haberes.cl/sala-cuna") &&
+        lastmodForPath("/sala-cuna") === "2026-09-06",
+    );
+    assert(
+      "seo-map documenta /sala-cuna y no-canibalizar hermanas",
+      /\/sala-cuna/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no canibalizar `\/asignacion-familiar`, `\/costo-empresa`, `\/colacion-movilizacion` ni `\/aguinaldo`/.test(
+          readFileSync(join(root, "docs/seo-map.md"), "utf8"),
+        ) &&
+        /no crear `\/bono-sala-cuna`/i.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")),
+    );
+    assert(
+      "hub /guias enlaza /sala-cuna en el cluster de liquidación",
+      /href="\/sala-cuna"/.test(readFileSync(join(root, "guias.html"), "utf8")) &&
+        !/<h2>Finiquito<\/h2>[\s\S]*href="\/sala-cuna"/.test(
+          readFileSync(join(root, "guias.html"), "utf8"),
+        ),
+    );
+    assert(
+      "hermanas enlazan /sala-cuna",
+      /href="\/sala-cuna"/.test(afHtml) &&
+        /href="\/sala-cuna"/.test(ceHtmlSala) &&
+        /href="\/sala-cuna"/.test(cmHtmlSala) &&
+        /href="\/sala-cuna"/.test(agHtmlSala),
     );
   }
   {
@@ -9738,6 +9920,7 @@ assert(
       "boleta-honorarios.html",
       "retencion-judicial.html",
       "apv.html",
+      "sala-cuna.html",
       "feriado-anual.html",
       "feriado-progresivo.html",
       "indemnizacion-anos-servicio.html",

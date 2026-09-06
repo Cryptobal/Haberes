@@ -34,6 +34,7 @@ import {
   TOPE_AFP_SALUD_UF,
   TOPE_APV_REGIMEN_B_UF,
   TOPE_CESANTIA_UF,
+  UMBRAL_SALA_CUNA,
 } from "./constants.js";
 import {
   DIAS_MES_CONVENCIONAL,
@@ -1406,5 +1407,44 @@ export function calcularCostoEmpresa(input = {}, indicadores = {}) {
     sanna: { tasa: SANNA_TASA, monto: sannaMonto },
     totalAportes,
     costoEmpresa,
+  };
+}
+
+/**
+ * Obligación de sala cuna (art. 203 Código del Trabajo) y estimación del
+ * costo mensual si el empleador paga el establecimiento autorizado.
+ *
+ * La empresa está obligada si ocupa 20 o más trabajadoras (cualquier edad o
+ * estado civil), de la misma razón social o personalidad jurídica. El input
+ * es ese recuento: no se inventa un filtro por honorarios o contratistas;
+ * el usuario no debe incluirlos.
+ *
+ * El costo estimado es N hijos/as menores de 2 años × tarifa mensual al
+ * establecimiento. Si no alcanza el umbral, igual se muestra el producto
+ * como simulación. No modela el bono compensatorio: no es la regla general
+ * del artículo 203 (solo excepciones con respaldo de la DT).
+ *
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=207436
+ * @see https://www.dt.gob.cl/portal/1626/w3-article-59956.html
+ */
+export function calcularSalaCuna({
+  trabajadoras = 0,
+  ninos = 0,
+  costoUnitario = 0,
+} = {}) {
+  const nTrabajadoras = Math.max(0, Math.floor(Number(trabajadoras) || 0));
+  const nNinos = Math.max(0, Math.floor(Number(ninos) || 0));
+  const unitario = roundPeso(Math.max(0, Number(costoUnitario) || 0));
+  const umbral = UMBRAL_SALA_CUNA;
+  const obligada = nTrabajadoras >= umbral;
+  const costoMensual = roundPeso(nNinos * unitario);
+  return {
+    trabajadoras: nTrabajadoras,
+    ninos: nNinos,
+    costoUnitario: unitario,
+    umbral,
+    obligada,
+    costoMensual,
+    simulacion: !obligada,
   };
 }

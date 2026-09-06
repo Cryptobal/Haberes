@@ -24,6 +24,7 @@ Actualizar este archivo antes de crear URLs nuevas para evitar canibalización.
 | Calcular pago feriado irrenunciable | feriado irrenunciable / pago feriado 18 septiembre / trabajar feriado | `/feriado-irrenunciable` | Title/H1 «calcular pago feriado irrenunciable»; no canibalizar `/horas-extras`, `/recargo-domingo-comercio` ni `/aguinaldo`. Art. 32 + Ley 19.973 (1 ene, 1 may, 18–19 sep, 25 dic). Jornada 42 por defecto. No crear `/pago-feriado`, `/trabajo-feriado`, `/feriados` ni `/irrenunciable` |
 | Calcular semana corrida | semana corrida (1.300/21) — intención calcular | `/semana-corrida` | Title/H1 «calcular semana corrida»; no canibalizar `/guias/semana-corrida`, `/recargo-domingo-comercio` ni `/sueldo`. Art. 45 (pago del descanso), no recargo 30 % art. 38 N°7 ni hora extra art. 32. No crear `/septimo-dia` ni `/pago-domingo-festivo` |
 | Calcular asignación familiar | asignación familiar / tramos asignación familiar / cargas familiares | `/asignacion-familiar` | Title/H1 «calcular asignación familiar»; no canibalizar `/sueldo`, `/cotizaciones-previsionales` ni `/guias/liquidacion-de-sueldo`. Sistema Único (D.F.L. 150), no SUF municipal. No crear `/suf`, `/asignacion-maternal` ni `/cargas-familiares` |
+| Calcular sala cuna | sala cuna / obligación sala cuna / art. 203 / costo sala cuna empresa | `/sala-cuna` | Title/H1 «calcular sala cuna» + art. 203 Chile 2026; no canibalizar `/asignacion-familiar`, `/costo-empresa`, `/colacion-movilizacion` ni `/aguinaldo`. Umbral 20 trabajadoras y costo si paga el establecimiento. El bono compensatorio no es la regla general. No crear `/bono-sala-cuna` ni `/jardín-infantil` |
 | Calcular colación y movilización | colación / movilización / asignación de colación / no imponible art. 41 | `/colacion-movilizacion` | Title/H1 «calcular colación y movilización»; no canibalizar `/sueldo`, `/costo-empresa` ni `/cotizaciones-previsionales`. Solo montos, imponibilidad y cómo salen en la liquidación. No crear `/colacion`, `/movilizacion` ni `/asignacion-colacion` |
 | Calcular feriado progresivo | feriado progresivo / vacaciones progresivas / calcular feriado progresivo | `/feriado-progresivo` | Title/H1 «calcular feriado progresivo»; no canibalizar `/vacaciones-proporcionales` ni `/finiquito`. Art. 68 (días extra al feriado anual), no art. 73 (plata de días no usados). No crear `/vacaciones-progresivas` ni `/indemnizacion` |
 | Calcular feriado anual | feriado anual / vacaciones legales / calcular feriado anual / días hábiles vacaciones | `/feriado-anual` | Title/H1 «calcular feriado anual» + vacaciones legales Chile 2026 art. 67; no canibalizar `/vacaciones-proporcionales` ni `/feriado-progresivo`. Fechas de término y reintegro (15/20 días hábiles), no pesos ni antigüedad art. 68. No crear `/vacaciones` ni `/calendario-vacaciones` |
@@ -132,6 +133,14 @@ No publicar hermanas de asignación familiar: `/suf`, `/asignacion-maternal`,
 `/cargas-familiares`. El SUF municipal (Ley 18.020) no es esta calculadora.
 La asignación maternal comparte tramos con `/asignacion-familiar`; no abre URL propia.
 La intención «calcular sueldo líquido» sigue en `/sueldo`.
+
+No publicar `/bono-sala-cuna` ni `/jardín-infantil`. La obligación de sala cuna
+(art. 203: umbral de 20 trabajadoras y costo si se paga el establecimiento)
+vive en `/sala-cuna`. El bono compensatorio no es la regla general y no abre URL.
+La asignación familiar (D.F.L. 150) sigue en `/asignacion-familiar`. El costo
+de cotizaciones del empleador sigue en `/costo-empresa`. Colación y movilización
+del artículo 41 siguen en `/colacion-movilizacion`. El aguinaldo sigue en
+`/aguinaldo`.
 
 No publicar `/colacion`, `/movilizacion` ni `/asignacion-colacion`. Colación y
 movilización del artículo 41 (montos, imponibilidad y cómo salen en la liquidación)
