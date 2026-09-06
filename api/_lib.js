@@ -602,6 +602,146 @@ export async function sendSignupAvisoEmail({
   }
 }
 
+export function providerAvisoLabel(provider) {
+  return String(provider || "").trim().toLowerCase() === "flow" ? "Flow" : "Mercado Pago";
+}
+
+/** Idempotency-Key de avisos a operación: checkout vs Pro, distinta por evento. */
+export function opsAvisoIdempotencyKey({ kind, companyId, provider, eventId } = {}) {
+  const co = String(companyId || "").trim();
+  if (!co) return "";
+  if (kind === "checkout") {
+    const p = String(provider || "mp").trim().toLowerCase() || "mp";
+    return `haberes-checkout-${co}-${p}`.slice(0, 256);
+  }
+  const ev = String(eventId || "").trim();
+  if (!ev) return "";
+  return `haberes-pro-${co}-${ev}`.slice(0, 256);
+}
+
+/**
+ * Avisa a operación (mismo destino que el alta) un checkout Pro o una activación Pro.
+ * Best-effort: sin RESEND_API_KEY o si fetch falla, no lanza.
+ * @returns {Promise<boolean>}
+ */
+export async function sendOpsAvisoEmail({
+  kind,
+  razonSocial,
+  email,
+  rut,
+  provider,
+  companyId,
+  eventId,
+  env,
+  fetchImpl,
+} = {}) {
+  const e = env || process.env;
+  const apiKey = String(e.RESEND_API_KEY || "").trim();
+  const to = signupAvisoTo(e);
+  if (!apiKey || !to) return false;
+  const nombre = String(razonSocial || "").trim();
+  const correo = String(email || "").trim();
+  const rutTxt = String(rut || "").trim();
+  const proveedor = providerAvisoLabel(provider);
+  const adminUrl = `${publicOrigin()}/admin`;
+  const isCheckout = kind === "checkout";
+  const evento = isCheckout ? "checkout iniciado" : "Pro activado";
+  const subject = isCheckout
+    ? `Checkout Pro iniciado: ${nombre || "empresa"}`
+    : `Haberes Pro activado: ${nombre || "empresa"}`;
+  const lead = isCheckout
+    ? "Una empresa inició el checkout de Haberes Pro (pidió el link de pago)."
+    : "Se activó Haberes Pro (pago o suscripción autorizada).";
+  const headers = {
+    Authorization: `Bearer ${apiKey}`,
+    "Content-Type": "application/json",
+  };
+  const idKey = opsAvisoIdempotencyKey({ kind, companyId, provider, eventId });
+  if (idKey) headers["Idempotency-Key"] = idKey;
+  const doFetch = fetchImpl || fetch;
+  try {
+    const res = await doFetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        from: resendFrom(e),
+        to: [to],
+        subject,
+        text:
+          `${lead}\n\n` +
+          `Evento: ${evento}\n` +
+          `Razón social: ${nombre}\n` +
+          `RUT: ${rutTxt}\n` +
+          `Correo: ${correo}\n` +
+          `Proveedor: ${proveedor}\n\n` +
+          `Admin: ${adminUrl}\n`,
+      }),
+    });
+    return Boolean(res?.ok);
+  } catch {
+    return false;
+  }
+}
+
+function companyAvisoFields(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    email: row.email,
+    rut: row.rut,
+    razon_social: row.razon_social ?? row.razonSocial,
+  };
+}
+
+/** Best-effort: checkout iniciado. `notify` inyectable en tests. */
+export async function notifyCheckoutStarted(company, { provider, notify, env, fetchImpl } = {}) {
+  const row = companyAvisoFields(company);
+  if (!row) return false;
+  try {
+    if (typeof notify === "function") {
+      await notify(row, { provider });
+      return true;
+    }
+    return await sendOpsAvisoEmail({
+      kind: "checkout",
+      razonSocial: row.razon_social,
+      email: row.email,
+      rut: row.rut,
+      provider,
+      companyId: row.id,
+      env,
+      fetchImpl,
+    });
+  } catch {
+    return false;
+  }
+}
+
+/** Best-effort: Pro activado. `notify` inyectable en tests; no reemplaza el mail de downgrade al cliente. */
+export async function notifyProActivated(row, { provider, eventId, notify, env, fetchImpl } = {}) {
+  const company = companyAvisoFields(row);
+  if (!company) return false;
+  try {
+    if (typeof notify === "function") {
+      await notify(company, { provider, eventId });
+      return true;
+    }
+    return await sendOpsAvisoEmail({
+      kind: "pro",
+      razonSocial: company.razon_social,
+      email: company.email,
+      rut: company.rut,
+      provider,
+      companyId: company.id,
+      eventId,
+      env,
+      fetchImpl,
+    });
+  } catch {
+    return false;
+  }
+}
+
 export async function sendResetEmail({ to, token }) {
   const apiKey = String(process.env.RESEND_API_KEY || "").trim();
   if (!apiKey || !to || !token) return false;

@@ -2940,7 +2940,9 @@ const {
   SESSION_COOKIE,
   TOKEN_TTL_MS,
   sendSignupAvisoEmail,
+  sendOpsAvisoEmail,
   signupAvisoTo,
+  opsAvisoIdempotencyKey,
 } = await import("../api/_lib.js");
 
 assert("clave mínima 10", MIN_PASSWORD_LENGTH === 10, String(MIN_PASSWORD_LENGTH));
@@ -3164,6 +3166,109 @@ const avisoNoKey = await sendSignupAvisoEmail({
   },
 });
 assert("aviso sin API key no lanza", avisoNoKey === false);
+
+assert(
+  "idempotency checkout y Pro son distintas",
+  opsAvisoIdempotencyKey({ kind: "checkout", companyId: "co-1", provider: "mp" }) ===
+    "haberes-checkout-co-1-mp" &&
+    opsAvisoIdempotencyKey({ kind: "checkout", companyId: "co-1", provider: "flow" }) ===
+      "haberes-checkout-co-1-flow" &&
+    opsAvisoIdempotencyKey({ kind: "pro", companyId: "co-1", eventId: "pay-9" }) ===
+      "haberes-pro-co-1-pay-9",
+);
+
+let opsFetch = null;
+const opsCheckoutSent = await sendOpsAvisoEmail({
+  kind: "checkout",
+  razonSocial: "Pyme SpA",
+  email: "pyme@example.cl",
+  rut: "12345678-5",
+  provider: "mp",
+  companyId: "co-1",
+  env: {
+    RESEND_API_KEY: "re_test",
+    ADMIN_AVISO_EMAIL: "ops@haberes.cl",
+  },
+  fetchImpl: async (url, init) => {
+    opsFetch = { url, init };
+    return { ok: true };
+  },
+});
+const opsCheckoutMail = opsFetch ? JSON.parse(opsFetch.init.body) : {};
+assert(
+  "aviso checkout Resend a operación",
+  opsCheckoutSent === true &&
+    opsCheckoutMail.to?.[0] === "ops@haberes.cl" &&
+    opsCheckoutMail.subject === "Checkout Pro iniciado: Pyme SpA" &&
+    /checkout iniciado/.test(opsCheckoutMail.text) &&
+    /Razón social: Pyme SpA/.test(opsCheckoutMail.text) &&
+    /RUT: 12345678-5/.test(opsCheckoutMail.text) &&
+    /Correo: pyme@example.cl/.test(opsCheckoutMail.text) &&
+    /Proveedor: Mercado Pago/.test(opsCheckoutMail.text) &&
+    /\/admin/.test(opsCheckoutMail.text) &&
+    opsFetch.init.headers["Idempotency-Key"] === "haberes-checkout-co-1-mp",
+  JSON.stringify(opsCheckoutMail),
+);
+
+opsFetch = null;
+const opsProSent = await sendOpsAvisoEmail({
+  kind: "pro",
+  razonSocial: "Pyme SpA",
+  email: "pyme@example.cl",
+  rut: "12345678-5",
+  provider: "flow",
+  companyId: "co-1",
+  eventId: "pay-9",
+  env: {
+    RESEND_API_KEY: "re_test",
+    SIGNUP_AVISO_EMAIL: "alt@haberes.cl",
+  },
+  fetchImpl: async (url, init) => {
+    opsFetch = { url, init };
+    return { ok: true };
+  },
+});
+const opsProMail = opsFetch ? JSON.parse(opsFetch.init.body) : {};
+assert(
+  "aviso Pro activado Resend a operación",
+  opsProSent === true &&
+    opsProMail.to?.[0] === "alt@haberes.cl" &&
+    opsProMail.subject === "Haberes Pro activado: Pyme SpA" &&
+    /Pro activado/.test(opsProMail.text) &&
+    /Proveedor: Flow/.test(opsProMail.text) &&
+    /\/admin/.test(opsProMail.text) &&
+    opsFetch.init.headers["Idempotency-Key"] === "haberes-pro-co-1-pay-9",
+  JSON.stringify(opsProMail),
+);
+
+const opsNoKey = await sendOpsAvisoEmail({
+  kind: "checkout",
+  razonSocial: "Pyme SpA",
+  email: "pyme@example.cl",
+  rut: "12345678-5",
+  provider: "mp",
+  companyId: "co-1",
+  env: {},
+  fetchImpl: async () => {
+    throw new Error("no fetch");
+  },
+});
+assert("aviso ops sin API key no lanza", opsNoKey === false);
+
+const opsFetchFail = await sendOpsAvisoEmail({
+  kind: "pro",
+  razonSocial: "Pyme SpA",
+  email: "pyme@example.cl",
+  rut: "12345678-5",
+  provider: "mp",
+  companyId: "co-1",
+  eventId: "pay-fail",
+  env: { RESEND_API_KEY: "re_test" },
+  fetchImpl: async () => {
+    throw new Error("resend down");
+  },
+});
+assert("aviso ops si Resend falla no lanza", opsFetchFail === false);
 
 const loginIp = "203.0.113.22";
 const loginRes = mockRes();
@@ -3574,6 +3679,62 @@ assert(
   JSON.stringify({ status: signed._out.statusCode, hits: applyHits, plan: appliedPlan }),
 );
 
+const hookMailClient = mockPayClient({
+  id: "co1",
+  plan: "gratis",
+  mp_payment_id: null,
+  plan_until: null,
+  email: "pyme@example.cl",
+  rut: "12345678-5",
+  razon_social: "Pyme SpA",
+});
+const hookMailThrow = mockRes();
+await handleMpWebhook(
+  {
+    method: "POST",
+    body: { type: "payment", data: { id: "999" } },
+    headers: {
+      "x-forwarded-for": "203.0.113.185",
+      "x-signature": `ts=${ts},v1=${goodV1}`,
+      "x-request-id": requestId,
+    },
+    url: "/api/mp-webhook?data.id=999&type=payment",
+  },
+  hookMailThrow,
+  {
+    fetchImpl: async (url) => {
+      if (String(url).includes("/v1/payments/999")) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            id: 999,
+            status: "approved",
+            transaction_amount: 17838,
+            currency_id: "CLP",
+            external_reference: "co1",
+          }),
+        };
+      }
+      return { ok: false, status: 404, json: async () => ({}) };
+    },
+    applyPayment: async (client, payment) =>
+      applyFetchedPayment(client, payment, {
+        notifyPro: async () => {
+          throw new Error("resend down");
+        },
+      }),
+    withDb: async (fn) => fn(hookMailClient),
+  },
+);
+assert(
+  "webhook MP activa Pro aunque el aviso lanza",
+  hookMailThrow._out.statusCode === 200 &&
+    hookMailThrow._out.body?.ok === true &&
+    hookMailClient.state.row.plan === "pro",
+  JSON.stringify({ status: hookMailThrow._out.statusCode, plan: hookMailClient.state.row.plan }),
+);
+
 function mockPayClient(row) {
   const state = { row: { ...row }, sql: [] };
   return {
@@ -3599,18 +3760,71 @@ function mockPayClient(row) {
   };
 }
 
-const payClient = mockPayClient({ id: "co1", plan: "gratis", mp_payment_id: null, plan_until: null });
-const approved = await applyFetchedPayment(payClient, {
-  id: "pay-1",
-  status: "approved",
-  transaction_amount: 17838,
-  currency_id: "CLP",
-  external_reference: "co1",
+const payClient = mockPayClient({
+  id: "co1",
+  plan: "gratis",
+  mp_payment_id: null,
+  plan_until: null,
+  email: "pyme@example.cl",
+  rut: "12345678-5",
+  razon_social: "Pyme SpA",
 });
+const payAviso = [];
+const approved = await applyFetchedPayment(
+  payClient,
+  {
+    id: "pay-1",
+    status: "approved",
+    transaction_amount: 17838,
+    currency_id: "CLP",
+    external_reference: "co1",
+  },
+  {
+    notifyPro: async (row, meta) => {
+      payAviso.push({ row, meta });
+    },
+  },
+);
 assert(
   "pago aprobado activa Pro",
   approved.applied && approved.plan === "pro" && payClient.state.row.plan === "pro",
   JSON.stringify(approved),
+);
+assert(
+  "pago aprobado avisa a operación",
+  payAviso.length === 1 &&
+    payAviso[0].meta?.provider === "mp" &&
+    payAviso[0].meta?.eventId === "pay-1" &&
+    payAviso[0].row?.email === "pyme@example.cl",
+  JSON.stringify(payAviso),
+);
+const payMailThrow = await applyFetchedPayment(
+  mockPayClient({
+    id: "co1",
+    plan: "gratis",
+    mp_payment_id: null,
+    plan_until: null,
+    email: "pyme@example.cl",
+    rut: "12345678-5",
+    razon_social: "Pyme SpA",
+  }),
+  {
+    id: "pay-mail",
+    status: "approved",
+    transaction_amount: 17838,
+    currency_id: "CLP",
+    external_reference: "co1",
+  },
+  {
+    notifyPro: async () => {
+      throw new Error("resend down");
+    },
+  },
+);
+assert(
+  "pago aprobado sigue si el aviso lanza",
+  payMailThrow.applied && payMailThrow.plan === "pro",
+  JSON.stringify(payMailThrow),
 );
 const pending = await applyFetchedPayment(payClient, {
   id: "pay-2",
@@ -3639,7 +3853,17 @@ function mockPreClient(row) {
       state.sql.push(sql);
       if (/SET plan = 'pro'/.test(sql) && /mp_preapproval_id/.test(sql)) {
         state.row = { ...state.row, plan: "pro", mp_preapproval_id: params[1], plan_until: null };
-        return { rowCount: 1 };
+        return {
+          rowCount: 1,
+          rows: [
+            {
+              id: state.row.id,
+              email: state.row.email,
+              rut: state.row.rut,
+              razon_social: state.row.razon_social,
+            },
+          ],
+        };
       }
       if (/SET plan = 'gratis'/.test(sql) && /mp_preapproval_id/.test(sql)) {
         if (state.row && String(state.row.mp_preapproval_id) === String(params[1])) {
@@ -3652,13 +3876,30 @@ function mockPreClient(row) {
     },
   };
 }
-const preClient = mockPreClient({ id: "co1", plan: "gratis", mp_preapproval_id: null, plan_until: "2099-01-01T00:00:00Z" });
-let preNotified = 0;
-const authorized = await applyFetchedPreapproval(preClient, {
-  id: "pre-1",
-  status: "authorized",
-  external_reference: "co1",
+const preClient = mockPreClient({
+  id: "co1",
+  plan: "gratis",
+  mp_preapproval_id: null,
+  plan_until: "2099-01-01T00:00:00Z",
+  email: "pyme@example.cl",
+  rut: "12345678-5",
+  razon_social: "Pyme SpA",
 });
+let preNotified = 0;
+const preAviso = [];
+const authorized = await applyFetchedPreapproval(
+  preClient,
+  {
+    id: "pre-1",
+    status: "authorized",
+    external_reference: "co1",
+  },
+  {
+    notifyPro: async (row, meta) => {
+      preAviso.push({ row, meta });
+    },
+  },
+);
 assert(
   "preapproval autorizado activa Pro sin plan_until",
   authorized.applied &&
@@ -3666,6 +3907,11 @@ assert(
     preClient.state.row.plan === "pro" &&
     preClient.state.row.plan_until == null,
   JSON.stringify(authorized),
+);
+assert(
+  "preapproval autorizado avisa a operación",
+  preAviso.length === 1 && preAviso[0].meta?.provider === "mp" && preAviso[0].meta?.eventId === "pre-1",
+  JSON.stringify(preAviso),
 );
 const cancelledPre = await applyFetchedPreapproval(
   preClient,
@@ -3922,6 +4168,7 @@ assert(
 );
 
 const flowProv = mockRes();
+const flowCheckoutAviso = [];
 await handleCheckout(
   {
     method: "POST",
@@ -3931,7 +4178,12 @@ await handleCheckout(
   flowProv,
   {
     hasDatabaseUrl: () => true,
-    requireCompany: async () => ({ id: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", email: "pyme@example.cl" }),
+    requireCompany: async () => ({
+      id: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+      email: "pyme@example.cl",
+      rut: "12345678-5",
+      razon_social: "Pyme SpA",
+    }),
     hasMp: () => true,
     hasFlow: () => true,
     createMp: async () => ({ ok: true, init_point: "https://www.mercadopago.cl/checkout/v1/redirect?pref_id=nope" }),
@@ -3939,6 +4191,9 @@ await handleCheckout(
       ok: true,
       init_point: "https://www.flow.cl/app/web/pay.php?token=from-provider",
     }),
+    notifyCheckout: async (company, meta) => {
+      flowCheckoutAviso.push({ company, meta });
+    },
   },
 );
 assert(
@@ -3949,8 +4204,70 @@ assert(
     String(flowProv._out.body?.init_point).includes("flow.cl"),
   JSON.stringify(flowProv._out.body),
 );
+assert(
+  "checkout Flow avisa a operación",
+  flowCheckoutAviso.length === 1 &&
+    flowCheckoutAviso[0].meta?.provider === "flow" &&
+    flowCheckoutAviso[0].company?.email === "pyme@example.cl",
+  JSON.stringify(flowCheckoutAviso),
+);
+
+const flowCheckoutFailAviso = [];
+const flowCheckoutFail = mockRes();
+await handleCheckout(
+  {
+    method: "POST",
+    body: { provider: "flow" },
+    headers: { "x-forwarded-for": "203.0.113.192", cookie: "haberes_session=unit-session" },
+  },
+  flowCheckoutFail,
+  {
+    hasDatabaseUrl: () => true,
+    requireCompany: async () => ({ id: "co1", email: "pyme@example.cl" }),
+    hasMp: () => true,
+    hasFlow: () => true,
+    createFlow: async () => ({ ok: false, reason: "flow_error" }),
+    notifyCheckout: async (company, meta) => {
+      flowCheckoutFailAviso.push({ company, meta });
+    },
+  },
+);
+assert(
+  "checkout Flow 502 no avisa",
+  flowCheckoutFail._out.statusCode === 502 && flowCheckoutFailAviso.length === 0,
+  JSON.stringify({ status: flowCheckoutFail._out.statusCode, calls: flowCheckoutFailAviso }),
+);
+
+const flowCheckoutMailThrow = mockRes();
+await handleCheckout(
+  {
+    method: "POST",
+    body: { provider: "flow" },
+    headers: { "x-forwarded-for": "203.0.113.194", cookie: "haberes_session=unit-session" },
+  },
+  flowCheckoutMailThrow,
+  {
+    hasDatabaseUrl: () => true,
+    requireCompany: async () => ({ id: "co1", email: "pyme@example.cl", razon_social: "Pyme SpA" }),
+    hasMp: () => false,
+    hasFlow: () => true,
+    createFlow: async () => ({
+      ok: true,
+      init_point: "https://www.flow.cl/app/web/pay.php?token=from-provider",
+    }),
+    notifyCheckout: async () => {
+      throw new Error("resend down");
+    },
+  },
+);
+assert(
+  "checkout Flow sigue si el aviso lanza",
+  flowCheckoutMailThrow._out.statusCode === 200 && flowCheckoutMailThrow._out.body?.ok === true,
+  JSON.stringify(flowCheckoutMailThrow._out.body),
+);
 
 const mpDefault = mockRes();
+const mpCheckoutAviso = [];
 await handleCheckout(
   {
     method: "POST",
@@ -3960,11 +4277,19 @@ await handleCheckout(
   mpDefault,
   {
     hasDatabaseUrl: () => true,
-    requireCompany: async () => ({ id: "co1", email: "pyme@example.cl" }),
+    requireCompany: async () => ({
+      id: "co1",
+      email: "pyme@example.cl",
+      rut: "12345678-5",
+      razon_social: "Pyme SpA",
+    }),
     hasMp: () => true,
     hasFlow: () => true,
     createMp: async () => ({ ok: true, init_point: "https://www.mercadopago.cl/checkout/v1/redirect?pref_id=unit" }),
     createFlow: async () => ({ ok: true, init_point: "https://www.flow.cl/app/web/pay.php?token=nope" }),
+    notifyCheckout: async (company, meta) => {
+      mpCheckoutAviso.push({ company, meta });
+    },
   },
 );
 assert(
@@ -3973,6 +4298,65 @@ assert(
     mpDefault._out.body?.provider === "mp" &&
     String(mpDefault._out.body?.init_point).includes("mercadopago.cl"),
   JSON.stringify(mpDefault._out.body),
+);
+assert(
+  "checkout MP avisa a operación",
+  mpCheckoutAviso.length === 1 &&
+    mpCheckoutAviso[0].meta?.provider === "mp" &&
+    mpCheckoutAviso[0].company?.email === "pyme@example.cl" &&
+    mpCheckoutAviso[0].company?.razon_social === "Pyme SpA",
+  JSON.stringify(mpCheckoutAviso),
+);
+
+const mpCheckoutMailThrow = mockRes();
+await handleCheckout(
+  {
+    method: "POST",
+    body: {},
+    headers: { "x-forwarded-for": "203.0.113.193", cookie: "haberes_session=unit-session" },
+  },
+  mpCheckoutMailThrow,
+  {
+    hasDatabaseUrl: () => true,
+    requireCompany: async () => ({ id: "co1", email: "pyme@example.cl", razon_social: "Pyme SpA" }),
+    hasMp: () => true,
+    hasFlow: () => false,
+    createMp: async () => ({ ok: true, init_point: "https://www.mercadopago.cl/checkout/v1/redirect?pref_id=unit" }),
+    notifyCheckout: async () => {
+      throw new Error("resend down");
+    },
+  },
+);
+assert(
+  "checkout MP sigue si el aviso lanza",
+  mpCheckoutMailThrow._out.statusCode === 200 && mpCheckoutMailThrow._out.body?.ok === true,
+  JSON.stringify(mpCheckoutMailThrow._out.body),
+);
+
+const mpCheckoutFailAviso = [];
+const mpCheckoutFail = mockRes();
+await handleCheckout(
+  {
+    method: "POST",
+    body: {},
+    headers: { "x-forwarded-for": "203.0.113.195", cookie: "haberes_session=unit-session" },
+  },
+  mpCheckoutFail,
+  {
+    hasDatabaseUrl: () => true,
+    requireCompany: async () => ({ id: "co1", email: "pyme@example.cl" }),
+    hasMp: () => true,
+    hasFlow: () => false,
+    createMp: async () => ({ ok: false, reason: "mp_error" }),
+    notifyCheckout: async (company, meta) => {
+      mpCheckoutFailAviso.push({ company, meta });
+    },
+  },
+);
+assert(
+  "checkout MP 502 no avisa",
+  mpCheckoutFail._out.statusCode === 502 && mpCheckoutFailAviso.length === 0,
+  JSON.stringify({ status: mpCheckoutFail._out.statusCode, calls: mpCheckoutFailAviso }),
 );
 
 let flowApplyHits = 0;
@@ -4062,6 +4446,58 @@ assert(
   JSON.stringify({ status: paidHook._out.statusCode, hits: flowApplyHits, plan: flowAppliedPlan }),
 );
 
+const flowHookMailClient = mockFlowClient({
+  id: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+  plan: "gratis",
+  flow_token: null,
+  plan_until: null,
+  email: "pyme@example.cl",
+  rut: "12345678-5",
+  razon_social: "Pyme SpA",
+});
+const flowHookMailThrow = mockRes();
+await handleFlowWebhook(
+  { method: "POST", body: { token: "paid-token", status: "2" }, headers: { "x-forwarded-for": "203.0.113.196" } },
+  flowHookMailThrow,
+  {
+    fetchImpl: async (url) => {
+      if (String(url).includes("/payment/getStatus")) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            flowOrder: 776655,
+            commerceOrder: "pro-aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee-1-abcd",
+            status: 2,
+            currency: "CLP",
+            amount: 17838,
+            optional: { company_id: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee" },
+          }),
+        };
+      }
+      return { ok: false, status: 404, json: async () => ({}) };
+    },
+    applyStatus: async (client, status, token) =>
+      applyFetchedFlowStatus(client, status, token, {
+        notifyPro: async () => {
+          throw new Error("resend down");
+        },
+      }),
+    getRegisterStatus: async () => ({ ok: false, data: null }),
+    withDb: async (fn) => fn(flowHookMailClient),
+  },
+);
+assert(
+  "webhook Flow activa Pro aunque el aviso lanza",
+  flowHookMailThrow._out.statusCode === 200 &&
+    flowHookMailThrow._out.body?.ok === true &&
+    flowHookMailClient.state.row.plan === "pro",
+  JSON.stringify({
+    status: flowHookMailThrow._out.statusCode,
+    plan: flowHookMailClient.state.row.plan,
+  }),
+);
+
 function mockFlowClient(row) {
   const state = { row: { ...row }, sql: [] };
   return {
@@ -4099,7 +4535,11 @@ const flowClient = mockFlowClient({
   plan: "gratis",
   flow_token: null,
   plan_until: null,
+  email: "pyme@example.cl",
+  rut: "12345678-5",
+  razon_social: "Pyme SpA",
 });
+const flowPayAviso = [];
 const flowPaid = await applyFetchedFlowStatus(
   flowClient,
   {
@@ -4111,11 +4551,53 @@ const flowPaid = await applyFetchedFlowStatus(
     optional: { company_id: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee" },
   },
   "paid-token",
+  {
+    notifyPro: async (row, meta) => {
+      flowPayAviso.push({ row, meta });
+    },
+  },
 );
 assert(
   "pago Flow aprobado activa Pro",
   flowPaid.applied && flowPaid.plan === "pro" && flowClient.state.row.plan === "pro",
   JSON.stringify(flowPaid),
+);
+assert(
+  "pago Flow aprobado avisa a operación",
+  flowPayAviso.length === 1 &&
+    flowPayAviso[0].meta?.provider === "flow" &&
+    flowPayAviso[0].meta?.eventId === "paid-token",
+  JSON.stringify(flowPayAviso),
+);
+const flowPayMailThrow = await applyFetchedFlowStatus(
+  mockFlowClient({
+    id: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+    plan: "gratis",
+    flow_token: null,
+    plan_until: null,
+    email: "pyme@example.cl",
+    rut: "12345678-5",
+    razon_social: "Pyme SpA",
+  }),
+  {
+    flowOrder: 776655,
+    commerceOrder: "pro-aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee-1-abcd",
+    status: 2,
+    currency: "CLP",
+    amount: 17838,
+    optional: { company_id: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee" },
+  },
+  "paid-token",
+  {
+    notifyPro: async () => {
+      throw new Error("resend down");
+    },
+  },
+);
+assert(
+  "pago Flow aprobado sigue si el aviso lanza",
+  flowPayMailThrow.applied && flowPayMailThrow.plan === "pro",
+  JSON.stringify(flowPayMailThrow),
 );
 const flowPending = await applyFetchedFlowStatus(
   flowClient,
@@ -4194,6 +4676,7 @@ const flowSubClient = mockFlowSubClient({
   email: "pyme@example.cl",
   razon_social: "Pyme",
 });
+const flowSubAviso = [];
 const cardReg = await applyFlowCardRegistered(
   flowSubClient,
   { customerId: "cus_unit", status: "1" },
@@ -4203,6 +4686,9 @@ const cardReg = await applyFlowCardRegistered(
         return { ok: true, status: 200, json: async () => ({ subscriptionId: "sus_unit" }) };
       }
       throw new Error("unexpected Flow call");
+    },
+    notifyPro: async (row, meta) => {
+      flowSubAviso.push({ row, meta });
     },
   },
 );
@@ -4214,6 +4700,13 @@ assert(
     flowSubClient.state.row.flow_subscription_id === "sus_unit" &&
     flowSubClient.state.row.plan_until == null,
   JSON.stringify(cardReg),
+);
+assert(
+  "registro de tarjeta Flow avisa a operación",
+  flowSubAviso.length === 1 &&
+    flowSubAviso[0].meta?.provider === "flow" &&
+    flowSubAviso[0].meta?.eventId === "sus_unit",
+  JSON.stringify(flowSubAviso),
 );
 const invPaid = await applyFetchedFlowInvoice(flowSubClient, {
   customerId: "cus_unit",
@@ -6064,7 +6557,12 @@ assert(
     /no_storage/.test(readFileSync(join(root, "api/enviar.js"), "utf8")) &&
     /sendDocumentEmail/.test(readFileSync(join(root, "api/_lib.js"), "utf8")) &&
     /sendSignupAvisoEmail/.test(readFileSync(join(root, "api/_lib.js"), "utf8")) &&
-    /sendSignupAvisoEmail/.test(readFileSync(join(root, "api/register.js"), "utf8")),
+    /sendSignupAvisoEmail/.test(readFileSync(join(root, "api/register.js"), "utf8")) &&
+    /sendOpsAvisoEmail/.test(readFileSync(join(root, "api/_lib.js"), "utf8")) &&
+    /notifyCheckoutStarted/.test(readFileSync(join(root, "api/checkout.js"), "utf8")) &&
+    /notifyProActivated/.test(readFileSync(join(root, "api/_mp.js"), "utf8")) &&
+    /notifyProActivated/.test(readFileSync(join(root, "api/_flow.js"), "utf8")) &&
+    /sendPlanDowngradeEmail/.test(readFileSync(join(root, "api/_lib.js"), "utf8")),
 );
 assert("sql/006.sql envios", /CREATE TABLE IF NOT EXISTS envios/.test(readFileSync(join(root, "sql/006.sql"), "utf8")));
 assert(
