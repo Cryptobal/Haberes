@@ -63,6 +63,7 @@ def check_http():
         ("/guias/indemnizacion-por-anos-de-servicio", 200, "html"),
         ("/guias/semana-corrida", 200, "html"),
         ("/guias/aguinaldo-fiestas-patrias", 200, "html"),
+        ("/guias/me-reservo-el-derecho-en-el-finiquito", 200, "html"),
         ("/horas-extras", 200, "html"),
         ("/vacaciones-proporcionales", 200, "html"),
         ("/gratificacion", 200, "html"),
@@ -163,6 +164,7 @@ PAGES = [
     ("guias/indemnizacion-por-anos-de-servicio.html", "guia-ias"),
     ("guias/semana-corrida.html", "guia-semana-corrida"),
     ("guias/aguinaldo-fiestas-patrias.html", "guia-aguinaldo-fiestas-patrias"),
+    ("guias/me-reservo-el-derecho-en-el-finiquito.html", "guia-me-reservo-el-derecho"),
 ]
 MOBILE = {"width": 360, "height": 780}
 DESKTOP = {"width": 1280, "height": 900}
