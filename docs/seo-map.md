@@ -25,6 +25,7 @@ Actualizar este archivo antes de crear URLs nuevas para evitar canibalización.
 | Calcular semana corrida | semana corrida (1.300/21) — intención calcular | `/semana-corrida` | Title/H1 «calcular semana corrida»; no canibalizar `/guias/semana-corrida`, `/recargo-domingo-comercio` ni `/sueldo`. Art. 45 (pago del descanso), no recargo 30 % art. 38 N°7 ni hora extra art. 32. No crear `/septimo-dia` ni `/pago-domingo-festivo` |
 | Calcular asignación familiar | asignación familiar / tramos asignación familiar / cargas familiares | `/asignacion-familiar` | Title/H1 «calcular asignación familiar»; no canibalizar `/sueldo`, `/cotizaciones-previsionales` ni `/guias/liquidacion-de-sueldo`. Sistema Único (D.F.L. 150), no SUF municipal. No crear `/suf`, `/asignacion-maternal` ni `/cargas-familiares` |
 | Calcular sala cuna | sala cuna / obligación sala cuna / art. 203 / costo sala cuna empresa | `/sala-cuna` | Title/H1 «calcular sala cuna» + art. 203 Chile 2026; no canibalizar `/asignacion-familiar`, `/costo-empresa`, `/colacion-movilizacion` ni `/aguinaldo`. Umbral 20 trabajadoras y costo si paga el establecimiento. El bono compensatorio no es la regla general. No crear `/bono-sala-cuna` ni `/jardín-infantil` |
+| Calcular postnatal parental | postnatal parental / permiso postnatal parental / art. 197 bis / Ley 20.545 | `/postnatal-parental` | Title/H1 «calcular postnatal parental» + art. 197 bis Chile 2026; no canibalizar `/licencia-medica`, `/sala-cuna`, `/sueldo`, `/sueldo-proporcional` ni `/asignacion-familiar`. Completa 12 sem vs parcial 18 sem (subsidio D.F.L. 44 art. 8 + empleador ≥ 50 % estipendios fijos). No es prenatal/postnatal 6+12 ni SIL genérico. No crear `/postnatal`, `/permiso-parental` ni `/subsidio-maternal` |
 | Calcular colación y movilización | colación / movilización / asignación de colación / no imponible art. 41 | `/colacion-movilizacion` | Title/H1 «calcular colación y movilización»; no canibalizar `/sueldo`, `/costo-empresa` ni `/cotizaciones-previsionales`. Solo montos, imponibilidad y cómo salen en la liquidación. No crear `/colacion`, `/movilizacion` ni `/asignacion-colacion` |
 | Calcular feriado progresivo | feriado progresivo / vacaciones progresivas / calcular feriado progresivo | `/feriado-progresivo` | Title/H1 «calcular feriado progresivo»; no canibalizar `/vacaciones-proporcionales` ni `/finiquito`. Art. 68 (días extra al feriado anual), no art. 73 (plata de días no usados). No crear `/vacaciones-progresivas` ni `/indemnizacion` |
 | Calcular feriado anual | feriado anual / vacaciones legales / calcular feriado anual / días hábiles vacaciones | `/feriado-anual` | Title/H1 «calcular feriado anual» + vacaciones legales Chile 2026 art. 67; no canibalizar `/vacaciones-proporcionales` ni `/feriado-progresivo`. Fechas de término y reintegro (15/20 días hábiles), no pesos ni antigüedad art. 68. No crear `/vacaciones` ni `/calendario-vacaciones` |
@@ -141,6 +142,13 @@ La asignación familiar (D.F.L. 150) sigue en `/asignacion-familiar`. El costo
 de cotizaciones del empleador sigue en `/costo-empresa`. Colación y movilización
 del artículo 41 siguen en `/colacion-movilizacion`. El aguinaldo sigue en
 `/aguinaldo`.
+
+No publicar `/postnatal`, `/permiso-parental` ni `/subsidio-maternal`. El permiso
+postnatal parental (art. 197 bis / Ley 20.545: 12 semanas completas o 18 a media
+jornada) vive en `/postnatal-parental`. No canibalizar `/licencia-medica`, `/sala-cuna`,
+`/sueldo`, `/sueldo-proporcional` ni `/asignacion-familiar`. El prenatal y el postnatal
+de 6+12 semanas (arts. 195 y 196) no abren URL propia. El SIL genérico de una
+licencia común sigue en `/licencia-medica`.
 
 No publicar `/colacion`, `/movilizacion` ni `/asignacion-colacion`. Colación y
 movilización del artículo 41 (montos, imponibilidad y cómo salen en la liquidación)

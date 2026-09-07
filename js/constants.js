@@ -39,6 +39,19 @@ export const GRATIFICACION_TOPE = 219115;
  */
 export const UMBRAL_SALA_CUNA = 20;
 
+/**
+ * Permiso postnatal parental (art. 197 bis CT / Ley 20.545).
+ * Completa: 12 semanas (84 días). Parcial: 18 semanas (126 días).
+ * La madre goza al menos las primeras 6 semanas; el padre, si se cede,
+ * toma el tramo final desde la 7.ª.
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=207436
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=1030936
+ * @see https://www.dt.gob.cl/portal/1628/w3-article-99747.html
+ */
+export const POSTNATAL_PARENTAL_SEMANAS_COMPLETA = 12;
+export const POSTNATAL_PARENTAL_SEMANAS_PARCIAL = 18;
+export const POSTNATAL_PARENTAL_SEMANAS_MIN_MADRE = 6;
+
 export const JORNADA_DEFAULT = 42;
 export const HORAS_EXTRA_FACTOR = 1.5;
 /** Mínimo legal art. 38 N°7: recargo sobre horas ordinarias en domingo (comercio/servicios al público). */
