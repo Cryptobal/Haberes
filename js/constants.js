@@ -29,6 +29,16 @@ export const IMM_ANTERIOR_MENOR_MAYOR = 402082;
 export const GRATIFICACION_TASA = 0.25;
 export const GRATIFICACION_TOPE = 219115;
 
+/**
+ * Umbral art. 203 Código del Trabajo: empresas que ocupan 20 o más
+ * trabajadoras (cualquier edad o estado civil). Se cuentan las de la misma
+ * razón social o personalidad jurídica (sucursales). No incluye honorarios
+ * ni contratistas ajenos.
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=207436
+ * @see https://www.dt.gob.cl/portal/1626/w3-article-59956.html
+ */
+export const UMBRAL_SALA_CUNA = 20;
+
 export const JORNADA_DEFAULT = 42;
 export const HORAS_EXTRA_FACTOR = 1.5;
 /** Mínimo legal art. 38 N°7: recargo sobre horas ordinarias en domingo (comercio/servicios al público). */
