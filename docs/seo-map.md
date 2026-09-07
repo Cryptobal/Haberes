@@ -53,6 +53,7 @@ Actualizar este archivo antes de crear URLs nuevas para evitar canibalización.
 | Aguinaldo Fiestas Patrias | aguinaldo fiestas patrias (5.400/23), es obligatorio el aguinaldo (480/15), bono fiestas patrias (170) | `/guias/aguinaldo-fiestas-patrias` | guía espesa; el cálculo vive en `/aguinaldo`; no es obligación general del Código; no canibalizar `/gratificacion` ni `/guias/gratificacion-legal` |
 | Carta de aviso | carta de aviso de término de contrato (10–480) | `/guias/carta-aviso-termino-contrato` | plantilla descargable |
 | Casa particular | finiquito asesora del hogar (140/15) | `/guias/finiquito-trabajadora-de-casa-particular` | explica; el cálculo vive en `/finiquito-casa-particular`; no reescribir la guía como segunda calculadora |
+| Reserva de derechos al firmar | me reservo el derecho / reserva de derechos finiquito — explainer | `/guias/me-reservo-el-derecho-en-el-finiquito` | guía espesa art. 177 (reserva, sumas no disputadas, poder liberatorio); el cálculo vive en `/finiquito`; no canibalizar title/H1 de esa calculadora ni de `/guias/finiquito` ni `/guias/plazo-de-pago-del-finiquito`. No crear `/guias/reserva-de-derechos` |
 
 ## Guías de apoyo (ya publicadas — no canibalizar)
 
@@ -60,7 +61,6 @@ Actualizar este archivo antes de crear URLs nuevas para evitar canibalización.
 |---|---|
 | `/guias/plazo-de-pago-del-finiquito` | Soporte a intención finiquito |
 | `/guias/con-que-sueldo-se-calcula-el-finiquito` | Base de cálculo |
-| `/guias/me-reservo-el-derecho-en-el-finiquito` | Firma / reserva |
 | `/guias/como-leer-una-liquidacion-de-sueldo` | Soporte liquidación |
 | `/guias/formato-de-liquidacion-de-sueldo-chile` | Formato PDF |
 | `/guias/liquidacion-de-sueldo-y-previred` | Previred vs liquidación; enlace a `/cotizaciones-previsionales` (cálculo, no declaración) |

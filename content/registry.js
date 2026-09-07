@@ -55,12 +55,12 @@ export const GUIDES = [
   { slug: "plazo-de-pago-del-finiquito", group: "finiquito", calc: "/finiquito", updated: "2026-08-17" },
   { slug: "con-que-sueldo-se-calcula-el-finiquito", group: "finiquito", calc: "/finiquito", updated: "2026-08-17" },
   { slug: "finiquito-trabajadora-de-casa-particular", group: "finiquito", calc: "/finiquito-casa-particular", updated: "2026-08-31" },
-  { slug: "me-reservo-el-derecho-en-el-finiquito", group: "finiquito", calc: "/finiquito", updated: "2026-08-17" },
+  { slug: "me-reservo-el-derecho-en-el-finiquito", group: "finiquito", calc: "/finiquito", updated: "2026-09-07" },
 ];
 
 /** lastmod de rutas base que sí cambiaron después del lote SEO inicial. */
 export const PATH_LASTMOD = {
-  "/guias": "2026-09-01",
+  "/guias": "2026-09-07",
   "/finiquito-casa-particular": "2026-08-31",
   "/costo-empresa": "2026-08-30",
   "/seguro-cesantia": "2026-09-01",

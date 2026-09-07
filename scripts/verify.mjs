@@ -2553,14 +2553,16 @@ assert(
     lastmodForPath("/guias/semana-corrida") === "2026-08-27" &&
     lastmodForPath("/guias/aguinaldo-fiestas-patrias") === "2026-08-30" &&
     lastmodForPath("/guias/horas-extras") === "2026-08-31" &&
-    lastmodForPath("/guias") === "2026-09-01" &&
+    lastmodForPath("/guias/me-reservo-el-derecho-en-el-finiquito") === "2026-09-07" &&
+    lastmodForPath("/guias") === "2026-09-07" &&
     /<loc>https:\/\/www\.haberes\.cl\/guias\/liquidacion-de-sueldo<\/loc>\s*<lastmod>2026-08-18<\/lastmod>/.test(sitemap) &&
     /<loc>https:\/\/www\.haberes\.cl\/guias\/gratificacion-legal<\/loc>\s*<lastmod>2026-08-18<\/lastmod>/.test(sitemap) &&
     /<loc>https:\/\/www\.haberes\.cl\/guias\/indemnizacion-por-anos-de-servicio<\/loc>\s*<lastmod>2026-08-19<\/lastmod>/.test(sitemap) &&
     /<loc>https:\/\/www\.haberes\.cl\/guias\/semana-corrida<\/loc>\s*<lastmod>2026-08-27<\/lastmod>/.test(sitemap) &&
     /<loc>https:\/\/www\.haberes\.cl\/guias\/aguinaldo-fiestas-patrias<\/loc>\s*<lastmod>2026-08-30<\/lastmod>/.test(sitemap) &&
     /<loc>https:\/\/www\.haberes\.cl\/guias\/horas-extras<\/loc>\s*<lastmod>2026-08-31<\/lastmod>/.test(sitemap) &&
-    /<loc>https:\/\/www\.haberes\.cl\/guias<\/loc>\s*<lastmod>2026-09-01<\/lastmod>/.test(sitemap),
+    /<loc>https:\/\/www\.haberes\.cl\/guias\/me-reservo-el-derecho-en-el-finiquito<\/loc>\s*<lastmod>2026-09-07<\/lastmod>/.test(sitemap) &&
+    /<loc>https:\/\/www\.haberes\.cl\/guias<\/loc>\s*<lastmod>2026-09-07<\/lastmod>/.test(sitemap),
 );
 assert("sin ruta /blog ni /noticias", !existsSync(join(root, "blog.html")) && !existsSync(join(root, "noticias.html")));
 assert("sitemap sin .html (cleanUrls)", !locs.some((u) => u.endsWith(".html")));
@@ -9047,6 +9049,7 @@ assert(
       ["guias/semana-corrida.html", "/sueldo", /artículo 45/, /dt\.gob\.cl/],
       ["guias/aguinaldo-fiestas-patrias.html", "/aguinaldo", /artículo 41/, /dt\.gob\.cl/],
       ["guias/horas-extras.html", "/horas-extras", /artículo 32/, /dt\.gob\.cl/],
+      ["guias/me-reservo-el-derecho-en-el-finiquito.html", "/finiquito", /artículo 177/, /dt\.gob\.cl/],
     ];
     function visibleWords(html) {
       const main = html.match(/<main\b[\s\S]*?<\/main>/i)?.[0] || html;
@@ -9068,11 +9071,14 @@ assert(
         file.includes("indemnizacion-por-anos-de-servicio") ||
         file.includes("semana-corrida") ||
         file.includes("aguinaldo-fiestas-patrias") ||
-        file.includes("horas-extras")
+        file.includes("horas-extras") ||
+        file.includes("me-reservo-el-derecho-en-el-finiquito")
           ? 900
           : 800;
       const dateRe =
-        file.includes("horas-extras")
+        file.includes("me-reservo-el-derecho-en-el-finiquito")
+          ? /<time datetime="2026-09-07">/
+          : file.includes("horas-extras")
           ? /<time datetime="2026-08-31">/
           : file.includes("aguinaldo-fiestas-patrias")
           ? /<time datetime="2026-08-30">/
@@ -9228,6 +9234,62 @@ assert(
           /1191554/.test(heHtml) &&
           landingH1 === "Calcular horas extras Chile 2026",
         `${heTitle} | ${heH1} | ${landingH1}`,
+      );
+    }
+    {
+      const html = readFileSync(join(root, "guias/me-reservo-el-derecho-en-el-finiquito.html"), "utf8");
+      const finiLanding = readFileSync(join(root, "finiquito.html"), "utf8");
+      const finiGuide = readFileSync(join(root, "guias/finiquito.html"), "utf8");
+      const plazo = readFileSync(join(root, "guias/plazo-de-pago-del-finiquito.html"), "utf8");
+      const sueldoHtml = readFileSync(join(root, "sueldo.html"), "utf8");
+      const title = (html.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+      const h1 = (html.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+      const landingTitle = (finiLanding.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+      const landingH1 = (finiLanding.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+      const guideTitle = (finiGuide.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+      const guideH1 = (finiGuide.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+      const plazoH1 = (plazo.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+      const sueldoH1 = (sueldoHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+      assert(
+        "SEO guía reserva de derechos title/H1 únicos y no canibalizan /finiquito",
+        title &&
+          h1 &&
+          title !== landingTitle &&
+          h1 !== landingH1 &&
+          title !== guideTitle &&
+          h1 !== guideH1 &&
+          h1 !== plazoH1 &&
+          h1 !== sueldoH1 &&
+          /reserva de derechos/i.test(title) &&
+          /finiquito/i.test(title) &&
+          /177/.test(h1) &&
+          /reserva/i.test(h1) &&
+          !/calculadora/i.test(title) &&
+          !/calculadora/i.test(h1) &&
+          !/^Calcular /i.test(h1) &&
+          /sumas no disputadas/.test(html) &&
+          /poder liberatorio/.test(html) &&
+          /no impedirá en ningún caso/.test(html) &&
+          /href="\/finiquito"/.test(html) &&
+          /href="\/guias\/finiquito"/.test(html) &&
+          /href="\/guias\/plazo-de-pago-del-finiquito"/.test(html) &&
+          /href="\/guias\/carta-aviso-termino-contrato"/.test(html) &&
+          /href="\/guias\/indemnizacion-por-anos-de-servicio"/.test(html) &&
+          /href="\/guias"/.test(html) &&
+          /w3-article-118107/.test(html) &&
+          /207436/.test(html) &&
+          !existsSync(join(root, "guias/reserva-de-derechos.html")) &&
+          landingH1 === "Calculadora de finiquito Chile 2026",
+        `${title} | ${h1} | ${landingH1} | ${guideH1}`,
+      );
+      assert(
+        "seo-map documenta reserva de derechos sin slug paralelo",
+        /\/guias\/me-reservo-el-derecho-en-el-finiquito/.test(
+          readFileSync(join(root, "docs/seo-map.md"), "utf8"),
+        ) &&
+          /No crear `\/guias\/reserva-de-derechos`/.test(
+            readFileSync(join(root, "docs/seo-map.md"), "utf8"),
+          ),
       );
     }
   }
@@ -9784,8 +9846,9 @@ assert(
       "SEO hub tiene últimas con fecha",
       /<h2>Últimas actualizaciones<\/h2>/.test(hub) &&
         /<ol class="guide-latest">/.test(hub) &&
+        /datetime="2026-09-07"/.test(hub) &&
         /datetime="2026-08-31"/.test(hub) &&
-        /datetime="2026-08-18"/.test(hub) &&
+        /href="\/guias\/me-reservo-el-derecho-en-el-finiquito"/.test(hub) &&
         /href="\/guias\/horas-extras"/.test(hub) &&
         !/href="\/blog"/.test(hub),
     );
