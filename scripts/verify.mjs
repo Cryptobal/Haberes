@@ -1177,11 +1177,15 @@ console.log("\nJornada 40 horas Ley 21.561 (tope, rebaja y valor hora DT)");
     JSON.stringify(g6.bloques),
   );
   const j40App = readFileSync(join(root, "js/app-jornada-40-horas.js"), "utf8");
-  assert(
-    "app-jornada-40-horas usa calcularJornada40Horas",
-    /import\s*\{[^}]*calcularJornada40Horas[^}]*\}\s*from\s*["']\.\/sueldo\.js["']/.test(j40App) &&
-      /calcularJornada40Horas\s*\(/.test(j40App),
-  );
+    assert(
+      "app-jornada-40-horas usa calcularJornada40Horas",
+      /import\s*\{[^}]*calcularJornada40Horas[^}]*\}\s*from\s*["']\.\/sueldo\.js["']/.test(j40App) &&
+        /calcularJornada40Horas\s*\(/.test(j40App),
+    );
+    assert(
+      "app-jornada-40-horas deriva el tope de hoy con topeJornadaOrdinaria",
+      /topeJornadaOrdinaria/.test(j40App) && /actualizarTopeHoyCopy/.test(j40App),
+    );
 }
 
 {
@@ -8080,12 +8084,21 @@ assert(
         goldJ40.bloques[1] === 60 &&
         goldJ40.valorHoraAjustadaPesos === 4667 &&
         hist45.valorHoraPactadaPesos === 4356 &&
-        /tope <strong>42 h<\/strong>/.test(j40Html) &&
+        /id="ledeTopeHoy"/.test(j40Html) &&
+        /tope es <strong id="ledeTopeHoy">42 h<\/strong>/.test(j40Html) &&
         /1 h en dos d[ií]as distintos al t[eé]rmino/.test(j40Html) &&
         /\$4\.667/.test(j40Html) &&
         /\$4\.356/.test(j40Html),
     );
     assert("SEO jornada 40 horas FAQPage", /"@type": "FAQPage"/.test(j40Html));
+    assert(
+      "SEO jornada 40 horas pide sueldo convenido y no fija «tope vigente hoy»",
+      /Sueldo convenido para la jornada ordinaria/.test(j40Html) &&
+        /sueldo convenido \/ 30/.test(j40Html) &&
+        !/tope vigente hoy/.test(j40Html) &&
+        /id="ledeTopeHoy"/.test(j40Html) &&
+        /id="hintFecha"/.test(j40Html),
+    );
     assert(
       "SEO jornada 40 horas no canibaliza hermanas vetadas",
       /href="\/horas-extras"/.test(j40Html) &&

@@ -83,7 +83,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
       "name": "¿Baja el sueldo mensual con la rebaja de jornada?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "No solo por la rebaja legal. El sueldo mensual pactado no se reduce por el solo hecho de bajar el tope. Lo que cambia es el máximo de horas ordinarias y el denominador del valor hora usado para extras (remuneración / 30 × 28 / (jornada × 4))."
+        "text": "No solo por la rebaja legal. El sueldo mensual pactado no se reduce por el solo hecho de bajar el tope. Lo que cambia es el máximo de horas ordinarias y el denominador del valor hora usado para extras (sueldo convenido / 30 × 28 / (jornada × 4))."
       }
     },
     {
@@ -193,7 +193,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <strong>44 h</strong> desde el 26-abr-2024,
         <strong>42 h</strong> desde el 26-abr-2026,
         <strong>40 h</strong> desde el 26-abr-2028.
-        Hoy el tope es <strong>42 h</strong>.
+        Hoy el tope es <strong id="ledeTopeHoy">42 h</strong>.
         A falta de acuerdo, cómo se reparte la rebaja
         (<a href="https://www.bcn.cl/leychile/navegar?idNorma=1214890">Ley 21.755 art. 24</a>
         /
@@ -221,8 +221,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
               <option value="2028-04-26">26-abr-2028 — tope 40 h</option>
             </select>
           </div>
-          <p class="hint">
-            El tope depende de esta fecha, no del mes de pago. En septiembre de 2026 el tope es 42 h.
+          <p class="hint" id="hintFecha">
+            El tope depende de esta fecha, no del mes de pago. Hoy el tope legal es 42 h (40 h desde el 26-abr-2028).
           </p>
           <div class="field">
             <label for="jornadaPactada">Jornada semanal pactada actual (horas)</label>
@@ -239,11 +239,12 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             <label><input type="radio" name="dias" value="6" /> <span>6 días</span></label>
           </div>
           <div class="field">
-            <label for="remuneracion">Remuneración mensual (CLP), opcional</label>
+            <label for="remuneracion">Sueldo convenido para la jornada ordinaria (CLP), opcional</label>
             <input id="remuneracion" type="number" min="0" step="1" value="840000" />
           </div>
           <p class="hint">
-            Para el valor hora ordinaria DT: remuneración / 30 × 28 / (jornada × 4).
+            Sueldo base fijo (art. 42 letra a), no la liquidación completa: sin gratificación, bonos ni comisiones.
+            Fórmula DT: sueldo convenido / 30 × 28 / (jornada × 4).
             Misma base que
             <a href="/horas-extras">horas extras</a>
             y
@@ -296,7 +297,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         </p>
         <ul>
           <li><strong>26 de abril de 2024:</strong> 44 horas semanales.</li>
-          <li><strong>26 de abril de 2026:</strong> 42 horas semanales (tope vigente hoy).</li>
+          <li><strong>26 de abril de 2026:</strong> 42 horas semanales (hito 2026; 40 h el 26-abr-2028).</li>
           <li><strong>26 de abril de 2028:</strong> 40 horas semanales.</li>
         </ul>
         <p>
@@ -340,7 +341,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <h3>Valor hora ordinaria (base de extras)</h3>
         <p>
           La Dirección del Trabajo usa
-          <strong>remuneración / 30 × 28 / (jornada semanal × 4)</strong>
+          <strong>sueldo convenido / 30 × 28 / (jornada semanal × 4)</strong>
           para la hora ordinaria; la extra es esa cifra × 1,5 (art. 32).
           Si el denominador baja, el valor hora
           <strong>sube</strong>.
@@ -362,12 +363,12 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             <strong>1 h en dos días distintos al término</strong>.
           </li>
           <li>
-            Remuneración <strong>$840.000</strong>, jornada <strong>42</strong>
+            Sueldo convenido <strong>$840.000</strong>, jornada <strong>42</strong>
             → valor hora = 840000 / 30 × 28 / (42 × 4) = 4.666,66…
             → <strong>$4.667</strong> (redondeo al peso, igual que horas extras).
           </li>
           <li>
-            Remuneración <strong>$840.000</strong>, jornada <strong>45</strong> (histórico)
+            Sueldo convenido <strong>$840.000</strong>, jornada <strong>45</strong> (histórico)
             → valor hora <strong>$4.356</strong>, menor que con 42 h.
           </li>
         </ul>
@@ -405,7 +406,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <p>
           No solo por la rebaja legal. El sueldo mensual pactado no se reduce por el solo hecho
           de bajar el tope. Lo que cambia es el máximo de horas ordinarias y el denominador del
-          valor hora usado para extras (remuneración / 30 × 28 / (jornada × 4)).
+          valor hora usado para extras (sueldo convenido / 30 × 28 / (jornada × 4)).
         </p>
         <h3>¿Cómo se reparte la rebaja si no hay acuerdo?</h3>
         <p>

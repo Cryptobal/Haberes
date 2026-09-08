@@ -1,5 +1,5 @@
 import { clp, num } from "./format.js";
-import { calcularJornada40Horas } from "./sueldo.js";
+import { calcularJornada40Horas, topeJornadaOrdinaria } from "./sueldo.js";
 import { el, mountIndicadores, numVal, wireNav } from "./ui.js";
 
 /** type=number usa punto decimal; no recortar puntos como miles. */
@@ -58,10 +58,10 @@ function render(calc) {
   nota.push(`Tope legal el ${calc.fecha}: ${calc.tope} h semanales (Ley 21.561).`);
   if (calc.remuneracion > 0) {
     nota.push(
-      `Valor hora ordinaria DT = remuneración / 30 × 28 / (jornada × 4). Con ${calc.jornadaAjustada} h da ${num(calc.valorHoraAjustada)}; se muestra en pesos (${clp(calc.valorHoraAjustadaPesos)}).`,
+      `Valor hora ordinaria DT = sueldo convenido / 30 × 28 / (jornada × 4). Con ${calc.jornadaAjustada} h da ${num(calc.valorHoraAjustada)}; se muestra en pesos (${clp(calc.valorHoraAjustadaPesos)}).`,
     );
   } else {
-    nota.push("Indique una remuneración mensual para estimar el valor hora (opcional).");
+    nota.push("Indique el sueldo convenido mensual (no la liquidación completa) para estimar el valor hora (opcional).");
   }
   nota.push(
     "El sueldo mensual no baja solo por la rebaja legal; cambia el tope y la base de las horas extras. Estimación educativa, no asesoría legal ni reemplazo de un pacto escrito.",
@@ -73,7 +73,18 @@ function recalc() {
   render(calcularJornada40Horas(leer()));
 }
 
+function actualizarTopeHoyCopy() {
+  const topeHoy = topeJornadaOrdinaria(fechaHoyIso());
+  const lede = el("ledeTopeHoy");
+  if (lede) lede.textContent = `${topeHoy} h`;
+  const hint = el("hintFecha");
+  if (hint) {
+    hint.textContent = `El tope depende de esta fecha, no del mes de pago. Hoy el tope legal es ${topeHoy} h.`;
+  }
+}
+
 wireNav();
+actualizarTopeHoyCopy();
 const form = document.getElementById("formJornada40");
 form?.addEventListener("input", recalc);
 form?.addEventListener("change", recalc);
