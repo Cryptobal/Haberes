@@ -1,9 +1,12 @@
 /**
- * Feriados legales nacionales de Chile y conteo del feriado anual (art. 67 y 69).
+ * Feriados legales nacionales de Chile, conteo del feriado anual (art. 67 y 69)
+ * y del permiso pagado del padre (art. 195 inc. 2).
  *
- * Días hábiles del feriado: lunes a viernes, excluyendo feriados legales.
- * El sábado es siempre inhábil para este conteo (art. 69); no se inventa
- * otra regla de sábado. El reintegro es el primer hábil siguiente al término.
+ * Días hábiles del feriado anual y del permiso de paternidad (estimación
+ * lun–vie de oficina): lunes a viernes, excluyendo feriados legales.
+ * El sábado es siempre inhábil para este conteo (art. 69 / descanso semanal);
+ * no se inventa otra regla de sábado. El reintegro es el primer hábil
+ * siguiente al término.
  *
  * Listado 2025–2027: calendario civil publicado (16 nacionales en 2026).
  * No incluye feriados regionales (p. ej. 7 jun Arica, 20 ago Chillán).
@@ -234,5 +237,218 @@ export function calcularFeriadoAnual({
     diasCorridos: daysBetween(inicio, reintegro),
     domingos,
     feriados,
+  };
+}
+
+/** Cupo del permiso pagado del padre (art. 195 inc. 2). */
+export const PERMISO_PATERNIDAD_DIAS = 5;
+
+function addCalendarMonths(parts, months) {
+  const dt = toDate(parts);
+  const day = dt.getDate();
+  dt.setDate(1);
+  dt.setMonth(dt.getMonth() + months);
+  const last = new Date(dt.getFullYear(), dt.getMonth() + 1, 0).getDate();
+  dt.setDate(Math.min(day, last));
+  return fromDate(dt);
+}
+
+function emptyPermisoPaternidad({
+  fechaParto = "",
+  fechaInicio = "",
+  goce = "continuo",
+  remuneracion = 0,
+  motivo = "",
+  ventanaDesde = "",
+  ventanaHasta = "",
+} = {}) {
+  const rem = Math.max(0, Number(remuneracion) || 0);
+  const valorDia = rem / 30;
+  return {
+    ok: false,
+    motivo,
+    fechaParto,
+    fechaInicio,
+    fechaTermino: "",
+    fechaReintegro: "",
+    goce,
+    diasHabiles: PERMISO_PATERNIDAD_DIAS,
+    diasHabilesConsumidos: 0,
+    diasCorridos: 0,
+    dentroDelMes: false,
+    ventanaDesde,
+    ventanaHasta,
+    remuneracion: rem,
+    valorDia,
+    goceRemuneracion: Math.round(valorDia * PERMISO_PATERNIDAD_DIAS),
+    dias: [],
+    feriados: [],
+    domingos: [],
+  };
+}
+
+/**
+ * Permiso pagado del padre por nacimiento de un hijo (art. 195 inc. 2).
+ *
+ * Norma: cinco días, a elección (i) continuos desde el parto, excluyendo el
+ * descanso semanal, o (ii) distribuidos dentro del primer mes desde el
+ * nacimiento (continuos o fraccionados). Irrenunciable. No aumenta por
+ * partos múltiples. También aplica en adopción (no se modela aquí).
+ *
+ * Lectura DT: ORD. N°3827/103 (02.09.2005) y ORD. N°864/10 (16.02.2011).
+ * El cupo se usa en días de la jornada, no en el descanso semanal (legal o
+ * convencional). El ORD. 864/10 ilustra el «mes» como del día siguiente al
+ * parto hasta la misma fecha del mes siguiente (p. ej. 15 sep → 16 sep a
+ * 16 oct).
+ *
+ * Estimación educativa de Haberes (jornada lun–vie de oficina):
+ * - día que consume = lunes a viernes que no sea feriado legal nacional
+ *   (mismo calendario que /feriado-anual);
+ * - sábado no consume (descanso semanal; analogía art. 69);
+ * - feriado legal nacional lun–vie no consume el cupo de 5.
+ * No se modela el art. 38 (domingo/festivo laborable y descanso compensatorio).
+ * El goce es 5 × (remuneración / 30): el permiso es con remuneración, no un
+ * descuento. Un tramo fraccionado se estima como un bloque continuo de 5
+ * hábiles desde la fecha de inicio; no arma cinco días aislados.
+ *
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=207436
+ * @see https://www.dt.gob.cl/legislacion/1624/w3-article-98859.html
+ * @see https://www.dt.gob.cl/legislacion/1624/w3-article-87127.html
+ */
+export function calcularPermisoPaternidad({
+  fechaParto = "",
+  fechaInicio = "",
+  goce = "continuo",
+  remuneracion = 0,
+} = {}) {
+  const rem = Math.max(0, Number(remuneracion) || 0);
+  const modo = String(goce || "continuo") === "fraccionado" ? "fraccionado" : "continuo";
+  const parto = parseIsoFecha(fechaParto);
+  if (!parto) {
+    return emptyPermisoPaternidad({
+      fechaInicio,
+      goce: modo,
+      remuneracion: rem,
+      motivo: "sin_parto",
+    });
+  }
+
+  const partoIso = isoOf(parto);
+  const diaSiguiente = addDays(parto, 1);
+  const ventanaDesde = modo === "fraccionado" ? diaSiguiente : parto;
+  const ventanaHasta = addCalendarMonths(ventanaDesde, 1);
+  const ventanaDesdeIso = isoOf(ventanaDesde);
+  const ventanaHastaIso = isoOf(ventanaHasta);
+
+  let inicio = parto;
+  if (modo === "fraccionado") {
+    const elegido = parseIsoFecha(fechaInicio);
+    if (!elegido) {
+      return emptyPermisoPaternidad({
+        fechaParto: partoIso,
+        goce: modo,
+        remuneracion: rem,
+        motivo: "sin_inicio",
+        ventanaDesde: ventanaDesdeIso,
+        ventanaHasta: ventanaHastaIso,
+      });
+    }
+    if (daysBetween(parto, elegido) < 0) {
+      return emptyPermisoPaternidad({
+        fechaParto: partoIso,
+        fechaInicio: isoOf(elegido),
+        goce: modo,
+        remuneracion: rem,
+        motivo: "inicio_antes_parto",
+        ventanaDesde: ventanaDesdeIso,
+        ventanaHasta: ventanaHastaIso,
+      });
+    }
+    if (daysBetween(elegido, ventanaHasta) < 0) {
+      return emptyPermisoPaternidad({
+        fechaParto: partoIso,
+        fechaInicio: isoOf(elegido),
+        goce: modo,
+        remuneracion: rem,
+        motivo: "fuera_del_mes",
+        ventanaDesde: ventanaDesdeIso,
+        ventanaHasta: ventanaHastaIso,
+      });
+    }
+    inicio = elegido;
+  }
+
+  const inicioIso = isoOf(inicio);
+  let cursor = { ...inicio };
+  let consumed = 0;
+  let lastHabil = null;
+  let steps = 0;
+  const dias = [];
+  let dentroDelMes = true;
+
+  while (consumed < PERMISO_PATERNIDAD_DIAS && steps < MAX_STEPS) {
+    const iso = isoOf(cursor);
+    if (esDiaHabilFeriadoAnual(iso)) {
+      consumed += 1;
+      lastHabil = { ...cursor };
+      dias.push(iso);
+      if (daysBetween(cursor, ventanaHasta) < 0) dentroDelMes = false;
+    }
+    cursor = addDays(cursor, 1);
+    steps += 1;
+  }
+
+  if (!lastHabil || consumed < PERMISO_PATERNIDAD_DIAS) {
+    return emptyPermisoPaternidad({
+      fechaParto: partoIso,
+      fechaInicio: inicioIso,
+      goce: modo,
+      remuneracion: rem,
+      motivo: "sin_cupo",
+      ventanaDesde: ventanaDesdeIso,
+      ventanaHasta: ventanaHastaIso,
+    });
+  }
+
+  let reintegro = addDays(lastHabil, 1);
+  let reSteps = 0;
+  while (!esDiaHabilFeriadoAnual(isoOf(reintegro)) && reSteps < MAX_STEPS) {
+    reintegro = addDays(reintegro, 1);
+    reSteps += 1;
+  }
+
+  const domingos = [];
+  const feriados = [];
+  let scan = { ...inicio };
+  while (daysBetween(scan, reintegro) > 0) {
+    const iso = isoOf(scan);
+    const festivo = feriadoLegal(iso);
+    const dow = weekday(scan);
+    if (festivo) feriados.push({ fecha: iso, nombre: festivo.nombre });
+    else if (dow === 0) domingos.push({ fecha: iso, nombre: "Domingo" });
+    scan = addDays(scan, 1);
+  }
+
+  const valorDia = rem / 30;
+  return {
+    ok: true,
+    motivo: "",
+    fechaParto: partoIso,
+    fechaInicio: inicioIso,
+    fechaTermino: isoOf(lastHabil),
+    fechaReintegro: isoOf(reintegro),
+    goce: modo,
+    diasHabiles: PERMISO_PATERNIDAD_DIAS,
+    diasHabilesConsumidos: consumed,
+    diasCorridos: daysBetween(inicio, reintegro),
+    dentroDelMes,
+    ventanaDesde: ventanaDesdeIso,
+    ventanaHasta: ventanaHastaIso,
+    remuneracion: rem,
+    valorDia,
+    goceRemuneracion: Math.round(valorDia * PERMISO_PATERNIDAD_DIAS),
+    dias,
+    feriados,
+    domingos,
   };
 }
