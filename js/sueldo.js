@@ -1569,3 +1569,154 @@ export function calcularPostnatalParental({
     ingresoMadreParcialRestante: subsidioMadreParcial + empleadorMadreParcial,
   };
 }
+
+/**
+ * Hitos de la Ley 21.561 (art. primero transitorio): tope de jornada ordinaria
+ * art. 22. Antes del 26-abr-2024 el máximo era 45 h.
+ */
+export const JORNADA_TOPE_ANTES = 45;
+export const JORNADA_HITO_44 = "2024-04-26";
+export const JORNADA_HITO_42 = "2026-04-26";
+export const JORNADA_HITO_40 = "2028-04-26";
+
+function fechaIsoDia(value) {
+  const s = String(value || "").trim().slice(0, 10);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  const n = new Date();
+  const y = n.getFullYear();
+  const m = String(n.getMonth() + 1).padStart(2, "0");
+  const d = String(n.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+/**
+ * Tope legal de jornada ordinaria semanal según la fecha de referencia.
+ * 45 h hasta el 25-abr-2024; 44 desde el 26-abr-2024; 42 desde el 26-abr-2026;
+ * 40 desde el 26-abr-2028.
+ *
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=1191554 Ley 21.561
+ */
+export function topeJornadaOrdinaria(fecha) {
+  const d = fechaIsoDia(fecha);
+  if (d < JORNADA_HITO_44) return JORNADA_TOPE_ANTES;
+  if (d < JORNADA_HITO_42) return 44;
+  if (d < JORNADA_HITO_40) return 42;
+  return 40;
+}
+
+function etiquetaMinutos(m) {
+  const n = Math.round(Number(m) || 0);
+  if (n === 60) return "1 h";
+  if (n > 0 && n % 60 === 0) return `${n / 60} h`;
+  return `${n} min`;
+}
+
+function palabraDias(n) {
+  const w = { 1: "un", 2: "dos", 3: "tres", 4: "cuatro", 5: "cinco", 6: "seis" };
+  return w[n] || String(n);
+}
+
+/**
+ * Reparte la rebaja a falta de acuerdo (Ley 21.755 art. 24 / ORD. N°253/21).
+ * 5 días: unidad máxima 1 h (60 min) al término, en días distintos.
+ * 6 días: unidad máxima 50 min; el remanente que no complete la unidad
+ * va a otro día, sin acumulación. Para el hito 44→42 (120 min) en 6 días:
+ * 50 + 50 + 20. El hito 42→40 (2028) usa la misma unidad; es estimativo
+ * porque el ORD. N°253/21 fija doctrina del tramo 44→42.
+ *
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=1214890 Ley 21.755 art. 24
+ * @see https://www.dt.gob.cl/legislacion/1624/w3-article-129189.html ORD. N°253/21
+ */
+export function distribuirRebajaFaltaAcuerdo(minutosRebaja, dias = 5) {
+  const mins = Math.max(0, Math.round(Number(minutosRebaja) || 0));
+  const d = Number(dias) === 6 ? 6 : 5;
+  const unidad = d === 6 ? 50 : 60;
+  const bloques = [];
+  let rest = mins;
+  while (rest > 0) {
+    if (rest >= unidad) {
+      bloques.push(unidad);
+      rest -= unidad;
+    } else {
+      bloques.push(rest);
+      rest = 0;
+    }
+  }
+  return { minutos: mins, dias: d, unidad, bloques };
+}
+
+function textoDistribucion(bloques, dias) {
+  if (!bloques.length) {
+    return "Sin rebaja: la jornada pactada no supera el tope legal de esta fecha.";
+  }
+  const unidad = dias === 6 ? 50 : 60;
+  const nUnidad = bloques.filter((m) => m === unidad).length;
+  const restos = bloques.filter((m) => m !== unidad);
+  const uLabel = unidad === 60 ? "1 h" : "50 min";
+  const partes = [];
+  if (nUnidad === 1) {
+    partes.push(`${uLabel} al término de la jornada en un día`);
+  } else if (nUnidad > 1) {
+    partes.push(`${uLabel} al término de la jornada en ${palabraDias(nUnidad)} días distintos`);
+  }
+  for (const r of restos) {
+    partes.push(`${etiquetaMinutos(r)} (fracción) en un día distinto, sin acumular`);
+  }
+  return `A falta de acuerdo, rebaja al término de la jornada: ${partes.join(" y ")}. El empleador elige los días, respetando la distribución semanal pactada. Estimación educativa (ORD. N°253/21 / Ley 21.755 art. 24).`;
+}
+
+/**
+ * Calculadora educativa Ley 21.561: tope vigente, distribución a falta de
+ * acuerdo y valor hora ordinaria DT (misma base que horas extras).
+ * El sueldo mensual no baja solo por la rebaja legal; cambia el tope y el
+ * denominador de la hora extra. No modela bandas 4×3 (art. 22 bis) ni
+ * turnos excepcionales.
+ *
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=1191554
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=1214890
+ * @see https://www.dt.gob.cl/legislacion/1624/w3-article-129189.html
+ */
+export function calcularJornada40Horas({
+  fecha,
+  jornadaPactada = JORNADA_DEFAULT,
+  dias = 5,
+  remuneracion = 0,
+} = {}) {
+  const fechaIso = fechaIsoDia(fecha);
+  const tope = topeJornadaOrdinaria(fechaIso);
+  const pactada = Math.max(0, Number(jornadaPactada) || 0);
+  const d = Number(dias) === 6 ? 6 : 5;
+  const rem = Math.max(0, Number(remuneracion) || 0);
+  const superaTope = pactada > tope;
+  const horasARebajar = superaTope ? Math.round((pactada - tope) * 100) / 100 : 0;
+  const minutosARebajar = Math.round(horasARebajar * 60);
+  const jornadaAjustada = superaTope ? tope : pactada;
+  const dist = distribuirRebajaFaltaAcuerdo(minutosARebajar, d);
+  const valorHoraPactada = pactada > 0 ? valorHoraOrdinaria(rem, pactada) : 0;
+  const valorHoraAjustada = jornadaAjustada > 0 ? valorHoraOrdinaria(rem, jornadaAjustada) : 0;
+  const valorHoraTope = valorHoraOrdinaria(rem, tope);
+  const valorHoraHistorica45 = valorHoraOrdinaria(rem, JORNADA_TOPE_ANTES);
+
+  return {
+    fecha: fechaIso,
+    tope,
+    jornadaPactada: pactada,
+    dias: d,
+    remuneracion: roundPeso(rem),
+    horasARebajar,
+    minutosARebajar,
+    jornadaAjustada,
+    superaTope,
+    bloques: dist.bloques,
+    unidadDiaria: dist.unidad,
+    textoDistribucion: textoDistribucion(dist.bloques, d),
+    valorHoraPactada,
+    valorHoraPactadaPesos: roundPeso(valorHoraPactada),
+    valorHoraAjustada,
+    valorHoraAjustadaPesos: roundPeso(valorHoraAjustada),
+    valorHoraTope,
+    valorHoraTopePesos: roundPeso(valorHoraTope),
+    valorHoraHistorica45,
+    valorHoraHistorica45Pesos: roundPeso(valorHoraHistorica45),
+  };
+}

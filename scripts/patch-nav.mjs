@@ -25,6 +25,7 @@ const DRAWER_LINKS = [
   ["/retencion-judicial", "Retención judicial"],
   ["/apv", "APV Régimen B"],
   ["/horas-extras", "Horas extras"],
+  ["/jornada-40-horas", "Jornada 40 horas"],
   ["/recargo-domingo-comercio", "Recargo domingo comercio"],
   ["/feriado-irrenunciable", "Feriado irrenunciable"],
   ["/semana-corrida", "Semana corrida"],
