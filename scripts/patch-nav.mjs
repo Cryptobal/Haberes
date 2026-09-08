@@ -38,6 +38,7 @@ const DRAWER_LINKS = [
   ["/seguro-cesantia", "Seguro de cesantía"],
   ["/asignacion-familiar", "Asignación familiar"],
   ["/sala-cuna", "Sala cuna"],
+  ["/postnatal-parental", "Postnatal parental"],
   ["/colacion-movilizacion", "Colación y movilización"],
   ["/vacaciones-proporcionales", "Vacaciones proporcionales"],
   ["/feriado-anual", "Feriado anual"],

@@ -7,7 +7,6 @@ Aquí se comprueba lo que solo se ve en un navegador real:
   - desborde horizontal en 360 px
   - áreas táctiles menores a 44 px
   - cajón de navegación, picker, diálogo y avisos flotantes
-Usa wait_until=load (GTM/analytics no llega a networkidle).
 Genera capturas en /tmp/shots.
 """
 
@@ -84,6 +83,7 @@ def check_http():
         ("/retencion-judicial", 200, "html"),
         ("/apv", 200, "html"),
         ("/sala-cuna", 200, "html"),
+        ("/postnatal-parental", 200, "html"),
         ("/jornada-40-horas", 200, "html"),
         ("/feriado-anual", 200, "html"),
         ("/feriado-progresivo", 200, "html"),
@@ -150,6 +150,7 @@ PAGES = [
     ("retencion-judicial.html", "retencion-judicial"),
     ("apv.html", "apv"),
     ("sala-cuna.html", "sala-cuna"),
+    ("postnatal-parental.html", "postnatal-parental"),
     ("jornada-40-horas.html", "jornada-40-horas"),
     ("feriado-anual.html", "feriado-anual"),
     ("indemnizacion-aviso-previo.html", "indemnizacion-aviso-previo"),
@@ -256,7 +257,7 @@ def run():
         print("[marca] isotype en inicio y tema noche")
         mark_ctx = browser.new_context(viewport=DESKTOP, device_scale_factor=2)
         mark_page = mark_ctx.new_page()
-        mark_page.goto(f"{BASE}/", wait_until="load")
+        mark_page.goto(f"{BASE}/", wait_until="networkidle")
         mark_page.wait_for_timeout(250)
         mark_day = mark_page.evaluate(
             """() => {
@@ -320,7 +321,7 @@ def run():
             for file, label in PAGES:
                 errors.clear()
                 print(f"[{tag}] {label}")
-                page.goto(f"{BASE}/{file}", wait_until="load")
+                page.goto(f"{BASE}/{file}", wait_until="networkidle")
                 page.wait_for_timeout(350)
                 audit(page, label, viewport)
                 page.screenshot(path=f"{SHOTS}/{tag}-{label}.png", full_page=True)
@@ -341,7 +342,7 @@ def run():
         page.on("pageerror", lambda e: js_errors.append(str(e)))
 
         print("[interacción] cajón de navegación")
-        page.goto(f"{BASE}/index.html", wait_until="load")
+        page.goto(f"{BASE}/index.html", wait_until="networkidle")
         page.click("[data-nav-burger]")
         page.wait_for_timeout(400)
         if page.is_hidden("[data-nav-drawer]"):
@@ -354,7 +355,7 @@ def run():
             note("el cajón no se cerró con Escape")
 
         print("[interacción] hamburguesa en /admin")
-        page.goto(f"{BASE}/admin.html", wait_until="load")
+        page.goto(f"{BASE}/admin.html", wait_until="networkidle")
         page.wait_for_timeout(300)
         if page.locator("#adminAuth").count() == 0:
             note("admin no mostró el acceso")
@@ -380,7 +381,7 @@ def run():
         print("[interacción] hamburguesa 390px")
         ctx390 = browser.new_context(viewport={"width": 390, "height": 844}, device_scale_factor=2)
         page390 = ctx390.new_page()
-        page390.goto(f"{BASE}/index.html", wait_until="load")
+        page390.goto(f"{BASE}/index.html", wait_until="networkidle")
         page390.wait_for_timeout(350)
         burger390 = page390.locator("[data-nav-burger]")
         if burger390.count() == 0 or not burger390.is_visible():
@@ -425,7 +426,7 @@ def run():
         ctx390.close()
 
         print("[interacción] fecha de finiquito como calendario")
-        page.goto(f"{BASE}/finiquito.html", wait_until="load")
+        page.goto(f"{BASE}/finiquito.html", wait_until="networkidle")
         page.wait_for_timeout(400)
         ingreso = page.locator("#pickIngreso .picker-trigger")
         if ingreso.count() == 0:
@@ -452,7 +453,7 @@ def run():
                 note("Escape no cerró el calendario de ingreso")
 
         print("[interacción] picker como hoja inferior")
-        page.goto(f"{BASE}/sueldo.html", wait_until="load")
+        page.goto(f"{BASE}/sueldo.html", wait_until="networkidle")
         page.wait_for_timeout(400)
         trigger = page.query_selector("#pickAfp .picker-trigger")
         if not trigger:
@@ -487,7 +488,7 @@ def run():
                     note("el scroll quedó bloqueado tras cerrar el picker")
 
         print("[interacción] alta, diálogo y avisos en /empresa")
-        page.goto(f"{BASE}/empresa.html", wait_until="load")
+        page.goto(f"{BASE}/empresa.html", wait_until="networkidle")
         page.wait_for_timeout(400)
         # el radio está recortado y con pointer-events:none; se activa por su etiqueta
         page.click('label:has([data-auth-modo][value="registro"])')

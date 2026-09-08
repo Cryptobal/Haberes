@@ -35,6 +35,9 @@ import {
   TOPE_APV_REGIMEN_B_UF,
   TOPE_CESANTIA_UF,
   UMBRAL_SALA_CUNA,
+  POSTNATAL_PARENTAL_SEMANAS_COMPLETA,
+  POSTNATAL_PARENTAL_SEMANAS_MIN_MADRE,
+  POSTNATAL_PARENTAL_SEMANAS_PARCIAL,
 } from "./constants.js";
 import {
   DIAS_MES_CONVENCIONAL,
@@ -1446,6 +1449,124 @@ export function calcularSalaCuna({
     obligada,
     costoMensual,
     simulacion: !obligada,
+  };
+}
+
+/**
+ * Permiso postnatal parental (art. 197 bis Código del Trabajo / Ley 20.545).
+ * Agente IA (Cursor): estima jornada completa vs media jornada. No calcula
+ * prenatal ni postnatal de 6+12 semanas (arts. 195 y 196). No aplica topes
+ * UF ni liquidación de Isapre, COMPIN o SUSESO.
+ *
+ * Modalidad A — jornada completa: 12 semanas (84 días) a continuación del
+ * postnatal. Subsidio con la misma base diaria del subsidio de maternidad
+ * (D.F.L. N°44 art. 8 / art. 195): diario = base SIL / 30 (sin redondear);
+ * total = roundPeso(diario × 84). El empleador no paga ese tramo.
+ *
+ * Modalidad B — media jornada: 18 semanas (126 días). Subsidio = 50 % del
+ * diario completo. Empleador ≥ 50 % de los estipendios fijos del contrato.
+ * Prorrateo alineado a rem/30:
+ *   pago empleador = roundPeso(días × (fijos / 2) / 30)
+ *
+ * Base SIL: `baseSil` mensual, o promedio de 3 rentas netas (D.F.L. N°44
+ * art. 8) si las tres vienen informadas (reemplazan `baseSil`).
+ *
+ * Transferencia al padre: desde la 7.ª semana; tope 6 (completa) o 12
+ * (parcial). Se prorratea el tramo de la madre. No se estima el subsidio
+ * del padre (usa sus propias rentas ante su entidad pagadora).
+ *
+ * Gold (verify): base SIL $900.000 → diario = 900000/30 = $30.000.
+ * Completa 12 sem: 84 × 30000 = $2.520.000; empleador $0.
+ * Parcial 18 sem: subsidio 126 × 15000 = $1.890.000;
+ *   fijos $900.000 → empleador 126 × (450000/30) = $1.890.000;
+ *   ingreso madre $3.780.000.
+ *
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=207436
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=1030936
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=4252
+ * @see https://www.suseso.gob.cl/612/w3-propertyvalue-222048.html
+ * @see https://www.dt.gob.cl/portal/1628/w3-article-99747.html
+ */
+export function calcularPostnatalParental({
+  baseSil = 0,
+  estipendiosFijos = 0,
+  neta1 = null,
+  neta2 = null,
+  neta3 = null,
+  semanasPadre = 0,
+} = {}) {
+  const n1 = netaSil(neta1);
+  const n2 = netaSil(neta2);
+  const n3 = netaSil(neta3);
+  const silDesdeNetas = n1 != null && n2 != null && n3 != null;
+  const baseIngresada = Math.max(0, Number(baseSil) || 0);
+  const baseUsada = silDesdeNetas ? roundPeso((n1 + n2 + n3) / 3) : roundPeso(baseIngresada);
+  const fijos = roundPeso(Math.max(0, Number(estipendiosFijos) || 0));
+  const semanasPadreRaw = Math.max(0, Math.trunc(Number(semanasPadre) || 0));
+
+  const semanasCompleta = POSTNATAL_PARENTAL_SEMANAS_COMPLETA;
+  const semanasParcial = POSTNATAL_PARENTAL_SEMANAS_PARCIAL;
+  const minMadre = POSTNATAL_PARENTAL_SEMANAS_MIN_MADRE;
+  const maxPadreCompleta = Math.max(0, semanasCompleta - minMadre);
+  const maxPadreParcial = Math.max(0, semanasParcial - minMadre);
+  const semanasPadreCompleta = Math.min(maxPadreCompleta, semanasPadreRaw);
+  const semanasPadreParcial = Math.min(maxPadreParcial, semanasPadreRaw);
+
+  const diasCompleta = semanasCompleta * 7;
+  const diasParcial = semanasParcial * 7;
+  const diarioCompleto = baseUsada > 0 ? baseUsada / DIAS_MES_CONVENCIONAL : 0;
+  const diarioParcial = diarioCompleto / 2;
+  const diarioEmpleador = fijos > 0 ? fijos / 2 / DIAS_MES_CONVENCIONAL : 0;
+
+  const subsidioCompleta = roundPeso(diarioCompleto * diasCompleta);
+  const subsidioParcial = roundPeso(diarioParcial * diasParcial);
+  const empleadorCompleta = 0;
+  const empleadorParcial = roundPeso(diarioEmpleador * diasParcial);
+  const ingresoCompleta = subsidioCompleta + empleadorCompleta;
+  const ingresoParcial = subsidioParcial + empleadorParcial;
+
+  const semanasMadreCompleta = semanasCompleta - semanasPadreCompleta;
+  const semanasMadreParcial = semanasParcial - semanasPadreParcial;
+  const diasMadreCompleta = semanasMadreCompleta * 7;
+  const diasMadreParcial = semanasMadreParcial * 7;
+  const subsidioMadreCompleta = roundPeso(diarioCompleto * diasMadreCompleta);
+  const subsidioMadreParcial = roundPeso(diarioParcial * diasMadreParcial);
+  const empleadorMadreParcial = roundPeso(diarioEmpleador * diasMadreParcial);
+
+  return {
+    baseSil: baseUsada,
+    baseSilIngresada: roundPeso(baseIngresada),
+    silDesdeNetas,
+    neta1: n1,
+    neta2: n2,
+    neta3: n3,
+    estipendiosFijos: fijos,
+    diarioCompleto,
+    diarioParcial,
+    diarioEmpleador,
+    semanasCompleta,
+    diasCompleta,
+    subsidioCompleta,
+    empleadorCompleta,
+    ingresoCompleta,
+    semanasParcial,
+    diasParcial,
+    subsidioParcial,
+    empleadorParcial,
+    ingresoParcial,
+    diferenciaIngreso: ingresoParcial - ingresoCompleta,
+    semanasPadre: semanasPadreRaw,
+    semanasPadreCompleta,
+    semanasPadreParcial,
+    semanasMadreCompleta,
+    diasMadreCompleta,
+    subsidioMadreCompleta,
+    ingresoMadreCompletaRestante: subsidioMadreCompleta,
+    semanasMadreParcial,
+    diasMadreParcial,
+    subsidioMadreParcial,
+    empleadorMadreParcial,
+    ingresoMadreParcialRestante: subsidioMadreParcial + empleadorMadreParcial,
   };
 }
 

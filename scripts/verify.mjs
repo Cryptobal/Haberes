@@ -39,6 +39,9 @@ import {
   RETENCION_BOLETA_ANIO_DEFAULT,
   RETENCION_BOLETA_HONORARIOS,
   UMBRAL_SALA_CUNA,
+  POSTNATAL_PARENTAL_SEMANAS_COMPLETA,
+  POSTNATAL_PARENTAL_SEMANAS_MIN_MADRE,
+  POSTNATAL_PARENTAL_SEMANAS_PARCIAL,
   resumirTextoLegal,
 } from "../js/constants.js";
 import { CAUSALES, causalPorId } from "../js/causales.js";
@@ -78,6 +81,7 @@ import {
   calcularRetencionJudicial,
   calcularApv,
   calcularSalaCuna,
+  calcularPostnatalParental,
   calcularJornada40Horas,
   topeJornadaOrdinaria,
   calcularSueldoMinimo,
@@ -1110,6 +1114,101 @@ console.log("\nSala cuna art. 203 (umbral 20 y costo al establecimiento)");
     "app-sala-cuna usa calcularSalaCuna",
     /import\s*\{[^}]*calcularSalaCuna[^}]*\}\s*from\s*["']\.\/sueldo\.js["']/.test(scApp) &&
       /calcularSalaCuna\s*\(/.test(scApp),
+  );
+}
+
+console.log("\nPostnatal parental art. 197 bis (completa 12 vs parcial 18)");
+{
+  const g = calcularPostnatalParental({
+    baseSil: 900_000,
+    estipendiosFijos: 900_000,
+  });
+  assert(
+    "gold 900000: diario 30000; completa 84×30000=2520000; parcial 126×15000=1890000 + empleador 1890000",
+    g.baseSil === 900_000 &&
+      g.silDesdeNetas === false &&
+      g.diarioCompleto === 30_000 &&
+      g.diarioParcial === 15_000 &&
+      g.semanasCompleta === 12 &&
+      g.semanasCompleta === POSTNATAL_PARENTAL_SEMANAS_COMPLETA &&
+      g.diasCompleta === 84 &&
+      g.subsidioCompleta === 2_520_000 &&
+      g.empleadorCompleta === 0 &&
+      g.ingresoCompleta === 2_520_000 &&
+      g.semanasParcial === 18 &&
+      g.semanasParcial === POSTNATAL_PARENTAL_SEMANAS_PARCIAL &&
+      g.diasParcial === 126 &&
+      g.subsidioParcial === 1_890_000 &&
+      g.empleadorParcial === 1_890_000 &&
+      g.ingresoParcial === 3_780_000 &&
+      g.diferenciaIngreso === 1_260_000 &&
+      g.diarioEmpleador === 15_000,
+    JSON.stringify(g),
+  );
+  const netas = calcularPostnatalParental({
+    baseSil: 1,
+    estipendiosFijos: 900_000,
+    neta1: 800_000,
+    neta2: 900_000,
+    neta3: 1_000_000,
+  });
+  assert(
+    "3 netas 800/900/1000 → base 900000 (DFL 44 art. 8) y mismo gold",
+    netas.silDesdeNetas === true &&
+      netas.baseSil === 900_000 &&
+      netas.subsidioCompleta === 2_520_000 &&
+      netas.subsidioParcial === 1_890_000 &&
+      netas.empleadorParcial === 1_890_000,
+    JSON.stringify(netas),
+  );
+  const sinFijos = calcularPostnatalParental({
+    baseSil: 900_000,
+    estipendiosFijos: 0,
+  });
+  assert(
+    "sin estipendios fijos: parcial solo subsidio 1890000; completa suma más",
+    sinFijos.empleadorParcial === 0 &&
+      sinFijos.ingresoParcial === 1_890_000 &&
+      sinFijos.ingresoCompleta === 2_520_000 &&
+      sinFijos.diferenciaIngreso === -630_000,
+  );
+  const cesion = calcularPostnatalParental({
+    baseSil: 900_000,
+    estipendiosFijos: 900_000,
+    semanasPadre: 6,
+  });
+  assert(
+    "ceder 6 sem: madre completa 42×30000=1260000; parcial 84×15000+empleador 1260000",
+    cesion.semanasPadreCompleta === 6 &&
+      cesion.semanasMadreCompleta === POSTNATAL_PARENTAL_SEMANAS_MIN_MADRE &&
+      cesion.diasMadreCompleta === 42 &&
+      cesion.subsidioMadreCompleta === 1_260_000 &&
+      cesion.semanasPadreParcial === 6 &&
+      cesion.semanasMadreParcial === 12 &&
+      cesion.diasMadreParcial === 84 &&
+      cesion.subsidioMadreParcial === 1_260_000 &&
+      cesion.empleadorMadreParcial === 1_260_000 &&
+      cesion.ingresoMadreParcialRestante === 2_520_000 &&
+      cesion.ingresoCompleta === 2_520_000,
+    JSON.stringify(cesion),
+  );
+  assert(
+    "ceder 12 sem se recorta a 6 en completa y 12 en parcial",
+    calcularPostnatalParental({ baseSil: 900_000, semanasPadre: 12 }).semanasPadreCompleta === 6 &&
+      calcularPostnatalParental({ baseSil: 900_000, semanasPadre: 12 }).semanasPadreParcial === 12 &&
+      calcularPostnatalParental({ baseSil: 900_000, semanasPadre: 12 }).semanasMadreParcial === 6,
+  );
+  assert(
+    "inputs negativos → 0",
+    calcularPostnatalParental({ baseSil: -1, estipendiosFijos: -4, semanasPadre: -3 }).baseSil === 0 &&
+      calcularPostnatalParental({ baseSil: -1, estipendiosFijos: -4 }).subsidioCompleta === 0 &&
+      calcularPostnatalParental({ baseSil: -1, estipendiosFijos: -4 }).empleadorParcial === 0,
+  );
+  const pppApp = readFileSync(join(root, "js/app-postnatal-parental.js"), "utf8");
+  assert(
+    "app-postnatal-parental usa calcularPostnatalParental",
+    /import\s*\{[^}]*calcularPostnatalParental[^}]*\}\s*from\s*["']\.\/sueldo\.js["']/.test(pppApp) &&
+      /calcularPostnatalParental\s*\(/.test(pppApp),
   );
 }
 
@@ -2267,6 +2366,7 @@ const required = [
   "retencion-judicial.html",
   "apv.html",
   "sala-cuna.html",
+  "postnatal-parental.html",
   "jornada-40-horas.html",
   "feriado-anual.html",
   "feriado-progresivo.html",
@@ -2295,6 +2395,7 @@ const required = [
   "js/app-retencion-judicial.js",
   "js/app-apv.js",
   "js/app-sala-cuna.js",
+  "js/app-postnatal-parental.js",
   "js/app-jornada-40-horas.js",
   "js/app-feriado-anual.js",
   "js/app-feriado-progresivo.js",
@@ -2451,6 +2552,7 @@ const htmlFiles = [
   "retencion-judicial.html",
   "apv.html",
   "sala-cuna.html",
+  "postnatal-parental.html",
   "jornada-40-horas.html",
   "feriado-anual.html",
   "feriado-progresivo.html",
@@ -2554,6 +2656,7 @@ const appEntries = [
   "js/app-retencion-judicial.js",
   "js/app-apv.js",
   "js/app-sala-cuna.js",
+  "js/app-postnatal-parental.js",
   "js/app-jornada-40-horas.js",
   "js/app-feriado-anual.js",
   "js/app-feriado-progresivo.js",
@@ -2594,7 +2697,7 @@ assert("robots Allow /", /Allow:\s*\//.test(robots));
 assert("robots Disallow /admin", /Disallow:\s*\/admin/.test(robots));
 assert("robots Disallow /api", /Disallow:\s*\/api/.test(robots));
 assert("robots Disallow /docs", /Disallow:\s*\/docs/.test(robots));
-assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/feriado-anual/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/licencia-medica/.test(robots) && !/Disallow:\s*\/boleta-honorarios/.test(robots) && !/Disallow:\s*\/retencion-judicial/.test(robots) && !/Disallow:\s*\/apv/.test(robots) && !/Disallow:\s*\/sala-cuna/.test(robots) && !/Disallow:\s*\/jornada-40-horas/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots));
+assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/feriado-anual/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/licencia-medica/.test(robots) && !/Disallow:\s*\/boleta-honorarios/.test(robots) && !/Disallow:\s*\/retencion-judicial/.test(robots) && !/Disallow:\s*\/apv/.test(robots) && !/Disallow:\s*\/sala-cuna/.test(robots) && !/Disallow:\s*\/postnatal-parental/.test(robots) && !/Disallow:\s*\/jornada-40-horas/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots));
 assert("robots Sitemap", /Sitemap:\s*https:\/\/www\.haberes\.cl\/sitemap\.xml/.test(robots));
 
 const { seoPaths, GUIDE_SLUGS, GUIDES, CAUSAL_PAGES, BASE_PATHS, lastmodForPath } = await import("../content/registry.js");
@@ -2637,6 +2740,7 @@ assert(
     BASE_PATHS.includes("/retencion-judicial") &&
     BASE_PATHS.includes("/apv") &&
     BASE_PATHS.includes("/sala-cuna") &&
+    BASE_PATHS.includes("/postnatal-parental") &&
     BASE_PATHS.includes("/jornada-40-horas") &&
     BASE_PATHS.includes("/indemnizacion-aviso-previo"),
   `${locs.length} vs ${expectedFromRegistry.length}`,
@@ -2991,7 +3095,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 74,
+      seoPaths().length === 75,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -3003,7 +3107,7 @@ try {
   const docsSeo = await hitLocal("/docs/seo-map.md");
   assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
   assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
-  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/apv/", "/sala-cuna/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/asignacion-familiar/", "/colacion-movilizacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/asignacion-familiar/", "/colacion-movilizacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
   }
@@ -3037,6 +3141,7 @@ try {
     "/retencion-judicial",
     "/apv",
     "/sala-cuna",
+    "/postnatal-parental",
     "/jornada-40-horas",
     "/indemnizacion-aviso-previo",
     "/gratificacion",
@@ -6770,6 +6875,7 @@ assert(
     ["retencion-judicial.html", "/retencion-judicial"],
     ["apv.html", "/apv"],
     ["sala-cuna.html", "/sala-cuna"],
+    ["postnatal-parental.html", "/postnatal-parental"],
     ["jornada-40-horas.html", "/jornada-40-horas"],
     ["feriado-anual.html", "/feriado-anual"],
     ["feriado-progresivo.html", "/feriado-progresivo"],
@@ -8021,6 +8127,132 @@ assert(
         /href="\/sala-cuna"/.test(ceHtmlSala) &&
         /href="\/sala-cuna"/.test(cmHtmlSala) &&
         /href="\/sala-cuna"/.test(agHtmlSala),
+    );
+  }
+  {
+    const pppHtml = readFileSync(join(root, "postnatal-parental.html"), "utf8");
+    const pppTitle = (pppHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const pppH1 = (pppHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const pppDesc = (pppHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "";
+    const lmHtmlPpp = readFileSync(join(root, "licencia-medica.html"), "utf8");
+    const scHtmlPpp = readFileSync(join(root, "sala-cuna.html"), "utf8");
+    const spHtmlPpp = readFileSync(join(root, "sueldo-proporcional.html"), "utf8");
+    const afHtmlPpp = readFileSync(join(root, "asignacion-familiar.html"), "utf8");
+    const goldPpp = calcularPostnatalParental({
+      baseSil: 900_000,
+      estipendiosFijos: 900_000,
+    });
+    const sinFijosPpp = calcularPostnatalParental({
+      baseSil: 900_000,
+      estipendiosFijos: 0,
+    });
+    assert(
+      "SEO postnatal parental title único y corto",
+      /calcular postnatal parental/i.test(pppTitle) &&
+        !/licencia m[eé]dica/i.test(pppTitle) &&
+        !/sala cuna/i.test(pppTitle) &&
+        !/sueldo l[ií]quido/i.test(pppTitle) &&
+        pppTitle !== ((lmHtmlPpp.match(/<title>([^<]*)<\/title>/) || [])[1] || "") &&
+        pppTitle !== ((scHtmlPpp.match(/<title>([^<]*)<\/title>/) || [])[1] || "") &&
+        pppTitle.length <= 65,
+      pppTitle,
+    );
+    assert(
+      "SEO postnatal parental H1 único art. 197 bis",
+      pppH1 === "Calcular postnatal parental art. 197 bis Chile 2026" &&
+        pppH1 !== ((lmHtmlPpp.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "") &&
+        !/licencia m[eé]dica/i.test(pppH1),
+      pppH1,
+    );
+    assert(
+      "SEO postnatal parental description propia",
+      pppDesc &&
+        pppDesc !== ((lmHtmlPpp.match(/meta name="description" content="([^"]*)"/) || [])[1] || "") &&
+        pppDesc !== ((scHtmlPpp.match(/meta name="description" content="([^"]*)"/) || [])[1] || ""),
+      pppDesc,
+    );
+    assert(
+      "SEO postnatal parental cita art. 197 bis, Ley 20.545 y DFL 44 art. 8",
+      /art[ií]culo 197 bis/.test(pppHtml) &&
+        /Ley 20\.545/.test(pppHtml) &&
+        /D\.F\.L\.\s*N°44 art\. 8/.test(pppHtml) &&
+        /bcn\.cl\/leychile\/navegar\?idNorma=207436/.test(pppHtml) &&
+        /bcn\.cl\/leychile\/navegar\?idNorma=1030936/.test(pppHtml) &&
+        /bcn\.cl\/leychile\/navegar\?idNorma=4252/.test(pppHtml) &&
+        /dt\.gob\.cl\/portal\/1628\/w3-article-99747/.test(pppHtml) &&
+        /suseso\.gob\.cl\/612\/w3-propertyvalue-222048/.test(pppHtml) &&
+        /d[ií]as del permiso × \(estipendios fijos \/ 2\) \/ 30/.test(pppHtml),
+    );
+    assert(
+      "SEO postnatal parental gold 900000 completa 2520000 y parcial 1890000+1890000",
+      goldPpp.subsidioCompleta === 2_520_000 &&
+        goldPpp.empleadorCompleta === 0 &&
+        goldPpp.subsidioParcial === 1_890_000 &&
+        goldPpp.empleadorParcial === 1_890_000 &&
+        goldPpp.ingresoParcial === 3_780_000 &&
+        sinFijosPpp.ingresoParcial === 1_890_000 &&
+        /\$900\.000/.test(pppHtml) &&
+        /\$30\.000/.test(pppHtml) &&
+        /\$2\.520\.000/.test(pppHtml) &&
+        /\$1\.890\.000/.test(pppHtml) &&
+        /\$3\.780\.000/.test(pppHtml),
+    );
+    assert("SEO postnatal parental FAQPage", /"@type": "FAQPage"/.test(pppHtml));
+    assert(
+      "SEO postnatal parental no canibaliza hermanas vetadas",
+      /href="\/licencia-medica"/.test(pppHtml) &&
+        /href="\/sala-cuna"/.test(pppHtml) &&
+        /href="\/sueldo"/.test(pppHtml) &&
+        /href="\/sueldo-proporcional"/.test(pppHtml) &&
+        /href="\/asignacion-familiar"/.test(pppHtml) &&
+        /no constituye asesor[ií]a legal/i.test(pppHtml) &&
+        /entidad pagadora/i.test(pppHtml) &&
+        !existsSync(join(root, "postnatal.html")) &&
+        !existsSync(join(root, "permiso-parental.html")) &&
+        !existsSync(join(root, "subsidio-maternal.html")),
+    );
+    assert(
+      "SEO postnatal parental métrica principal es comparación A vs B",
+      /Diferencia \(parcial − completa\)/.test(pppHtml) &&
+        /Ingreso madre completa/.test(pppHtml) &&
+        /Ingreso madre parcial/.test(pppHtml) &&
+        !/<p class="metric-label">L[ií]quido<\/p>/.test(pppHtml) &&
+        !/<p class="metric-label">Bruto a cargo del empleador<\/p>/.test(pppHtml),
+    );
+    assert(
+      "home y nav enlazan /postnatal-parental",
+      /href="\/postnatal-parental"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/postnatal-parental" data-nav>Postnatal parental<\/a>/.test(
+          readFileSync(join(root, "index.html"), "utf8"),
+        ) &&
+        /href="\/postnatal-parental" data-nav>Postnatal parental<\/a>/.test(pppHtml),
+    );
+    assert(
+      "sitemap incluye /postnatal-parental",
+      locs.includes("https://www.haberes.cl/postnatal-parental") &&
+        lastmodForPath("/postnatal-parental") === "2026-09-07",
+    );
+    assert(
+      "seo-map documenta /postnatal-parental y no-canibalizar hermanas",
+      /\/postnatal-parental/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no canibalizar `\/licencia-medica`, `\/sala-cuna`, `\/sueldo`, `\/sueldo-proporcional` ni `\/asignacion-familiar`/.test(
+          readFileSync(join(root, "docs/seo-map.md"), "utf8"),
+        ) &&
+        /no crear `\/postnatal`/i.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")),
+    );
+    assert(
+      "hub /guias enlaza /postnatal-parental en el cluster de liquidación",
+      /href="\/postnatal-parental"/.test(readFileSync(join(root, "guias.html"), "utf8")) &&
+        !/<h2>Finiquito<\/h2>[\s\S]*href="\/postnatal-parental"/.test(
+          readFileSync(join(root, "guias.html"), "utf8"),
+        ),
+    );
+    assert(
+      "hermanas enlazan /postnatal-parental",
+      /href="\/postnatal-parental"/.test(lmHtmlPpp) &&
+        /href="\/postnatal-parental"/.test(scHtmlPpp) &&
+        /href="\/postnatal-parental"/.test(spHtmlPpp) &&
+        /href="\/postnatal-parental"/.test(afHtmlPpp),
     );
   }
   {
@@ -10194,6 +10426,7 @@ assert(
       "retencion-judicial.html",
       "apv.html",
       "sala-cuna.html",
+      "postnatal-parental.html",
       "jornada-40-horas.html",
       "feriado-anual.html",
       "feriado-progresivo.html",
@@ -10377,7 +10610,7 @@ assert(
     return acc;
   }
   const pages = listHtml(root);
-  assert("76 páginas HTML", pages.length === 76, String(pages.length));
+  assert("77 páginas HTML", pages.length === 77, String(pages.length));
   for (const file of pages) {
     const html = readFileSync(file, "utf8");
     const rel = file.slice(root.length + 1);
