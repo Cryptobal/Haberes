@@ -19,7 +19,7 @@ Las **horas extraordinarias** son las que exceden la jornada máxima legal o la 
 
 ## A quién aplica y a quién no
 
-Quien trabaja bajo el artículo 22 está sujeto a jornada. Desde el **26 de abril de 2026** el máximo es de **42 horas semanales** (Ley 21.561, artículo primero transitorio). Las **40 horas** rigen el **26 de abril de 2028**, no ahora. Si el contrato ya pactó menos de 42, extra es lo que pasa de esa jornada menor.
+Quien trabaja bajo el artículo 22 está sujeto a jornada. Desde el **26 de abril de 2026** el máximo es de **42 horas semanales** (Ley 21.561, artículo primero transitorio). Las **40 horas** rigen el **26 de abril de 2028**, no ahora. Si el contrato ya pactó menos de 42, extra es lo que pasa de esa jornada menor. El tope vigente y cómo se reparte la rebaja a falta de acuerdo se estiman en [calcular jornada 40 horas](/jornada-40-horas).
 
 El 32 pide **pacto escrito**, solo para necesidades **temporales**, hasta **tres meses**, renovable. Aunque falte el escrito, **igual son extras** las horas de más con **conocimiento del empleador**. El [artículo 31](https://www.bcn.cl/leychile/navegar?idNorma=207436) topea en **dos horas** por día (faenas que no perjudiquen la salud); se pagan con el 50 % del 32.
 

@@ -78,6 +78,8 @@ import {
   calcularRetencionJudicial,
   calcularApv,
   calcularSalaCuna,
+  calcularJornada40Horas,
+  topeJornadaOrdinaria,
   calcularSueldoMinimo,
   calcularSueldoProporcional,
   diasCalendarioFraccionMes,
@@ -1108,6 +1110,77 @@ console.log("\nSala cuna art. 203 (umbral 20 y costo al establecimiento)");
     "app-sala-cuna usa calcularSalaCuna",
     /import\s*\{[^}]*calcularSalaCuna[^}]*\}\s*from\s*["']\.\/sueldo\.js["']/.test(scApp) &&
       /calcularSalaCuna\s*\(/.test(scApp),
+  );
+}
+
+console.log("\nJornada 40 horas Ley 21.561 (tope, rebaja y valor hora DT)");
+{
+  assert("tope 26-abr-2026 → 42", topeJornadaOrdinaria("2026-04-26") === 42);
+  assert("tope 25-abr-2028 → 42", topeJornadaOrdinaria("2028-04-25") === 42);
+  assert("tope 26-abr-2028 → 40", topeJornadaOrdinaria("2028-04-26") === 40);
+  assert("tope 26-abr-2024 → 44", topeJornadaOrdinaria("2024-04-26") === 44);
+  assert("tope 25-abr-2024 → 45", topeJornadaOrdinaria("2024-04-25") === 45);
+  const g = calcularJornada40Horas({
+    fecha: "2026-09-08",
+    jornadaPactada: 44,
+    dias: 5,
+    remuneracion: 840_000,
+  });
+  assert(
+    "gold 44 h / 5 días / sep 2026 → tope 42, rebaja 2 h en 1 h × 2 días",
+    g.tope === 42 &&
+      g.horasARebajar === 2 &&
+      g.minutosARebajar === 120 &&
+      g.bloques.length === 2 &&
+      g.bloques[0] === 60 &&
+      g.bloques[1] === 60 &&
+      g.jornadaAjustada === 42 &&
+      g.superaTope === true,
+    JSON.stringify(g),
+  );
+  const hora42 = (840_000 / 30) * 28 / (42 * 4);
+  assert(
+    "gold rem 840000 jornada 42 → valor hora 4666.66… → $4.667",
+    g.valorHoraAjustadaPesos === 4667 &&
+      close(g.valorHoraAjustada, hora42) &&
+      g.valorHoraAjustadaPesos === Math.round(hora42),
+    String(g.valorHoraAjustadaPesos),
+  );
+  const h45 = calcularJornada40Horas({
+    fecha: "2026-09-08",
+    jornadaPactada: 45,
+    dias: 5,
+    remuneracion: 840_000,
+  });
+  const hora45 = (840_000 / 30) * 28 / (45 * 4);
+  assert(
+    "gold rem 840000 jornada 45 histórico → valor hora 4355.55… → $4.356, menor que 42 h",
+    h45.valorHoraPactadaPesos === 4356 &&
+      close(h45.valorHoraPactada, hora45) &&
+      h45.valorHoraPactadaPesos < g.valorHoraAjustadaPesos &&
+      h45.horasARebajar === 3,
+    JSON.stringify({ pesos: h45.valorHoraPactadaPesos, raw: h45.valorHoraPactada }),
+  );
+  const g6 = calcularJornada40Horas({
+    fecha: "2026-09-08",
+    jornadaPactada: 44,
+    dias: 6,
+    remuneracion: 840_000,
+  });
+  assert(
+    "gold 44 h / 6 días → 50 + 50 + 20 min (ORD. 253/21)",
+    g6.tope === 42 &&
+      g6.bloques.length === 3 &&
+      g6.bloques[0] === 50 &&
+      g6.bloques[1] === 50 &&
+      g6.bloques[2] === 20,
+    JSON.stringify(g6.bloques),
+  );
+  const j40App = readFileSync(join(root, "js/app-jornada-40-horas.js"), "utf8");
+  assert(
+    "app-jornada-40-horas usa calcularJornada40Horas",
+    /import\s*\{[^}]*calcularJornada40Horas[^}]*\}\s*from\s*["']\.\/sueldo\.js["']/.test(j40App) &&
+      /calcularJornada40Horas\s*\(/.test(j40App),
   );
 }
 
@@ -2190,6 +2263,7 @@ const required = [
   "retencion-judicial.html",
   "apv.html",
   "sala-cuna.html",
+  "jornada-40-horas.html",
   "feriado-anual.html",
   "feriado-progresivo.html",
   "indemnizacion-anos-servicio.html",
@@ -2217,6 +2291,7 @@ const required = [
   "js/app-retencion-judicial.js",
   "js/app-apv.js",
   "js/app-sala-cuna.js",
+  "js/app-jornada-40-horas.js",
   "js/app-feriado-anual.js",
   "js/app-feriado-progresivo.js",
   "js/app-indemnizacion-anos-servicio.js",
@@ -2372,6 +2447,7 @@ const htmlFiles = [
   "retencion-judicial.html",
   "apv.html",
   "sala-cuna.html",
+  "jornada-40-horas.html",
   "feriado-anual.html",
   "feriado-progresivo.html",
   "indemnizacion-anos-servicio.html",
@@ -2474,6 +2550,7 @@ const appEntries = [
   "js/app-retencion-judicial.js",
   "js/app-apv.js",
   "js/app-sala-cuna.js",
+  "js/app-jornada-40-horas.js",
   "js/app-feriado-anual.js",
   "js/app-feriado-progresivo.js",
   "js/app-indemnizacion-anos-servicio.js",
@@ -2513,7 +2590,7 @@ assert("robots Allow /", /Allow:\s*\//.test(robots));
 assert("robots Disallow /admin", /Disallow:\s*\/admin/.test(robots));
 assert("robots Disallow /api", /Disallow:\s*\/api/.test(robots));
 assert("robots Disallow /docs", /Disallow:\s*\/docs/.test(robots));
-assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/feriado-anual/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/licencia-medica/.test(robots) && !/Disallow:\s*\/boleta-honorarios/.test(robots) && !/Disallow:\s*\/retencion-judicial/.test(robots) && !/Disallow:\s*\/apv/.test(robots) && !/Disallow:\s*\/sala-cuna/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots));
+assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/feriado-anual/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/licencia-medica/.test(robots) && !/Disallow:\s*\/boleta-honorarios/.test(robots) && !/Disallow:\s*\/retencion-judicial/.test(robots) && !/Disallow:\s*\/apv/.test(robots) && !/Disallow:\s*\/sala-cuna/.test(robots) && !/Disallow:\s*\/jornada-40-horas/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots));
 assert("robots Sitemap", /Sitemap:\s*https:\/\/www\.haberes\.cl\/sitemap\.xml/.test(robots));
 
 const { seoPaths, GUIDE_SLUGS, GUIDES, CAUSAL_PAGES, BASE_PATHS, lastmodForPath } = await import("../content/registry.js");
@@ -2556,6 +2633,7 @@ assert(
     BASE_PATHS.includes("/retencion-judicial") &&
     BASE_PATHS.includes("/apv") &&
     BASE_PATHS.includes("/sala-cuna") &&
+    BASE_PATHS.includes("/jornada-40-horas") &&
     BASE_PATHS.includes("/indemnizacion-aviso-previo"),
   `${locs.length} vs ${expectedFromRegistry.length}`,
 );
@@ -2909,7 +2987,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 73,
+      seoPaths().length === 74,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -2921,7 +2999,7 @@ try {
   const docsSeo = await hitLocal("/docs/seo-map.md");
   assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
   assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
-  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/apv/", "/sala-cuna/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/asignacion-familiar/", "/colacion-movilizacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/apv/", "/sala-cuna/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/asignacion-familiar/", "/colacion-movilizacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
   }
@@ -2955,6 +3033,7 @@ try {
     "/retencion-judicial",
     "/apv",
     "/sala-cuna",
+    "/jornada-40-horas",
     "/indemnizacion-aviso-previo",
     "/gratificacion",
     "/impuesto-unico",
@@ -6687,6 +6766,7 @@ assert(
     ["retencion-judicial.html", "/retencion-judicial"],
     ["apv.html", "/apv"],
     ["sala-cuna.html", "/sala-cuna"],
+    ["jornada-40-horas.html", "/jornada-40-horas"],
     ["feriado-anual.html", "/feriado-anual"],
     ["feriado-progresivo.html", "/feriado-progresivo"],
     ["indemnizacion-anos-servicio.html", "/indemnizacion-anos-servicio"],
@@ -7937,6 +8017,124 @@ assert(
         /href="\/sala-cuna"/.test(ceHtmlSala) &&
         /href="\/sala-cuna"/.test(cmHtmlSala) &&
         /href="\/sala-cuna"/.test(agHtmlSala),
+    );
+  }
+  {
+    const j40Html = readFileSync(join(root, "jornada-40-horas.html"), "utf8");
+    const j40Title = (j40Html.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const j40H1 = (j40Html.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const j40Desc = (j40Html.match(/meta name="description" content="([^"]*)"/) || [])[1] || "";
+    const heHtmlJ40 = readFileSync(join(root, "horas-extras.html"), "utf8");
+    const sueldoHtmlJ40 = readFileSync(join(root, "sueldo.html"), "utf8");
+    const ceHtmlJ40 = readFileSync(join(root, "costo-empresa.html"), "utf8");
+    const guideHeJ40 = readFileSync(join(root, "guias/horas-extras.html"), "utf8");
+    const goldJ40 = calcularJornada40Horas({
+      fecha: "2026-09-08",
+      jornadaPactada: 44,
+      dias: 5,
+      remuneracion: 840_000,
+    });
+    const hist45 = calcularJornada40Horas({
+      fecha: "2026-09-08",
+      jornadaPactada: 45,
+      dias: 5,
+      remuneracion: 840_000,
+    });
+    assert(
+      "SEO jornada 40 horas title único y corto",
+      /calculadora jornada 40 horas/i.test(j40Title) &&
+        !/horas extras/i.test(j40Title) &&
+        !/sueldo l[ií]quido/i.test(j40Title) &&
+        j40Title !== ((heHtmlJ40.match(/<title>([^<]*)<\/title>/) || [])[1] || "") &&
+        j40Title.length <= 65,
+      j40Title,
+    );
+    assert(
+      "SEO jornada 40 horas H1 único Ley 21.561",
+      j40H1 === "Calculadora jornada 40 horas Chile 2026" &&
+        j40H1 !== ((heHtmlJ40.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "") &&
+        !/horas extras/i.test(j40H1),
+      j40H1,
+    );
+    assert(
+      "SEO jornada 40 horas description propia",
+      j40Desc &&
+        j40Desc !== ((heHtmlJ40.match(/meta name="description" content="([^"]*)"/) || [])[1] || "") &&
+        j40Desc !== ((sueldoHtmlJ40.match(/meta name="description" content="([^"]*)"/) || [])[1] || ""),
+      j40Desc,
+    );
+    assert(
+      "SEO jornada 40 horas cita Ley 21.561, 21.755 y ORD. 253/21",
+      /Ley 21\.561/.test(j40Html) &&
+        /42 h/.test(j40Html) &&
+        /bcn\.cl\/leychile\/navegar\?idNorma=1191554/.test(j40Html) &&
+        /bcn\.cl\/leychile\/navegar\?idNorma=1214890/.test(j40Html) &&
+        /dt\.gob\.cl\/legislacion\/1624\/w3-article-129189/.test(j40Html) &&
+        /ORD\. N°253\/21/.test(j40Html),
+    );
+    assert(
+      "SEO jornada 40 horas gold 42 h, 44/5 días y $840.000",
+      goldJ40.tope === 42 &&
+        goldJ40.horasARebajar === 2 &&
+        goldJ40.bloques[0] === 60 &&
+        goldJ40.bloques[1] === 60 &&
+        goldJ40.valorHoraAjustadaPesos === 4667 &&
+        hist45.valorHoraPactadaPesos === 4356 &&
+        /tope <strong>42 h<\/strong>/.test(j40Html) &&
+        /1 h en dos d[ií]as distintos al t[eé]rmino/.test(j40Html) &&
+        /\$4\.667/.test(j40Html) &&
+        /\$4\.356/.test(j40Html),
+    );
+    assert("SEO jornada 40 horas FAQPage", /"@type": "FAQPage"/.test(j40Html));
+    assert(
+      "SEO jornada 40 horas no canibaliza hermanas vetadas",
+      /href="\/horas-extras"/.test(j40Html) &&
+        /href="\/sueldo"/.test(j40Html) &&
+        /href="\/costo-empresa"/.test(j40Html) &&
+        /href="\/guias\/horas-extras"/.test(j40Html) &&
+        /no constituye asesor[ií]a legal/i.test(j40Html) &&
+        !existsSync(join(root, "40-horas.html")) &&
+        !existsSync(join(root, "ley-21561.html")) &&
+        !existsSync(join(root, "reduccion-jornada.html")),
+    );
+    assert(
+      "SEO jornada 40 horas métrica principal es el tope legal",
+      /Tope legal ordinario/.test(j40Html) &&
+        !/<p class="metric-label">L[ií]quido<\/p>/.test(j40Html) &&
+        !/<p class="metric-label">Total a pagar<\/p>/.test(j40Html),
+    );
+    assert(
+      "home y nav enlazan /jornada-40-horas",
+      /href="\/jornada-40-horas"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/jornada-40-horas" data-nav>Jornada 40 horas<\/a>/.test(
+          readFileSync(join(root, "index.html"), "utf8"),
+        ) &&
+        /href="\/jornada-40-horas" data-nav>Jornada 40 horas<\/a>/.test(j40Html),
+    );
+    assert(
+      "sitemap incluye /jornada-40-horas",
+      locs.includes("https://www.haberes.cl/jornada-40-horas") &&
+        lastmodForPath("/jornada-40-horas") === "2026-09-08",
+    );
+    assert(
+      "seo-map documenta /jornada-40-horas y no-canibalizar hermanas",
+      /\/jornada-40-horas/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no canibalizar `\/horas-extras`/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no crear `\/40-horas`/i.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")),
+    );
+    assert(
+      "hub /guias enlaza /jornada-40-horas en el cluster de liquidación",
+      /href="\/jornada-40-horas"/.test(readFileSync(join(root, "guias.html"), "utf8")) &&
+        !/<h2>Finiquito<\/h2>[\s\S]*href="\/jornada-40-horas"/.test(
+          readFileSync(join(root, "guias.html"), "utf8"),
+        ),
+    );
+    assert(
+      "hermanas enlazan /jornada-40-horas",
+      /href="\/jornada-40-horas"/.test(heHtmlJ40) &&
+        /href="\/jornada-40-horas"/.test(sueldoHtmlJ40) &&
+        /href="\/jornada-40-horas"/.test(ceHtmlJ40) &&
+        /href="\/jornada-40-horas"/.test(guideHeJ40),
     );
   }
   {
@@ -9983,6 +10181,7 @@ assert(
       "retencion-judicial.html",
       "apv.html",
       "sala-cuna.html",
+      "jornada-40-horas.html",
       "feriado-anual.html",
       "feriado-progresivo.html",
       "indemnizacion-anos-servicio.html",

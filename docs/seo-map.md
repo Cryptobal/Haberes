@@ -13,6 +13,7 @@ Actualizar este archivo antes de crear URLs nuevas para evitar canibalización.
 | Calcular sueldo líquido | calcular sueldo líquido / liquido (5.400/38), sueldo líquido (4.400/35), calculadora de sueldo liquido (1.300/32) | `/sueldo` | H1 calculadora Chile 2026; no crear `/calculadora-sueldo` |
 | Calcular sueldo mínimo | sueldo mínimo / ingreso mínimo mensual / IMM 2026 | `/sueldo-minimo` | Title/H1 «calcular sueldo mínimo»; no canibalizar `/sueldo`, `/gratificacion`, `/colacion-movilizacion` ni `/costo-empresa`. Piso legal del IMM (Ley 21.830), jornada parcial y tope art. 50. No es el líquido. No crear `/imm`, `/ingreso-minimo` ni `/sueldo-minimo-2026` |
 | Calcular horas extras | calcular horas extras / cálculo horas extras (8.100/17) | `/horas-extras` | Title/H1 «calcular horas extras»; no canibalizar `/sueldo` ni `/guias/horas-extras` |
+| Calcular jornada 40 horas | jornada 40 horas / ley 21.561 / tope 42 horas 2026 | `/jornada-40-horas` | Title/H1 «Calculadora jornada 40 horas Chile»; no canibalizar `/horas-extras`, `/sueldo`, `/sueldo-proporcional`, `/sueldo-minimo`, `/recargo-domingo-comercio`, `/feriado-irrenunciable` ni `/finiquito-casa-particular`. Tope gradual art. 22 (Ley 21.561), distribución a falta de acuerdo (Ley 21.755 / ORD. N°253/21) y valor hora DT. No es el monto de extras. No crear `/40-horas`, `/ley-21561` ni `/reduccion-jornada` |
 | Calcular vacaciones proporcionales | vacaciones proporcionales (1.300/16), feriado proporcional (590/13), calcular feriado proporcional (320/14) | `/vacaciones-proporcionales` | Title/H1 «calcular vacaciones proporcionales»; no canibalizar `/finiquito` ni `/guias/vacaciones-proporcionales` |
 | Calcular gratificación | gratificación legal (4.400/17) — intención calcular | `/gratificacion` | Title/H1 «calcular gratificación»; no canibalizar `/sueldo` ni `/guias/gratificacion-legal` |
 | Calcular impuesto único | calcular impuesto unico (480/mes), tabla impuesto unico (2.900/mes) | `/impuesto-unico` | Title/H1 «calcular impuesto único»; no canibalizar `/sueldo` ni `/guias/impuesto-unico` |
@@ -121,6 +122,11 @@ La prestación (giros) si hay despido no abre URL propia.
 No publicar hermanas del recargo domingo: `/horas-extras-domingo`, `/recargo-festivo`,
 `/trabajo-en-domingo`. El recargo 30 % del comercio (art. 38 N°7) vive en
 `/recargo-domingo-comercio`. Las horas extras (art. 32) siguen en `/horas-extras`.
+
+No publicar `/40-horas`, `/ley-21561` ni `/reduccion-jornada`. El tope gradual de jornada
+ordinaria (Ley 21.561: 44/42/40 h), la distribución a falta de acuerdo y el valor hora DT
+viven en `/jornada-40-horas`. El monto de extras con recargo 50 % sigue en `/horas-extras`.
+El líquido sigue en `/sueldo`. El costo de cotizaciones del empleador sigue en `/costo-empresa`.
 
 No publicar `/pago-feriado`, `/trabajo-feriado`, `/feriados` ni `/irrenunciable`.
 El pago educativo de un feriado irrenunciable (Ley 19.973 + recargo 50 % art. 32)
