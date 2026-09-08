@@ -1,4 +1,4 @@
-import { clp, num } from "./format.js";
+import { clp } from "./format.js";
 import { calcularPermisoPaternidad } from "./sueldo.js";
 import { createDateFields, el, mountIndicadores, numVal, wireNav } from "./ui.js";
 
@@ -91,7 +91,7 @@ function render(calc) {
   el("outInicio").textContent = calc.fechaInicio ? fechaEs(calc.fechaInicio) : "—";
   el("outHabiles").textContent = calc.ok ? String(calc.diasHabilesConsumidos) : "0";
   el("outGoce").textContent = clp(calc.goceRemuneracion);
-  el("outDiario").textContent = calc.valorDia > 0 ? `$ ${num(calc.valorDia)}` : "$ 0";
+  el("outDiario").textContent = calc.valorDia > 0 ? clp(calc.valorDia) : "$ 0";
   el("outRem").textContent = clp(calc.remuneracion);
   el("outNota").textContent = nota(calc);
 
