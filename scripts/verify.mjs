@@ -42,6 +42,10 @@ import {
   POSTNATAL_PARENTAL_SEMANAS_COMPLETA,
   POSTNATAL_PARENTAL_SEMANAS_MIN_MADRE,
   POSTNATAL_PARENTAL_SEMANAS_PARCIAL,
+  HORA_LACTANCIA_DIAS_DEFAULT,
+  HORA_LACTANCIA_EDAD_MAX_MESES,
+  HORA_LACTANCIA_MINUTOS_LEGAL,
+  HORA_LACTANCIA_MINUTOS_MAX,
   resumirTextoLegal,
 } from "../js/constants.js";
 import { CAUSALES, causalPorId } from "../js/causales.js";
@@ -83,6 +87,7 @@ import {
   calcularSalaCuna,
   calcularPostnatalParental,
   calcularPermisoPaternidad,
+  calcularHoraLactancia,
   calcularJornada40Horas,
   topeJornadaOrdinaria,
   calcularSueldoMinimo,
@@ -1210,6 +1215,96 @@ console.log("\nPostnatal parental art. 197 bis (completa 12 vs parcial 18)");
     "app-postnatal-parental usa calcularPostnatalParental",
     /import\s*\{[^}]*calcularPostnatalParental[^}]*\}\s*from\s*["']\.\/sueldo\.js["']/.test(pppApp) &&
       /calcularPostnatalParental\s*\(/.test(pppApp),
+  );
+}
+
+console.log("\nHora de lactancia art. 206 (valor hora DT, diario y mensual)");
+{
+  const g = calcularHoraLactancia({
+    remuneracion: 900_000,
+    jornada: 42,
+    diasLaborales: 20,
+    minutosDiarios: 60,
+  });
+  const hora = valorHoraOrdinaria(900_000, 42);
+  assert(
+    "gold 900000 / 42 h / 20 días / 60 min → hora 5000, diario 5000, mensual 100000",
+    close(g.valorHora, hora, 0.0001) &&
+      close(g.valorHora, 5_000, 0.0001) &&
+      g.valorDiario === 5_000 &&
+      g.valorMensual === 100_000 &&
+      g.valorMensual === g.valorDiario * 20 &&
+      g.vigente === true &&
+      g.minutosDiarios === HORA_LACTANCIA_MINUTOS_LEGAL &&
+      g.minutosLegal === 60 &&
+      g.edadMaxMeses === HORA_LACTANCIA_EDAD_MAX_MESES,
+    JSON.stringify(g),
+  );
+  const mitad = calcularHoraLactancia({
+    remuneracion: 900_000,
+    jornada: 42,
+    diasLaborales: 20,
+    minutosDiarios: 30,
+  });
+  assert(
+    "30 min/día → mitad del diario y mensual del caso 60 min",
+    mitad.valorDiario === 2_500 &&
+      mitad.valorMensual === 50_000 &&
+      mitad.valorMensual === g.valorMensual / 2 &&
+      mitad.valorDiario === g.valorDiario / 2 &&
+      mitad.esFraccion === true,
+    JSON.stringify(mitad),
+  );
+  const fuera = calcularHoraLactancia({
+    remuneracion: 900_000,
+    jornada: 42,
+    diasLaborales: 20,
+    minutosDiarios: 60,
+    edadMeses: 24,
+  });
+  assert(
+    "hijo ≥24 meses → aviso de vigencia; mismo monto que el gold",
+    fuera.vigente === false &&
+      fuera.edadMeses === 24 &&
+      fuera.valorDiario === g.valorDiario &&
+      fuera.valorMensual === g.valorMensual &&
+      close(fuera.valorHora, g.valorHora, 0.0001),
+    JSON.stringify(fuera),
+  );
+  assert(
+    "23 meses sigue vigente; 24 no",
+    calcularHoraLactancia({ remuneracion: 900_000, edadMeses: 23 }).vigente === true &&
+      calcularHoraLactancia({ remuneracion: 900_000, edadMeses: 24 }).vigente === false &&
+      calcularHoraLactancia({ remuneracion: 900_000, edadMeses: 30 }).vigente === false,
+  );
+  const tope = calcularHoraLactancia({
+    remuneracion: 900_000,
+    jornada: 42,
+    diasLaborales: 20,
+    minutosDiarios: 180,
+  });
+  assert(
+    "minutos sobre 120 se recortan al techo de la herramienta",
+    tope.minutosDiarios === HORA_LACTANCIA_MINUTOS_MAX &&
+      tope.minutosRecortados === true &&
+      tope.minutosIngresados === 180,
+    JSON.stringify(tope),
+  );
+  assert(
+    "inputs negativos → 0",
+    calcularHoraLactancia({ remuneracion: -1, jornada: -4, diasLaborales: -3, minutosDiarios: -10 }).valorMensual === 0 &&
+      calcularHoraLactancia({ remuneracion: -1 }).valorHora === 0,
+  );
+  assert(
+    "días por defecto 22",
+    calcularHoraLactancia({ remuneracion: 900_000, jornada: 42, minutosDiarios: 60 }).diasLaborales ===
+      HORA_LACTANCIA_DIAS_DEFAULT,
+  );
+  const hlApp = readFileSync(join(root, "js/app-hora-lactancia.js"), "utf8");
+  assert(
+    "app-hora-lactancia usa calcularHoraLactancia",
+    /import\s*\{[^}]*calcularHoraLactancia[^}]*\}\s*from\s*["']\.\/sueldo\.js["']/.test(hlApp) &&
+      /calcularHoraLactancia\s*\(/.test(hlApp),
   );
 }
 
@@ -2445,6 +2540,7 @@ const required = [
   "sala-cuna.html",
   "postnatal-parental.html",
   "permiso-paternidad.html",
+  "hora-lactancia.html",
   "jornada-40-horas.html",
   "feriado-anual.html",
   "feriado-progresivo.html",
@@ -2475,6 +2571,7 @@ const required = [
   "js/app-sala-cuna.js",
   "js/app-postnatal-parental.js",
   "js/app-permiso-paternidad.js",
+  "js/app-hora-lactancia.js",
   "js/app-jornada-40-horas.js",
   "js/app-feriado-anual.js",
   "js/app-feriado-progresivo.js",
@@ -2633,6 +2730,7 @@ const htmlFiles = [
   "sala-cuna.html",
   "postnatal-parental.html",
   "permiso-paternidad.html",
+  "hora-lactancia.html",
   "jornada-40-horas.html",
   "feriado-anual.html",
   "feriado-progresivo.html",
@@ -2738,6 +2836,7 @@ const appEntries = [
   "js/app-sala-cuna.js",
   "js/app-postnatal-parental.js",
   "js/app-permiso-paternidad.js",
+  "js/app-hora-lactancia.js",
   "js/app-jornada-40-horas.js",
   "js/app-feriado-anual.js",
   "js/app-feriado-progresivo.js",
@@ -2778,7 +2877,7 @@ assert("robots Allow /", /Allow:\s*\//.test(robots));
 assert("robots Disallow /admin", /Disallow:\s*\/admin/.test(robots));
 assert("robots Disallow /api", /Disallow:\s*\/api/.test(robots));
 assert("robots Disallow /docs", /Disallow:\s*\/docs/.test(robots));
-assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/feriado-anual/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/licencia-medica/.test(robots) && !/Disallow:\s*\/boleta-honorarios/.test(robots) && !/Disallow:\s*\/retencion-judicial/.test(robots) && !/Disallow:\s*\/apv/.test(robots) && !/Disallow:\s*\/sala-cuna/.test(robots) && !/Disallow:\s*\/postnatal-parental/.test(robots) && !/Disallow:\s*\/permiso-paternidad/.test(robots) && !/Disallow:\s*\/jornada-40-horas/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots));
+assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/feriado-anual/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/licencia-medica/.test(robots) && !/Disallow:\s*\/boleta-honorarios/.test(robots) && !/Disallow:\s*\/retencion-judicial/.test(robots) && !/Disallow:\s*\/apv/.test(robots) && !/Disallow:\s*\/sala-cuna/.test(robots) && !/Disallow:\s*\/postnatal-parental/.test(robots) && !/Disallow:\s*\/permiso-paternidad/.test(robots) && !/Disallow:\s*\/hora-lactancia/.test(robots) && !/Disallow:\s*\/jornada-40-horas/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots));
 assert("robots Sitemap", /Sitemap:\s*https:\/\/www\.haberes\.cl\/sitemap\.xml/.test(robots));
 
 const { seoPaths, GUIDE_SLUGS, GUIDES, CAUSAL_PAGES, BASE_PATHS, lastmodForPath } = await import("../content/registry.js");
@@ -2823,6 +2922,7 @@ assert(
     BASE_PATHS.includes("/sala-cuna") &&
     BASE_PATHS.includes("/postnatal-parental") &&
     BASE_PATHS.includes("/permiso-paternidad") &&
+    BASE_PATHS.includes("/hora-lactancia") &&
     BASE_PATHS.includes("/jornada-40-horas") &&
     BASE_PATHS.includes("/indemnizacion-aviso-previo"),
   `${locs.length} vs ${expectedFromRegistry.length}`,
@@ -3177,7 +3277,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 76,
+      seoPaths().length === 77,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -3189,7 +3289,7 @@ try {
   const docsSeo = await hitLocal("/docs/seo-map.md");
   assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
   assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
-  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-paternidad/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/asignacion-familiar/", "/colacion-movilizacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-paternidad/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/asignacion-familiar/", "/colacion-movilizacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
   }
@@ -3225,6 +3325,7 @@ try {
     "/sala-cuna",
     "/postnatal-parental",
     "/permiso-paternidad",
+    "/hora-lactancia",
     "/jornada-40-horas",
     "/indemnizacion-aviso-previo",
     "/gratificacion",
@@ -6958,8 +7059,9 @@ assert(
     ["retencion-judicial.html", "/retencion-judicial"],
     ["apv.html", "/apv"],
     ["sala-cuna.html", "/sala-cuna"],
-    ["/postnatal-parental.html", "/postnatal-parental"],
+    ["postnatal-parental.html", "/postnatal-parental"],
     ["permiso-paternidad.html", "/permiso-paternidad"],
+    ["hora-lactancia.html", "/hora-lactancia"],
     ["jornada-40-horas.html", "/jornada-40-horas"],
     ["feriado-anual.html", "/feriado-anual"],
     ["feriado-progresivo.html", "/feriado-progresivo"],
@@ -8413,6 +8515,7 @@ assert(
         /href="\/sala-cuna"/.test(ppHtml) &&
         /href="\/sueldo"/.test(ppHtml) &&
         /href="\/feriado-anual"/.test(ppHtml) &&
+        /href="\/hora-lactancia"/.test(ppHtml) &&
         /no constituye asesor[ií]a legal/i.test(ppHtml) &&
         /goce de remuneraci[oó]n/.test(ppHtml) &&
         !existsSync(join(root, "paternidad.html")) &&
@@ -8455,6 +8558,147 @@ assert(
         /href="\/permiso-paternidad"/.test(scHtmlPp) &&
         /href="\/permiso-paternidad"/.test(sueldoHtmlPp) &&
         /href="\/permiso-paternidad"/.test(faHtmlPp),
+    );
+  }
+  {
+    const hlHtml = readFileSync(join(root, "hora-lactancia.html"), "utf8");
+    const hlTitle = (hlHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const hlH1 = (hlHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const hlDesc = (hlHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "";
+    const scHtmlHl = readFileSync(join(root, "sala-cuna.html"), "utf8");
+    const pppHtmlHl = readFileSync(join(root, "postnatal-parental.html"), "utf8");
+    const lmHtmlHl = readFileSync(join(root, "licencia-medica.html"), "utf8");
+    const sueldoHtmlHl = readFileSync(join(root, "sueldo.html"), "utf8");
+    const goldHl = calcularHoraLactancia({
+      remuneracion: 900_000,
+      jornada: 42,
+      diasLaborales: 20,
+      minutosDiarios: 60,
+    });
+    const mitadHl = calcularHoraLactancia({
+      remuneracion: 900_000,
+      jornada: 42,
+      diasLaborales: 20,
+      minutosDiarios: 30,
+    });
+    const fueraHl = calcularHoraLactancia({
+      remuneracion: 900_000,
+      jornada: 42,
+      diasLaborales: 20,
+      minutosDiarios: 60,
+      edadMeses: 24,
+    });
+    assert(
+      "SEO hora de lactancia title único y corto",
+      /calcular hora de lactancia/i.test(hlTitle) &&
+        !/sala cuna/i.test(hlTitle) &&
+        !/postnatal parental/i.test(hlTitle) &&
+        !/sueldo l[ií]quido/i.test(hlTitle) &&
+        !/licencia m[eé]dica/i.test(hlTitle) &&
+        hlTitle !== ((scHtmlHl.match(/<title>([^<]*)<\/title>/) || [])[1] || "") &&
+        hlTitle !== ((pppHtmlHl.match(/<title>([^<]*)<\/title>/) || [])[1] || "") &&
+        hlTitle.length <= 65,
+      hlTitle,
+    );
+    assert(
+      "SEO hora de lactancia H1 único art. 206",
+      hlH1 === "Calcular hora de lactancia art. 206 Chile 2026" &&
+        hlH1 !== ((scHtmlHl.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "") &&
+        hlH1 !== ((pppHtmlHl.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "") &&
+        !/sala cuna/i.test(hlH1) &&
+        !/postnatal parental/i.test(hlH1),
+      hlH1,
+    );
+    assert(
+      "SEO hora de lactancia description propia",
+      hlDesc &&
+        hlDesc !== ((scHtmlHl.match(/meta name="description" content="([^"]*)"/) || [])[1] || "") &&
+        hlDesc !== ((pppHtmlHl.match(/meta name="description" content="([^"]*)"/) || [])[1] || "") &&
+        /art\. 206/.test(hlDesc) &&
+        !/\bIA\b/.test(hlDesc),
+      hlDesc,
+    );
+    assert(
+      "SEO hora de lactancia cita art. 206, BCN y DT",
+      /art[ií]culo 206/.test(hlHtml) &&
+        /bcn\.cl\/leychile\/navegar\?idNorma=207436/.test(hlHtml) &&
+        /dt\.gob\.cl\/portal\/1628\/w3-article-60103/.test(hlHtml) &&
+        /dt\.gob\.cl\/portal\/1628\/w3-article-60094/.test(hlHtml) &&
+        /dt\.gob\.cl\/legislacion\/1624\/w3-article-94769/.test(hlHtml) &&
+        /remuneraci[oó]n \/ 30 × 28 \/ \(jornada semanal × 4\)/.test(hlHtml) &&
+        /con goce de sueldo/.test(hlHtml) &&
+        /herramienta digital/.test(hlHtml),
+    );
+    assert(
+      "SEO hora de lactancia gold 900000/42/20/60 y 30 min mitad",
+      goldHl.valorDiario === 5_000 &&
+        goldHl.valorMensual === 100_000 &&
+        close(goldHl.valorHora, valorHoraOrdinaria(900_000, 42), 0.0001) &&
+        mitadHl.valorDiario === 2_500 &&
+        mitadHl.valorMensual === 50_000 &&
+        fueraHl.vigente === false &&
+        fueraHl.valorMensual === goldHl.valorMensual &&
+        /\$900\.000/.test(hlHtml) &&
+        /\$5\.000/.test(hlHtml) &&
+        /\$100\.000/.test(hlHtml) &&
+        /\$2\.500/.test(hlHtml) &&
+        /\$50\.000/.test(hlHtml) &&
+        /24 meses/.test(hlHtml),
+    );
+    assert("SEO hora de lactancia FAQPage", /"@type": "FAQPage"/.test(hlHtml));
+    assert(
+      "SEO hora de lactancia no canibaliza hermanas vetadas",
+      /href="\/sala-cuna"/.test(hlHtml) &&
+        /href="\/postnatal-parental"/.test(hlHtml) &&
+        /href="\/sueldo"/.test(hlHtml) &&
+        /href="\/licencia-medica"/.test(hlHtml) &&
+        /href="\/permiso-paternidad"/.test(hlHtml) &&
+        /no constituye asesor[ií]a/i.test(hlHtml) &&
+        !existsSync(join(root, "lactancia.html")) &&
+        !existsSync(join(root, "hora-de-alimentacion.html")) &&
+        !existsSync(join(root, "permiso-lactancia.html")),
+    );
+    assert(
+      "SEO hora de lactancia métrica principal es valor mensual",
+      /Valor mensual estimado/.test(hlHtml) &&
+        /Valor diario del permiso/.test(hlHtml) &&
+        !/<p class="metric-label">L[ií]quido<\/p>/.test(hlHtml) &&
+        !/<p class="metric-label">Diferencia \(parcial − completa\)/.test(hlHtml),
+    );
+    assert(
+      "home y nav enlazan /hora-lactancia",
+      /href="\/hora-lactancia"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/hora-lactancia" data-nav>Hora de lactancia<\/a>/.test(
+          readFileSync(join(root, "index.html"), "utf8"),
+        ) &&
+        /href="\/hora-lactancia" data-nav>Hora de lactancia<\/a>/.test(hlHtml),
+    );
+    assert(
+      "sitemap incluye /hora-lactancia",
+      locs.includes("https://www.haberes.cl/hora-lactancia") &&
+        lastmodForPath("/hora-lactancia") === "2026-09-09",
+    );
+    assert(
+      "seo-map documenta /hora-lactancia y no-canibalizar hermanas",
+      /\/hora-lactancia/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no canibalizar `\/sala-cuna`, `\/postnatal-parental`, `\/sueldo` ni `\/licencia-medica`/.test(
+          readFileSync(join(root, "docs/seo-map.md"), "utf8"),
+        ) &&
+        /no crear `\/lactancia`/i.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")),
+    );
+    assert(
+      "hub /guias enlaza /hora-lactancia en el cluster de liquidación",
+      /href="\/hora-lactancia"/.test(readFileSync(join(root, "guias.html"), "utf8")) &&
+        !/<h2>Finiquito<\/h2>[\s\S]*href="\/hora-lactancia"/.test(
+          readFileSync(join(root, "guias.html"), "utf8"),
+        ),
+    );
+    assert(
+      "hermanas enlazan /hora-lactancia",
+      /href="\/hora-lactancia"/.test(scHtmlHl) &&
+        /href="\/hora-lactancia"/.test(pppHtmlHl) &&
+        /href="\/hora-lactancia"/.test(lmHtmlHl) &&
+        /href="\/hora-lactancia"/.test(sueldoHtmlHl),
     );
   }
   {
@@ -10630,6 +10874,7 @@ assert(
       "sala-cuna.html",
       "postnatal-parental.html",
       "permiso-paternidad.html",
+      "hora-lactancia.html",
       "jornada-40-horas.html",
       "feriado-anual.html",
       "feriado-progresivo.html",
@@ -10813,7 +11058,7 @@ assert(
     return acc;
   }
   const pages = listHtml(root);
-  assert("78 páginas HTML", pages.length === 78, String(pages.length));
+  assert("79 páginas HTML", pages.length === 79, String(pages.length));
   for (const file of pages) {
     const html = readFileSync(file, "utf8");
     const rel = file.slice(root.length + 1);

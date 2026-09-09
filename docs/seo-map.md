@@ -27,7 +27,8 @@ Actualizar este archivo antes de crear URLs nuevas para evitar canibalización.
 | Calcular asignación familiar | asignación familiar / tramos asignación familiar / cargas familiares | `/asignacion-familiar` | Title/H1 «calcular asignación familiar»; no canibalizar `/sueldo`, `/cotizaciones-previsionales` ni `/guias/liquidacion-de-sueldo`. Sistema Único (D.F.L. 150), no SUF municipal. No crear `/suf`, `/asignacion-maternal` ni `/cargas-familiares` |
 | Calcular sala cuna | sala cuna / obligación sala cuna / art. 203 / costo sala cuna empresa | `/sala-cuna` | Title/H1 «calcular sala cuna» + art. 203 Chile 2026; no canibalizar `/asignacion-familiar`, `/costo-empresa`, `/colacion-movilizacion` ni `/aguinaldo`. Umbral 20 trabajadoras y costo si paga el establecimiento. El bono compensatorio no es la regla general. No crear `/bono-sala-cuna` ni `/jardín-infantil` |
 | Calcular postnatal parental | postnatal parental / permiso postnatal parental / art. 197 bis / Ley 20.545 | `/postnatal-parental` | Title/H1 «calcular postnatal parental» + art. 197 bis Chile 2026; no canibalizar `/licencia-medica`, `/sala-cuna`, `/sueldo`, `/sueldo-proporcional` ni `/asignacion-familiar`. Completa 12 sem vs parcial 18 sem (subsidio D.F.L. 44 art. 8 + empleador ≥ 50 % estipendios fijos). No es prenatal/postnatal 6+12 ni SIL genérico. No crear `/postnatal`, `/permiso-parental` ni `/subsidio-maternal` |
-| Calcular permiso paternidad | permiso paternidad / permiso padre nacimiento / art. 195 / 5 días hábiles padre | `/permiso-paternidad` | Title/H1 «Calculadora permiso paternidad Chile»; no canibalizar `/postnatal-parental`, `/licencia-medica`, `/sala-cuna`, `/sueldo`, `/sueldo-proporcional`, `/descuento-atrasos`, `/feriado-anual` ni `/asignacion-familiar`. 5 días pagados art. 195 inc. 2 (ORD. 864/10 y 3827/103): continuo desde el parto o tramo en el primer mes. Goce 5 × rem/30. No es postnatal parental ni SIL. No crear `/paternidad`, `/permiso-padre`, `/nacimiento-hijo` ni `/art-195` |
+| Calcular permiso paternidad | permiso paternidad / permiso padre nacimiento / art. 195 / 5 días hábiles padre | `/permiso-paternidad` | Title/H1 «Calculadora permiso paternidad Chile»; no canibalizar `/postnatal-parental`, `/licencia-medica`, `/sala-cuna`, `/sueldo`, `/sueldo-proporcional`, `/descuento-atrasos`, `/feriado-anual`, `/asignacion-familiar` ni `/hora-lactancia`. 5 días pagados art. 195 inc. 2 (ORD. 864/10 y 3827/103): continuo desde el parto o tramo en el primer mes. Goce 5 × rem/30. No es postnatal parental ni SIL. No crear `/paternidad`, `/permiso-padre`, `/nacimiento-hijo` ni `/art-195` |
+| Calcular hora de lactancia | hora de lactancia / hora de alimentación / art. 206 | `/hora-lactancia` | Title/H1 «calcular hora de lactancia» + art. 206 Chile 2026; no canibalizar `/sala-cuna`, `/postnatal-parental`, `/sueldo` ni `/licencia-medica`. Tiempo remunerado (mín. 1 h/día) hasta los 2 años. Valor hora DT, no es hora extra ni descuento. No crear `/lactancia`, `/hora-de-alimentacion` ni `/permiso-lactancia` |
 | Calcular colación y movilización | colación / movilización / asignación de colación / no imponible art. 41 | `/colacion-movilizacion` | Title/H1 «calcular colación y movilización»; no canibalizar `/sueldo`, `/costo-empresa` ni `/cotizaciones-previsionales`. Solo montos, imponibilidad y cómo salen en la liquidación. No crear `/colacion`, `/movilizacion` ni `/asignacion-colacion` |
 | Calcular feriado progresivo | feriado progresivo / vacaciones progresivas / calcular feriado progresivo | `/feriado-progresivo` | Title/H1 «calcular feriado progresivo»; no canibalizar `/vacaciones-proporcionales` ni `/finiquito`. Art. 68 (días extra al feriado anual), no art. 73 (plata de días no usados). No crear `/vacaciones-progresivas` ni `/indemnizacion` |
 | Calcular feriado anual | feriado anual / vacaciones legales / calcular feriado anual / días hábiles vacaciones | `/feriado-anual` | Title/H1 «calcular feriado anual» + vacaciones legales Chile 2026 art. 67; no canibalizar `/vacaciones-proporcionales` ni `/feriado-progresivo`. Fechas de término y reintegro (15/20 días hábiles), no pesos ni antigüedad art. 68. No crear `/vacaciones` ni `/calendario-vacaciones` |
@@ -161,9 +162,17 @@ No publicar `/paternidad`, `/permiso-padre`, `/nacimiento-hijo` ni `/art-195`. E
 permiso pagado del padre por nacimiento (art. 195 inc. 2: 5 días con goce, continuo
 desde el parto o dentro del primer mes; ORD. N°864/10 y 3827/103) vive en
 `/permiso-paternidad`. No canibalizar `/postnatal-parental`, `/licencia-medica`,
-`/sala-cuna`, `/sueldo`, `/sueldo-proporcional`, `/descuento-atrasos` ni `/feriado-anual`.
-El postnatal parental sigue en `/postnatal-parental`. El SIL genérico sigue en
-`/licencia-medica`. El conteo de hábiles del feriado anual sigue en `/feriado-anual`.
+`/sala-cuna`, `/sueldo`, `/sueldo-proporcional`, `/descuento-atrasos`, `/feriado-anual`
+ni `/hora-lactancia`. El postnatal parental sigue en `/postnatal-parental`. El SIL
+genérico sigue en `/licencia-medica`. El conteo de hábiles del feriado anual sigue
+en `/feriado-anual`.
+
+No publicar `/lactancia`, `/hora-de-alimentacion` ni `/permiso-lactancia`. La hora
+de alimentación o lactancia (art. 206: al menos 1 hora al día remunerada hasta
+los 2 años) vive en `/hora-lactancia`. No canibalizar `/sala-cuna`, `/postnatal-parental`,
+`/sueldo`, `/licencia-medica` ni `/permiso-paternidad`. El permiso de paternidad de
+5 días (art. 195) vive en `/permiso-paternidad`. No es hora extra ni descuento de
+liquidación.
 
 No publicar `/colacion`, `/movilizacion` ni `/asignacion-colacion`. Colación y
 movilización del artículo 41 (montos, imponibilidad y cómo salen en la liquidación)

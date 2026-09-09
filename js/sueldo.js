@@ -38,6 +38,10 @@ import {
   POSTNATAL_PARENTAL_SEMANAS_COMPLETA,
   POSTNATAL_PARENTAL_SEMANAS_MIN_MADRE,
   POSTNATAL_PARENTAL_SEMANAS_PARCIAL,
+  HORA_LACTANCIA_DIAS_DEFAULT,
+  HORA_LACTANCIA_EDAD_MAX_MESES,
+  HORA_LACTANCIA_MINUTOS_LEGAL,
+  HORA_LACTANCIA_MINUTOS_MAX,
 } from "./constants.js";
 import {
   DIAS_MES_CONVENCIONAL,
@@ -1569,6 +1573,79 @@ export function calcularPostnatalParental({
     subsidioMadreParcial,
     empleadorMadreParcial,
     ingresoMadreParcialRestante: subsidioMadreParcial + empleadorMadreParcial,
+  };
+}
+
+/**
+ * Valor educativo de la hora de alimentación / lactancia (art. 206 CT).
+ * Derecho de la madre trabajadora a disponer de al menos 1 hora al día para
+ * dar alimento a hijos menores de 2 años. El tiempo se considera trabajado
+ * (con goce de sueldo). No es hora extra (no hay recargo 50 %). No descuenta
+ * la liquidación.
+ *
+ * Valor hora = valorHoraOrdinaria (misma base DT: rem/30 × 28 / (jornada×4)).
+ * Valor diario = valor hora × minutos / 60.
+ * Valor mensual = valor diario (al peso) × días laborales del mes.
+ *
+ * Minutos: piso legal 60; 30 estima una fracción (el derecho no puede pactarse
+ * por debajo de 60 min en el día); más de 60 solo por pacto o viaje a sala
+ * cuna (art. 203). Techo de la herramienta: 120 min.
+ *
+ * Edad en meses: si es ≥ 24, se avisa que el art. 206 no rige; el monto no
+ * cambia (no se inventa otro cálculo).
+ *
+ * Gold (verify): rem $900.000, jornada 42, 20 días, 60 min → hora $5.000;
+ * diario $5.000; mensual $100.000. Con 30 min: diario $2.500; mensual $50.000.
+ *
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=207436
+ * @see https://www.dt.gob.cl/portal/1628/w3-article-60103.html
+ * @see https://www.dt.gob.cl/portal/1628/w3-article-60094.html
+ * @see https://www.dt.gob.cl/legislacion/1624/w3-article-94769.html
+ */
+export function calcularHoraLactancia({
+  remuneracion = 0,
+  jornada = JORNADA_DEFAULT,
+  diasLaborales = HORA_LACTANCIA_DIAS_DEFAULT,
+  minutosDiarios = HORA_LACTANCIA_MINUTOS_LEGAL,
+  edadMeses = null,
+} = {}) {
+  const rem = Math.max(0, Number(remuneracion) || 0);
+  const j = Math.max(0, Number(jornada) || JORNADA_DEFAULT) || JORNADA_DEFAULT;
+  const dias = Math.max(0, Math.trunc(Number(diasLaborales) || 0));
+  const minsIngresados = Math.max(0, Math.round(Number(minutosDiarios) || 0));
+  const minutosDiariosUsados = Math.min(HORA_LACTANCIA_MINUTOS_MAX, minsIngresados);
+  const minutosRecortados = minsIngresados > HORA_LACTANCIA_MINUTOS_MAX;
+
+  let edad = null;
+  if (edadMeses != null && edadMeses !== "") {
+    const n = Number(edadMeses);
+    if (Number.isFinite(n)) edad = Math.max(0, Math.trunc(n));
+  }
+  const vigente = edad == null || edad < HORA_LACTANCIA_EDAD_MAX_MESES;
+
+  const valorHora = valorHoraOrdinaria(rem, j);
+  const valorDiarioRaw = valorHora * (minutosDiariosUsados / 60);
+  const valorDiario = roundPeso(valorDiarioRaw);
+  const valorMensual = valorDiario * dias;
+
+  return {
+    remuneracion: roundPeso(rem),
+    jornada: j,
+    diasLaborales: dias,
+    minutosDiarios: minutosDiariosUsados,
+    minutosIngresados: minsIngresados,
+    minutosLegal: HORA_LACTANCIA_MINUTOS_LEGAL,
+    minutosTope: HORA_LACTANCIA_MINUTOS_MAX,
+    minutosRecortados,
+    edadMeses: edad,
+    edadMaxMeses: HORA_LACTANCIA_EDAD_MAX_MESES,
+    vigente,
+    valorHora,
+    valorDiarioRaw,
+    valorDiario,
+    valorMensual,
+    esFraccion: minutosDiariosUsados > 0 && minutosDiariosUsados < HORA_LACTANCIA_MINUTOS_LEGAL,
+    superaLegal: minutosDiariosUsados > HORA_LACTANCIA_MINUTOS_LEGAL,
   };
 }
 
