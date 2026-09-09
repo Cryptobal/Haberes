@@ -3,7 +3,9 @@
   "trailingSlash": false,
   "redirects": [
     { "source": "/como-funciona", "destination": "/como", "permanent": true },
-    { "source": "/como-funciona/", "destination": "/como", "permanent": true }
+    { "source": "/como-funciona/", "destination": "/como", "permanent": true },
+    { "source": "/permiso-auc", "destination": "/permiso-matrimonio", "permanent": true },
+    { "source": "/permiso-auc/", "destination": "/permiso-matrimonio", "permanent": true }
   ],
   "rewrites": [
     { "source": "/sitemap.xml", "destination": "/api/sitemap" },

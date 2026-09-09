@@ -87,6 +87,7 @@ import {
   calcularSalaCuna,
   calcularPostnatalParental,
   calcularPermisoPaternidad,
+  calcularPermisoMatrimonio,
   calcularHoraLactancia,
   calcularJornada40Horas,
   topeJornadaOrdinaria,
@@ -1459,6 +1460,88 @@ console.log("\nPermiso paternidad art. 195 (5 días pagados)");
   );
 }
 
+console.log("\nPermiso matrimonio art. 207 bis (5 días hábiles pagados)");
+{
+  const g1 = calcularPermisoMatrimonio({
+    fechaEvento: "2026-01-05",
+    ubicacion: "dia",
+    remuneracion: 900_000,
+  });
+  assert(
+    "lunes 5 ene 2026 desde el día → término viernes 9, reintegro lunes 12, costo 150000",
+    g1.ok &&
+      g1.fechaInicio === "2026-01-05" &&
+      g1.fechaTermino === "2026-01-09" &&
+      g1.fechaReintegro === "2026-01-12" &&
+      g1.diasHabilesConsumidos === 5 &&
+      g1.diasCalendario === 5 &&
+      g1.diasCorridos === 7 &&
+      g1.valorDia === 30_000 &&
+      g1.goceRemuneracion === 150_000 &&
+      g1.fechaAviso === "2025-12-06" &&
+      g1.fechaCertificado === "2026-02-04" &&
+      g1.feriados.length === 0 &&
+      g1.dias[0] === "2026-01-05" &&
+      g1.dias[4] === "2026-01-09",
+    JSON.stringify(g1),
+  );
+  const g2 = calcularPermisoMatrimonio({
+    fechaEvento: "2026-04-30",
+    ubicacion: "dia",
+    remuneracion: 900_000,
+  });
+  assert(
+    "jueves 30 abr 2026: 1 may no consume; término 7 may, reintegro 8 may",
+    g2.ok &&
+      g2.fechaTermino === "2026-05-07" &&
+      g2.fechaReintegro === "2026-05-08" &&
+      g2.diasHabilesConsumidos === 5 &&
+      g2.feriados.some((f) => f.fecha === "2026-05-01") &&
+      g2.dias.includes("2026-04-30") &&
+      !g2.dias.includes("2026-05-01") &&
+      g2.sabados.some((s) => s.fecha === "2026-05-02"),
+    JSON.stringify(g2),
+  );
+  const antes = calcularPermisoMatrimonio({
+    fechaEvento: "2026-01-05",
+    ubicacion: "antes",
+    remuneracion: 900_000,
+  });
+  assert(
+    "antes: 5 ene 2026 termina ese día; inicio 29 dic; 1 ene no consume",
+    antes.ok &&
+      antes.fechaInicio === "2025-12-29" &&
+      antes.fechaTermino === "2026-01-05" &&
+      antes.fechaReintegro === "2026-01-06" &&
+      antes.diasCalendario === 8 &&
+      antes.dias.includes("2026-01-02") &&
+      !antes.dias.includes("2026-01-01") &&
+      antes.feriados.some((f) => f.fecha === "2026-01-01"),
+    JSON.stringify(antes),
+  );
+  const fuera = calcularPermisoMatrimonio({
+    fechaEvento: "2026-01-12",
+    ubicacion: "inicio",
+    fechaInicio: "2026-01-05",
+    remuneracion: 900_000,
+  });
+  assert(
+    "inicio que no incluye la celebración no procede",
+    fuera.ok === false && fuera.motivo === "no_incluye_evento",
+  );
+  assert(
+    "remuneración negativa → costo 0; sin fecha → ok false",
+    calcularPermisoMatrimonio({ remuneracion: -1, fechaEvento: "2026-01-05" }).goceRemuneracion === 0 &&
+      calcularPermisoMatrimonio({ remuneracion: -4 }).ok === false,
+  );
+  const pmApp = readFileSync(join(root, "js/app-permiso-matrimonio.js"), "utf8");
+  assert(
+    "app-permiso-matrimonio usa calcularPermisoMatrimonio",
+    /import\s*\{[^}]*calcularPermisoMatrimonio[^}]*\}\s*from\s*["']\.\/sueldo\.js["']/.test(pmApp) &&
+      /calcularPermisoMatrimonio\s*\(/.test(pmApp),
+  );
+}
+
 {
   const fpApp = readFileSync(join(root, "js/app-feriado-progresivo.js"), "utf8");
   assert(
@@ -2540,6 +2623,7 @@ const required = [
   "sala-cuna.html",
   "postnatal-parental.html",
   "permiso-paternidad.html",
+  "permiso-matrimonio.html",
   "hora-lactancia.html",
   "jornada-40-horas.html",
   "feriado-anual.html",
@@ -2571,6 +2655,7 @@ const required = [
   "js/app-sala-cuna.js",
   "js/app-postnatal-parental.js",
   "js/app-permiso-paternidad.js",
+  "js/app-permiso-matrimonio.js",
   "js/app-hora-lactancia.js",
   "js/app-jornada-40-horas.js",
   "js/app-feriado-anual.js",
@@ -2730,6 +2815,7 @@ const htmlFiles = [
   "sala-cuna.html",
   "postnatal-parental.html",
   "permiso-paternidad.html",
+  "permiso-matrimonio.html",
   "hora-lactancia.html",
   "jornada-40-horas.html",
   "feriado-anual.html",
@@ -2836,6 +2922,7 @@ const appEntries = [
   "js/app-sala-cuna.js",
   "js/app-postnatal-parental.js",
   "js/app-permiso-paternidad.js",
+  "js/app-permiso-matrimonio.js",
   "js/app-hora-lactancia.js",
   "js/app-jornada-40-horas.js",
   "js/app-feriado-anual.js",
@@ -2922,6 +3009,7 @@ assert(
     BASE_PATHS.includes("/sala-cuna") &&
     BASE_PATHS.includes("/postnatal-parental") &&
     BASE_PATHS.includes("/permiso-paternidad") &&
+    BASE_PATHS.includes("/permiso-matrimonio") &&
     BASE_PATHS.includes("/hora-lactancia") &&
     BASE_PATHS.includes("/jornada-40-horas") &&
     BASE_PATHS.includes("/indemnizacion-aviso-previo"),
@@ -3277,7 +3365,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 77,
+      seoPaths().length === 78,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -3289,7 +3377,7 @@ try {
   const docsSeo = await hitLocal("/docs/seo-map.md");
   assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
   assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
-  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-paternidad/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/asignacion-familiar/", "/colacion-movilizacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-paternidad/", "/permiso-matrimonio/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/asignacion-familiar/", "/colacion-movilizacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
   }
@@ -3325,6 +3413,7 @@ try {
     "/sala-cuna",
     "/postnatal-parental",
     "/permiso-paternidad",
+    "/permiso-matrimonio",
     "/hora-lactancia",
     "/jornada-40-horas",
     "/indemnizacion-aviso-previo",
@@ -3351,6 +3440,12 @@ try {
   const noNews = await hitLocal("/noticias");
   assert("GET /blog 404", noBlog.status === 404);
   assert("GET /noticias 404", noNews.status === 404);
+  const aucAlias = await hitLocal("/permiso-auc");
+  assert(
+    "301 /permiso-auc → /permiso-matrimonio",
+    aucAlias.status === 301 && aucAlias.location === "/permiso-matrimonio",
+    `${aucAlias.status} ${aucAlias.location}`,
+  );
   writeFileSync(join(root, "sitemap.xml"), "<urlset>STATIC-LEFTOVER</urlset>");
   try {
     const afterLeftover = await hitLocal("/sitemap.xml");
@@ -7061,6 +7156,7 @@ assert(
     ["sala-cuna.html", "/sala-cuna"],
     ["postnatal-parental.html", "/postnatal-parental"],
     ["permiso-paternidad.html", "/permiso-paternidad"],
+    ["permiso-matrimonio.html", "/permiso-matrimonio"],
     ["hora-lactancia.html", "/hora-lactancia"],
     ["jornada-40-horas.html", "/jornada-40-horas"],
     ["feriado-anual.html", "/feriado-anual"],
@@ -8558,6 +8654,132 @@ assert(
         /href="\/permiso-paternidad"/.test(scHtmlPp) &&
         /href="\/permiso-paternidad"/.test(sueldoHtmlPp) &&
         /href="\/permiso-paternidad"/.test(faHtmlPp),
+    );
+  }
+  {
+    const pmHtml = readFileSync(join(root, "permiso-matrimonio.html"), "utf8");
+    const pmTitle = (pmHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const pmH1 = (pmHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const pmDesc = (pmHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "";
+    const ppHtmlPm = readFileSync(join(root, "permiso-paternidad.html"), "utf8");
+    const faHtmlPm = readFileSync(join(root, "feriado-anual.html"), "utf8");
+    const vpHtmlPm = readFileSync(join(root, "vacaciones-proporcionales.html"), "utf8");
+    const sueldoHtmlPm = readFileSync(join(root, "sueldo.html"), "utf8");
+    const hlHtmlPm = readFileSync(join(root, "hora-lactancia.html"), "utf8");
+    const goldPm = calcularPermisoMatrimonio({
+      fechaEvento: "2026-01-05",
+      ubicacion: "dia",
+      remuneracion: 900_000,
+    });
+    const goldFeriadoPm = calcularPermisoMatrimonio({
+      fechaEvento: "2026-04-30",
+      ubicacion: "dia",
+      remuneracion: 900_000,
+    });
+    assert(
+      "SEO permiso matrimonio title único y corto",
+      /calculadora permiso matrimonio/i.test(pmTitle) &&
+        pmTitle.length <= 65 &&
+        !/permiso paternidad/i.test(pmTitle) &&
+        !/feriado anual/i.test(pmTitle) &&
+        !/hora de lactancia/i.test(pmTitle),
+      pmTitle,
+    );
+    assert(
+      "SEO permiso matrimonio H1 único art. 207 bis",
+      pmH1 === "Calculadora permiso matrimonio Chile 2026" &&
+        /207 bis/.test(pmHtml) &&
+        /AUC/.test(pmHtml) &&
+        !/art\. 195/.test(pmH1) &&
+        !/art\. 67/.test(pmH1),
+      pmH1,
+    );
+    assert(
+      "SEO permiso matrimonio description propia",
+      pmDesc.length >= 110 &&
+        pmDesc.length <= 160 &&
+        /207 bis/.test(pmDesc) &&
+        /AUC/.test(pmDesc) &&
+        !/permiso paternidad/i.test(pmDesc),
+      `${pmDesc.length}:${pmDesc}`,
+    );
+    assert(
+      "SEO permiso matrimonio cita art. 207 bis, ORD 5845/132 y 343",
+      /207 bis/.test(pmHtml) &&
+        /5845\/132/.test(pmHtml) &&
+        /ORD\. N°343/.test(pmHtml) &&
+        /art[íi]culo 69/.test(pmHtml) &&
+        !/art\. 66 por fallecimiento/.test(pmH1),
+    );
+    assert(
+      "SEO permiso matrimonio gold 5 ene y 30 abr en copy",
+      goldPm.fechaTermino === "2026-01-09" &&
+        goldPm.fechaReintegro === "2026-01-12" &&
+        goldPm.goceRemuneracion === 150_000 &&
+        goldPm.diasCalendario === 5 &&
+        goldFeriadoPm.fechaTermino === "2026-05-07" &&
+        goldFeriadoPm.fechaReintegro === "2026-05-08" &&
+        /5 de enero de 2026/.test(pmHtml) &&
+        /30 de abril de 2026/.test(pmHtml) &&
+        /\$150\.000/.test(pmHtml),
+    );
+    assert("SEO permiso matrimonio FAQPage", /"@type": "FAQPage"/.test(pmHtml));
+    assert(
+      "SEO permiso matrimonio no canibaliza hermanas vetadas",
+      /href="\/feriado-anual"/.test(pmHtml) &&
+        /href="\/vacaciones-proporcionales"/.test(pmHtml) &&
+        /href="\/permiso-paternidad"/.test(pmHtml) &&
+        /href="\/sueldo"/.test(pmHtml) &&
+        /no constituye asesor[ií]a legal/i.test(pmHtml) &&
+        /estimaci[oó]n educativa/.test(pmHtml) &&
+        !existsSync(join(root, "matrimonio.html")) &&
+        !existsSync(join(root, "auc.html")) &&
+        !existsSync(join(root, "art-207-bis.html")) &&
+        !existsSync(join(root, "permiso-auc.html")),
+    );
+    assert(
+      "home y nav enlazan /permiso-matrimonio",
+      /href="\/permiso-matrimonio"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/permiso-matrimonio" data-nav>Permiso matrimonio<\/a>/.test(
+          readFileSync(join(root, "index.html"), "utf8"),
+        ) &&
+        /href="\/permiso-matrimonio" data-nav>Permiso matrimonio<\/a>/.test(pmHtml),
+    );
+    assert(
+      "sitemap incluye /permiso-matrimonio",
+      locs.includes("https://www.haberes.cl/permiso-matrimonio") &&
+        lastmodForPath("/permiso-matrimonio") === "2026-09-09",
+    );
+    assert(
+      "seo-map documenta /permiso-matrimonio y no-canibalizar hermanas",
+      /\/permiso-matrimonio/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no canibalizar `\/permiso-paternidad`, `\/feriado-anual`, `\/hora-lactancia`/.test(
+          readFileSync(join(root, "docs/seo-map.md"), "utf8"),
+        ) &&
+        /no crear `\/matrimonio`/i.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")),
+    );
+    assert(
+      "hub /guias enlaza /permiso-matrimonio en el cluster de liquidación",
+      /href="\/permiso-matrimonio"/.test(readFileSync(join(root, "guias.html"), "utf8")) &&
+        !/<h2>Finiquito<\/h2>[\s\S]*href="\/permiso-matrimonio"/.test(
+          readFileSync(join(root, "guias.html"), "utf8"),
+        ),
+    );
+    assert(
+      "hermanas enlazan /permiso-matrimonio",
+      /href="\/permiso-matrimonio"/.test(ppHtmlPm) &&
+        /href="\/permiso-matrimonio"/.test(faHtmlPm) &&
+        /href="\/permiso-matrimonio"/.test(vpHtmlPm) &&
+        /href="\/permiso-matrimonio"/.test(sueldoHtmlPm) &&
+        /href="\/permiso-matrimonio"/.test(hlHtmlPm),
+    );
+    const vercelPm = JSON.parse(readFileSync(join(root, "vercel.json"), "utf8"));
+    assert(
+      "alias /permiso-auc redirige a /permiso-matrimonio",
+      Array.isArray(vercelPm.redirects) &&
+        vercelPm.redirects.some(
+          (r) => r.source === "/permiso-auc" && r.destination === "/permiso-matrimonio" && r.permanent === true,
+        ),
     );
   }
   {
@@ -10874,6 +11096,7 @@ assert(
       "sala-cuna.html",
       "postnatal-parental.html",
       "permiso-paternidad.html",
+      "permiso-matrimonio.html",
       "hora-lactancia.html",
       "jornada-40-horas.html",
       "feriado-anual.html",
@@ -11058,7 +11281,7 @@ assert(
     return acc;
   }
   const pages = listHtml(root);
-  assert("79 páginas HTML", pages.length === 79, String(pages.length));
+  assert("80 páginas HTML", pages.length === 80, String(pages.length));
   for (const file of pages) {
     const html = readFileSync(file, "utf8");
     const rel = file.slice(root.length + 1);
