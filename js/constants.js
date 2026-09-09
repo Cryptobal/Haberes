@@ -52,6 +52,19 @@ export const POSTNATAL_PARENTAL_SEMANAS_COMPLETA = 12;
 export const POSTNATAL_PARENTAL_SEMANAS_PARCIAL = 18;
 export const POSTNATAL_PARENTAL_SEMANAS_MIN_MADRE = 6;
 
+/**
+ * Hora de alimentación / lactancia (art. 206 Código del Trabajo).
+ * Mínimo legal: 1 hora al día, irrenunciable, hasta que el hijo cumpla 2 años
+ * (24 meses). El techo de 120 min es de la herramienta (pacto o viaje a sala
+ * cuna); no autoriza recortar el piso de 60 min.
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=207436
+ * @see https://www.dt.gob.cl/portal/1628/w3-article-60103.html
+ */
+export const HORA_LACTANCIA_MINUTOS_LEGAL = 60;
+export const HORA_LACTANCIA_EDAD_MAX_MESES = 24;
+export const HORA_LACTANCIA_MINUTOS_MAX = 120;
+export const HORA_LACTANCIA_DIAS_DEFAULT = 22;
+
 export const JORNADA_DEFAULT = 42;
 export const HORAS_EXTRA_FACTOR = 1.5;
 /** Mínimo legal art. 38 N°7: recargo sobre horas ordinarias en domingo (comercio/servicios al público). */

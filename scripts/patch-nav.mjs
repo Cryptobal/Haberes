@@ -39,6 +39,7 @@ const DRAWER_LINKS = [
   ["/asignacion-familiar", "Asignación familiar"],
   ["/sala-cuna", "Sala cuna"],
   ["/postnatal-parental", "Postnatal parental"],
+  ["/hora-lactancia", "Hora de lactancia"],
   ["/colacion-movilizacion", "Colación y movilización"],
   ["/vacaciones-proporcionales", "Vacaciones proporcionales"],
   ["/feriado-anual", "Feriado anual"],
