@@ -1,12 +1,13 @@
 /**
  * Feriados legales nacionales de Chile, conteo del feriado anual (art. 67 y 69)
- * y del permiso pagado del padre (art. 195 inc. 2).
+ * del permiso pagado del padre (art. 195 inc. 2) y del permiso por
+ * matrimonio o acuerdo de unión civil (art. 207 bis).
  *
- * Días hábiles del feriado anual y del permiso de paternidad (estimación
- * lun–vie de oficina): lunes a viernes, excluyendo feriados legales.
- * El sábado es siempre inhábil para este conteo (art. 69 / descanso semanal);
- * no se inventa otra regla de sábado. El reintegro es el primer hábil
- * siguiente al término.
+ * Días hábiles del feriado anual, del permiso de paternidad y del permiso
+ * por matrimonio o AUC (estimación lun–vie de oficina): lunes a viernes,
+ * excluyendo feriados legales. El sábado es siempre inhábil para este
+ * conteo (art. 69); no se inventa otra regla de sábado. El reintegro es
+ * el primer hábil siguiente al término.
  *
  * Listado 2025–2027: calendario civil publicado (16 nacionales en 2026).
  * No incluye feriados regionales (p. ej. 7 jun Arica, 20 ago Chillán).
@@ -450,5 +451,281 @@ export function calcularPermisoPaternidad({
     dias,
     feriados,
     domingos,
+  };
+}
+
+/** Cupo del permiso pagado por matrimonio o AUC (art. 207 bis). */
+export const PERMISO_MATRIMONIO_DIAS = 5;
+
+function emptyPermisoMatrimonio({
+  fechaEvento = "",
+  fechaInicio = "",
+  ubicacion = "dia",
+  remuneracion = 0,
+  motivo = "",
+  fechaAviso = "",
+  fechaCertificado = "",
+} = {}) {
+  const rem = Math.max(0, Number(remuneracion) || 0);
+  const valorDia = rem / 30;
+  return {
+    ok: false,
+    motivo,
+    fechaEvento,
+    fechaInicio,
+    fechaTermino: "",
+    fechaReintegro: "",
+    ubicacion,
+    incluyeEvento: false,
+    diasHabiles: PERMISO_MATRIMONIO_DIAS,
+    diasHabilesConsumidos: 0,
+    diasCorridos: 0,
+    diasCalendario: 0,
+    remuneracion: rem,
+    valorDia,
+    goceRemuneracion: Math.round(valorDia * PERMISO_MATRIMONIO_DIAS),
+    fechaAviso,
+    fechaCertificado,
+    dias: [],
+    feriados: [],
+    domingos: [],
+    sabados: [],
+  };
+}
+
+function nextHabil(parts) {
+  let cursor = addDays(parts, 1);
+  let steps = 0;
+  while (!esDiaHabilFeriadoAnual(isoOf(cursor)) && steps < MAX_STEPS) {
+    cursor = addDays(cursor, 1);
+    steps += 1;
+  }
+  return cursor;
+}
+
+function listarInhabiles(desde, hastaExclusive) {
+  const feriados = [];
+  const domingos = [];
+  const sabados = [];
+  let scan = { ...desde };
+  while (daysBetween(scan, hastaExclusive) > 0) {
+    const iso = isoOf(scan);
+    const festivo = feriadoLegal(iso);
+    const dow = weekday(scan);
+    if (festivo) feriados.push({ fecha: iso, nombre: festivo.nombre });
+    else if (dow === 0) domingos.push({ fecha: iso, nombre: "Domingo" });
+    else if (dow === 6) sabados.push({ fecha: iso, nombre: "Sábado" });
+    scan = addDays(scan, 1);
+  }
+  return { feriados, domingos, sabados };
+}
+
+/**
+ * Permiso pagado por matrimonio o acuerdo de unión civil (art. 207 bis).
+ *
+ * Norma (Ley 20.764, texto sustituido por Ley 21.042): cinco días hábiles
+ * continuos de permiso pagado, adicional al feriado anual, sin requisito de
+ * antigüedad. El trabajador los usa, a su elección, el día de la celebración
+ * y en los días inmediatamente anteriores o posteriores. El lapso es continuo
+ * y debe incluir el día del matrimonio o AUC; no se fracciona ni se goza en
+ * otra fecha (ORD. N°5845/132 y ORD. N°343).
+ *
+ * Cómputo DT (ORD. N°5845/132, que reitera ORD. N°3342/048; ORD. N°343):
+ * excluir domingo y festivos; el sábado es siempre inhábil porque el permiso
+ * es adicional al feriado anual (art. 69). Haberes usa el mismo calendario
+ * de hábiles que /feriado-anual (lun–vie, sin feriados regionales).
+ *
+ * Estimación educativa del costo para el empleador:
+ * 5 × (remuneración mensual / 30). No es liquidación ni Previred.
+ *
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=207436
+ * @see https://www.dt.gob.cl/legislacion/1624/w3-article-113958.html
+ * @see https://www.dt.gob.cl/legislacion/1624/w3-article-123778.html
+ */
+export function calcularPermisoMatrimonio({
+  fechaEvento = "",
+  fechaInicio = "",
+  ubicacion = "dia",
+  remuneracion = 0,
+} = {}) {
+  const rem = Math.max(0, Number(remuneracion) || 0);
+  const modoRaw = String(ubicacion || "dia");
+  const modo = modoRaw === "antes" || modoRaw === "inicio" || modoRaw === "despues" ? modoRaw : "dia";
+  const evento = parseIsoFecha(fechaEvento);
+  if (!evento) {
+    return emptyPermisoMatrimonio({
+      fechaInicio,
+      ubicacion: modo,
+      remuneracion: rem,
+      motivo: "sin_evento",
+    });
+  }
+
+  const eventoIso = isoOf(evento);
+  const fechaAviso = isoOf(addDays(evento, -30));
+  const fechaCertificado = isoOf(addDays(evento, 30));
+
+  let inicio = null;
+  let termino = null;
+  let dias = [];
+
+  if (modo === "antes") {
+    const collected = [];
+    let cursor = { ...evento };
+    let steps = 0;
+    while (collected.length < PERMISO_MATRIMONIO_DIAS && steps < MAX_STEPS) {
+      const iso = isoOf(cursor);
+      if (esDiaHabilFeriadoAnual(iso)) collected.push(iso);
+      cursor = addDays(cursor, -1);
+      steps += 1;
+    }
+    if (collected.length < PERMISO_MATRIMONIO_DIAS) {
+      return emptyPermisoMatrimonio({
+        fechaEvento: eventoIso,
+        ubicacion: modo,
+        remuneracion: rem,
+        motivo: "sin_cupo",
+        fechaAviso,
+        fechaCertificado,
+      });
+    }
+    collected.reverse();
+    dias = collected;
+    inicio = parseIsoFecha(collected[0]);
+    termino = { ...evento };
+  } else if (modo === "inicio") {
+    const elegido = parseIsoFecha(fechaInicio);
+    if (!elegido) {
+      return emptyPermisoMatrimonio({
+        fechaEvento: eventoIso,
+        ubicacion: modo,
+        remuneracion: rem,
+        motivo: "sin_inicio",
+        fechaAviso,
+        fechaCertificado,
+      });
+    }
+    if (daysBetween(elegido, evento) < 0) {
+      return emptyPermisoMatrimonio({
+        fechaEvento: eventoIso,
+        fechaInicio: isoOf(elegido),
+        ubicacion: modo,
+        remuneracion: rem,
+        motivo: "evento_antes_inicio",
+        fechaAviso,
+        fechaCertificado,
+      });
+    }
+    inicio = elegido;
+    let cursor = { ...inicio };
+    let steps = 0;
+    while (dias.length < PERMISO_MATRIMONIO_DIAS && steps < MAX_STEPS) {
+      const iso = isoOf(cursor);
+      if (esDiaHabilFeriadoAnual(iso)) dias.push(iso);
+      cursor = addDays(cursor, 1);
+      steps += 1;
+    }
+    if (dias.length < PERMISO_MATRIMONIO_DIAS) {
+      return emptyPermisoMatrimonio({
+        fechaEvento: eventoIso,
+        fechaInicio: isoOf(inicio),
+        ubicacion: modo,
+        remuneracion: rem,
+        motivo: "sin_cupo",
+        fechaAviso,
+        fechaCertificado,
+      });
+    }
+    const lastHabil = parseIsoFecha(dias[dias.length - 1]);
+    if (daysBetween(lastHabil, evento) > 0) {
+      let probe = addDays(lastHabil, 1);
+      let extraHabil = false;
+      while (daysBetween(probe, evento) >= 0) {
+        if (esDiaHabilFeriadoAnual(isoOf(probe))) {
+          extraHabil = true;
+          break;
+        }
+        probe = addDays(probe, 1);
+      }
+      if (extraHabil) {
+        return emptyPermisoMatrimonio({
+          fechaEvento: eventoIso,
+          fechaInicio: isoOf(inicio),
+          ubicacion: modo,
+          remuneracion: rem,
+          motivo: "no_incluye_evento",
+          fechaAviso,
+          fechaCertificado,
+        });
+      }
+      termino = { ...evento };
+    } else {
+      termino = lastHabil;
+    }
+  } else {
+    // "dia" y "despues": el tramo empieza el día de la celebración y sigue
+    // con los días posteriores. Un tramo solo posterior, sin ese día, no
+    // procede (ORD. N°5845/132).
+    inicio = { ...evento };
+    let cursor = { ...inicio };
+    let steps = 0;
+    while (dias.length < PERMISO_MATRIMONIO_DIAS && steps < MAX_STEPS) {
+      const iso = isoOf(cursor);
+      if (esDiaHabilFeriadoAnual(iso)) dias.push(iso);
+      cursor = addDays(cursor, 1);
+      steps += 1;
+    }
+    if (dias.length < PERMISO_MATRIMONIO_DIAS) {
+      return emptyPermisoMatrimonio({
+        fechaEvento: eventoIso,
+        fechaInicio: isoOf(inicio),
+        ubicacion: modo,
+        remuneracion: rem,
+        motivo: "sin_cupo",
+        fechaAviso,
+        fechaCertificado,
+      });
+    }
+    termino = parseIsoFecha(dias[dias.length - 1]);
+  }
+
+  const incluyeEvento = daysBetween(inicio, evento) >= 0 && daysBetween(evento, termino) >= 0;
+  if (!incluyeEvento) {
+    return emptyPermisoMatrimonio({
+      fechaEvento: eventoIso,
+      fechaInicio: isoOf(inicio),
+      ubicacion: modo,
+      remuneracion: rem,
+      motivo: "no_incluye_evento",
+      fechaAviso,
+      fechaCertificado,
+    });
+  }
+
+  const reintegro = nextHabil(termino);
+  const { feriados, domingos, sabados } = listarInhabiles(inicio, addDays(termino, 1));
+  const valorDia = rem / 30;
+  return {
+    ok: true,
+    motivo: "",
+    fechaEvento: eventoIso,
+    fechaInicio: isoOf(inicio),
+    fechaTermino: isoOf(termino),
+    fechaReintegro: isoOf(reintegro),
+    ubicacion: modo,
+    incluyeEvento: true,
+    diasHabiles: PERMISO_MATRIMONIO_DIAS,
+    diasHabilesConsumidos: dias.length,
+    diasCorridos: daysBetween(inicio, reintegro),
+    diasCalendario: daysBetween(inicio, termino) + 1,
+    remuneracion: rem,
+    valorDia,
+    goceRemuneracion: Math.round(valorDia * PERMISO_MATRIMONIO_DIAS),
+    fechaAviso,
+    fechaCertificado,
+    dias,
+    feriados,
+    domingos,
+    sabados,
   };
 }

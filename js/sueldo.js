@@ -406,10 +406,12 @@ export function calcularSemanaCorrida({
 
 export {
   calcularFeriadoAnual,
+  calcularPermisoMatrimonio,
   calcularPermisoPaternidad,
   esDiaHabilFeriadoAnual,
   feriadoLegal,
   FERIADOS_LEGALES_CL,
+  PERMISO_MATRIMONIO_DIAS,
   PERMISO_PATERNIDAD_DIAS,
 } from "./feriados.js";
 

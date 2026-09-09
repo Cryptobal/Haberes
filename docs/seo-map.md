@@ -28,6 +28,7 @@ Actualizar este archivo antes de crear URLs nuevas para evitar canibalización.
 | Calcular sala cuna | sala cuna / obligación sala cuna / art. 203 / costo sala cuna empresa | `/sala-cuna` | Title/H1 «calcular sala cuna» + art. 203 Chile 2026; no canibalizar `/asignacion-familiar`, `/costo-empresa`, `/colacion-movilizacion` ni `/aguinaldo`. Umbral 20 trabajadoras y costo si paga el establecimiento. El bono compensatorio no es la regla general. No crear `/bono-sala-cuna` ni `/jardín-infantil` |
 | Calcular postnatal parental | postnatal parental / permiso postnatal parental / art. 197 bis / Ley 20.545 | `/postnatal-parental` | Title/H1 «calcular postnatal parental» + art. 197 bis Chile 2026; no canibalizar `/licencia-medica`, `/sala-cuna`, `/sueldo`, `/sueldo-proporcional` ni `/asignacion-familiar`. Completa 12 sem vs parcial 18 sem (subsidio D.F.L. 44 art. 8 + empleador ≥ 50 % estipendios fijos). No es prenatal/postnatal 6+12 ni SIL genérico. No crear `/postnatal`, `/permiso-parental` ni `/subsidio-maternal` |
 | Calcular permiso paternidad | permiso paternidad / permiso padre nacimiento / art. 195 / 5 días hábiles padre | `/permiso-paternidad` | Title/H1 «Calculadora permiso paternidad Chile»; no canibalizar `/postnatal-parental`, `/licencia-medica`, `/sala-cuna`, `/sueldo`, `/sueldo-proporcional`, `/descuento-atrasos`, `/feriado-anual`, `/asignacion-familiar` ni `/hora-lactancia`. 5 días pagados art. 195 inc. 2 (ORD. 864/10 y 3827/103): continuo desde el parto o tramo en el primer mes. Goce 5 × rem/30. No es postnatal parental ni SIL. No crear `/paternidad`, `/permiso-padre`, `/nacimiento-hijo` ni `/art-195` |
+| Calcular permiso matrimonio | permiso matrimonio / permiso AUC / acuerdo unión civil / art. 207 bis / 5 días hábiles matrimonio | `/permiso-matrimonio` | Title/H1 «Calculadora permiso matrimonio Chile»; no canibalizar `/permiso-paternidad`, `/feriado-anual`, `/hora-lactancia`, `/vacaciones-proporcionales` ni `/sueldo`. 5 días hábiles continuos art. 207 bis (ORD. 5845/132 y 343): sábado siempre inhábil (art. 69). Costo 5 × rem/30. Alias `/permiso-auc` redirige. No crear `/matrimonio`, `/auc` ni `/art-207-bis` |
 | Calcular hora de lactancia | hora de lactancia / hora de alimentación / art. 206 | `/hora-lactancia` | Title/H1 «calcular hora de lactancia» + art. 206 Chile 2026; no canibalizar `/sala-cuna`, `/postnatal-parental`, `/sueldo` ni `/licencia-medica`. Tiempo remunerado (mín. 1 h/día) hasta los 2 años. Valor hora DT, no es hora extra ni descuento. No crear `/lactancia`, `/hora-de-alimentacion` ni `/permiso-lactancia` |
 | Calcular colación y movilización | colación / movilización / asignación de colación / no imponible art. 41 | `/colacion-movilizacion` | Title/H1 «calcular colación y movilización»; no canibalizar `/sueldo`, `/costo-empresa` ni `/cotizaciones-previsionales`. Solo montos, imponibilidad y cómo salen en la liquidación. No crear `/colacion`, `/movilizacion` ni `/asignacion-colacion` |
 | Calcular feriado progresivo | feriado progresivo / vacaciones progresivas / calcular feriado progresivo | `/feriado-progresivo` | Title/H1 «calcular feriado progresivo»; no canibalizar `/vacaciones-proporcionales` ni `/finiquito`. Art. 68 (días extra al feriado anual), no art. 73 (plata de días no usados). No crear `/vacaciones-progresivas` ni `/indemnizacion` |
@@ -166,6 +167,15 @@ desde el parto o dentro del primer mes; ORD. N°864/10 y 3827/103) vive en
 ni `/hora-lactancia`. El postnatal parental sigue en `/postnatal-parental`. El SIL
 genérico sigue en `/licencia-medica`. El conteo de hábiles del feriado anual sigue
 en `/feriado-anual`.
+
+No publicar `/matrimonio`, `/auc` ni `/art-207-bis`. El permiso pagado por
+matrimonio o acuerdo de unión civil (art. 207 bis: 5 días hábiles continuos,
+adicional al feriado anual; ORD. N°5845/132 y ORD. N°343; sábado siempre inhábil
+por art. 69) vive en `/permiso-matrimonio`. `/permiso-auc` redirige a esa ruta
+canónica. No canibalizar `/permiso-paternidad`, `/feriado-anual`, `/hora-lactancia`,
+`/vacaciones-proporcionales` ni `/sueldo`. El feriado anual sigue en `/feriado-anual`.
+El permiso del padre por nacimiento sigue en `/permiso-paternidad`. No es el art. 66
+por fallecimiento.
 
 No publicar `/lactancia`, `/hora-de-alimentacion` ni `/permiso-lactancia`. La hora
 de alimentación o lactancia (art. 206: al menos 1 hora al día remunerada hasta
