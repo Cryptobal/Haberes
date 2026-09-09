@@ -406,9 +406,11 @@ export function calcularSemanaCorrida({
 
 export {
   calcularFeriadoAnual,
+  calcularPermisoPaternidad,
   esDiaHabilFeriadoAnual,
   feriadoLegal,
   FERIADOS_LEGALES_CL,
+  PERMISO_PATERNIDAD_DIAS,
 } from "./feriados.js";
 
 /** Feriado anual básico art. 67 (días hábiles; sábado inhábil, art. 69). */
