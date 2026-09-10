@@ -40,6 +40,8 @@ const DRAWER_LINKS = [
   ["/sala-cuna", "Sala cuna"],
   ["/postnatal-parental", "Postnatal parental"],
   ["/permiso-paternidad", "Permiso paternidad"],
+  ["/permiso-matrimonio", "Permiso matrimonio"],
+  ["/permiso-fallecimiento", "Permiso fallecimiento"],
   ["/hora-lactancia", "Hora de lactancia"],
   ["/colacion-movilizacion", "Colación y movilización"],
   ["/vacaciones-proporcionales", "Vacaciones proporcionales"],
