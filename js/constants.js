@@ -53,6 +53,21 @@ export const POSTNATAL_PARENTAL_SEMANAS_PARCIAL = 18;
 export const POSTNATAL_PARENTAL_SEMANAS_MIN_MADRE = 6;
 
 /**
+ * Descanso de maternidad y fuero (arts. 195, 196 y 201 CT).
+ * Prenatal: 6 semanas antes del parto. Postnatal legal: 12 semanas (84 días)
+ * después del parto. Fuero de la madre: desde el embarazo hasta un año después
+ * de expirado ese postnatal, excluido el permiso postnatal parental (art. 197 bis).
+ * DT: por regla general el fuero dura hasta que el hijo cumple un año y 84 días.
+ * Un postnatal suplementario (art. 196) sí corre la base; el parental no.
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=207436
+ * @see https://www.dt.gob.cl/portal/1628/w3-article-60062.html
+ * @see https://www.dt.gob.cl/legislacion/1624/w3-article-116607.html
+ */
+export const PRENATAL_LEGAL_SEMANAS = 6;
+export const POSTNATAL_LEGAL_SEMANAS = 12;
+export const FUERO_MATERNAL_ANIOS = 1;
+
+/**
  * Hora de alimentación / lactancia (art. 206 Código del Trabajo).
  * Mínimo legal: 1 hora al día, irrenunciable, hasta que el hijo cumpla 2 años
  * (24 meses). El techo de 120 min es de la herramienta (pacto o viaje a sala

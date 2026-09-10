@@ -27,6 +27,7 @@ Actualizar este archivo antes de crear URLs nuevas para evitar canibalización.
 | Calcular asignación familiar | asignación familiar / tramos asignación familiar / cargas familiares | `/asignacion-familiar` | Title/H1 «calcular asignación familiar»; no canibalizar `/sueldo`, `/cotizaciones-previsionales` ni `/guias/liquidacion-de-sueldo`. Sistema Único (D.F.L. 150), no SUF municipal. No crear `/suf`, `/asignacion-maternal` ni `/cargas-familiares` |
 | Calcular sala cuna | sala cuna / obligación sala cuna / art. 203 / costo sala cuna empresa | `/sala-cuna` | Title/H1 «calcular sala cuna» + art. 203 Chile 2026; no canibalizar `/asignacion-familiar`, `/costo-empresa`, `/colacion-movilizacion` ni `/aguinaldo`. Umbral 20 trabajadoras y costo si paga el establecimiento. El bono compensatorio no es la regla general. No crear `/bono-sala-cuna` ni `/jardín-infantil` |
 | Calcular postnatal parental | postnatal parental / permiso postnatal parental / art. 197 bis / Ley 20.545 | `/postnatal-parental` | Title/H1 «calcular postnatal parental» + art. 197 bis Chile 2026; no canibalizar `/licencia-medica`, `/sala-cuna`, `/sueldo`, `/sueldo-proporcional` ni `/asignacion-familiar`. Completa 12 sem vs parcial 18 sem (subsidio D.F.L. 44 art. 8 + empleador ≥ 50 % estipendios fijos). No es prenatal/postnatal 6+12 ni SIL genérico. No crear `/postnatal`, `/permiso-parental` ni `/subsidio-maternal` |
+| Calcular fuero maternal | fuero maternal / fuero embarazo / art. 201 / protección despido embarazo | `/fuero-maternal` | Title/H1 «Calculadora fuero maternal Chile»; no canibalizar `/postnatal-parental`, `/sala-cuna`, `/hora-lactancia`, `/permiso-paternidad` ni `/licencia-medica`. Art. 201: desde el embarazo hasta un año después del postnatal, excluido el parental (art. 197 bis). No es permiso pagado ni SIL. No crear `/fuero`, `/fuero-laboral`, `/proteccion-maternal`, `/art-201` ni `/despido-embarazo` |
 | Calcular permiso paternidad | permiso paternidad / permiso padre nacimiento / art. 195 / 5 días hábiles padre | `/permiso-paternidad` | Title/H1 «Calculadora permiso paternidad Chile»; no canibalizar `/postnatal-parental`, `/licencia-medica`, `/sala-cuna`, `/sueldo`, `/sueldo-proporcional`, `/descuento-atrasos`, `/feriado-anual`, `/asignacion-familiar` ni `/hora-lactancia`. 5 días pagados art. 195 inc. 2 (ORD. 864/10 y 3827/103): continuo desde el parto o tramo en el primer mes. Goce 5 × rem/30. No es postnatal parental ni SIL. No crear `/paternidad`, `/permiso-padre`, `/nacimiento-hijo` ni `/art-195` |
 | Calcular permiso matrimonio | permiso matrimonio / permiso AUC / acuerdo unión civil / art. 207 bis / 5 días hábiles matrimonio | `/permiso-matrimonio` | Title/H1 «Calculadora permiso matrimonio Chile»; no canibalizar `/permiso-paternidad`, `/feriado-anual`, `/hora-lactancia`, `/vacaciones-proporcionales` ni `/sueldo`. 5 días hábiles continuos art. 207 bis (ORD. 5845/132 y 343): sábado siempre inhábil (art. 69). Costo 5 × rem/30. Alias `/permiso-auc` redirige. No crear `/matrimonio`, `/auc` ni `/art-207-bis` |
 | Calcular permiso fallecimiento | permiso fallecimiento / permiso por muerte familiar / art. 66 / días de duelo laboral | `/permiso-fallecimiento` | Title/H1 «Calculadora permiso fallecimiento Chile»; no canibalizar `/permiso-matrimonio`, `/permiso-paternidad`, `/hora-lactancia`, `/feriado-anual`, `/licencia-medica` ni `/postnatal-parental`. Art. 66 (Ley 21.371 + 21.441): 10 corridos hijo, 7 corridos cónyuge/AUC, 7 hábiles hijo en gestación, 4 hábiles padre/madre/hermano. Costo N × rem/30. Fuero 1 mes solo inciso 1º (FAQ). No crear `/fallecimiento`, `/permiso-duelo` ni `/art-66` |
@@ -158,7 +159,17 @@ postnatal parental (art. 197 bis / Ley 20.545: 12 semanas completas o 18 a media
 jornada) vive en `/postnatal-parental`. No canibalizar `/licencia-medica`, `/sala-cuna`,
 `/sueldo`, `/sueldo-proporcional` ni `/asignacion-familiar`. El prenatal y el postnatal
 de 6+12 semanas (arts. 195 y 196) no abren URL propia. El SIL genérico de una
-licencia común sigue en `/licencia-medica`.
+licencia común sigue en `/licencia-medica`. El fuero maternal (art. 201) vive en
+`/fuero-maternal`.
+
+No publicar `/fuero`, `/fuero-laboral`, `/proteccion-maternal`, `/art-201` ni
+`/despido-embarazo`. El fuero maternal (art. 201: desde el embarazo hasta un año
+después del postnatal de 12 semanas, excluido el permiso postnatal parental del
+art. 197 bis; consulta DT y ORD. N°3366) vive en `/fuero-maternal`. No canibalizar
+`/postnatal-parental`, `/sala-cuna`, `/hora-lactancia`, `/permiso-paternidad` ni
+`/licencia-medica`. No es permiso pagado ni SIL ni indemnización por despido nulo.
+El postnatal parental sigue en `/postnatal-parental`. El permiso de 5 días del padre
+sigue en `/permiso-paternidad`.
 
 No publicar `/paternidad`, `/permiso-padre`, `/nacimiento-hijo` ni `/art-195`. El
 permiso pagado del padre por nacimiento (art. 195 inc. 2: 5 días con goce, continuo
