@@ -88,6 +88,7 @@ import {
   calcularPostnatalParental,
   calcularPermisoPaternidad,
   calcularPermisoMatrimonio,
+  calcularPermisoFallecimiento,
   calcularHoraLactancia,
   calcularJornada40Horas,
   topeJornadaOrdinaria,
@@ -1542,6 +1543,106 @@ console.log("\nPermiso matrimonio art. 207 bis (5 días hábiles pagados)");
   );
 }
 
+console.log("\nPermiso fallecimiento art. 66 (días pagados según vínculo)");
+{
+  const hijo = calcularPermisoFallecimiento({ vinculo: "hijo", remuneracion: 900_000 });
+  assert(
+    "gold hijo $900.000 → 10 corridos, $300.000",
+    hijo.ok &&
+      hijo.diasPermiso === 10 &&
+      hijo.tipoDias === "corridos" &&
+      hijo.valorDia === 30_000 &&
+      hijo.goceRemuneracion === 300_000 &&
+      hijo.fuero === true,
+    JSON.stringify(hijo),
+  );
+  const conyuge = calcularPermisoFallecimiento({ vinculo: "conyuge", remuneracion: 900_000 });
+  assert(
+    "gold cónyuge/AUC $900.000 → 7 corridos, $210.000",
+    conyuge.ok &&
+      conyuge.diasPermiso === 7 &&
+      conyuge.tipoDias === "corridos" &&
+      conyuge.goceRemuneracion === 210_000 &&
+      conyuge.fuero === true,
+    JSON.stringify(conyuge),
+  );
+  const padre = calcularPermisoFallecimiento({ vinculo: "padre_madre", remuneracion: 900_000 });
+  assert(
+    "gold padre/madre $900.000 → 4 hábiles, $120.000",
+    padre.ok &&
+      padre.diasPermiso === 4 &&
+      padre.tipoDias === "habiles" &&
+      padre.goceRemuneracion === 120_000 &&
+      padre.fuero === false,
+    JSON.stringify(padre),
+  );
+  const gestacion = calcularPermisoFallecimiento({
+    vinculo: "hijo_gestacion",
+    remuneracion: 900_000,
+  });
+  assert(
+    "gold hijo en gestación $900.000 → 7 hábiles, $210.000",
+    gestacion.ok &&
+      gestacion.diasPermiso === 7 &&
+      gestacion.tipoDias === "habiles" &&
+      gestacion.goceRemuneracion === 210_000 &&
+      gestacion.fuero === false,
+    JSON.stringify(gestacion),
+  );
+  const gFecha = calcularPermisoFallecimiento({
+    vinculo: "hijo",
+    fechaFallecimiento: "2026-01-05",
+    remuneracion: 900_000,
+  });
+  assert(
+    "lunes 5 ene 2026 hijo → término 14 ene, reintegro 15 ene, $300000",
+    gFecha.ok &&
+      gFecha.fechaInicio === "2026-01-05" &&
+      gFecha.fechaTermino === "2026-01-14" &&
+      gFecha.fechaReintegro === "2026-01-15" &&
+      gFecha.diasCalendario === 10 &&
+      gFecha.goceRemuneracion === 300_000 &&
+      gFecha.dias[0] === "2026-01-05" &&
+      gFecha.dias[9] === "2026-01-14",
+    JSON.stringify(gFecha),
+  );
+  const gHabil = calcularPermisoFallecimiento({
+    vinculo: "padre_madre",
+    fechaFallecimiento: "2026-04-30",
+    remuneracion: 900_000,
+  });
+  assert(
+    "jueves 30 abr 2026 padre: 1 may no consume; término 6 may, reintegro 7 may",
+    gHabil.ok &&
+      gHabil.fechaTermino === "2026-05-06" &&
+      gHabil.fechaReintegro === "2026-05-07" &&
+      gHabil.diasHabilesConsumidos === 4 &&
+      gHabil.feriados.some((f) => f.fecha === "2026-05-01") &&
+      gHabil.dias.includes("2026-04-30") &&
+      !gHabil.dias.includes("2026-05-01") &&
+      gHabil.goceRemuneracion === 120_000,
+    JSON.stringify(gHabil),
+  );
+  const hermano = calcularPermisoFallecimiento({ vinculo: "hermano", remuneracion: 900_000 });
+  assert(
+    "hermano comparte cupo de 4 hábiles con padre/madre",
+    hermano.diasPermiso === 4 &&
+      hermano.tipoDias === "habiles" &&
+      hermano.goceRemuneracion === 120_000,
+  );
+  assert(
+    "remuneración negativa → monto 0; sin vínculo → ok false",
+    calcularPermisoFallecimiento({ vinculo: "hijo", remuneracion: -1 }).goceRemuneracion === 0 &&
+      calcularPermisoFallecimiento({ remuneracion: 900_000 }).ok === false,
+  );
+  const pfApp = readFileSync(join(root, "js/app-permiso-fallecimiento.js"), "utf8");
+  assert(
+    "app-permiso-fallecimiento usa calcularPermisoFallecimiento",
+    /import\s*\{[^}]*calcularPermisoFallecimiento[^}]*\}\s*from\s*["']\.\/sueldo\.js["']/.test(pfApp) &&
+      /calcularPermisoFallecimiento\s*\(/.test(pfApp),
+  );
+}
+
 {
   const fpApp = readFileSync(join(root, "js/app-feriado-progresivo.js"), "utf8");
   assert(
@@ -2624,6 +2725,7 @@ const required = [
   "postnatal-parental.html",
   "permiso-paternidad.html",
   "permiso-matrimonio.html",
+  "permiso-fallecimiento.html",
   "hora-lactancia.html",
   "jornada-40-horas.html",
   "feriado-anual.html",
@@ -2656,6 +2758,7 @@ const required = [
   "js/app-postnatal-parental.js",
   "js/app-permiso-paternidad.js",
   "js/app-permiso-matrimonio.js",
+  "js/app-permiso-fallecimiento.js",
   "js/app-hora-lactancia.js",
   "js/app-jornada-40-horas.js",
   "js/app-feriado-anual.js",
@@ -2816,6 +2919,7 @@ const htmlFiles = [
   "postnatal-parental.html",
   "permiso-paternidad.html",
   "permiso-matrimonio.html",
+  "permiso-fallecimiento.html",
   "hora-lactancia.html",
   "jornada-40-horas.html",
   "feriado-anual.html",
@@ -2923,6 +3027,7 @@ const appEntries = [
   "js/app-postnatal-parental.js",
   "js/app-permiso-paternidad.js",
   "js/app-permiso-matrimonio.js",
+  "js/app-permiso-fallecimiento.js",
   "js/app-hora-lactancia.js",
   "js/app-jornada-40-horas.js",
   "js/app-feriado-anual.js",
@@ -2964,7 +3069,7 @@ assert("robots Allow /", /Allow:\s*\//.test(robots));
 assert("robots Disallow /admin", /Disallow:\s*\/admin/.test(robots));
 assert("robots Disallow /api", /Disallow:\s*\/api/.test(robots));
 assert("robots Disallow /docs", /Disallow:\s*\/docs/.test(robots));
-assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/feriado-anual/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/licencia-medica/.test(robots) && !/Disallow:\s*\/boleta-honorarios/.test(robots) && !/Disallow:\s*\/retencion-judicial/.test(robots) && !/Disallow:\s*\/apv/.test(robots) && !/Disallow:\s*\/sala-cuna/.test(robots) && !/Disallow:\s*\/postnatal-parental/.test(robots) && !/Disallow:\s*\/permiso-paternidad/.test(robots) && !/Disallow:\s*\/hora-lactancia/.test(robots) && !/Disallow:\s*\/jornada-40-horas/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots));
+assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/feriado-anual/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/licencia-medica/.test(robots) && !/Disallow:\s*\/boleta-honorarios/.test(robots) && !/Disallow:\s*\/retencion-judicial/.test(robots) && !/Disallow:\s*\/apv/.test(robots) && !/Disallow:\s*\/sala-cuna/.test(robots) && !/Disallow:\s*\/postnatal-parental/.test(robots) && !/Disallow:\s*\/permiso-paternidad/.test(robots) && !/Disallow:\s*\/permiso-matrimonio/.test(robots) && !/Disallow:\s*\/permiso-fallecimiento/.test(robots) && !/Disallow:\s*\/hora-lactancia/.test(robots) && !/Disallow:\s*\/jornada-40-horas/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots));
 assert("robots Sitemap", /Sitemap:\s*https:\/\/www\.haberes\.cl\/sitemap\.xml/.test(robots));
 
 const { seoPaths, GUIDE_SLUGS, GUIDES, CAUSAL_PAGES, BASE_PATHS, lastmodForPath } = await import("../content/registry.js");
@@ -3010,6 +3115,7 @@ assert(
     BASE_PATHS.includes("/postnatal-parental") &&
     BASE_PATHS.includes("/permiso-paternidad") &&
     BASE_PATHS.includes("/permiso-matrimonio") &&
+    BASE_PATHS.includes("/permiso-fallecimiento") &&
     BASE_PATHS.includes("/hora-lactancia") &&
     BASE_PATHS.includes("/jornada-40-horas") &&
     BASE_PATHS.includes("/indemnizacion-aviso-previo"),
@@ -3377,7 +3483,7 @@ try {
   const docsSeo = await hitLocal("/docs/seo-map.md");
   assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
   assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
-  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-paternidad/", "/permiso-matrimonio/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/asignacion-familiar/", "/colacion-movilizacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/asignacion-familiar/", "/colacion-movilizacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
   }
@@ -3414,6 +3520,7 @@ try {
     "/postnatal-parental",
     "/permiso-paternidad",
     "/permiso-matrimonio",
+    "/permiso-fallecimiento",
     "/hora-lactancia",
     "/jornada-40-horas",
     "/indemnizacion-aviso-previo",
@@ -7157,6 +7264,7 @@ assert(
     ["postnatal-parental.html", "/postnatal-parental"],
     ["permiso-paternidad.html", "/permiso-paternidad"],
     ["permiso-matrimonio.html", "/permiso-matrimonio"],
+    ["permiso-fallecimiento.html", "/permiso-fallecimiento"],
     ["hora-lactancia.html", "/hora-lactancia"],
     ["jornada-40-horas.html", "/jornada-40-horas"],
     ["feriado-anual.html", "/feriado-anual"],
@@ -8780,6 +8888,123 @@ assert(
         vercelPm.redirects.some(
           (r) => r.source === "/permiso-auc" && r.destination === "/permiso-matrimonio" && r.permanent === true,
         ),
+    );
+  }
+  {
+    const pfHtml = readFileSync(join(root, "permiso-fallecimiento.html"), "utf8");
+    const pfTitle = (pfHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const pfH1 = (pfHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const pfDesc = (pfHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "";
+    const pmHtmlPf = readFileSync(join(root, "permiso-matrimonio.html"), "utf8");
+    const ppHtmlPf = readFileSync(join(root, "permiso-paternidad.html"), "utf8");
+    const faHtmlPf = readFileSync(join(root, "feriado-anual.html"), "utf8");
+    const lmHtmlPf = readFileSync(join(root, "licencia-medica.html"), "utf8");
+    const goldHijo = calcularPermisoFallecimiento({ vinculo: "hijo", remuneracion: 900_000 });
+    const goldConyuge = calcularPermisoFallecimiento({ vinculo: "conyuge", remuneracion: 900_000 });
+    const goldPadre = calcularPermisoFallecimiento({ vinculo: "padre_madre", remuneracion: 900_000 });
+    const goldGest = calcularPermisoFallecimiento({ vinculo: "hijo_gestacion", remuneracion: 900_000 });
+    assert(
+      "SEO permiso fallecimiento title único y corto",
+      /calculadora permiso fallecimiento/i.test(pfTitle) &&
+        pfTitle.length <= 65 &&
+        !/permiso matrimonio/i.test(pfTitle) &&
+        !/permiso paternidad/i.test(pfTitle) &&
+        !/feriado anual/i.test(pfTitle) &&
+        !/licencia m[eé]dica/i.test(pfTitle),
+      pfTitle,
+    );
+    assert(
+      "SEO permiso fallecimiento H1 único art. 66",
+      pfH1 === "Calculadora permiso fallecimiento Chile 2026" &&
+        /art[íi]culo 66/.test(pfHtml) &&
+        /Ley 21\.371/.test(pfHtml) &&
+        /Ley 21\.441/.test(pfHtml) &&
+        !/207 bis/.test(pfH1) &&
+        !/art\. 195/.test(pfH1),
+      pfH1,
+    );
+    assert(
+      "SEO permiso fallecimiento description propia",
+      pfDesc.length >= 110 &&
+        pfDesc.length <= 160 &&
+        /art\. 66/.test(pfDesc) &&
+        /fallecimiento/.test(pfDesc) &&
+        !/permiso matrimonio/i.test(pfDesc) &&
+        !/permiso paternidad/i.test(pfDesc),
+      `${pfDesc.length}:${pfDesc}`,
+    );
+    assert(
+      "SEO permiso fallecimiento cita art. 66, ORD 853/16 y 1076/19",
+      /art[íi]culo 66/.test(pfHtml) &&
+        /853\/16/.test(pfHtml) &&
+        /1076\/19/.test(pfHtml) &&
+        /art[íi]culo 69/.test(pfHtml),
+    );
+    assert(
+      "SEO permiso fallecimiento golds en copy",
+      goldHijo.goceRemuneracion === 300_000 &&
+        goldConyuge.goceRemuneracion === 210_000 &&
+        goldPadre.goceRemuneracion === 120_000 &&
+        goldGest.goceRemuneracion === 210_000 &&
+        /10 d[íi]as corridos/.test(pfHtml) &&
+        /7 d[íi]as corridos/.test(pfHtml) &&
+        /7 d[íi]as h[áa]biles/.test(pfHtml) &&
+        /4 d[íi]as h[áa]biles/.test(pfHtml) &&
+        /\$300\.000/.test(pfHtml) &&
+        /\$210\.000/.test(pfHtml) &&
+        /\$120\.000/.test(pfHtml) &&
+        /5 de enero de 2026/.test(pfHtml) &&
+        /30 de abril de 2026/.test(pfHtml),
+    );
+    assert("SEO permiso fallecimiento FAQPage", /"@type": "FAQPage"/.test(pfHtml));
+    assert(
+      "SEO permiso fallecimiento no canibaliza hermanas vetadas",
+      /href="\/permiso-matrimonio"/.test(pfHtml) &&
+        /href="\/permiso-paternidad"/.test(pfHtml) &&
+        /href="\/feriado-anual"/.test(pfHtml) &&
+        /href="\/licencia-medica"/.test(pfHtml) &&
+        /href="\/hora-lactancia"/.test(pfHtml) &&
+        /href="\/postnatal-parental"/.test(pfHtml) &&
+        /no constituye asesor[ií]a legal/i.test(pfHtml) &&
+        /estimaci[oó]n educativa/.test(pfHtml) &&
+        !existsSync(join(root, "fallecimiento.html")) &&
+        !existsSync(join(root, "permiso-duelo.html")) &&
+        !existsSync(join(root, "art-66.html")),
+    );
+    assert(
+      "home y nav enlazan /permiso-fallecimiento",
+      /href="\/permiso-fallecimiento"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/permiso-fallecimiento" data-nav>Permiso fallecimiento<\/a>/.test(
+          readFileSync(join(root, "index.html"), "utf8"),
+        ) &&
+        /href="\/permiso-fallecimiento" data-nav>Permiso fallecimiento<\/a>/.test(pfHtml),
+    );
+    assert(
+      "sitemap incluye /permiso-fallecimiento",
+      locs.includes("https://www.haberes.cl/permiso-fallecimiento") &&
+        lastmodForPath("/permiso-fallecimiento") === "2026-09-10",
+    );
+    assert(
+      "seo-map documenta /permiso-fallecimiento y no-canibalizar hermanas",
+      /\/permiso-fallecimiento/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no canibalizar `\/permiso-matrimonio`, `\/permiso-paternidad`, `\/hora-lactancia`, `\/feriado-anual`, `\/licencia-medica`/.test(
+          readFileSync(join(root, "docs/seo-map.md"), "utf8"),
+        ) &&
+        /no crear `\/fallecimiento`/i.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")),
+    );
+    assert(
+      "hub /guias enlaza /permiso-fallecimiento en el cluster de liquidación",
+      /href="\/permiso-fallecimiento"/.test(readFileSync(join(root, "guias.html"), "utf8")) &&
+        !/<h2>Finiquito<\/h2>[\s\S]*href="\/permiso-fallecimiento"/.test(
+          readFileSync(join(root, "guias.html"), "utf8"),
+        ),
+    );
+    assert(
+      "hermanas enlazan /permiso-fallecimiento",
+      /href="\/permiso-fallecimiento"/.test(pmHtmlPf) &&
+        /href="\/permiso-fallecimiento"/.test(ppHtmlPf) &&
+        /href="\/permiso-fallecimiento"/.test(faHtmlPf) &&
+        /href="\/permiso-fallecimiento"/.test(lmHtmlPf),
     );
   }
   {
@@ -11097,6 +11322,7 @@ assert(
       "postnatal-parental.html",
       "permiso-paternidad.html",
       "permiso-matrimonio.html",
+      "permiso-fallecimiento.html",
       "hora-lactancia.html",
       "jornada-40-horas.html",
       "feriado-anual.html",

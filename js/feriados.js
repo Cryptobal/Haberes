@@ -1,13 +1,14 @@
 /**
  * Feriados legales nacionales de Chile, conteo del feriado anual (art. 67 y 69)
- * del permiso pagado del padre (art. 195 inc. 2) y del permiso por
- * matrimonio o acuerdo de unión civil (art. 207 bis).
+ * del permiso pagado del padre (art. 195 inc. 2), del permiso por
+ * matrimonio o acuerdo de unión civil (art. 207 bis) y del permiso por
+ * fallecimiento de un familiar (art. 66).
  *
- * Días hábiles del feriado anual, del permiso de paternidad y del permiso
- * por matrimonio o AUC (estimación lun–vie de oficina): lunes a viernes,
- * excluyendo feriados legales. El sábado es siempre inhábil para este
- * conteo (art. 69); no se inventa otra regla de sábado. El reintegro es
- * el primer hábil siguiente al término.
+ * Días hábiles del feriado anual, del permiso de paternidad, del permiso
+ * por matrimonio o AUC y de los cupos hábiles del art. 66 (estimación
+ * lun–vie de oficina): lunes a viernes, excluyendo feriados legales. El
+ * sábado es siempre inhábil para este conteo (art. 69); no se inventa
+ * otra regla de sábado. El reintegro es el primer hábil siguiente al término.
  *
  * Listado 2025–2027: calendario civil publicado (16 nacionales en 2026).
  * No incluye feriados regionales (p. ej. 7 jun Arica, 20 ago Chillán).
@@ -723,6 +724,237 @@ export function calcularPermisoMatrimonio({
     goceRemuneracion: Math.round(valorDia * PERMISO_MATRIMONIO_DIAS),
     fechaAviso,
     fechaCertificado,
+    dias,
+    feriados,
+    domingos,
+    sabados,
+  };
+}
+
+/**
+ * Cupos del permiso pagado por fallecimiento (art. 66 CT).
+ * Texto vigente: Ley 21.371 (hijo 10 corridos, cónyuge/AUC 7 corridos,
+ * hijo en gestación 7 hábiles) + Ley 21.441 (hermano, padre o madre: 4 hábiles).
+ */
+export const PERMISO_FALLECIMIENTO_REGLAS = {
+  hijo: {
+    dias: 10,
+    tipo: "corridos",
+    fuero: true,
+    etiqueta: "hijo o hija",
+  },
+  conyuge: {
+    dias: 7,
+    tipo: "corridos",
+    fuero: true,
+    etiqueta: "cónyuge o conviviente civil",
+  },
+  hijo_gestacion: {
+    dias: 7,
+    tipo: "habiles",
+    fuero: false,
+    etiqueta: "hijo o hija en período de gestación",
+  },
+  padre_madre: {
+    dias: 4,
+    tipo: "habiles",
+    fuero: false,
+    etiqueta: "padre o madre",
+  },
+  hermano: {
+    dias: 4,
+    tipo: "habiles",
+    fuero: false,
+    etiqueta: "hermano o hermana",
+  },
+};
+
+export function normaVinculoFallecimiento(vinculo) {
+  const s = String(vinculo || "")
+    .trim()
+    .toLowerCase()
+    .replace(/-/g, "_");
+  if (s === "hijo" || s === "hija") return "hijo";
+  if (s === "conyuge" || s === "auc" || s === "conviviente" || s === "conyuge_auc") return "conyuge";
+  if (s === "hijo_gestacion" || s === "gestacion" || s === "fetal") return "hijo_gestacion";
+  if (s === "padre_madre" || s === "padre" || s === "madre") return "padre_madre";
+  if (s === "hermano" || s === "hermana") return "hermano";
+  return "";
+}
+
+function emptyPermisoFallecimiento({
+  vinculo = "",
+  fechaFallecimiento = "",
+  remuneracion = 0,
+  motivo = "",
+  diasPermiso = 0,
+  tipoDias = "",
+  fuero = false,
+  etiqueta = "",
+} = {}) {
+  const rem = Math.max(0, Number(remuneracion) || 0);
+  const valorDia = rem / 30;
+  return {
+    ok: false,
+    motivo,
+    vinculo,
+    etiqueta,
+    fechaFallecimiento,
+    fechaInicio: "",
+    fechaTermino: "",
+    fechaReintegro: "",
+    fechaFueroHasta: "",
+    tipoDias,
+    diasPermiso,
+    diasHabilesConsumidos: 0,
+    diasCorridos: 0,
+    diasCalendario: 0,
+    fuero,
+    remuneracion: rem,
+    valorDia,
+    goceRemuneracion: Math.round(valorDia * diasPermiso),
+    dias: [],
+    feriados: [],
+    domingos: [],
+    sabados: [],
+  };
+}
+
+/**
+ * Permiso pagado por fallecimiento de un familiar (art. 66).
+ *
+ * Norma vigente (Ley 21.371 + Ley 21.441):
+ * - hijo: 10 días corridos;
+ * - cónyuge o conviviente civil: 7 días corridos;
+ * - hijo en período de gestación: 7 días hábiles, desde la acreditación
+ *   con certificado de defunción fetal;
+ * - hermano, padre o madre: 4 días hábiles.
+ * Adicional al feriado anual, no compensable en dinero. Se hace efectivo
+ * desde el día del fallecimiento (salvo gestación). Fuero de un mes solo
+ * en los casos del inciso 1º (hijo, cónyuge o AUC): informativo, no input.
+ *
+ * Días corridos: calendario continuo, incluidos sábados, domingos y feriados
+ * (ORD. N°853/16). Días hábiles: mismo calendario que /feriado-anual
+ * (lun–vie, sábado inhábil art. 69, feriados nacionales no consumen).
+ * Una consulta DT sobre padre/madre/hermano habla de «lunes a sábado»;
+ * Haberes no usa esa regla para no romper el criterio de las otras
+ * calculadoras de hábiles.
+ *
+ * Estimación educativa: N × (remuneración mensual / 30). No es liquidación.
+ *
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=207436
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=1165684
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=1175780
+ * @see https://www.dt.gob.cl/legislacion/1624/w3-article-122236.html
+ * @see https://www.dt.gob.cl/legislacion/1624/w3-article-122332.html
+ * @see https://www.dt.gob.cl/portal/1628/w3-article-94885.html
+ */
+export function calcularPermisoFallecimiento({
+  vinculo = "",
+  fechaFallecimiento = "",
+  remuneracion = 0,
+} = {}) {
+  const rem = Math.max(0, Number(remuneracion) || 0);
+  const key = normaVinculoFallecimiento(vinculo);
+  const regla = key ? PERMISO_FALLECIMIENTO_REGLAS[key] : null;
+  if (!regla) {
+    return emptyPermisoFallecimiento({
+      vinculo,
+      fechaFallecimiento,
+      remuneracion: rem,
+      motivo: "sin_vinculo",
+    });
+  }
+
+  const valorDia = rem / 30;
+  const goce = Math.round(valorDia * regla.dias);
+  const inicio = parseIsoFecha(fechaFallecimiento);
+  if (!inicio) {
+    return {
+      ok: true,
+      motivo: "",
+      vinculo: key,
+      etiqueta: regla.etiqueta,
+      fechaFallecimiento: "",
+      fechaInicio: "",
+      fechaTermino: "",
+      fechaReintegro: "",
+      fechaFueroHasta: "",
+      tipoDias: regla.tipo,
+      diasPermiso: regla.dias,
+      diasHabilesConsumidos: regla.tipo === "habiles" ? regla.dias : 0,
+      diasCorridos: regla.tipo === "corridos" ? regla.dias : 0,
+      diasCalendario: 0,
+      fuero: regla.fuero,
+      remuneracion: rem,
+      valorDia,
+      goceRemuneracion: goce,
+      dias: [],
+      feriados: [],
+      domingos: [],
+      sabados: [],
+    };
+  }
+
+  const inicioIso = isoOf(inicio);
+  const fechaFueroHasta = regla.fuero ? isoOf(addCalendarMonths(inicio, 1)) : "";
+  let termino = null;
+  let dias = [];
+  let diasHabilesConsumidos = 0;
+
+  if (regla.tipo === "corridos") {
+    termino = addDays(inicio, regla.dias - 1);
+    let scan = { ...inicio };
+    while (daysBetween(scan, termino) >= 0) {
+      dias.push(isoOf(scan));
+      scan = addDays(scan, 1);
+    }
+  } else {
+    let cursor = { ...inicio };
+    let steps = 0;
+    while (dias.length < regla.dias && steps < MAX_STEPS) {
+      const iso = isoOf(cursor);
+      if (esDiaHabilFeriadoAnual(iso)) dias.push(iso);
+      cursor = addDays(cursor, 1);
+      steps += 1;
+    }
+    if (dias.length < regla.dias) {
+      return emptyPermisoFallecimiento({
+        vinculo: key,
+        fechaFallecimiento: inicioIso,
+        remuneracion: rem,
+        motivo: "sin_cupo",
+        diasPermiso: regla.dias,
+        tipoDias: regla.tipo,
+        fuero: regla.fuero,
+        etiqueta: regla.etiqueta,
+      });
+    }
+    termino = parseIsoFecha(dias[dias.length - 1]);
+    diasHabilesConsumidos = dias.length;
+  }
+
+  const reintegro = nextHabil(termino);
+  const { feriados, domingos, sabados } = listarInhabiles(inicio, addDays(termino, 1));
+  return {
+    ok: true,
+    motivo: "",
+    vinculo: key,
+    etiqueta: regla.etiqueta,
+    fechaFallecimiento: inicioIso,
+    fechaInicio: inicioIso,
+    fechaTermino: isoOf(termino),
+    fechaReintegro: isoOf(reintegro),
+    fechaFueroHasta,
+    tipoDias: regla.tipo,
+    diasPermiso: regla.dias,
+    diasHabilesConsumidos: regla.tipo === "habiles" ? diasHabilesConsumidos || dias.length : 0,
+    diasCorridos: daysBetween(inicio, reintegro),
+    diasCalendario: daysBetween(inicio, termino) + 1,
+    fuero: regla.fuero,
+    remuneracion: rem,
+    valorDia,
+    goceRemuneracion: goce,
     dias,
     feriados,
     domingos,
