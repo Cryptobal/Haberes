@@ -45,6 +45,7 @@ Actualizar este archivo antes de crear URLs nuevas para evitar canibalización.
 | Calcular aguinaldo Fiestas Patrias | aguinaldo fiestas patrias (5.400/23) — intención presupuestar/calcular monto | `/aguinaldo` | Title/H1 «calcular aguinaldo Fiestas Patrias»; no es obligación legal general del Código; no canibalizar `/gratificacion`, `/sueldo` ni `/guias/aguinaldo-fiestas-patrias`. No crear `/bono-fiestas-patrias` ni `/aguinaldo-navidad` |
 | Calcular finiquito de casa particular | finiquito asesora del hogar / finiquito trabajadora casa particular — intención calcular | `/finiquito-casa-particular` | Title/H1 «calcular finiquito casa particular»; no canibalizar `/finiquito`, `/indemnizacion-anos-servicio` ni `/guias/finiquito-trabajadora-de-casa-particular`. Estatuto propio (art. 163 a todo evento AFP 1,11 %, aviso art. 161). No crear `/finiquito-nana` ni `/asesora-hogar` |
 | Calcular indemnización por aviso previo | indemnizacion aviso previo / indemnizacion sustitutiva aviso — intención calcular | `/indemnizacion-aviso-previo` | Title/H1 «calcular indemnización por aviso previo»; no canibalizar `/finiquito` ni `/indemnizacion-anos-servicio`. Arts. 161 y 162 (sustitutiva de 30 días), no IAS art. 163 ni el finiquito completo. No crear `/dias-aviso`. No crear `/aviso-previo` |
+| Calcular interés y reajuste por mora | interés por mora remuneraciones / reajuste IPC sueldo adeudado / art. 63 | `/interes-mora` | Title/H1 «Calculadora interés por mora» + remuneraciones Chile 2026; no canibalizar `/finiquito`, `/sueldo`, `/descuento-atrasos`, `/sueldo-proporcional`, `/indemnizacion-anos-servicio`, `/indemnizacion-aviso-previo` ni `/guias/plazo-de-pago-del-finiquito`. Art. 63: reajuste IPC + TMC operaciones reajustables. No es el líquido ni el finiquito ni el descuento al trabajador. No crear `/reajuste-ipc`, `/mora-sueldo` ni `/art-63` |
 | Índice de guías | — | `/guias` | Hub: 17 guías, grupo liquidación vs finiquito |
 
 ## Guías pilar (contenido + calculadora embebida)
@@ -264,6 +265,16 @@ No publicar hermanas de semana corrida: `/septimo-dia`, `/pago-domingo-festivo`,
 `/semana-corrida-mensual`. El haber del artículo 45 vive en `/semana-corrida`.
 El recargo 30 % del comercio (art. 38 N°7) sigue en `/recargo-domingo-comercio`.
 La guía editorial sigue en `/guias/semana-corrida`.
+
+No publicar `/reajuste-ipc`, `/mora-sueldo` ni `/art-63`. El reajuste IPC y el
+interés por mora de remuneraciones u otros haberes adeudados (art. 63: IPC del
+mes anterior al vencimiento vs mes precedente al pago, más TMC de operaciones
+reajustables CMF) vive en `/interes-mora`. No canibalizar `/finiquito`, `/sueldo`,
+`/descuento-atrasos`, `/sueldo-proporcional`, `/indemnizacion-anos-servicio`,
+`/indemnizacion-aviso-previo` ni `/guias/plazo-de-pago-del-finiquito`. El finiquito
+completo sigue en `/finiquito`. El líquido sigue en `/sueldo`. El descuento al
+trabajador por atrasos e inasistencias sigue en `/descuento-atrasos`. El plazo de
+10 días hábiles del art. 177 sigue en `/guias/plazo-de-pago-del-finiquito`.
 
 No publicar `/imm`, `/ingreso-minimo` ni `/sueldo-minimo-2026`. El piso legal del
 IMM (Ley 21.830: tramos, jornada parcial art. 44 y tope art. 50) vive en

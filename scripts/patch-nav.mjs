@@ -44,6 +44,7 @@ const DRAWER_LINKS = [
   ["/permiso-paternidad", "Permiso paternidad"],
   ["/permiso-matrimonio", "Permiso matrimonio"],
   ["/permiso-fallecimiento", "Permiso fallecimiento"],
+  ["/interes-mora", "Interés por mora"],
   ["/hora-lactancia", "Hora de lactancia"],
   ["/colacion-movilizacion", "Colación y movilización"],
   ["/vacaciones-proporcionales", "Vacaciones proporcionales"],

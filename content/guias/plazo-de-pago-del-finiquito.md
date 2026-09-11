@@ -32,7 +32,7 @@ La ratificación ante inspector del trabajo, notario u otro ministro de fe da fe
 - Indemnización sustitutiva de aviso previo si no se dio el aviso de treinta días.
 - Si el monto no cuadra, deje constancia de reserva de derechos al firmar. Detalle en [«me reservo el derecho»](/guias/me-reservo-el-derecho-en-el-finiquito).
 
-Estime el monto en la [calculadora de finiquito](/finiquito). Haberes arma el documento; no es la Dirección del Trabajo ni el trámite de ratificación.
+Estime el monto en la [calculadora de finiquito](/finiquito). Si el pago se hace después del vencimiento, el [reajuste IPC e interés por mora (art. 63)](/interes-mora) es otra estimación: no sustituye este plazo ni el finiquito. Haberes arma el documento; no es la Dirección del Trabajo ni el trámite de ratificación.
 
 {{calc}}
 
