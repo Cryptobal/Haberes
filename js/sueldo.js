@@ -38,6 +38,10 @@ import {
   POSTNATAL_PARENTAL_SEMANAS_COMPLETA,
   POSTNATAL_PARENTAL_SEMANAS_MIN_MADRE,
   POSTNATAL_PARENTAL_SEMANAS_PARCIAL,
+  DESCANSO_PRENATAL_SEMANAS,
+  DESCANSO_PRENATAL_DIAS,
+  DESCANSO_POSTNATAL_SEMANAS,
+  DESCANSO_POSTNATAL_DIAS,
   HORA_LACTANCIA_DIAS_DEFAULT,
   HORA_LACTANCIA_EDAD_MAX_MESES,
   HORA_LACTANCIA_MINUTOS_LEGAL,
@@ -517,6 +521,15 @@ function parseIsoFecha(iso) {
   const last = ultimoDiaDelMes(y, mo);
   if (!last || d < 1 || d > last) return null;
   return { y, mo, d, last };
+}
+
+function isoOfFecha(p) {
+  return `${p.y}-${String(p.mo).padStart(2, "0")}-${String(p.d).padStart(2, "0")}`;
+}
+
+function addDaysFecha(p, n) {
+  const dt = new Date(Date.UTC(p.y, p.mo - 1, p.d + n));
+  return { y: dt.getUTCFullYear(), mo: dt.getUTCMonth() + 1, d: dt.getUTCDate() };
 }
 
 /**
@@ -1460,6 +1473,97 @@ export function calcularSalaCuna({
     obligada,
     costoMensual,
     simulacion: !obligada,
+  };
+}
+
+/**
+ * Descanso prenatal de maternidad (art. 195 inc. 1 Código del Trabajo).
+ * Calendario: 6 semanas (42 días corridos) antes del parto y, solo
+ * informativo, término del postnatal legal de 12 semanas (84 días
+ * corridos a contar de la fecha de parto). No calcula el permiso postnatal
+ * parental (art. 197 bis), el fuero (art. 201) ni extensiones del art. 196
+ * (parto prematuro, bajo peso o múltiple).
+ *
+ * Modo `parto`: inicio prenatal = FPP − 42 días corridos.
+ * Modo `inicio`: FPP = inicio certificado + 42 días corridos.
+ * El prenatal cubre [inicio, día anterior al parto] = 42 días.
+ * El postnatal legal cubre [parto, parto + 83] = 84 días (SUSESO:
+ * «84 días a contar de la fecha de parto»).
+ *
+ * Subsidio del prenatal: misma base D.F.L. N°44 art. 8 que
+ * `calcularPostnatalParental` / SIL. Diario = base / 30 (sin redondear);
+ * tramo = roundPeso(diario × 42). No aplica topes UF.
+ *
+ * Gold (verify): parto 2026-03-01 → inicio 2026-01-18, fin prenatal
+ * 2026-02-28, fin postnatal 2026-05-23. Base $900.000 → diario $30.000;
+ * subsidio 42 × 30000 = $1.260.000.
+ *
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=207436
+ * @see https://www.dt.gob.cl/portal/1628/w3-article-60107.html
+ * @see https://www.suseso.gob.cl/605/w3-article-782408.html
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=4252
+ */
+export function calcularPermisoPrenatal({
+  modo = "parto",
+  fechaParto = "",
+  fechaInicio = "",
+  baseSil = 0,
+  neta1 = null,
+  neta2 = null,
+  neta3 = null,
+} = {}) {
+  const modoUsado = modo === "inicio" ? "inicio" : "parto";
+  const n1 = netaSil(neta1);
+  const n2 = netaSil(neta2);
+  const n3 = netaSil(neta3);
+  const silDesdeNetas = n1 != null && n2 != null && n3 != null;
+  const baseIngresada = Math.max(0, Number(baseSil) || 0);
+  const baseUsada = silDesdeNetas ? roundPeso((n1 + n2 + n3) / 3) : roundPeso(baseIngresada);
+  const diarioSil = baseUsada > 0 ? baseUsada / DIAS_MES_CONVENCIONAL : 0;
+  const semanasPrenatal = DESCANSO_PRENATAL_SEMANAS;
+  const diasPrenatal = DESCANSO_PRENATAL_DIAS;
+  const semanasPostnatal = DESCANSO_POSTNATAL_SEMANAS;
+  const diasPostnatal = DESCANSO_POSTNATAL_DIAS;
+  const subsidioPrenatal = roundPeso(diarioSil * diasPrenatal);
+
+  let motivo = "";
+  let parto = null;
+  let inicio = null;
+  if (modoUsado === "inicio") {
+    inicio = parseIsoFecha(fechaInicio);
+    if (!inicio) motivo = "sin_inicio";
+    else parto = addDaysFecha(inicio, diasPrenatal);
+  } else {
+    parto = parseIsoFecha(fechaParto);
+    if (!parto) motivo = "sin_parto";
+    else inicio = addDaysFecha(parto, -diasPrenatal);
+  }
+
+  const ok = Boolean(parto && inicio);
+  const finPrenatal = ok ? addDaysFecha(parto, -1) : null;
+  const finPostnatal = ok ? addDaysFecha(parto, diasPostnatal - 1) : null;
+
+  return {
+    ok,
+    motivo,
+    modo: modoUsado,
+    fechaParto: parto ? isoOfFecha(parto) : "",
+    fechaInicioPrenatal: inicio ? isoOfFecha(inicio) : "",
+    fechaFinPrenatal: finPrenatal ? isoOfFecha(finPrenatal) : "",
+    fechaInicioPostnatal: parto ? isoOfFecha(parto) : "",
+    fechaFinPostnatal: finPostnatal ? isoOfFecha(finPostnatal) : "",
+    semanasPrenatal,
+    diasPrenatal,
+    semanasPostnatal,
+    diasPostnatal,
+    baseSil: baseUsada,
+    baseSilIngresada: roundPeso(baseIngresada),
+    silDesdeNetas,
+    neta1: n1,
+    neta2: n2,
+    neta3: n3,
+    diarioSil,
+    subsidioPrenatal,
   };
 }
 

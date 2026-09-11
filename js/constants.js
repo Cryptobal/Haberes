@@ -53,6 +53,19 @@ export const POSTNATAL_PARENTAL_SEMANAS_PARCIAL = 18;
 export const POSTNATAL_PARENTAL_SEMANAS_MIN_MADRE = 6;
 
 /**
+ * Descanso de maternidad art. 195 (no el parental art. 197 bis).
+ * Prenatal: 6 semanas = 42 días corridos antes del parto.
+ * Postnatal legal: 12 semanas = 84 días corridos a contar de la fecha de parto.
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=207436
+ * @see https://www.dt.gob.cl/portal/1628/w3-article-60107.html
+ * @see https://www.suseso.gob.cl/605/w3-article-782408.html
+ */
+export const DESCANSO_PRENATAL_SEMANAS = 6;
+export const DESCANSO_PRENATAL_DIAS = 42;
+export const DESCANSO_POSTNATAL_SEMANAS = 12;
+export const DESCANSO_POSTNATAL_DIAS = 84;
+
+/**
  * Hora de alimentación / lactancia (art. 206 Código del Trabajo).
  * Mínimo legal: 1 hora al día, irrenunciable, hasta que el hijo cumpla 2 años
  * (24 meses). El techo de 120 min es de la herramienta (pacto o viaje a sala
