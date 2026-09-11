@@ -1,9 +1,10 @@
 import {
+  DESCANSO_POSTNATAL_DIAS,
+  DESCANSO_POSTNATAL_SEMANAS,
+  DESCANSO_PRENATAL_SEMANAS,
   FUERO_MATERNAL_ANIOS,
-  POSTNATAL_LEGAL_SEMANAS,
   POSTNATAL_PARENTAL_SEMANAS_COMPLETA,
   POSTNATAL_PARENTAL_SEMANAS_PARCIAL,
-  PRENATAL_LEGAL_SEMANAS,
 } from "./constants.js";
 
 /**
@@ -1005,9 +1006,9 @@ function emptyFueroMaternal({
     situacion: sit,
     modalidad: modo,
     etiquetaModalidad: FUERO_MATERNAL_MODALIDADES[modo].etiqueta,
-    semanasPrenatal: PRENATAL_LEGAL_SEMANAS,
-    semanasPostnatal: POSTNATAL_LEGAL_SEMANAS,
-    diasPostnatal: POSTNATAL_LEGAL_SEMANAS * 7 + extra,
+    semanasPrenatal: DESCANSO_PRENATAL_SEMANAS,
+    semanasPostnatal: DESCANSO_POSTNATAL_SEMANAS,
+    diasPostnatal: DESCANSO_POSTNATAL_DIAS + extra,
     diasSuplementario: extra,
     semanasParental: FUERO_MATERNAL_MODALIDADES[modo].parentalSemanas,
     diasParental: FUERO_MATERNAL_MODALIDADES[modo].parentalSemanas * 7,
@@ -1065,11 +1066,11 @@ export function calcularFueroMaternal({
     });
   }
 
-  const diasPostnatal = POSTNATAL_LEGAL_SEMANAS * 7 + extra;
+  const diasPostnatal = DESCANSO_POSTNATAL_DIAS + extra;
   const semanasParental = FUERO_MATERNAL_MODALIDADES[modo].parentalSemanas;
   const diasParental = semanasParental * 7;
   const fechaPartoIso = isoOf(parto);
-  const fechaInicioPrenatal = isoOf(addDays(parto, -(PRENATAL_LEGAL_SEMANAS * 7)));
+  const fechaInicioPrenatal = isoOf(addDays(parto, -(DESCANSO_PRENATAL_SEMANAS * 7)));
   const terminoPostnatal = addDays(parto, diasPostnatal);
   const fechaTerminoPostnatal = isoOf(terminoPostnatal);
   const fechaTerminoParental =
@@ -1094,8 +1095,8 @@ export function calcularFueroMaternal({
     situacion: sit,
     modalidad: modo,
     etiquetaModalidad: FUERO_MATERNAL_MODALIDADES[modo].etiqueta,
-    semanasPrenatal: PRENATAL_LEGAL_SEMANAS,
-    semanasPostnatal: POSTNATAL_LEGAL_SEMANAS,
+    semanasPrenatal: DESCANSO_PRENATAL_SEMANAS,
+    semanasPostnatal: DESCANSO_POSTNATAL_SEMANAS,
     diasPostnatal,
     diasSuplementario: extra,
     semanasParental,
