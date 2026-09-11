@@ -25,6 +25,8 @@ import {
   IMM_ANTERIOR,
   IMM_MENOR_MAYOR,
   IMM_NO_REMUNERACIONAL,
+  INTERES_MORA_GOLD,
+  IPC_INE,
   IUSC_TRAMOS,
   LEY_21735_CRP,
   LEY_21735_CUENTA_INDIVIDUAL,
@@ -36,6 +38,7 @@ import {
   TOPE_AFP_SALUD_UF,
   TOPE_APV_REGIMEN_B_UF,
   TOPE_CESANTIA_UF,
+  TMC_REAJUSTABLE_MENOS_UN_ANIO,
   RETENCION_BOLETA_ANIO_DEFAULT,
   RETENCION_BOLETA_HONORARIOS,
   UMBRAL_SALA_CUNA,
@@ -95,6 +98,7 @@ import {
   calcularPermisoPaternidad,
   calcularPermisoMatrimonio,
   calcularPermisoFallecimiento,
+  calcularInteresMora,
   calcularHoraLactancia,
   calcularJornada40Horas,
   topeJornadaOrdinaria,
@@ -1730,6 +1734,100 @@ console.log("\nPermiso fallecimiento art. 66 (días pagados según vínculo)");
   );
 }
 
+console.log("\nInterés por mora art. 63 (reajuste IPC + TMC reajustable)");
+{
+  // Gold: $1.000.000, 31-mar-2026 → 30-jun-2026, IPC 100→101,2, tasa 6 %.
+  // Días de mora DT: 1-abr a 29-jun inclusive = 90. Reajuste 12.000; interés 15.180.
+  const gold = calcularInteresMora(INTERES_MORA_GOLD);
+  assert(
+    "gold 1.000.000 / 31-mar-2026 / 30-jun-2026 / 6 % / IPC 1,2 % → 90 días, 12.000 + 15.180 = 1.027.180",
+    gold.ok &&
+      gold.diasMora === 90 &&
+      gold.diasCalendario === 91 &&
+      gold.reajuste === 12_000 &&
+      gold.capitalReajustado === 1_012_000 &&
+      gold.intereses === 15_180 &&
+      gold.total === 1_027_180 &&
+      Math.abs(gold.variacionIpcPct - 1.2) < 1e-9 &&
+      gold.mesIpcInicial === "2026-02" &&
+      gold.mesIpcFinal === "2026-05",
+    JSON.stringify(gold),
+  );
+  const ine = calcularInteresMora({
+    monto: 1_000_000,
+    fechaVencimiento: "2026-03-31",
+    fechaPago: "2026-06-30",
+  });
+  const varIne = IPC_INE["2026-05"] / IPC_INE["2026-02"] - 1;
+  const reajIne = Math.round(1_000_000 * varIne);
+  const intIne = Math.round(((1_000_000 + reajIne) * (TMC_REAJUSTABLE_MENOS_UN_ANIO / 100) * 90) / 360);
+  assert(
+    "tabla INE feb/may 2026 + TMC 6,72 % sobre el mismo tramo",
+    ine.ok &&
+      ine.diasMora === 90 &&
+      ine.ipcInicial === IPC_INE["2026-02"] &&
+      ine.ipcFinal === IPC_INE["2026-05"] &&
+      ine.tasaAnualPct === 6.72 &&
+      ine.reajuste === reajIne &&
+      ine.intereses === intIne &&
+      ine.total === 1_000_000 + reajIne + intIne,
+    JSON.stringify({ ine, reajIne, intIne }),
+  );
+  assert(
+    "mismo mes: 0 % IPC; pagar al día siguiente → 0 días de interés",
+    calcularInteresMora({
+      monto: 1_000_000,
+      fechaVencimiento: "2026-03-31",
+      fechaPago: "2026-04-01",
+      ipcInicial: 100,
+      ipcFinal: 100,
+      tasaAnualPct: 6,
+    }).diasMora === 0 &&
+      calcularInteresMora({
+        monto: 1_000_000,
+        fechaVencimiento: "2026-03-10",
+        fechaPago: "2026-03-20",
+        ipcInicial: 100,
+        ipcFinal: 100,
+        tasaAnualPct: 6,
+      }).reajuste === 0,
+  );
+  assert(
+    "pago antes / sin monto / sin fecha → ok false",
+    calcularInteresMora({
+      monto: 1_000_000,
+      fechaVencimiento: "2026-06-30",
+      fechaPago: "2026-03-31",
+      ipcInicial: 100,
+      ipcFinal: 101,
+    }).motivo === "pago_antes" &&
+      calcularInteresMora({ fechaVencimiento: "2026-03-31", fechaPago: "2026-06-30" }).motivo ===
+        "sin_monto" &&
+      calcularInteresMora({ monto: 1000 }).motivo === "sin_fecha",
+  );
+  assert(
+    "IPC INE dic-2025 a ago-2026 (SII + boletín INE agosto)",
+    IPC_INE["2025-12"] === 109.26 &&
+      IPC_INE["2026-01"] === 109.71 &&
+      IPC_INE["2026-02"] === 109.7 &&
+      IPC_INE["2026-03"] === 110.75 &&
+      IPC_INE["2026-04"] === 112.18 &&
+      IPC_INE["2026-05"] === 112.37 &&
+      IPC_INE["2026-06"] === 112.35 &&
+      IPC_INE["2026-07"] === 112.45 &&
+      IPC_INE["2026-08"] === 113.15 &&
+      TMC_REAJUSTABLE_MENOS_UN_ANIO === 6.72,
+  );
+  const imApp = readFileSync(join(root, "js/app-interes-mora.js"), "utf8");
+  assert(
+    "app-interes-mora usa calcularInteresMora",
+    /import\s*\{[^}]*calcularInteresMora[^}]*\}\s*from\s*["']\.\/sueldo\.js["']/.test(imApp) &&
+      /calcularInteresMora\s*\(/.test(imApp) &&
+      /function decimalVal/.test(imApp) &&
+      !/\balert\s*\(/.test(imApp),
+  );
+}
+
 console.log("\nFuero maternal art. 201 (calendario; parental excluido)");
 {
   // Fuente: art. 201 CT (BCN) + consulta DT 14/03/2025 (un año y 84 días) + ORD. N°3366.
@@ -2895,6 +2993,7 @@ const required = [
   "permiso-paternidad.html",
   "permiso-matrimonio.html",
   "permiso-fallecimiento.html",
+  "interes-mora.html",
   "hora-lactancia.html",
   "jornada-40-horas.html",
   "feriado-anual.html",
@@ -2930,6 +3029,7 @@ const required = [
   "js/app-permiso-paternidad.js",
   "js/app-permiso-matrimonio.js",
   "js/app-permiso-fallecimiento.js",
+  "js/app-interes-mora.js",
   "js/app-hora-lactancia.js",
   "js/app-jornada-40-horas.js",
   "js/app-feriado-anual.js",
@@ -2949,6 +3049,7 @@ const required = [
   "js/constants.js",
   "js/sueldo.js",
   "js/feriados.js",
+  "js/interes-mora.js",
   "js/causales.js",
   "js/finiquito.js",
   "js/indicadores.js",
@@ -3093,6 +3194,7 @@ const htmlFiles = [
   "permiso-paternidad.html",
   "permiso-matrimonio.html",
   "permiso-fallecimiento.html",
+  "interes-mora.html",
   "hora-lactancia.html",
   "jornada-40-horas.html",
   "feriado-anual.html",
@@ -3203,6 +3305,7 @@ const appEntries = [
   "js/app-permiso-paternidad.js",
   "js/app-permiso-matrimonio.js",
   "js/app-permiso-fallecimiento.js",
+  "js/app-interes-mora.js",
   "js/app-hora-lactancia.js",
   "js/app-jornada-40-horas.js",
   "js/app-feriado-anual.js",
@@ -3244,7 +3347,7 @@ assert("robots Allow /", /Allow:\s*\//.test(robots));
 assert("robots Disallow /admin", /Disallow:\s*\/admin/.test(robots));
 assert("robots Disallow /api", /Disallow:\s*\/api/.test(robots));
 assert("robots Disallow /docs", /Disallow:\s*\/docs/.test(robots));
-assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/feriado-anual/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/licencia-medica/.test(robots) && !/Disallow:\s*\/boleta-honorarios/.test(robots) && !/Disallow:\s*\/retencion-judicial/.test(robots) && !/Disallow:\s*\/apv/.test(robots) && !/Disallow:\s*\/sala-cuna/.test(robots) && !/Disallow:\s*\/postnatal-parental/.test(robots) && !/Disallow:\s*\/permiso-prenatal/.test(robots) && !/Disallow:\s*\/fuero-maternal/.test(robots) && !/Disallow:\s*\/permiso-paternidad/.test(robots) && !/Disallow:\s*\/permiso-matrimonio/.test(robots) && !/Disallow:\s*\/permiso-fallecimiento/.test(robots) && !/Disallow:\s*\/hora-lactancia/.test(robots) && !/Disallow:\s*\/jornada-40-horas/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots));
+assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/feriado-anual/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/licencia-medica/.test(robots) && !/Disallow:\s*\/boleta-honorarios/.test(robots) && !/Disallow:\s*\/retencion-judicial/.test(robots) && !/Disallow:\s*\/apv/.test(robots) && !/Disallow:\s*\/sala-cuna/.test(robots) && !/Disallow:\s*\/postnatal-parental/.test(robots) && !/Disallow:\s*\/permiso-prenatal/.test(robots) && !/Disallow:\s*\/fuero-maternal/.test(robots) && !/Disallow:\s*\/permiso-paternidad/.test(robots) && !/Disallow:\s*\/permiso-matrimonio/.test(robots) && !/Disallow:\s*\/permiso-fallecimiento/.test(robots) && !/Disallow:\s*\/interes-mora/.test(robots) && !/Disallow:\s*\/hora-lactancia/.test(robots) && !/Disallow:\s*\/jornada-40-horas/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots));
 assert("robots Sitemap", /Sitemap:\s*https:\/\/www\.haberes\.cl\/sitemap\.xml/.test(robots));
 
 const { seoPaths, GUIDE_SLUGS, GUIDES, CAUSAL_PAGES, BASE_PATHS, lastmodForPath } = await import("../content/registry.js");
@@ -3293,6 +3396,7 @@ assert(
     BASE_PATHS.includes("/permiso-paternidad") &&
     BASE_PATHS.includes("/permiso-matrimonio") &&
     BASE_PATHS.includes("/permiso-fallecimiento") &&
+    BASE_PATHS.includes("/interes-mora") &&
     BASE_PATHS.includes("/hora-lactancia") &&
     BASE_PATHS.includes("/jornada-40-horas") &&
     BASE_PATHS.includes("/indemnizacion-aviso-previo"),
@@ -3648,7 +3752,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 81,
+      seoPaths().length === 82,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -3660,7 +3764,7 @@ try {
   const docsSeo = await hitLocal("/docs/seo-map.md");
   assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
   assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
-  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/asignacion-familiar/", "/colacion-movilizacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/asignacion-familiar/", "/colacion-movilizacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
   }
@@ -3700,6 +3804,7 @@ try {
     "/permiso-paternidad",
     "/permiso-matrimonio",
     "/permiso-fallecimiento",
+    "/interes-mora",
     "/hora-lactancia",
     "/jornada-40-horas",
     "/indemnizacion-aviso-previo",
@@ -7452,6 +7557,7 @@ assert(
     ["permiso-paternidad.html", "/permiso-paternidad"],
     ["permiso-matrimonio.html", "/permiso-matrimonio"],
     ["permiso-fallecimiento.html", "/permiso-fallecimiento"],
+    ["interes-mora.html", "/interes-mora"],
     ["hora-lactancia.html", "/hora-lactancia"],
     ["jornada-40-horas.html", "/jornada-40-horas"],
     ["feriado-anual.html", "/feriado-anual"],
@@ -9320,6 +9426,116 @@ assert(
         /href="\/permiso-fallecimiento"/.test(ppHtmlPf) &&
         /href="\/permiso-fallecimiento"/.test(faHtmlPf) &&
         /href="\/permiso-fallecimiento"/.test(lmHtmlPf),
+    );
+  }
+  {
+    const imHtml = readFileSync(join(root, "interes-mora.html"), "utf8");
+    const imTitle = (imHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const imH1 = (imHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const imDesc = (imHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "";
+    const finiHtmlIm = readFileSync(join(root, "finiquito.html"), "utf8");
+    const sueldoHtmlIm = readFileSync(join(root, "sueldo.html"), "utf8");
+    const daHtmlIm = readFileSync(join(root, "descuento-atrasos.html"), "utf8");
+    const plazoHtmlIm = readFileSync(join(root, "guias/plazo-de-pago-del-finiquito.html"), "utf8");
+    const goldIm = calcularInteresMora(INTERES_MORA_GOLD);
+    assert(
+      "SEO interés mora title único y corto",
+      /calculadora inter[eé]s por mora/i.test(imTitle) &&
+        imTitle.length <= 65 &&
+        !/finiquito/i.test(imTitle) &&
+        !/sueldo l[ií]quido/i.test(imTitle) &&
+        !/descuento atrasos/i.test(imTitle),
+      imTitle,
+    );
+    assert(
+      "SEO interés mora H1 único art. 63",
+      imH1 === "Calculadora interés por mora de remuneraciones Chile 2026" &&
+        /art[íi]culo 63/.test(imHtml) &&
+        /operaciones reajustables/.test(imHtml) &&
+        !/art\. 177/.test(imH1),
+      imH1,
+    );
+    assert(
+      "SEO interés mora description propia",
+      imDesc.length >= 110 &&
+        imDesc.length <= 160 &&
+        /art\. 63/.test(imDesc) &&
+        /mora/.test(imDesc) &&
+        !/sueldo l[ií]quido/i.test(imDesc),
+      `${imDesc.length}:${imDesc}`,
+    );
+    assert(
+      "SEO interés mora cita art. 63, DT, CMF 08/2026 y 360 días",
+      /art[íi]culo 63/.test(imHtml) &&
+        /60253/.test(imHtml) &&
+        /60612/.test(imHtml) &&
+        /08\/2026/.test(imHtml) &&
+        /6,72/.test(imHtml) &&
+        /360/.test(imHtml),
+    );
+    assert(
+      "SEO interés mora gold en copy",
+      goldIm.total === 1_027_180 &&
+        goldIm.reajuste === 12_000 &&
+        goldIm.intereses === 15_180 &&
+        goldIm.diasMora === 90 &&
+        /\$1\.000\.000/.test(imHtml) &&
+        /31 de marzo de 2026/.test(imHtml) &&
+        /30 de junio de 2026/.test(imHtml) &&
+        /\$12\.000/.test(imHtml) &&
+        /\$15\.180/.test(imHtml) &&
+        /\$1\.027\.180/.test(imHtml),
+    );
+    assert("SEO interés mora FAQPage", /"@type": "FAQPage"/.test(imHtml));
+    assert(
+      "SEO interés mora no canibaliza hermanas vetadas",
+      /href="\/finiquito"/.test(imHtml) &&
+        /href="\/sueldo"/.test(imHtml) &&
+        /href="\/descuento-atrasos"/.test(imHtml) &&
+        /href="\/sueldo-proporcional"/.test(imHtml) &&
+        /href="\/indemnizacion-anos-servicio"/.test(imHtml) &&
+        /href="\/indemnizacion-aviso-previo"/.test(imHtml) &&
+        /href="\/guias\/plazo-de-pago-del-finiquito"/.test(imHtml) &&
+        /no constituye asesor[ií]a legal/i.test(imHtml) &&
+        /liquidaci[oó]n judicial/.test(imHtml) &&
+        !existsSync(join(root, "reajuste-ipc.html")) &&
+        !existsSync(join(root, "mora-sueldo.html")) &&
+        !existsSync(join(root, "art-63.html")),
+    );
+    assert(
+      "home y nav enlazan /interes-mora",
+      /href="\/interes-mora"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/interes-mora" data-nav>Interés por mora<\/a>/.test(
+          readFileSync(join(root, "index.html"), "utf8"),
+        ) &&
+        /href="\/interes-mora" data-nav>Interés por mora<\/a>/.test(imHtml),
+    );
+    assert(
+      "sitemap incluye /interes-mora",
+      locs.includes("https://www.haberes.cl/interes-mora") &&
+        lastmodForPath("/interes-mora") === "2026-09-11",
+    );
+    assert(
+      "seo-map documenta /interes-mora y no-canibalizar hermanas",
+      /\/interes-mora/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no canibalizar `\/finiquito`, `\/sueldo`, `\/descuento-atrasos`/.test(
+          readFileSync(join(root, "docs/seo-map.md"), "utf8"),
+        ) &&
+        /no crear `\/reajuste-ipc`/i.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")),
+    );
+    assert(
+      "hub /guias enlaza /interes-mora en el cluster de liquidación",
+      /href="\/interes-mora"/.test(readFileSync(join(root, "guias.html"), "utf8")) &&
+        !/<h2>Finiquito<\/h2>[\s\S]*href="\/interes-mora"/.test(
+          readFileSync(join(root, "guias.html"), "utf8"),
+        ),
+    );
+    assert(
+      "hermanas enlazan /interes-mora",
+      /href="\/interes-mora"/.test(finiHtmlIm) &&
+        /href="\/interes-mora"/.test(sueldoHtmlIm) &&
+        /href="\/interes-mora"/.test(daHtmlIm) &&
+        /href="\/interes-mora"/.test(plazoHtmlIm),
     );
   }
   {
@@ -11759,6 +11975,7 @@ assert(
       "permiso-paternidad.html",
       "permiso-matrimonio.html",
       "permiso-fallecimiento.html",
+      "interes-mora.html",
       "hora-lactancia.html",
       "jornada-40-horas.html",
       "feriado-anual.html",
@@ -11943,7 +12160,7 @@ assert(
     return acc;
   }
   const pages = listHtml(root);
-  assert("83 páginas HTML", pages.length === 83, String(pages.length));
+  assert("84 páginas HTML", pages.length === 84, String(pages.length));
   for (const file of pages) {
     const html = readFileSync(file, "utf8");
     const rel = file.slice(root.length + 1);

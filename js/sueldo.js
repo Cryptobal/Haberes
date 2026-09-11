@@ -425,6 +425,13 @@ export {
   PERMISO_PATERNIDAD_DIAS,
 } from "./feriados.js";
 
+export {
+  calcularInteresMora,
+  diasMoraInteres,
+  lookupIpc,
+  mesAnteriorKey,
+} from "./interes-mora.js";
+
 /** Feriado anual básico art. 67 (días hábiles; sábado inhábil, art. 69). */
 export const FERIADO_ANUAL_DIAS = 15;
 /** Art. 67: Magallanes, Aysén y Palena. */
