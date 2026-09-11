@@ -53,17 +53,24 @@ export const POSTNATAL_PARENTAL_SEMANAS_PARCIAL = 18;
 export const POSTNATAL_PARENTAL_SEMANAS_MIN_MADRE = 6;
 
 /**
- * Descanso de maternidad art. 195 (no el parental art. 197 bis).
+ * Descanso de maternidad (arts. 195 y 196) y fuero (art. 201).
  * Prenatal: 6 semanas = 42 días corridos antes del parto.
  * Postnatal legal: 12 semanas = 84 días corridos a contar de la fecha de parto.
+ * Fuero de la madre: desde el embarazo hasta un año después de expirado ese
+ * postnatal, excluido el permiso postnatal parental (art. 197 bis).
+ * DT: por regla general el fuero dura hasta que el hijo cumple un año y 84 días.
+ * Un postnatal suplementario (art. 196) sí corre la base; el parental no.
  * @see https://www.bcn.cl/leychile/navegar?idNorma=207436
  * @see https://www.dt.gob.cl/portal/1628/w3-article-60107.html
  * @see https://www.suseso.gob.cl/605/w3-article-782408.html
+ * @see https://www.dt.gob.cl/portal/1628/w3-article-60062.html
+ * @see https://www.dt.gob.cl/legislacion/1624/w3-article-116607.html
  */
 export const DESCANSO_PRENATAL_SEMANAS = 6;
 export const DESCANSO_PRENATAL_DIAS = 42;
 export const DESCANSO_POSTNATAL_SEMANAS = 12;
 export const DESCANSO_POSTNATAL_DIAS = 84;
+export const FUERO_MATERNAL_ANIOS = 1;
 
 /**
  * Hora de alimentación / lactancia (art. 206 Código del Trabajo).

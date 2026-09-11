@@ -410,12 +410,15 @@ export function calcularSemanaCorrida({
 
 export {
   calcularFeriadoAnual,
+  calcularFueroMaternal,
   calcularPermisoFallecimiento,
   calcularPermisoMatrimonio,
   calcularPermisoPaternidad,
   esDiaHabilFeriadoAnual,
   feriadoLegal,
   FERIADOS_LEGALES_CL,
+  FUERO_MATERNAL_MODALIDADES,
+  normaModalidadFuero,
   normaVinculoFallecimiento,
   PERMISO_FALLECIMIENTO_REGLAS,
   PERMISO_MATRIMONIO_DIAS,

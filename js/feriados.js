@@ -1,8 +1,17 @@
+import {
+  DESCANSO_POSTNATAL_DIAS,
+  DESCANSO_POSTNATAL_SEMANAS,
+  DESCANSO_PRENATAL_SEMANAS,
+  FUERO_MATERNAL_ANIOS,
+  POSTNATAL_PARENTAL_SEMANAS_COMPLETA,
+  POSTNATAL_PARENTAL_SEMANAS_PARCIAL,
+} from "./constants.js";
+
 /**
  * Feriados legales nacionales de Chile, conteo del feriado anual (art. 67 y 69)
  * del permiso pagado del padre (art. 195 inc. 2), del permiso por
- * matrimonio o acuerdo de unión civil (art. 207 bis) y del permiso por
- * fallecimiento de un familiar (art. 66).
+ * matrimonio o acuerdo de unión civil (art. 207 bis), del permiso por
+ * fallecimiento de un familiar (art. 66) y del fuero maternal (art. 201).
  *
  * Días hábiles del feriado anual, del permiso de paternidad, del permiso
  * por matrimonio o AUC y de los cupos hábiles del art. 66 (estimación
@@ -959,5 +968,147 @@ export function calcularPermisoFallecimiento({
     feriados,
     domingos,
     sabados,
+  };
+}
+
+export const FUERO_MATERNAL_MODALIDADES = {
+  postnatal: { parentalSemanas: 0, etiqueta: "Solo postnatal legal 12 semanas" },
+  completa: {
+    parentalSemanas: POSTNATAL_PARENTAL_SEMANAS_COMPLETA,
+    etiqueta: "Postnatal + parental completo 12 semanas",
+  },
+  parcial: {
+    parentalSemanas: POSTNATAL_PARENTAL_SEMANAS_PARCIAL,
+    etiqueta: "Postnatal + parental parcial 18 semanas",
+  },
+};
+
+export function normaModalidadFuero(value) {
+  const key = String(value || "").trim().toLowerCase();
+  if (key === "completa" || key === "parcial" || key === "postnatal") return key;
+  return "postnatal";
+}
+
+function emptyFueroMaternal({
+  situacion = "nacido",
+  modalidad = "postnatal",
+  diasSuplementario = 0,
+  referencia = "",
+  motivo = "sin_fecha",
+} = {}) {
+  const extra = Math.max(0, Math.min(366, Math.trunc(Number(diasSuplementario) || 0)));
+  const modo = normaModalidadFuero(modalidad);
+  const sit = situacion === "probable" ? "probable" : "nacido";
+  return {
+    ok: false,
+    motivo,
+    fechaParto: "",
+    situacion: sit,
+    modalidad: modo,
+    etiquetaModalidad: FUERO_MATERNAL_MODALIDADES[modo].etiqueta,
+    semanasPrenatal: DESCANSO_PRENATAL_SEMANAS,
+    semanasPostnatal: DESCANSO_POSTNATAL_SEMANAS,
+    diasPostnatal: DESCANSO_POSTNATAL_DIAS + extra,
+    diasSuplementario: extra,
+    semanasParental: FUERO_MATERNAL_MODALIDADES[modo].parentalSemanas,
+    diasParental: FUERO_MATERNAL_MODALIDADES[modo].parentalSemanas * 7,
+    aniosFuero: FUERO_MATERNAL_ANIOS,
+    fechaInicioPrenatal: "",
+    fechaTerminoPostnatal: "",
+    fechaTerminoParental: "",
+    fechaTerminoFuero: "",
+    parentalExtiendeFuero: false,
+    suplementarioExtiendeFuero: extra > 0,
+    fase: "",
+    referencia: String(referencia || ""),
+  };
+}
+
+/**
+ * Fuero maternal de la trabajadora (art. 201 CT).
+ *
+ * El fuero corre desde el embarazo hasta un año después de expirado el
+ * descanso de maternidad (postnatal legal de 12 semanas, arts. 195/197).
+ * El permiso postnatal parental del art. 197 bis queda excluido del cómputo
+ * (texto vigente BCN + consulta DT 14/03/2025: el fuero, por regla general,
+ * dura hasta que el hijo cumple un año y 84 días de edad).
+ *
+ * Un descanso postnatal suplementario (art. 196) sí corre la base: el año
+ * se cuenta desde el término de esa ampliación.
+ *
+ * Gold (verify): parto 2026-01-05 → postnatal 2026-03-30 (84 días) →
+ * fuero 2027-03-30. Parental completo o parcial no cambia esas fechas.
+ *
+ * No estima montos ni indemnización por despido nulo (art. 174 / 201 inc. 4).
+ *
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=207436
+ * @see https://www.dt.gob.cl/portal/1628/w3-article-60062.html
+ * @see https://www.dt.gob.cl/legislacion/1624/w3-article-116607.html
+ */
+export function calcularFueroMaternal({
+  fechaParto = "",
+  situacion = "nacido",
+  modalidad = "postnatal",
+  diasSuplementario = 0,
+  referencia = "",
+} = {}) {
+  const extra = Math.max(0, Math.min(366, Math.trunc(Number(diasSuplementario) || 0)));
+  const modo = normaModalidadFuero(modalidad);
+  const sit = situacion === "probable" ? "probable" : "nacido";
+  const parto = parseIsoFecha(fechaParto);
+  if (!parto) {
+    return emptyFueroMaternal({
+      situacion: sit,
+      modalidad: modo,
+      diasSuplementario: extra,
+      referencia,
+      motivo: "sin_fecha",
+    });
+  }
+
+  const diasPostnatal = DESCANSO_POSTNATAL_DIAS + extra;
+  const semanasParental = FUERO_MATERNAL_MODALIDADES[modo].parentalSemanas;
+  const diasParental = semanasParental * 7;
+  const fechaPartoIso = isoOf(parto);
+  const fechaInicioPrenatal = isoOf(addDays(parto, -(DESCANSO_PRENATAL_SEMANAS * 7)));
+  const terminoPostnatal = addDays(parto, diasPostnatal);
+  const fechaTerminoPostnatal = isoOf(terminoPostnatal);
+  const fechaTerminoParental =
+    diasParental > 0 ? isoOf(addDays(terminoPostnatal, diasParental)) : "";
+  const fechaTerminoFuero = isoOf(addCalendarMonths(terminoPostnatal, FUERO_MATERNAL_ANIOS * 12));
+
+  const ref = parseIsoFecha(referencia);
+  let fase = "";
+  if (ref) {
+    const hoy = isoOf(ref);
+    if (hoy < fechaPartoIso) fase = "embarazo";
+    else if (hoy <= fechaTerminoPostnatal) fase = "postnatal";
+    else if (fechaTerminoParental && hoy <= fechaTerminoParental) fase = "parental";
+    else if (hoy <= fechaTerminoFuero) fase = "fuero";
+    else fase = "sin_fuero";
+  }
+
+  return {
+    ok: true,
+    motivo: "",
+    fechaParto: fechaPartoIso,
+    situacion: sit,
+    modalidad: modo,
+    etiquetaModalidad: FUERO_MATERNAL_MODALIDADES[modo].etiqueta,
+    semanasPrenatal: DESCANSO_PRENATAL_SEMANAS,
+    semanasPostnatal: DESCANSO_POSTNATAL_SEMANAS,
+    diasPostnatal,
+    diasSuplementario: extra,
+    semanasParental,
+    diasParental,
+    aniosFuero: FUERO_MATERNAL_ANIOS,
+    fechaInicioPrenatal,
+    fechaTerminoPostnatal,
+    fechaTerminoParental,
+    fechaTerminoFuero,
+    parentalExtiendeFuero: false,
+    suplementarioExtiendeFuero: extra > 0,
+    fase,
+    referencia: ref ? isoOf(ref) : "",
   };
 }
