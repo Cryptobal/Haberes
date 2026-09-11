@@ -228,6 +228,57 @@ export const CASA_PARTICULAR_ITE_DESDE_1991 = "1991-01-01";
 export const CASA_PARTICULAR_FERIADO_ANUAL = 15;
 export const CASA_PARTICULAR_PRUEBA_DIAS = 15;
 
+/**
+ * Interés máximo convencional para operaciones reajustables en moneda nacional
+ * de menos de 1 año. Art. 63 CT: las remuneraciones adeudadas, ya reajustadas,
+ * «devengarán el máximo interés permitido para operaciones reajustables».
+ * CMF Certificado N° 08/2026 (D.O. 14-ago-2026, CVE 2855104), tramo 3.a.
+ * No es la TMC de créditos en pesos no reajustables.
+ * @see https://www.cmfchile.cl/portal/estadisticas/617/w3-propertyvalue-30141.html
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=29441
+ * @see https://www.dt.gob.cl/portal/1628/w3-article-60612.html
+ */
+export const TMC_REAJUSTABLE_MENOS_UN_ANIO = 6.72;
+export const TMC_REAJUSTABLE_CERTIFICADO = "08/2026";
+export const TMC_REAJUSTABLE_DESDE = "2026-08-14";
+/** Ley 18.010 art. 11 y consulta DT: el interés diario = tasa anual / 360. */
+export const INTERES_MORA_BASE_DIAS = 360;
+
+/**
+ * Índice general IPC INE, base anual 2023 = 100. Solo meses publicados
+ * en boletines oficiales; no se interpola ni se adelanta el mes en curso.
+ * Cruzado con la tabla UTM/IPC del SII (ene–jul 2026) y boletín INE ago-2026
+ * (índice general 113,15).
+ * @see https://www.ine.gob.cl/estadisticas/economia/indices-de-precios-e-inflacion/indice-de-precios-al-consumidor
+ * @see https://www.sii.cl/valores_y_fechas/utm/utm2026.htm
+ */
+export const IPC_INE = {
+  "2025-12": 109.26,
+  "2026-01": 109.71,
+  "2026-02": 109.7,
+  "2026-03": 110.75,
+  "2026-04": 112.18,
+  "2026-05": 112.37,
+  "2026-06": 112.35,
+  "2026-07": 112.45,
+  "2026-08": 113.15,
+};
+
+/**
+ * Ejemplo gold de /interes-mora: $1.000.000, vencimiento 31-mar-2026,
+ * pago 30-jun-2026, IPC 100 → 101,2 (1,2 %) y tasa 6 % anual.
+ * 90 días de mora (1-abr a 29-jun, ambos inclusive). Reajuste $12.000,
+ * intereses $15.180, total $1.027.180.
+ */
+export const INTERES_MORA_GOLD = {
+  monto: 1_000_000,
+  fechaVencimiento: "2026-03-31",
+  fechaPago: "2026-06-30",
+  tasaAnualPct: 6,
+  ipcInicial: 100,
+  ipcFinal: 101.2,
+};
+
 export const DISCLAIMER =
   "Documento generado por Haberes. No es un cálculo de la Dirección del Trabajo ni de Previred. No constituye asesoría legal ni previsional. Verifique con su contador o en los canales oficiales.";
 
