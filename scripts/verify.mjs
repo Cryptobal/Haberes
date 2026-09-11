@@ -42,6 +42,10 @@ import {
   POSTNATAL_PARENTAL_SEMANAS_COMPLETA,
   POSTNATAL_PARENTAL_SEMANAS_MIN_MADRE,
   POSTNATAL_PARENTAL_SEMANAS_PARCIAL,
+  DESCANSO_PRENATAL_SEMANAS,
+  DESCANSO_PRENATAL_DIAS,
+  DESCANSO_POSTNATAL_SEMANAS,
+  DESCANSO_POSTNATAL_DIAS,
   HORA_LACTANCIA_DIAS_DEFAULT,
   HORA_LACTANCIA_EDAD_MAX_MESES,
   HORA_LACTANCIA_MINUTOS_LEGAL,
@@ -86,6 +90,7 @@ import {
   calcularApv,
   calcularSalaCuna,
   calcularPostnatalParental,
+  calcularPermisoPrenatal,
   calcularPermisoPaternidad,
   calcularPermisoMatrimonio,
   calcularPermisoFallecimiento,
@@ -1217,6 +1222,87 @@ console.log("\nPostnatal parental art. 197 bis (completa 12 vs parcial 18)");
     "app-postnatal-parental usa calcularPostnatalParental",
     /import\s*\{[^}]*calcularPostnatalParental[^}]*\}\s*from\s*["']\.\/sueldo\.js["']/.test(pppApp) &&
       /calcularPostnatalParental\s*\(/.test(pppApp),
+  );
+}
+
+console.log("\nPermiso prenatal art. 195 (42 días corridos + SIL DFL 44)");
+{
+  const g = calcularPermisoPrenatal({
+    fechaParto: "2026-03-01",
+    baseSil: 900_000,
+  });
+  assert(
+    "gold parto 2026-03-01 → inicio 2026-01-18, fin prenatal 2026-02-28, fin postnatal 2026-05-23, SIL 1260000",
+    g.ok === true &&
+      g.modo === "parto" &&
+      g.fechaInicioPrenatal === "2026-01-18" &&
+      g.fechaFinPrenatal === "2026-02-28" &&
+      g.fechaParto === "2026-03-01" &&
+      g.fechaInicioPostnatal === "2026-03-01" &&
+      g.fechaFinPostnatal === "2026-05-23" &&
+      g.semanasPrenatal === 6 &&
+      g.semanasPrenatal === DESCANSO_PRENATAL_SEMANAS &&
+      g.diasPrenatal === 42 &&
+      g.diasPrenatal === DESCANSO_PRENATAL_DIAS &&
+      g.semanasPostnatal === 12 &&
+      g.semanasPostnatal === DESCANSO_POSTNATAL_SEMANAS &&
+      g.diasPostnatal === 84 &&
+      g.diasPostnatal === DESCANSO_POSTNATAL_DIAS &&
+      g.baseSil === 900_000 &&
+      g.silDesdeNetas === false &&
+      g.diarioSil === 30_000 &&
+      g.subsidioPrenatal === 1_260_000,
+    JSON.stringify(g),
+  );
+  const fromInicio = calcularPermisoPrenatal({
+    modo: "inicio",
+    fechaInicio: "2026-01-18",
+    baseSil: 900_000,
+  });
+  assert(
+    "modo inicio 2026-01-18 → parto 2026-03-01 (mismo gold)",
+    fromInicio.ok === true &&
+      fromInicio.fechaParto === "2026-03-01" &&
+      fromInicio.fechaFinPrenatal === "2026-02-28" &&
+      fromInicio.fechaFinPostnatal === "2026-05-23" &&
+      fromInicio.subsidioPrenatal === 1_260_000,
+    JSON.stringify(fromInicio),
+  );
+  const leap = calcularPermisoPrenatal({ fechaParto: "2024-03-01", baseSil: 900_000 });
+  assert(
+    "bisiesto parto 2024-03-01 → inicio 2024-01-19 (feb 29)",
+    leap.ok === true &&
+      leap.fechaInicioPrenatal === "2024-01-19" &&
+      leap.fechaFinPrenatal === "2024-02-29" &&
+      leap.subsidioPrenatal === 1_260_000,
+    JSON.stringify(leap),
+  );
+  const netas = calcularPermisoPrenatal({
+    fechaParto: "2026-03-01",
+    baseSil: 1,
+    neta1: 800_000,
+    neta2: 900_000,
+    neta3: 1_000_000,
+  });
+  assert(
+    "3 netas 800/900/1000 → base 900000 (DFL 44 art. 8) y mismo subsidio",
+    netas.silDesdeNetas === true &&
+      netas.baseSil === 900_000 &&
+      netas.subsidioPrenatal === 1_260_000,
+    JSON.stringify(netas),
+  );
+  assert(
+    "sin fecha → ok false; inputs negativos → base 0",
+    calcularPermisoPrenatal({ fechaParto: "", baseSil: 900_000 }).ok === false &&
+      calcularPermisoPrenatal({ modo: "inicio", fechaInicio: "", baseSil: 900_000 }).ok === false &&
+      calcularPermisoPrenatal({ fechaParto: "2026-03-01", baseSil: -1 }).baseSil === 0 &&
+      calcularPermisoPrenatal({ fechaParto: "2026-03-01", baseSil: -1 }).subsidioPrenatal === 0,
+  );
+  const ppnApp = readFileSync(join(root, "js/app-permiso-prenatal.js"), "utf8");
+  assert(
+    "app-permiso-prenatal usa calcularPermisoPrenatal",
+    /import\s*\{[^}]*calcularPermisoPrenatal[^}]*\}\s*from\s*["']\.\/sueldo\.js["']/.test(ppnApp) &&
+      /calcularPermisoPrenatal\s*\(/.test(ppnApp),
   );
 }
 
@@ -2723,6 +2809,7 @@ const required = [
   "apv.html",
   "sala-cuna.html",
   "postnatal-parental.html",
+  "permiso-prenatal.html",
   "permiso-paternidad.html",
   "permiso-matrimonio.html",
   "permiso-fallecimiento.html",
@@ -2756,6 +2843,7 @@ const required = [
   "js/app-apv.js",
   "js/app-sala-cuna.js",
   "js/app-postnatal-parental.js",
+  "js/app-permiso-prenatal.js",
   "js/app-permiso-paternidad.js",
   "js/app-permiso-matrimonio.js",
   "js/app-permiso-fallecimiento.js",
@@ -2917,6 +3005,7 @@ const htmlFiles = [
   "apv.html",
   "sala-cuna.html",
   "postnatal-parental.html",
+  "permiso-prenatal.html",
   "permiso-paternidad.html",
   "permiso-matrimonio.html",
   "permiso-fallecimiento.html",
@@ -3025,6 +3114,7 @@ const appEntries = [
   "js/app-apv.js",
   "js/app-sala-cuna.js",
   "js/app-postnatal-parental.js",
+  "js/app-permiso-prenatal.js",
   "js/app-permiso-paternidad.js",
   "js/app-permiso-matrimonio.js",
   "js/app-permiso-fallecimiento.js",
@@ -3069,7 +3159,7 @@ assert("robots Allow /", /Allow:\s*\//.test(robots));
 assert("robots Disallow /admin", /Disallow:\s*\/admin/.test(robots));
 assert("robots Disallow /api", /Disallow:\s*\/api/.test(robots));
 assert("robots Disallow /docs", /Disallow:\s*\/docs/.test(robots));
-assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/feriado-anual/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/licencia-medica/.test(robots) && !/Disallow:\s*\/boleta-honorarios/.test(robots) && !/Disallow:\s*\/retencion-judicial/.test(robots) && !/Disallow:\s*\/apv/.test(robots) && !/Disallow:\s*\/sala-cuna/.test(robots) && !/Disallow:\s*\/postnatal-parental/.test(robots) && !/Disallow:\s*\/permiso-paternidad/.test(robots) && !/Disallow:\s*\/permiso-matrimonio/.test(robots) && !/Disallow:\s*\/permiso-fallecimiento/.test(robots) && !/Disallow:\s*\/hora-lactancia/.test(robots) && !/Disallow:\s*\/jornada-40-horas/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots));
+assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/feriado-anual/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/licencia-medica/.test(robots) && !/Disallow:\s*\/boleta-honorarios/.test(robots) && !/Disallow:\s*\/retencion-judicial/.test(robots) && !/Disallow:\s*\/apv/.test(robots) && !/Disallow:\s*\/sala-cuna/.test(robots) && !/Disallow:\s*\/postnatal-parental/.test(robots) && !/Disallow:\s*\/permiso-prenatal/.test(robots) && !/Disallow:\s*\/permiso-paternidad/.test(robots) && !/Disallow:\s*\/permiso-matrimonio/.test(robots) && !/Disallow:\s*\/permiso-fallecimiento/.test(robots) && !/Disallow:\s*\/hora-lactancia/.test(robots) && !/Disallow:\s*\/jornada-40-horas/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots));
 assert("robots Sitemap", /Sitemap:\s*https:\/\/www\.haberes\.cl\/sitemap\.xml/.test(robots));
 
 const { seoPaths, GUIDE_SLUGS, GUIDES, CAUSAL_PAGES, BASE_PATHS, lastmodForPath } = await import("../content/registry.js");
@@ -3113,6 +3203,7 @@ assert(
     BASE_PATHS.includes("/apv") &&
     BASE_PATHS.includes("/sala-cuna") &&
     BASE_PATHS.includes("/postnatal-parental") &&
+    BASE_PATHS.includes("/permiso-prenatal") &&
     BASE_PATHS.includes("/permiso-paternidad") &&
     BASE_PATHS.includes("/permiso-matrimonio") &&
     BASE_PATHS.includes("/permiso-fallecimiento") &&
@@ -3471,7 +3562,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 79,
+      seoPaths().length === 80,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -3483,7 +3574,7 @@ try {
   const docsSeo = await hitLocal("/docs/seo-map.md");
   assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
   assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
-  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/asignacion-familiar/", "/colacion-movilizacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/asignacion-familiar/", "/colacion-movilizacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
   }
@@ -3518,6 +3609,7 @@ try {
     "/apv",
     "/sala-cuna",
     "/postnatal-parental",
+    "/permiso-prenatal",
     "/permiso-paternidad",
     "/permiso-matrimonio",
     "/permiso-fallecimiento",
@@ -3552,6 +3644,12 @@ try {
     "301 /permiso-auc → /permiso-matrimonio",
     aucAlias.status === 301 && aucAlias.location === "/permiso-matrimonio",
     `${aucAlias.status} ${aucAlias.location}`,
+  );
+  const prenatalAlias = await hitLocal("/descanso-prenatal");
+  assert(
+    "301 /descanso-prenatal → /permiso-prenatal",
+    prenatalAlias.status === 301 && prenatalAlias.location === "/permiso-prenatal",
+    `${prenatalAlias.status} ${prenatalAlias.location}`,
   );
   writeFileSync(join(root, "sitemap.xml"), "<urlset>STATIC-LEFTOVER</urlset>");
   try {
@@ -7262,6 +7360,7 @@ assert(
     ["apv.html", "/apv"],
     ["sala-cuna.html", "/sala-cuna"],
     ["postnatal-parental.html", "/postnatal-parental"],
+    ["permiso-prenatal.html", "/permiso-prenatal"],
     ["permiso-paternidad.html", "/permiso-paternidad"],
     ["permiso-matrimonio.html", "/permiso-matrimonio"],
     ["permiso-fallecimiento.html", "/permiso-fallecimiento"],
@@ -8643,6 +8742,133 @@ assert(
         /href="\/postnatal-parental"/.test(scHtmlPpp) &&
         /href="\/postnatal-parental"/.test(spHtmlPpp) &&
         /href="\/postnatal-parental"/.test(afHtmlPpp),
+    );
+  }
+  {
+    const ppnHtml = readFileSync(join(root, "permiso-prenatal.html"), "utf8");
+    const ppnTitle = (ppnHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const ppnH1 = (ppnHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const ppnDesc = (ppnHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "";
+    const pppHtmlPpn = readFileSync(join(root, "postnatal-parental.html"), "utf8");
+    const lmHtmlPpn = readFileSync(join(root, "licencia-medica.html"), "utf8");
+    const ppHtmlPpn = readFileSync(join(root, "permiso-paternidad.html"), "utf8");
+    const hlHtmlPpn = readFileSync(join(root, "hora-lactancia.html"), "utf8");
+    const scHtmlPpn = readFileSync(join(root, "sala-cuna.html"), "utf8");
+    const goldPpn = calcularPermisoPrenatal({
+      fechaParto: "2026-03-01",
+      baseSil: 900_000,
+    });
+    assert(
+      "SEO permiso prenatal title único y corto",
+      /calcular permiso prenatal/i.test(ppnTitle) &&
+        !/postnatal parental/i.test(ppnTitle) &&
+        !/licencia m[eé]dica/i.test(ppnTitle) &&
+        !/sueldo l[ií]quido/i.test(ppnTitle) &&
+        ppnTitle !== ((pppHtmlPpn.match(/<title>([^<]*)<\/title>/) || [])[1] || "") &&
+        ppnTitle !== ((lmHtmlPpn.match(/<title>([^<]*)<\/title>/) || [])[1] || "") &&
+        ppnTitle.length <= 65,
+      ppnTitle,
+    );
+    assert(
+      "SEO permiso prenatal H1 único art. 195",
+      ppnH1 === "Calcular permiso prenatal art. 195 Chile 2026" &&
+        ppnH1 !== ((pppHtmlPpn.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "") &&
+        !/197 bis/i.test(ppnH1),
+      ppnH1,
+    );
+    assert(
+      "SEO permiso prenatal description propia",
+      ppnDesc &&
+        ppnDesc !== ((pppHtmlPpn.match(/meta name="description" content="([^"]*)"/) || [])[1] || "") &&
+        ppnDesc !== ((lmHtmlPpn.match(/meta name="description" content="([^"]*)"/) || [])[1] || ""),
+      ppnDesc,
+    );
+    assert(
+      "SEO permiso prenatal cita art. 195, DT, SUSESO y DFL 44 art. 8",
+      /art[ií]culo 195/.test(ppnHtml) &&
+        /42 d[ií]as corridos/.test(ppnHtml) &&
+        /D\.F\.L\.\s*N°44 art\. 8/.test(ppnHtml) &&
+        /bcn\.cl\/leychile\/navegar\?idNorma=207436/.test(ppnHtml) &&
+        /bcn\.cl\/leychile\/navegar\?idNorma=4252/.test(ppnHtml) &&
+        /dt\.gob\.cl\/portal\/1628\/w3-article-60107/.test(ppnHtml) &&
+        /suseso\.gob\.cl\/605\/w3-article-782408/.test(ppnHtml) &&
+        /suseso\.gob\.cl\/612\/w3-propertyvalue-222048/.test(ppnHtml),
+    );
+    assert(
+      "SEO permiso prenatal gold 900000 → 1260000 y no parental/fuero",
+      goldPpn.subsidioPrenatal === 1_260_000 &&
+        goldPpn.fechaInicioPrenatal === "2026-01-18" &&
+        goldPpn.fechaFinPostnatal === "2026-05-23" &&
+        /\$1\.260\.000/.test(ppnHtml) &&
+        /18 de enero de 2026/.test(ppnHtml) &&
+        /23 de mayo de 2026/.test(ppnHtml) &&
+        /href="\/postnatal-parental"/.test(ppnHtml) &&
+        /href="\/licencia-medica"/.test(ppnHtml) &&
+        /href="\/permiso-paternidad"/.test(ppnHtml) &&
+        /href="\/hora-lactancia"/.test(ppnHtml) &&
+        /href="\/sala-cuna"/.test(ppnHtml) &&
+        /art[ií]culo 201/.test(ppnHtml) &&
+        !/href="\/fuero-maternal"/.test(ppnHtml) &&
+        !/<code>\/postnatal-parental<\/code>/.test(ppnHtml.split("No abre URLs hermanas")[1] || ""),
+    );
+    assert(
+      "SEO permiso prenatal no canibaliza hermanas en copy",
+      /no es el/i.test(ppnHtml) &&
+        /postnatal parental/.test(ppnHtml) &&
+        /fuero/.test(ppnHtml) &&
+        /licencia com[uú]n/.test(ppnHtml),
+    );
+    assert(
+      "home y nav enlazan /permiso-prenatal",
+      /href="\/permiso-prenatal"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/permiso-prenatal" data-nav>Permiso prenatal<\/a>/.test(
+          readFileSync(join(root, "index.html"), "utf8"),
+        ) &&
+        /href="\/permiso-prenatal" data-nav>Permiso prenatal<\/a>/.test(ppnHtml),
+    );
+    assert(
+      "sitemap incluye /permiso-prenatal",
+      locs.includes("https://www.haberes.cl/permiso-prenatal") &&
+        lastmodForPath("/permiso-prenatal") === "2026-09-11",
+    );
+    assert(
+      "seo-map documenta /permiso-prenatal y no-canibalizar hermanas",
+      /\/permiso-prenatal/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no canibalizar `\/postnatal-parental`, `\/fuero-maternal`, `\/licencia-medica`, `\/sala-cuna`, `\/hora-lactancia`, `\/permiso-paternidad`, `\/sueldo` ni `\/sueldo-proporcional`/.test(
+          readFileSync(join(root, "docs/seo-map.md"), "utf8"),
+        ) &&
+        /no crear `\/prenatal`/i.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")),
+    );
+    assert(
+      "hub /guias enlaza /permiso-prenatal en el cluster de liquidación",
+      /href="\/permiso-prenatal"/.test(readFileSync(join(root, "guias.html"), "utf8")) &&
+        !/<h2>Finiquito<\/h2>[\s\S]*href="\/permiso-prenatal"/.test(
+          readFileSync(join(root, "guias.html"), "utf8"),
+        ),
+    );
+    assert(
+      "hermanas enlazan /permiso-prenatal",
+      /href="\/permiso-prenatal"/.test(pppHtmlPpn) &&
+        /href="\/permiso-prenatal"/.test(lmHtmlPpn) &&
+        /href="\/permiso-prenatal"/.test(ppHtmlPpn) &&
+        /href="\/permiso-prenatal"/.test(hlHtmlPpn) &&
+        /href="\/permiso-prenatal"/.test(scHtmlPpn),
+    );
+    assert("SEO permiso prenatal FAQPage", /"@type": "FAQPage"/.test(ppnHtml));
+    assert(
+      "SEO permiso prenatal no crea URLs hermanas",
+      !existsSync(join(root, "prenatal.html")) &&
+        !existsSync(join(root, "pre-natal.html")) &&
+        !existsSync(join(root, "art-195-prenatal.html")) &&
+        !existsSync(join(root, "descanso-prenatal.html")),
+    );
+    const vercelPpn = JSON.parse(readFileSync(join(root, "vercel.json"), "utf8"));
+    assert(
+      "alias /descanso-prenatal redirige a /permiso-prenatal",
+      Array.isArray(vercelPpn.redirects) &&
+        vercelPpn.redirects.some(
+          (r) => r.source === "/descanso-prenatal" && r.destination === "/permiso-prenatal" && r.permanent === true,
+        ),
     );
   }
   {
@@ -11320,6 +11546,7 @@ assert(
       "apv.html",
       "sala-cuna.html",
       "postnatal-parental.html",
+      "permiso-prenatal.html",
       "permiso-paternidad.html",
       "permiso-matrimonio.html",
       "permiso-fallecimiento.html",
@@ -11507,7 +11734,7 @@ assert(
     return acc;
   }
   const pages = listHtml(root);
-  assert("81 páginas HTML", pages.length === 81, String(pages.length));
+  assert("82 páginas HTML", pages.length === 82, String(pages.length));
   for (const file of pages) {
     const html = readFileSync(file, "utf8");
     const rel = file.slice(root.length + 1);
