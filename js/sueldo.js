@@ -34,6 +34,15 @@ import {
   TOPE_AFP_SALUD_UF,
   TOPE_APV_REGIMEN_B_UF,
   TOPE_CESANTIA_UF,
+  TRABAJO_MENOS_PESADO_REBAJA_ANIOS_POR_BLOQUE,
+  TRABAJO_MENOS_PESADO_REBAJA_MAX,
+  TRABAJO_MENOS_PESADO_TASA_EMPLEADOR,
+  TRABAJO_MENOS_PESADO_TASA_TRABAJADOR,
+  TRABAJO_PESADO_ANIOS_BLOQUE,
+  TRABAJO_PESADO_REBAJA_ANIOS_POR_BLOQUE,
+  TRABAJO_PESADO_REBAJA_MAX,
+  TRABAJO_PESADO_TASA_EMPLEADOR,
+  TRABAJO_PESADO_TASA_TRABAJADOR,
   UMBRAL_SALA_CUNA,
   POSTNATAL_PARENTAL_SEMANAS_COMPLETA,
   POSTNATAL_PARENTAL_SEMANAS_MIN_MADRE,
@@ -1337,6 +1346,88 @@ export function calcularSeguroCesantia(input = {}, indicadores = {}) {
     cuentaIndividual: { monto: trabajadorCic + empleadorCic },
     fondoSolidario: { monto: trabajadorFcs + empleadorFcs },
     total: trabajadorMonto + empleadorMonto,
+  };
+}
+
+function tasasTrabajoPesado(calificacion) {
+  if (calificacion === "menos_pesado") {
+    return {
+      calificacion: "menos_pesado",
+      tasaTrab: TRABAJO_MENOS_PESADO_TASA_TRABAJADOR,
+      tasaEmp: TRABAJO_MENOS_PESADO_TASA_EMPLEADOR,
+      aniosPorBloque: TRABAJO_MENOS_PESADO_REBAJA_ANIOS_POR_BLOQUE,
+      maxRebaja: TRABAJO_MENOS_PESADO_REBAJA_MAX,
+    };
+  }
+  return {
+    calificacion: "pesado",
+    tasaTrab: TRABAJO_PESADO_TASA_TRABAJADOR,
+    tasaEmp: TRABAJO_PESADO_TASA_EMPLEADOR,
+    aniosPorBloque: TRABAJO_PESADO_REBAJA_ANIOS_POR_BLOQUE,
+    maxRebaja: TRABAJO_PESADO_REBAJA_MAX,
+  };
+}
+
+/**
+ * Cotización adicional por trabajo pesado (D.L. 3.500 art. 17 bis / Ley 19.404).
+ *
+ * imponibleEfectiva = min(remuneracionImponible, topeAFP)
+ * cotTrabajador = round(imponibleEfectiva × tasaTrab / 100)
+ * cotEmpleador = round(imponibleEfectiva × tasaEmp / 100)
+ * totalMes = cotTrabajador + cotEmpleador
+ * añosRebaja = min(maxRebaja, floor(aniosCotizados / 5) × aniosPorBloque)
+ *
+ * Tasas CEN: pesado 2 %+2 %; menos pesado 1 %+1 %. Tope AFP (90 UF), no el
+ * de cesantía. No se cotiza si no hay remuneración imponible (p. ej. licencia
+ * médica). No modela fracciones del art. 68 bis ni el requisito de 20 años
+ * de cotizaciones totales.
+ *
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=30771
+ * @see https://www.suseso.gob.cl/613/w3-propertyvalue-185105.html
+ */
+export function calcularTrabajoPesado(input = {}, indicadores = {}) {
+  const uf = Number(indicadores.uf) || FALLBACK_UF;
+  const remuneracionImponible = Math.max(
+    0,
+    Number(input.remuneracionImponible ?? input.sueldoBase ?? input.imponible) || 0,
+  );
+  const calificacionRaw = String(input.calificacion || "pesado").toLowerCase().trim();
+  const calificacion =
+    calificacionRaw === "menos_pesado" ||
+    calificacionRaw === "menos-pesado" ||
+    calificacionRaw === "menos pesado" ||
+    calificacionRaw === "1"
+      ? "menos_pesado"
+      : "pesado";
+  const tasas = tasasTrabajoPesado(calificacion);
+  const topeAfp = TOPE_AFP_SALUD_UF * uf;
+  const imponibleEfectiva = Math.min(remuneracionImponible, topeAfp);
+  const cotTrabajador = roundPeso((imponibleEfectiva * tasas.tasaTrab) / 100);
+  const cotEmpleador = roundPeso((imponibleEfectiva * tasas.tasaEmp) / 100);
+  const aniosCotizados = Math.max(0, Number(input.aniosCotizados) || 0);
+  const aniosRebaja = Math.min(
+    tasas.maxRebaja,
+    Math.floor(aniosCotizados / TRABAJO_PESADO_ANIOS_BLOQUE) * tasas.aniosPorBloque,
+  );
+
+  return {
+    calificacion: tasas.calificacion,
+    remuneracionImponible,
+    imponibleEfectiva,
+    topeAfp,
+    topeUf: TOPE_AFP_SALUD_UF,
+    uf,
+    tasaTrab: tasas.tasaTrab,
+    tasaEmp: tasas.tasaEmp,
+    cotTrabajador,
+    cotEmpleador,
+    totalMes: cotTrabajador + cotEmpleador,
+    aniosCotizados,
+    aniosBloque: TRABAJO_PESADO_ANIOS_BLOQUE,
+    aniosPorBloque: tasas.aniosPorBloque,
+    maxRebaja: tasas.maxRebaja,
+    aniosRebaja,
+    topeAplicado: remuneracionImponible > topeAfp + 0.5,
   };
 }
 

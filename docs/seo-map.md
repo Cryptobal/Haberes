@@ -21,6 +21,7 @@ Actualizar este archivo antes de crear URLs nuevas para evitar canibalización.
 | Calcular cotizaciones previsionales | cotizaciones previsionales / tope imponible AFP / comisión AFP | `/cotizaciones-previsionales` | Title/H1 «calcular cotizaciones previsionales»; no canibalizar `/sueldo` ni `/guias/liquidacion-de-sueldo-y-previred`. No crear `/tope-imponible`, `/cotizacion-afp`, `/descuentos-legales` ni `/calculadora-sueldo` |
 | Calcular costo empresa de un sueldo | costo empresa / costo de un trabajador / cuánto cuesta contratar | `/costo-empresa` | Title/H1 «calcular costo empresa de un sueldo»; no canibalizar `/sueldo` ni `/cotizaciones-previsionales`. Responde «cuánto me cuesta contratar», no el líquido. No crear `/costo-trabajador` ni `/aportes-patronales` |
 | Calcular seguro de cesantía | seguro de cesantía / cotización AFC / Ley 19.728 | `/seguro-cesantia` | Title/H1 «calcular seguro de cesantía»; no canibalizar `/cotizaciones-previsionales`, `/costo-empresa` ni `/sueldo`. Cotización mensual AFC (trabajador + empleador, CIC/FCS). No es prestación post-despido ni AFP/salud. No crear `/afc` ni `/cesantia` |
+| Calcular trabajo pesado | trabajo pesado / cotización adicional CEN / Ley 19.404 / art. 17 bis | `/trabajo-pesado` | Title/H1 «Calculadora trabajo pesado Chile»; no canibalizar `/cotizaciones-previsionales`, `/costo-empresa`, `/seguro-cesantia`, `/sueldo`, `/apv` ni `/licencia-medica`. Cotización adicional AFP (2 %+2 % o 1 %+1 %) y rebaja de edad. La CEN califica el puesto. No crear `/trabajo-pesado-cotizacion`, `/cen`, `/ley-19404` ni `/jubilacion-anticipada-pesado` |
 | Calcular recargo domingo comercio | recargo domingo comercio / recargo 30% domingo / art. 38 N°7 | `/recargo-domingo-comercio` | Title/H1 «calcular recargo domingo comercio»; no canibalizar `/horas-extras` ni `/guias/horas-extras`. No es hora extra (art. 32) ni semana corrida (art. 45). No crear `/horas-extras-domingo` ni `/recargo-festivo` |
 | Calcular pago feriado irrenunciable | feriado irrenunciable / pago feriado 18 septiembre / trabajar feriado | `/feriado-irrenunciable` | Title/H1 «calcular pago feriado irrenunciable»; no canibalizar `/horas-extras`, `/recargo-domingo-comercio` ni `/aguinaldo`. Art. 32 + Ley 19.973 (1 ene, 1 may, 18–19 sep, 25 dic). Jornada 42 por defecto. No crear `/pago-feriado`, `/trabajo-feriado`, `/feriados` ni `/irrenunciable` |
 | Calcular semana corrida | semana corrida (1.300/21) — intención calcular | `/semana-corrida` | Title/H1 «calcular semana corrida»; no canibalizar `/guias/semana-corrida`, `/recargo-domingo-comercio` ni `/sueldo`. Art. 45 (pago del descanso), no recargo 30 % art. 38 N°7 ni hora extra art. 32. No crear `/septimo-dia` ni `/pago-domingo-festivo` |
@@ -125,6 +126,17 @@ No publicar `/afc` ni `/cesantia`. La cotización mensual al Seguro de Cesantía
 vive en `/seguro-cesantia`. AFP y salud siguen en `/cotizaciones-previsionales`.
 El costo completo de contratar sigue en `/costo-empresa`. El líquido, en `/sueldo`.
 La prestación (giros) si hay despido no abre URL propia.
+
+No publicar `/trabajo-pesado-cotizacion`, `/cen`, `/ley-19404` ni
+`/jubilacion-anticipada-pesado`. La cotización adicional por trabajo pesado
+(Ley 19.404 / D.L. 3.500 art. 17 bis: 2 %+2 % o 1 %+1 % CEN sobre tope AFP,
+y rebaja de edad art. 68 bis) vive en `/trabajo-pesado`. No canibalizar
+`/cotizaciones-previsionales`, `/costo-empresa`, `/seguro-cesantia`, `/sueldo`,
+`/apv` ni `/licencia-medica`. AFP, salud y cesantía del trabajador siguen en
+`/cotizaciones-previsionales`. El AFC sigue en `/seguro-cesantia`. El costo de
+contratar (sin esta línea) sigue en `/costo-empresa`. El líquido sigue en
+`/sueldo`. El APV Régimen B sigue en `/apv`. El SIL de una licencia sigue en
+`/licencia-medica`. La calificación del puesto la hace la CEN; no abre URL.
 
 No publicar hermanas del recargo domingo: `/horas-extras-domingo`, `/recargo-festivo`,
 `/trabajo-en-domingo`. El recargo 30 % del comercio (art. 38 N°7) vive en

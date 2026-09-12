@@ -36,6 +36,15 @@ import {
   TOPE_AFP_SALUD_UF,
   TOPE_APV_REGIMEN_B_UF,
   TOPE_CESANTIA_UF,
+  TRABAJO_MENOS_PESADO_REBAJA_ANIOS_POR_BLOQUE,
+  TRABAJO_MENOS_PESADO_REBAJA_MAX,
+  TRABAJO_MENOS_PESADO_TASA_EMPLEADOR,
+  TRABAJO_MENOS_PESADO_TASA_TRABAJADOR,
+  TRABAJO_PESADO_ANIOS_BLOQUE,
+  TRABAJO_PESADO_REBAJA_ANIOS_POR_BLOQUE,
+  TRABAJO_PESADO_REBAJA_MAX,
+  TRABAJO_PESADO_TASA_EMPLEADOR,
+  TRABAJO_PESADO_TASA_TRABAJADOR,
   RETENCION_BOLETA_ANIO_DEFAULT,
   RETENCION_BOLETA_HONORARIOS,
   UMBRAL_SALA_CUNA,
@@ -81,6 +90,7 @@ import {
   calcularRecargoDomingoComercio,
   calcularFeriadoIrrenunciable,
   calcularSeguroCesantia,
+  calcularTrabajoPesado,
   calcularSemanaCorrida,
   calcularSueldo,
   calcularDescuentoAtrasosInasistencias,
@@ -178,6 +188,18 @@ assert(
 );
 assert("Tope AFP/salud 90 UF", TOPE_AFP_SALUD_UF === 90);
 assert("Tope cesantía 135.2 UF", TOPE_CESANTIA_UF === 135.2);
+assert(
+  "Trabajo pesado CEN 2 %+2 % y 1 %+1 %",
+  TRABAJO_PESADO_TASA_TRABAJADOR === 2 &&
+    TRABAJO_PESADO_TASA_EMPLEADOR === 2 &&
+    TRABAJO_MENOS_PESADO_TASA_TRABAJADOR === 1 &&
+    TRABAJO_MENOS_PESADO_TASA_EMPLEADOR === 1 &&
+    TRABAJO_PESADO_ANIOS_BLOQUE === 5 &&
+    TRABAJO_PESADO_REBAJA_ANIOS_POR_BLOQUE === 2 &&
+    TRABAJO_PESADO_REBAJA_MAX === 10 &&
+    TRABAJO_MENOS_PESADO_REBAJA_ANIOS_POR_BLOQUE === 1 &&
+    TRABAJO_MENOS_PESADO_REBAJA_MAX === 5,
+);
 assert("Tope APV Régimen B 50 UF", TOPE_APV_REGIMEN_B_UF === 50);
 assert(
   "Cesantía empleador Ley 19.728",
@@ -2149,6 +2171,90 @@ assert(
       /calcularSeguroCesantia\s*\(/.test(scApp),
   );
 }
+
+{
+  const indTp = { uf: FALLBACK_UF };
+  const goldTpCalc = calcularTrabajoPesado(
+    { remuneracionImponible: 1_000_000, calificacion: "pesado" },
+    indTp,
+  );
+  assert(
+    "gold trabajo pesado 1000000 2 %+2 % → 20000 + 20000 = 40000",
+    goldTpCalc.cotTrabajador === 20_000 &&
+      goldTpCalc.cotEmpleador === 20_000 &&
+      goldTpCalc.totalMes === 40_000 &&
+      goldTpCalc.imponibleEfectiva === 1_000_000 &&
+      goldTpCalc.topeAplicado === false,
+    JSON.stringify({ t: goldTpCalc.cotTrabajador, e: goldTpCalc.cotEmpleador, tot: goldTpCalc.totalMes }),
+  );
+  const menosTp = calcularTrabajoPesado(
+    { remuneracionImponible: 1_000_000, calificacion: "menos_pesado" },
+    indTp,
+  );
+  assert(
+    "gold trabajo menos pesado 1000000 1 %+1 % → 10000 + 10000 = 20000",
+    menosTp.cotTrabajador === 10_000 &&
+      menosTp.cotEmpleador === 10_000 &&
+      menosTp.totalMes === 20_000 &&
+      menosTp.calificacion === "menos_pesado",
+    JSON.stringify({ t: menosTp.cotTrabajador, e: menosTp.cotEmpleador }),
+  );
+  const topeTp = calcularTrabajoPesado(
+    { remuneracionImponible: 10_000_000, calificacion: "pesado" },
+    indTp,
+  );
+  const topePesosTp = TOPE_AFP_SALUD_UF * FALLBACK_UF;
+  const cotTopeTp = Math.round(topePesosTp * 0.02);
+  assert(
+    "trabajo pesado respeta tope AFP 90 UF",
+    close(topeTp.imponibleEfectiva, topePesosTp, 0.1) &&
+      topeTp.topeAplicado === true &&
+      topeTp.cotTrabajador === cotTopeTp &&
+      topeTp.cotEmpleador === cotTopeTp &&
+      topeTp.totalMes === cotTopeTp * 2 &&
+      10_000_000 > topePesosTp,
+    `${topeTp.cotTrabajador} ${topeTp.imponibleEfectiva}`,
+  );
+  const rebaja10 = calcularTrabajoPesado({
+    remuneracionImponible: 1_000_000,
+    calificacion: "pesado",
+    aniosCotizados: 10,
+  });
+  const rebaja25 = calcularTrabajoPesado({
+    remuneracionImponible: 1_000_000,
+    calificacion: "pesado",
+    aniosCotizados: 25,
+  });
+  const rebajaMenos10 = calcularTrabajoPesado({
+    remuneracionImponible: 1_000_000,
+    calificacion: "menos_pesado",
+    aniosCotizados: 10,
+  });
+  const rebajaMenos25 = calcularTrabajoPesado({
+    remuneracionImponible: 1_000_000,
+    calificacion: "menos_pesado",
+    aniosCotizados: 25,
+  });
+  assert(
+    "rebaja edad: 10 años → 4/2; 25 años → tope 10/5",
+    rebaja10.aniosRebaja === 4 &&
+      rebaja25.aniosRebaja === 10 &&
+      rebajaMenos10.aniosRebaja === 2 &&
+      rebajaMenos25.aniosRebaja === 5,
+    JSON.stringify({
+      r10: rebaja10.aniosRebaja,
+      r25: rebaja25.aniosRebaja,
+      m10: rebajaMenos10.aniosRebaja,
+      m25: rebajaMenos25.aniosRebaja,
+    }),
+  );
+  const tpApp = readFileSync(join(root, "js/app-trabajo-pesado.js"), "utf8");
+  assert(
+    "app-trabajo-pesado usa calcularTrabajoPesado",
+    /import\s*\{[^}]*calcularTrabajoPesado[^}]*\}\s*from\s*["']\.\/sueldo\.js["']/.test(tpApp) &&
+      /calcularTrabajoPesado\s*\(/.test(tpApp),
+  );
+}
 {
   const iuApp = readFileSync(join(root, "js/app-impuesto-unico.js"), "utf8");
   assert(
@@ -2877,6 +2983,7 @@ const required = [
   "cotizaciones-previsionales.html",
   "costo-empresa.html",
   "seguro-cesantia.html",
+  "trabajo-pesado.html",
   "recargo-domingo-comercio.html",
   "feriado-irrenunciable.html",
   "semana-corrida.html",
@@ -2912,6 +3019,7 @@ const required = [
   "js/app-cotizaciones-previsionales.js",
   "js/app-costo-empresa.js",
   "js/app-seguro-cesantia.js",
+  "js/app-trabajo-pesado.js",
   "js/app-recargo-domingo-comercio.js",
   "js/app-feriado-irrenunciable.js",
   "js/app-semana-corrida.js",
@@ -3075,6 +3183,7 @@ const htmlFiles = [
   "cotizaciones-previsionales.html",
   "costo-empresa.html",
   "seguro-cesantia.html",
+  "trabajo-pesado.html",
   "recargo-domingo-comercio.html",
   "feriado-irrenunciable.html",
   "semana-corrida.html",
@@ -3185,6 +3294,7 @@ const appEntries = [
   "js/app-cotizaciones-previsionales.js",
   "js/app-costo-empresa.js",
   "js/app-seguro-cesantia.js",
+  "js/app-trabajo-pesado.js",
   "js/app-recargo-domingo-comercio.js",
   "js/app-feriado-irrenunciable.js",
   "js/app-semana-corrida.js",
@@ -3244,7 +3354,7 @@ assert("robots Allow /", /Allow:\s*\//.test(robots));
 assert("robots Disallow /admin", /Disallow:\s*\/admin/.test(robots));
 assert("robots Disallow /api", /Disallow:\s*\/api/.test(robots));
 assert("robots Disallow /docs", /Disallow:\s*\/docs/.test(robots));
-assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/feriado-anual/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/licencia-medica/.test(robots) && !/Disallow:\s*\/boleta-honorarios/.test(robots) && !/Disallow:\s*\/retencion-judicial/.test(robots) && !/Disallow:\s*\/apv/.test(robots) && !/Disallow:\s*\/sala-cuna/.test(robots) && !/Disallow:\s*\/postnatal-parental/.test(robots) && !/Disallow:\s*\/permiso-prenatal/.test(robots) && !/Disallow:\s*\/fuero-maternal/.test(robots) && !/Disallow:\s*\/permiso-paternidad/.test(robots) && !/Disallow:\s*\/permiso-matrimonio/.test(robots) && !/Disallow:\s*\/permiso-fallecimiento/.test(robots) && !/Disallow:\s*\/hora-lactancia/.test(robots) && !/Disallow:\s*\/jornada-40-horas/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots));
+assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/trabajo-pesado/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/feriado-anual/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/licencia-medica/.test(robots) && !/Disallow:\s*\/boleta-honorarios/.test(robots) && !/Disallow:\s*\/retencion-judicial/.test(robots) && !/Disallow:\s*\/apv/.test(robots) && !/Disallow:\s*\/sala-cuna/.test(robots) && !/Disallow:\s*\/postnatal-parental/.test(robots) && !/Disallow:\s*\/permiso-prenatal/.test(robots) && !/Disallow:\s*\/fuero-maternal/.test(robots) && !/Disallow:\s*\/permiso-paternidad/.test(robots) && !/Disallow:\s*\/permiso-matrimonio/.test(robots) && !/Disallow:\s*\/permiso-fallecimiento/.test(robots) && !/Disallow:\s*\/hora-lactancia/.test(robots) && !/Disallow:\s*\/jornada-40-horas/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots));
 assert("robots Sitemap", /Sitemap:\s*https:\/\/www\.haberes\.cl\/sitemap\.xml/.test(robots));
 
 const { seoPaths, GUIDE_SLUGS, GUIDES, CAUSAL_PAGES, BASE_PATHS, lastmodForPath } = await import("../content/registry.js");
@@ -3269,6 +3379,7 @@ assert(
     BASE_PATHS.includes("/cotizaciones-previsionales") &&
     BASE_PATHS.includes("/costo-empresa") &&
     BASE_PATHS.includes("/seguro-cesantia") &&
+    BASE_PATHS.includes("/trabajo-pesado") &&
     BASE_PATHS.includes("/recargo-domingo-comercio") &&
     BASE_PATHS.includes("/feriado-irrenunciable") &&
     BASE_PATHS.includes("/feriado-anual") &&
@@ -3648,7 +3759,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 81,
+      seoPaths().length === 82,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -3660,7 +3771,7 @@ try {
   const docsSeo = await hitLocal("/docs/seo-map.md");
   assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
   assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
-  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/asignacion-familiar/", "/colacion-movilizacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
   }
@@ -3708,6 +3819,7 @@ try {
     "/cotizaciones-previsionales",
     "/costo-empresa",
     "/seguro-cesantia",
+    "/trabajo-pesado",
     "/asignacion-familiar",
     "/colacion-movilizacion",
     "/guias/liquidacion-de-sueldo",
@@ -7434,6 +7546,7 @@ assert(
     ["cotizaciones-previsionales.html", "/cotizaciones-previsionales"],
     ["costo-empresa.html", "/costo-empresa"],
     ["seguro-cesantia.html", "/seguro-cesantia"],
+    ["trabajo-pesado.html", "/trabajo-pesado"],
     ["recargo-domingo-comercio.html", "/recargo-domingo-comercio"],
     ["feriado-irrenunciable.html", "/feriado-irrenunciable"],
     ["semana-corrida.html", "/semana-corrida"],
@@ -11730,6 +11843,155 @@ assert(
       /href="\/seguro-cesantia"/.test(readFileSync(join(root, "guias.html"), "utf8")),
     );
   }
+
+  {
+    const tpHtml = readFileSync(join(root, "trabajo-pesado.html"), "utf8");
+    const tpTitle = (tpHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const tpH1 = (tpHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const tpDesc = (tpHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "";
+    const sueldoHtmlTp = readFileSync(join(root, "sueldo.html"), "utf8");
+    const sueldoTitleTp = (sueldoHtmlTp.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const sueldoH1Tp = (sueldoHtmlTp.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const cpHtmlTp = readFileSync(join(root, "cotizaciones-previsionales.html"), "utf8");
+    const cpTitleTp = (cpHtmlTp.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const cpH1Tp = (cpHtmlTp.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const ceHtmlTp = readFileSync(join(root, "costo-empresa.html"), "utf8");
+    const ceTitleTp = (ceHtmlTp.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const ceH1Tp = (ceHtmlTp.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const scHtmlTp = readFileSync(join(root, "seguro-cesantia.html"), "utf8");
+    const scTitleTp = (scHtmlTp.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const scH1Tp = (scHtmlTp.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const apvHtmlTp = readFileSync(join(root, "apv.html"), "utf8");
+    const lmHtmlTp = readFileSync(join(root, "licencia-medica.html"), "utf8");
+    const goldTp = calcularTrabajoPesado(
+      { remuneracionImponible: 1_000_000, calificacion: "pesado" },
+      { uf: FALLBACK_UF },
+    );
+    const goldMenos = calcularTrabajoPesado(
+      { remuneracionImponible: 1_000_000, calificacion: "menos_pesado" },
+      { uf: FALLBACK_UF },
+    );
+    assert(
+      "SEO title trabajo pesado apunta a calculadora trabajo pesado",
+      /calculadora trabajo pesado/i.test(tpTitle) &&
+        !/sueldo l[ií]quido/i.test(tpTitle) &&
+        !/cotizaciones previsionales/i.test(tpTitle) &&
+        !/costo empresa/i.test(tpTitle) &&
+        !/seguro de cesant[ií]a/i.test(tpTitle) &&
+        tpTitle !== sueldoTitleTp &&
+        tpTitle !== cpTitleTp &&
+        tpTitle !== ceTitleTp &&
+        tpTitle !== scTitleTp &&
+        tpTitle.length <= 65,
+      tpTitle,
+    );
+    assert(
+      "SEO H1 trabajo pesado exacto y distinto de hermanas",
+      tpH1 === "Calculadora trabajo pesado Chile 2026" &&
+        tpH1 !== sueldoH1Tp &&
+        tpH1 !== cpH1Tp &&
+        tpH1 !== ceH1Tp &&
+        tpH1 !== scH1Tp,
+      tpH1,
+    );
+    assert(
+      "SEO trabajo pesado meta distinta de hermanas",
+      tpDesc &&
+        tpDesc !== ((sueldoHtmlTp.match(/meta name="description" content="([^"]*)"/) || [])[1] || "") &&
+        tpDesc !== ((cpHtmlTp.match(/meta name="description" content="([^"]*)"/) || [])[1] || "") &&
+        tpDesc !== ((ceHtmlTp.match(/meta name="description" content="([^"]*)"/) || [])[1] || "") &&
+        tpDesc !== ((scHtmlTp.match(/meta name="description" content="([^"]*)"/) || [])[1] || ""),
+    );
+    assert(
+      "SEO trabajo pesado no canibaliza líquido, cotizaciones, costo, AFC, APV ni licencia",
+      /href="\/sueldo"/.test(tpHtml) &&
+        /href="\/cotizaciones-previsionales"/.test(tpHtml) &&
+        /href="\/costo-empresa"/.test(tpHtml) &&
+        /href="\/seguro-cesantia"/.test(tpHtml) &&
+        /href="\/apv"/.test(tpHtml) &&
+        /href="\/licencia-medica"/.test(tpHtml) &&
+        /no es/i.test(tpHtml),
+    );
+    assert(
+      "SEO trabajo pesado cita Ley 19.404, art. 17 bis, CEN y tope AFP",
+      /19\.404/.test(tpHtml) &&
+        /17 bis/.test(tpHtml) &&
+        /68 bis/.test(tpHtml) &&
+        /Comisi[oó]n Ergon[oó]mica Nacional/.test(tpHtml) &&
+        /90 UF/.test(tpHtml) &&
+        /bcn\.cl\/leychile/.test(tpHtml) &&
+        /suseso\.gob\.cl/.test(tpHtml) &&
+        /spensiones\.cl/.test(tpHtml),
+    );
+    assert(
+      "SEO trabajo pesado ejemplo 1000000 pesado y menos pesado",
+      goldTp.totalMes === 40_000 &&
+        goldTp.cotTrabajador === 20_000 &&
+        goldTp.cotEmpleador === 20_000 &&
+        goldMenos.cotTrabajador === 10_000 &&
+        goldMenos.cotEmpleador === 10_000 &&
+        /\$1\.000\.000/.test(tpHtml) &&
+        /\$20\.000/.test(tpHtml) &&
+        /\$40\.000/.test(tpHtml) &&
+        /\$10\.000/.test(tpHtml),
+    );
+    assert("SEO trabajo pesado FAQPage", /"@type": "FAQPage"/.test(tpHtml));
+    assert(
+      "SEO trabajo pesado disclaimer Haberes / no DT / no Previred / CEN",
+      /Documento generado por Haberes/.test(tpHtml) &&
+        /Direcci[oó]n del Trabajo/.test(tpHtml) &&
+        /Previred/.test(tpHtml) &&
+        /Comisi[oó]n Ergon[oó]mica Nacional/.test(tpHtml) &&
+        /no constituye asesor[ií]a legal/i.test(tpHtml) &&
+        !/inteligencia artificial/i.test(tpHtml),
+    );
+    assert(
+      "home y nav enlazan /trabajo-pesado",
+      /href="\/trabajo-pesado"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/trabajo-pesado" data-nav>Trabajo pesado<\/a>/.test(
+          readFileSync(join(root, "index.html"), "utf8"),
+        ) &&
+        /href="\/trabajo-pesado" data-nav>Trabajo pesado<\/a>/.test(tpHtml),
+    );
+    assert(
+      "sitemap incluye /trabajo-pesado",
+      locs.includes("https://www.haberes.cl/trabajo-pesado") &&
+        lastmodForPath("/trabajo-pesado") === "2026-09-12",
+    );
+    assert(
+      "seo-map documenta /trabajo-pesado y no-canibalizar hermanas",
+      /\/trabajo-pesado/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no canibalizar `\/cotizaciones-previsionales`/.test(
+          readFileSync(join(root, "docs/seo-map.md"), "utf8"),
+        ) &&
+        /no crear `\/trabajo-pesado-cotizacion`/i.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /`\/cen`/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /`\/ley-19404`/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")),
+    );
+    assert(
+      "no se crean URLs hermanas de trabajo pesado",
+      !existsSync(join(root, "trabajo-pesado-cotizacion.html")) &&
+        !existsSync(join(root, "cen.html")) &&
+        !existsSync(join(root, "ley-19404.html")) &&
+        !existsSync(join(root, "jubilacion-anticipada-pesado.html")),
+    );
+    assert(
+      "sueldo, cotizaciones, costo empresa, AFC, APV y licencia enlazan /trabajo-pesado",
+      /href="\/trabajo-pesado"/.test(sueldoHtmlTp) &&
+        /href="\/trabajo-pesado"/.test(cpHtmlTp) &&
+        /href="\/trabajo-pesado"/.test(ceHtmlTp) &&
+        /href="\/trabajo-pesado"/.test(scHtmlTp) &&
+        /href="\/trabajo-pesado"/.test(apvHtmlTp) &&
+        /href="\/trabajo-pesado"/.test(lmHtmlTp),
+    );
+    assert(
+      "hub /guias enlaza /trabajo-pesado en el cluster de liquidación",
+      /href="\/trabajo-pesado"/.test(readFileSync(join(root, "guias.html"), "utf8")) &&
+        !/<h2>Finiquito<\/h2>[\s\S]*href="\/trabajo-pesado"/.test(
+          readFileSync(join(root, "guias.html"), "utf8"),
+        ),
+    );
+  }
   {
     const files = [
       "index.html",
@@ -11741,6 +12003,7 @@ assert(
       "cotizaciones-previsionales.html",
       "costo-empresa.html",
       "seguro-cesantia.html",
+      "trabajo-pesado.html",
       "recargo-domingo-comercio.html",
       "feriado-irrenunciable.html",
       "semana-corrida.html",
@@ -11943,7 +12206,7 @@ assert(
     return acc;
   }
   const pages = listHtml(root);
-  assert("83 páginas HTML", pages.length === 83, String(pages.length));
+  assert("84 páginas HTML", pages.length === 84, String(pages.length));
   for (const file of pages) {
     const html = readFileSync(file, "utf8");
     const rel = file.slice(root.length + 1);
