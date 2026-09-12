@@ -111,6 +111,10 @@ export function handleRequest(req, res) {
     send(res, 301, { Location: `/permiso-prenatal${url.search}` }, "");
     return;
   }
+  if (urlPath === "/despido-nulo" || urlPath === "/convalidacion-despido") {
+    send(res, 301, { Location: `/nulidad-despido${url.search}` }, "");
+    return;
+  }
   const hit = resolvePath(urlPath);
   if (hit.kind === "bad") {
     send(res, 400, { "Content-Type": "text/plain; charset=utf-8" }, "Bad Request");

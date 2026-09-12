@@ -92,6 +92,7 @@ import {
   calcularPostnatalParental,
   calcularFueroMaternal,
   calcularPermisoPrenatal,
+  calcularNulidadDespido,
   calcularPermisoPaternidad,
   calcularPermisoMatrimonio,
   calcularPermisoFallecimiento,
@@ -1304,6 +1305,100 @@ console.log("\nPermiso prenatal art. 195 (42 días corridos + SIL DFL 44)");
     "app-permiso-prenatal usa calcularPermisoPrenatal",
     /import\s*\{[^}]*calcularPermisoPrenatal[^}]*\}\s*from\s*["']\.\/sueldo\.js["']/.test(ppnApp) &&
       /calcularPermisoPrenatal\s*\(/.test(ppnApp),
+  );
+}
+
+
+console.log("\nNulidad del despido art. 162 (remuneraciones hasta convalidación)");
+{
+  const g = calcularNulidadDespido({
+    remuneracion: 900_000,
+    fechaDespido: "2026-01-01",
+    fechaConvalidacion: "2026-03-31",
+  });
+  assert(
+    "gold 900000, 2026-01-01 → 2026-03-31 → 90 días, $2.700.000",
+    g.ok === true &&
+      g.dias === 90 &&
+      g.mesesConvencionales === 3 &&
+      g.divisor === 30 &&
+      g.remuneracion === 900_000 &&
+      g.prestaciones === 0 &&
+      g.baseMensual === 900_000 &&
+      g.valorDiario === 30_000 &&
+      g.remuneracionesAdeudadas === 2_700_000 &&
+      g.prestacionesAdeudadas === 0 &&
+      g.total === 2_700_000 &&
+      g.fechaDespido === "2026-01-01" &&
+      g.fechaConvalidacion === "2026-03-31",
+    JSON.stringify(g),
+  );
+  const conPrest = calcularNulidadDespido({
+    remuneracion: 900_000,
+    prestaciones: 150_000,
+    fechaDespido: "2026-01-01",
+    fechaConvalidacion: "2026-03-31",
+  });
+  assert(
+    "gold + prestaciones 150000 → diario 35000, total 3150000",
+    conPrest.ok === true &&
+      conPrest.baseMensual === 1_050_000 &&
+      conPrest.valorDiario === 35_000 &&
+      conPrest.remuneracionesAdeudadas === 2_700_000 &&
+      conPrest.prestacionesAdeudadas === 450_000 &&
+      conPrest.total === 3_150_000,
+    JSON.stringify(conPrest),
+  );
+  const mismoDia = calcularNulidadDespido({
+    remuneracion: 900_000,
+    fechaDespido: "2026-03-01",
+    fechaConvalidacion: "2026-03-01",
+  });
+  assert(
+    "mismo día → 1 × 30000 = 30000",
+    mismoDia.ok === true && mismoDia.dias === 1 && mismoDia.total === 30_000,
+    JSON.stringify(mismoDia),
+  );
+  const feb = calcularNulidadDespido({
+    remuneracion: 900_000,
+    fechaDespido: "2026-02-01",
+    fechaConvalidacion: "2026-02-28",
+  });
+  assert(
+    "febrero 2026 (28 días) → 840000 (no el mes entero)",
+    feb.ok === true && feb.dias === 28 && feb.total === 840_000,
+    JSON.stringify(feb),
+  );
+  const mar31 = calcularNulidadDespido({
+    remuneracion: 900_000,
+    fechaDespido: "2026-03-01",
+    fechaConvalidacion: "2026-03-31",
+  });
+  assert(
+    "marzo 31 días → 31 × 30000 = 930000",
+    mar31.ok === true && mar31.dias === 31 && mar31.total === 930_000,
+    JSON.stringify(mar31),
+  );
+  assert(
+    "sin fechas / invertidas / negativos",
+    calcularNulidadDespido({ remuneracion: 900_000 }).ok === false &&
+      calcularNulidadDespido({
+        remuneracion: 900_000,
+        fechaDespido: "2026-03-31",
+        fechaConvalidacion: "2026-01-01",
+      }).motivo === "convalidacion_antes" &&
+      calcularNulidadDespido({
+        remuneracion: -1,
+        prestaciones: -4,
+        fechaDespido: "2026-01-01",
+        fechaConvalidacion: "2026-03-31",
+      }).total === 0,
+  );
+  const ndApp = readFileSync(join(root, "js/app-nulidad-despido.js"), "utf8");
+  assert(
+    "app-nulidad-despido usa calcularNulidadDespido",
+    /import\s*\{[^}]*calcularNulidadDespido[^}]*\}\s*from\s*["']\.\/sueldo\.js["']/.test(ndApp) &&
+      /calcularNulidadDespido\s*\(/.test(ndApp),
   );
 }
 
@@ -2891,6 +2986,7 @@ const required = [
   "sala-cuna.html",
   "postnatal-parental.html",
   "permiso-prenatal.html",
+  "nulidad-despido.html",
   "fuero-maternal.html",
   "permiso-paternidad.html",
   "permiso-matrimonio.html",
@@ -2926,6 +3022,7 @@ const required = [
   "js/app-sala-cuna.js",
   "js/app-postnatal-parental.js",
   "js/app-permiso-prenatal.js",
+  "js/app-nulidad-despido.js",
   "js/app-fuero-maternal.js",
   "js/app-permiso-paternidad.js",
   "js/app-permiso-matrimonio.js",
@@ -3089,6 +3186,7 @@ const htmlFiles = [
   "sala-cuna.html",
   "postnatal-parental.html",
   "permiso-prenatal.html",
+  "nulidad-despido.html",
   "fuero-maternal.html",
   "permiso-paternidad.html",
   "permiso-matrimonio.html",
@@ -3199,6 +3297,7 @@ const appEntries = [
   "js/app-sala-cuna.js",
   "js/app-postnatal-parental.js",
   "js/app-permiso-prenatal.js",
+  "js/app-nulidad-despido.js",
   "js/app-fuero-maternal.js",
   "js/app-permiso-paternidad.js",
   "js/app-permiso-matrimonio.js",
@@ -3244,7 +3343,7 @@ assert("robots Allow /", /Allow:\s*\//.test(robots));
 assert("robots Disallow /admin", /Disallow:\s*\/admin/.test(robots));
 assert("robots Disallow /api", /Disallow:\s*\/api/.test(robots));
 assert("robots Disallow /docs", /Disallow:\s*\/docs/.test(robots));
-assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/feriado-anual/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/licencia-medica/.test(robots) && !/Disallow:\s*\/boleta-honorarios/.test(robots) && !/Disallow:\s*\/retencion-judicial/.test(robots) && !/Disallow:\s*\/apv/.test(robots) && !/Disallow:\s*\/sala-cuna/.test(robots) && !/Disallow:\s*\/postnatal-parental/.test(robots) && !/Disallow:\s*\/permiso-prenatal/.test(robots) && !/Disallow:\s*\/fuero-maternal/.test(robots) && !/Disallow:\s*\/permiso-paternidad/.test(robots) && !/Disallow:\s*\/permiso-matrimonio/.test(robots) && !/Disallow:\s*\/permiso-fallecimiento/.test(robots) && !/Disallow:\s*\/hora-lactancia/.test(robots) && !/Disallow:\s*\/jornada-40-horas/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots));
+assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/feriado-anual/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/licencia-medica/.test(robots) && !/Disallow:\s*\/boleta-honorarios/.test(robots) && !/Disallow:\s*\/retencion-judicial/.test(robots) && !/Disallow:\s*\/apv/.test(robots) && !/Disallow:\s*\/sala-cuna/.test(robots) && !/Disallow:\s*\/postnatal-parental/.test(robots) && !/Disallow:\s*\/permiso-prenatal/.test(robots) && !/Disallow:\s*\/fuero-maternal/.test(robots) && !/Disallow:\s*\/permiso-paternidad/.test(robots) && !/Disallow:\s*\/permiso-matrimonio/.test(robots) && !/Disallow:\s*\/permiso-fallecimiento/.test(robots) && !/Disallow:\s*\/hora-lactancia/.test(robots) && !/Disallow:\s*\/jornada-40-horas/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots) && !/Disallow:\s*\/nulidad-despido/.test(robots));
 assert("robots Sitemap", /Sitemap:\s*https:\/\/www\.haberes\.cl\/sitemap\.xml/.test(robots));
 
 const { seoPaths, GUIDE_SLUGS, GUIDES, CAUSAL_PAGES, BASE_PATHS, lastmodForPath } = await import("../content/registry.js");
@@ -3295,7 +3394,8 @@ assert(
     BASE_PATHS.includes("/permiso-fallecimiento") &&
     BASE_PATHS.includes("/hora-lactancia") &&
     BASE_PATHS.includes("/jornada-40-horas") &&
-    BASE_PATHS.includes("/indemnizacion-aviso-previo"),
+    BASE_PATHS.includes("/indemnizacion-aviso-previo") &&
+    BASE_PATHS.includes("/nulidad-despido"),
   `${locs.length} vs ${expectedFromRegistry.length}`,
 );
 assert(
@@ -3648,7 +3748,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 81,
+      seoPaths().length === 82,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -3660,7 +3760,7 @@ try {
   const docsSeo = await hitLocal("/docs/seo-map.md");
   assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
   assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
-  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/asignacion-familiar/", "/colacion-movilizacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/asignacion-familiar/", "/colacion-movilizacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
   }
@@ -3703,6 +3803,7 @@ try {
     "/hora-lactancia",
     "/jornada-40-horas",
     "/indemnizacion-aviso-previo",
+    "/nulidad-despido",
     "/gratificacion",
     "/impuesto-unico",
     "/cotizaciones-previsionales",
@@ -3737,6 +3838,18 @@ try {
     "301 /descanso-prenatal → /permiso-prenatal",
     prenatalAlias.status === 301 && prenatalAlias.location === "/permiso-prenatal",
     `${prenatalAlias.status} ${prenatalAlias.location}`,
+  );
+  const despidoNuloAlias = await hitLocal("/despido-nulo");
+  assert(
+    "301 /despido-nulo → /nulidad-despido",
+    despidoNuloAlias.status === 301 && despidoNuloAlias.location === "/nulidad-despido",
+    `${despidoNuloAlias.status} ${despidoNuloAlias.location}`,
+  );
+  const convAlias = await hitLocal("/convalidacion-despido");
+  assert(
+    "301 /convalidacion-despido → /nulidad-despido",
+    convAlias.status === 301 && convAlias.location === "/nulidad-despido",
+    `${convAlias.status} ${convAlias.location}`,
   );
   writeFileSync(join(root, "sitemap.xml"), "<urlset>STATIC-LEFTOVER</urlset>");
   try {
@@ -7461,6 +7574,7 @@ assert(
     ["finiquito-casa-particular.html", "/finiquito-casa-particular"],
     ["sueldo-proporcional.html", "/sueldo-proporcional"],
     ["indemnizacion-aviso-previo.html", "/indemnizacion-aviso-previo"],
+    ["nulidad-despido.html", "/nulidad-despido"],
     ["finiquito.html", "/finiquito"],
     ["empresa.html", "/empresa"],
     ["como.html", "/como"],
@@ -8958,6 +9072,145 @@ assert(
         vercelPpn.redirects.some(
           (r) => r.source === "/descanso-prenatal" && r.destination === "/permiso-prenatal" && r.permanent === true,
         ),
+    );
+  }
+  {
+    const ndHtml = readFileSync(join(root, "nulidad-despido.html"), "utf8");
+    const ndTitle = (ndHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const ndH1 = (ndHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const ndDesc = (ndHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "";
+    const finiHtmlNd = readFileSync(join(root, "finiquito.html"), "utf8");
+    const cpHtmlNd = readFileSync(join(root, "cotizaciones-previsionales.html"), "utf8");
+    const iasHtmlNd = readFileSync(join(root, "indemnizacion-anos-servicio.html"), "utf8");
+    const avisoHtmlNd = readFileSync(join(root, "indemnizacion-aviso-previo.html"), "utf8");
+    const goldNd = calcularNulidadDespido({
+      remuneracion: 900_000,
+      fechaDespido: "2026-01-01",
+      fechaConvalidacion: "2026-03-31",
+    });
+    assert(
+      "SEO nulidad despido title único y corto",
+      /calcular nulidad del despido/i.test(ndTitle) &&
+        !/finiquito/i.test(ndTitle) &&
+        !/aviso previo/i.test(ndTitle) &&
+        !/sueldo l[ií]quido/i.test(ndTitle) &&
+        ndTitle !== ((avisoHtmlNd.match(/<title>([^<]*)<\/title>/) || [])[1] || "") &&
+        ndTitle !== ((finiHtmlNd.match(/<title>([^<]*)<\/title>/) || [])[1] || "") &&
+        ndTitle.length <= 65,
+      ndTitle,
+    );
+    assert(
+      "SEO nulidad despido H1 único art. 162",
+      ndH1 === "Calcular nulidad del despido art. 162 Chile 2026" &&
+        ndH1 !== ((avisoHtmlNd.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "") &&
+        !/aviso previo/i.test(ndH1),
+      ndH1,
+    );
+    assert(
+      "SEO nulidad despido description propia",
+      ndDesc &&
+        ndDesc !== ((avisoHtmlNd.match(/meta name="description" content="([^"]*)"/) || [])[1] || "") &&
+        ndDesc !== ((finiHtmlNd.match(/meta name="description" content="([^"]*)"/) || [])[1] || "") &&
+        /nulidad/i.test(ndDesc) &&
+        /cotizaciones/i.test(ndDesc),
+      ndDesc,
+    );
+    assert(
+      "SEO nulidad despido cita art. 162, BCN, SUSESO y DT",
+      /art[ií]culo 162/.test(ndHtml) &&
+        /Ley 19\.631/.test(ndHtml) &&
+        /bcn\.cl\/leychile\/navegar\?idNorma=207436/.test(ndHtml) &&
+        /suseso\.gob\.cl\/620\/w3-propertyvalue-69841/.test(ndHtml) &&
+        /dt\.gob\.cl\/legislacion\/1624\/w3-article-62185/.test(ndHtml) &&
+        /dt\.gob\.cl\/legislacion\/1624\/w3-article-62352/.test(ndHtml) &&
+        /dt\.gob\.cl\/legislacion\/1624\/w3-article-94858/.test(ndHtml) &&
+        /dt\.gob\.cl\/legislacion\/1624\/w3-article-85030/.test(ndHtml),
+    );
+    assert(
+      "SEO nulidad despido gold 900000 → 2700000 y no finiquito/IAS/aviso",
+      goldNd.total === 2_700_000 &&
+        goldNd.dias === 90 &&
+        /\$2\.700\.000/.test(ndHtml) &&
+        /1 de enero de 2026/.test(ndHtml) &&
+        /31 de marzo de 2026/.test(ndHtml) &&
+        /90 d[ií]as/.test(ndHtml) &&
+        /href="\/finiquito"/.test(ndHtml) &&
+        /href="\/cotizaciones-previsionales"/.test(ndHtml) &&
+        /href="\/indemnizacion-anos-servicio"/.test(ndHtml) &&
+        /href="\/indemnizacion-aviso-previo"/.test(ndHtml) &&
+        /href="\/sueldo"/.test(ndHtml) &&
+        /estimaci[oó]n educativa/.test(ndHtml),
+    );
+    assert(
+      "SEO nulidad despido no canibaliza hermanas en copy",
+      /no es el/i.test(ndHtml) &&
+        /finiquito/.test(ndHtml) &&
+        /aviso/.test(ndHtml) &&
+        /Previred/.test(ndHtml) &&
+        /art\. 63/.test(ndHtml),
+    );
+    assert(
+      "home y nav enlazan /nulidad-despido",
+      /href="\/nulidad-despido"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/nulidad-despido" data-nav>Nulidad del despido<\/a>/.test(
+          readFileSync(join(root, "index.html"), "utf8"),
+        ) &&
+        /href="\/nulidad-despido" data-nav>Nulidad del despido<\/a>/.test(ndHtml),
+    );
+    assert(
+      "sitemap incluye /nulidad-despido",
+      locs.includes("https://www.haberes.cl/nulidad-despido") &&
+        lastmodForPath("/nulidad-despido") === "2026-09-12",
+    );
+    assert(
+      "seo-map documenta /nulidad-despido y no-canibalizar hermanas",
+      /\/nulidad-despido/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no canibalizar `\/finiquito`, `\/cotizaciones-previsionales`, `\/indemnizacion-anos-servicio`, `\/indemnizacion-aviso-previo`, `\/sueldo` ni `\/descuento-atrasos`/.test(
+          readFileSync(join(root, "docs/seo-map.md"), "utf8"),
+        ) &&
+        /no crear `\/art-162`/i.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")),
+    );
+    const hubNd = readFileSync(join(root, "guias.html"), "utf8");
+    const liqNd = hubNd.slice(
+      hubNd.indexOf("<h2>Liquidación de sueldo</h2>"),
+      hubNd.indexOf("<h2>Finiquito</h2>"),
+    );
+    const finNd = hubNd.slice(hubNd.indexOf("<h2>Finiquito</h2>"));
+    assert(
+      "hub /guias enlaza /nulidad-despido en el cluster de finiquito",
+      /href="\/nulidad-despido"/.test(hubNd) &&
+        /href="\/nulidad-despido"/.test(finNd) &&
+        !/href="\/nulidad-despido"/.test(liqNd),
+    );
+    assert(
+      "hermanas enlazan /nulidad-despido",
+      /href="\/nulidad-despido"/.test(finiHtmlNd) &&
+        /href="\/nulidad-despido"/.test(cpHtmlNd) &&
+        /href="\/nulidad-despido"/.test(iasHtmlNd) &&
+        /href="\/nulidad-despido"/.test(avisoHtmlNd) &&
+        /href="\/nulidad-despido"/.test(readFileSync(join(root, "sueldo.html"), "utf8")),
+    );
+    assert("SEO nulidad despido FAQPage", /"@type": "FAQPage"/.test(ndHtml));
+    assert(
+      "SEO nulidad despido no crea URLs hermanas",
+      !existsSync(join(root, "despido-nulo.html")) &&
+        !existsSync(join(root, "art-162.html")) &&
+        !existsSync(join(root, "convalidacion-despido.html")),
+    );
+    const vercelNd = JSON.parse(readFileSync(join(root, "vercel.json"), "utf8"));
+    assert(
+      "alias /despido-nulo y /convalidacion-despido redirigen a /nulidad-despido",
+      Array.isArray(vercelNd.redirects) &&
+        vercelNd.redirects.some(
+          (r) => r.source === "/despido-nulo" && r.destination === "/nulidad-despido" && r.permanent === true,
+        ) &&
+        vercelNd.redirects.some(
+          (r) =>
+            r.source === "/convalidacion-despido" &&
+            r.destination === "/nulidad-despido" &&
+            r.permanent === true,
+        ) &&
+        !vercelNd.redirects.some((r) => r.source === "/art-162"),
     );
   }
   {
@@ -11768,6 +12021,7 @@ assert(
       "finiquito-casa-particular.html",
       "sueldo-proporcional.html",
       "indemnizacion-aviso-previo.html",
+      "nulidad-despido.html",
       "finiquito.html",
       "empresa.html",
       "precios.html",
@@ -11943,7 +12197,7 @@ assert(
     return acc;
   }
   const pages = listHtml(root);
-  assert("83 páginas HTML", pages.length === 83, String(pages.length));
+  assert("84 páginas HTML", pages.length === 84, String(pages.length));
   for (const file of pages) {
     const html = readFileSync(file, "utf8");
     const rel = file.slice(root.length + 1);

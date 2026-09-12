@@ -51,6 +51,7 @@ const DRAWER_LINKS = [
   ["/feriado-progresivo", "Feriado progresivo"],
   ["/indemnizacion-anos-servicio", "Indemnización años de servicio"],
   ["/indemnizacion-aviso-previo", "Indemnización aviso previo"],
+  ["/nulidad-despido", "Nulidad del despido"],
   ["/finiquito-casa-particular", "Finiquito casa particular"],
   ["/finiquito", "Finiquito"],
 ];
