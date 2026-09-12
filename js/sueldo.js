@@ -1911,3 +1911,96 @@ export function calcularJornada40Horas({
     valorHoraHistorica45Pesos: roundPeso(valorHoraHistorica45),
   };
 }
+
+function utcMillisFecha(p) {
+  return Date.UTC(p.y, p.mo - 1, p.d);
+}
+
+/**
+ * Días corridos inclusivos entre dos fechas ISO (ambos extremos).
+ * 2026-01-01 → 2026-03-31 = 90 (ene 31 + feb 28 + mar 31).
+ */
+function diasCorridosIncluidos(a, b) {
+  return Math.round((utcMillisFecha(b) - utcMillisFecha(a)) / 86400000) + 1;
+}
+
+/**
+ * Remuneraciones y prestaciones adeudadas por nulidad del despido
+ * (art. 162 incisos 5.º a 7.º: Ley 19.631 / «Ley Bustos»).
+ *
+ * Si al despedir no están enteradas las cotizaciones previsionales
+ * devengadas hasta el último día del mes anterior, el despido no pone
+ * término al contrato. El empleador convalida pagando las imposiciones
+ * morosas y comunicándolo (carta certificada o entrega personal, con
+ * comprobantes). Debe las remuneraciones y demás prestaciones del contrato
+ * entre la fecha del despido y la del envío o entrega de esa comunicación.
+ *
+ * Criterio de cómputo (simplificación educativa, documentada en la FAQ):
+ *   días = corridos inclusivos (despido y convalidación inclusive);
+ *   diario = (remuneración + prestaciones fijas) / 30
+ *     (mismo divisor convencional que sueldo proporcional / feriado;
+ *      DT Dictamen 5308/230);
+ *   total = round(días × diario).
+ * No se usa `proporcional()`: ese helper trata d ≥ 30 como un mes entero
+ * y cortaría un período de nulidad de varios meses.
+ *
+ * No modela: deuda de cotizaciones (Previred), recargos judiciales, IAS,
+ * aviso sustitutivo, mora/reajuste art. 63, excepción 10 % / 2 UTM del
+ * inciso 7.º, ni el plazo de prescripción del art. 480 (solo aviso).
+ *
+ * Gold (verify): rem $900.000, despido 2026-01-01, convalidación
+ * 2026-03-31 → 90 días; diario $30.000; total $2.700.000.
+ *
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=207436
+ * @see https://www.suseso.gob.cl/620/w3-propertyvalue-69841.html
+ * @see https://www.dt.gob.cl/legislacion/1624/w3-article-62185.html
+ * @see https://www.dt.gob.cl/legislacion/1624/w3-article-62352.html
+ * @see https://www.dt.gob.cl/legislacion/1624/w3-article-94858.html
+ */
+export function calcularNulidadDespido({
+  remuneracion = 0,
+  prestaciones = 0,
+  fechaDespido = "",
+  fechaConvalidacion = "",
+} = {}) {
+  const rem = Math.max(0, Number(remuneracion) || 0);
+  const prest = Math.max(0, Number(prestaciones) || 0);
+  const baseMensual = rem + prest;
+  const valorDiario = baseMensual > 0 ? baseMensual / DIAS_MES_CONVENCIONAL : 0;
+  const valorDiarioRem = rem > 0 ? rem / DIAS_MES_CONVENCIONAL : 0;
+  const valorDiarioPrest = prest > 0 ? prest / DIAS_MES_CONVENCIONAL : 0;
+
+  const despido = parseIsoFecha(fechaDespido);
+  const conv = parseIsoFecha(fechaConvalidacion);
+
+  let motivo = "";
+  if (!despido) motivo = "sin_despido";
+  else if (!conv) motivo = "sin_convalidacion";
+  else if (utcMillisFecha(conv) < utcMillisFecha(despido)) motivo = "convalidacion_antes";
+
+  const ok = motivo === "";
+  const dias = ok ? diasCorridosIncluidos(despido, conv) : 0;
+  const remuneracionesAdeudadas = ok ? roundPeso(dias * valorDiarioRem) : 0;
+  const total = ok ? roundPeso(dias * valorDiario) : 0;
+  const prestacionesAdeudadas = total - remuneracionesAdeudadas;
+  const mesesConvencionales = dias / DIAS_MES_CONVENCIONAL;
+
+  return {
+    ok,
+    motivo,
+    fechaDespido: despido ? isoOfFecha(despido) : "",
+    fechaConvalidacion: conv ? isoOfFecha(conv) : "",
+    dias,
+    mesesConvencionales,
+    divisor: DIAS_MES_CONVENCIONAL,
+    remuneracion: roundPeso(rem),
+    prestaciones: roundPeso(prest),
+    baseMensual: roundPeso(baseMensual),
+    valorDiario,
+    valorDiarioRem,
+    valorDiarioPrest,
+    remuneracionesAdeudadas,
+    prestacionesAdeudadas,
+    total,
+  };
+}

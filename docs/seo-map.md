@@ -44,7 +44,8 @@ Actualizar este archivo antes de crear URLs nuevas para evitar canibalización.
 | Calcular sueldo proporcional | sueldo proporcional / días trabajados mes / remuneración proporcional | `/sueldo-proporcional` | Title/H1 «calcular sueldo proporcional»; no canibalizar `/sueldo`, `/vacaciones-proporcionales` ni `/finiquito`. Bruto de un mes incompleto (mensual / 30 × días calendario). No crear `/dias-trabajados` ni `/sueldo-proporcional-dias` |
 | Calcular aguinaldo Fiestas Patrias | aguinaldo fiestas patrias (5.400/23) — intención presupuestar/calcular monto | `/aguinaldo` | Title/H1 «calcular aguinaldo Fiestas Patrias»; no es obligación legal general del Código; no canibalizar `/gratificacion`, `/sueldo` ni `/guias/aguinaldo-fiestas-patrias`. No crear `/bono-fiestas-patrias` ni `/aguinaldo-navidad` |
 | Calcular finiquito de casa particular | finiquito asesora del hogar / finiquito trabajadora casa particular — intención calcular | `/finiquito-casa-particular` | Title/H1 «calcular finiquito casa particular»; no canibalizar `/finiquito`, `/indemnizacion-anos-servicio` ni `/guias/finiquito-trabajadora-de-casa-particular`. Estatuto propio (art. 163 a todo evento AFP 1,11 %, aviso art. 161). No crear `/finiquito-nana` ni `/asesora-hogar` |
-| Calcular indemnización por aviso previo | indemnizacion aviso previo / indemnizacion sustitutiva aviso — intención calcular | `/indemnizacion-aviso-previo` | Title/H1 «calcular indemnización por aviso previo»; no canibalizar `/finiquito` ni `/indemnizacion-anos-servicio`. Arts. 161 y 162 (sustitutiva de 30 días), no IAS art. 163 ni el finiquito completo. No crear `/dias-aviso`. No crear `/aviso-previo` |
+| Calcular indemnización por aviso previo | indemnizacion aviso previo / indemnizacion sustitutiva aviso — intención calcular | `/indemnizacion-aviso-previo` | Title/H1 «calcular indemnización por aviso previo»; no canibalizar `/finiquito`, `/indemnizacion-anos-servicio` ni `/nulidad-despido`. Arts. 161 y 162 (sustitutiva de 30 días), no IAS art. 163 ni el finiquito completo ni la nulidad por cotizaciones impagas. No crear `/dias-aviso`. No crear `/aviso-previo` |
+| Calcular nulidad del despido | nulidad del despido / despido nulo cotizaciones / convalidación despido / art. 162 cotizaciones impagas | `/nulidad-despido` | Title/H1 «calcular nulidad del despido» + art. 162 Chile 2026; no canibalizar `/finiquito`, `/cotizaciones-previsionales`, `/indemnizacion-anos-servicio`, `/indemnizacion-aviso-previo`, `/sueldo` ni `/descuento-atrasos`. Remuneraciones del período de nulidad (cotizaciones impagas, Ley 19.631) hasta la convalidación; no es IAS, aviso de 30 días, mora art. 63 ni deuda Previred. `/despido-nulo` y `/convalidacion-despido` redirigen. No crear `/art-162` ni `/convalidacion-despido` como páginas paralelas |
 | Índice de guías | — | `/guias` | Hub: 17 guías, grupo liquidación vs finiquito |
 
 ## Guías pilar (contenido + calculadora embebida)
@@ -258,7 +259,16 @@ de contratar sigue en `/costo-empresa`.
 
 No publicar `/dias-aviso` ni `/aviso-previo`. La indemnización sustitutiva del aviso de treinta días
 (arts. 161 y 162) vive en `/indemnizacion-aviso-previo`. La carta (formalidades) sigue en
-`/guias/carta-aviso-termino-contrato`.
+`/guias/carta-aviso-termino-contrato`. No canibalizar `/nulidad-despido`.
+
+No publicar `/despido-nulo`, `/art-162` ni `/convalidacion-despido` como páginas paralelas.
+Las remuneraciones adeudadas por nulidad del despido (art. 162, cotizaciones impagas / Ley 19.631,
+hasta la convalidación) viven en `/nulidad-despido`. `/despido-nulo` y `/convalidacion-despido`
+redirigen a esa ruta canónica. No canibalizar `/finiquito`, `/cotizaciones-previsionales`,
+`/indemnizacion-anos-servicio`, `/indemnizacion-aviso-previo`, `/sueldo` ni `/descuento-atrasos`.
+No es IAS, aviso de 30 días, mora/reajuste art. 63 ni declaración Previred. El finiquito sigue
+en `/finiquito`. Las cotizaciones del trabajador siguen en `/cotizaciones-previsionales`.
+El aviso de 30 días sigue en `/indemnizacion-aviso-previo`. El líquido sigue en `/sueldo`.
 
 No publicar hermanas de semana corrida: `/septimo-dia`, `/pago-domingo-festivo`,
 `/semana-corrida-mensual`. El haber del artículo 45 vive en `/semana-corrida`.
