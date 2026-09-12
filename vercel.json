@@ -7,7 +7,11 @@
     { "source": "/permiso-auc", "destination": "/permiso-matrimonio", "permanent": true },
     { "source": "/permiso-auc/", "destination": "/permiso-matrimonio", "permanent": true },
     { "source": "/descanso-prenatal", "destination": "/permiso-prenatal", "permanent": true },
-    { "source": "/descanso-prenatal/", "destination": "/permiso-prenatal", "permanent": true }
+    { "source": "/descanso-prenatal/", "destination": "/permiso-prenatal", "permanent": true },
+    { "source": "/despido-nulo", "destination": "/nulidad-despido", "permanent": true },
+    { "source": "/despido-nulo/", "destination": "/nulidad-despido", "permanent": true },
+    { "source": "/convalidacion-despido", "destination": "/nulidad-despido", "permanent": true },
+    { "source": "/convalidacion-despido/", "destination": "/nulidad-despido", "permanent": true }
   ],
   "rewrites": [
     { "source": "/sitemap.xml", "destination": "/api/sitemap" },
