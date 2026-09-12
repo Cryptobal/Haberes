@@ -146,6 +146,31 @@ export const CESANTIA_EMPLEADOR_PLAZO_CIC = 0.028;
 export const CESANTIA_EMPLEADOR_PLAZO_FCS = 0.002;
 
 /**
+ * Cotización adicional por trabajo pesado — Ley 19.404 / D.L. 3.500 art. 17 bis.
+ * Entra a la cuenta de capitalización individual (AFP), sobre la misma
+ * remuneración imponible y tope de los arts. 14 y 16 (tope AFP, 90 UF).
+ * Comisión Ergonómica Nacional (CEN): pesado 2 % trabajador + 2 % empleador
+ * (total 4 %); puede fijar 1 % + 1 % (total 2 %) si el desgaste es menor.
+ * El empleador retiene la parte del trabajador y entera ambos.
+ * Rebaja de edad (art. 68 bis): 2 años por cada 5 cotizados al 2 % (máx. 10);
+ * 1 año por cada 5 al 1 % (máx. 5). Haberes usa bloques de 5 años completos
+ * (floor); no estima fracciones ni exige los 20 años de cotizaciones totales.
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=30771
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=7147
+ * @see https://www.suseso.gob.cl/613/w3-propertyvalue-185105.html
+ * @see https://www.spensiones.cl/portal/institucional/594/w3-propertyvalue-9918.html
+ */
+export const TRABAJO_PESADO_TASA_TRABAJADOR = 2;
+export const TRABAJO_PESADO_TASA_EMPLEADOR = 2;
+export const TRABAJO_MENOS_PESADO_TASA_TRABAJADOR = 1;
+export const TRABAJO_MENOS_PESADO_TASA_EMPLEADOR = 1;
+export const TRABAJO_PESADO_ANIOS_BLOQUE = 5;
+export const TRABAJO_PESADO_REBAJA_ANIOS_POR_BLOQUE = 2;
+export const TRABAJO_PESADO_REBAJA_MAX = 10;
+export const TRABAJO_MENOS_PESADO_REBAJA_ANIOS_POR_BLOQUE = 1;
+export const TRABAJO_MENOS_PESADO_REBAJA_MAX = 5;
+
+/**
  * Cotización de cargo del empleador Ley 21.735 (reforma previsional).
  * Remuneraciones de agosto 2026 a julio 2027: 3,5 % sobre la base AFP
  * (tope 90 UF). Incluye el SIS: no se suma un SIS aparte.
