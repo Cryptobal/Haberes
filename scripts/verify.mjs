@@ -10924,9 +10924,14 @@ assert(
         /href="\/finiquito"/.test(despidoHtml) &&
         /href="\/indemnizacion-anos-servicio"/.test(despidoHtml) &&
         /href="\/indemnizacion-aviso-previo"/.test(despidoHtml) &&
-        /href="\/tutela-laboral"/.test(despidoHtml) &&
-        /href="\/nulidad-despido"/.test(despidoHtml) &&
-        /href="\/interes-mora"/.test(despidoHtml) &&
+        /tutela laboral \(art\. 489\)/i.test(despidoHtml) &&
+        /nulidad del despido/.test(despidoHtml) &&
+        /mora del art[ií]culo 63/.test(despidoHtml) &&
+        ["tutela-laboral", "nulidad-despido", "interes-mora"].every(
+          (slug) =>
+            existsSync(join(root, `${slug}.html`)) ||
+            !new RegExp(`href="/${slug}"`).test(despidoHtml),
+        ) &&
         /Inspecci[oó]n del Trabajo|Direcci[oó]n del Trabajo/.test(despidoHtml) &&
         /acoso sexual/i.test(despidoHtml) &&
         !/<input[^>]*id="acoso/.test(despidoHtml) &&
