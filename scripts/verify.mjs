@@ -10713,9 +10713,9 @@ assert(
       "seo-map documenta /tutela-laboral y no-canibalizar hermanas",
       /\/tutela-laboral/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
         /no canibalizar `\/finiquito`/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
-        /no crear `\/tutela`/i.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
-        /no crear `\/derechos-fundamentales`/i.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
-        /no crear `\/art-489`/i.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")),
+        /no crear `\/tutela`, `\/derechos-fundamentales` ni `\/art-489`/i.test(
+          readFileSync(join(root, "docs/seo-map.md"), "utf8"),
+        ),
     );
     assert(
       "finiquito, IAS y aviso enlazan /tutela-laboral",
