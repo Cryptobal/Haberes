@@ -49,6 +49,7 @@ Actualizar este archivo antes de crear URLs nuevas para evitar canibalización.
 | Calcular interés y reajuste por mora | interés por mora remuneraciones / reajuste IPC sueldo adeudado / art. 63 | `/interes-mora` | Title/H1 «Calculadora interés por mora» + remuneraciones Chile 2026; no canibalizar `/finiquito`, `/sueldo`, `/descuento-atrasos`, `/sueldo-proporcional`, `/indemnizacion-anos-servicio`, `/indemnizacion-aviso-previo` ni `/guias/plazo-de-pago-del-finiquito`. Art. 63: reajuste IPC + TMC operaciones reajustables. No es el líquido ni el finiquito ni el descuento al trabajador. No crear `/reajuste-ipc`, `/mora-sueldo` ni `/art-63` |
 | Calcular nulidad del despido | nulidad del despido / despido nulo cotizaciones / convalidación despido / art. 162 cotizaciones impagas | `/nulidad-despido` | Title/H1 «calcular nulidad del despido» + art. 162 Chile 2026; no canibalizar `/finiquito`, `/cotizaciones-previsionales`, `/indemnizacion-anos-servicio`, `/indemnizacion-aviso-previo`, `/sueldo` ni `/descuento-atrasos`. Remuneraciones del período de nulidad (cotizaciones impagas, Ley 19.631) hasta la convalidación; no es IAS, aviso de 30 días, mora art. 63 ni deuda Previred. `/despido-nulo` y `/convalidacion-despido` redirigen. No crear `/art-162` ni `/convalidacion-despido` como páginas paralelas |
 | Calcular tutela laboral | tutela laboral / indemnización derechos fundamentales / art. 489 | `/tutela-laboral` | Title/H1 «calcular tutela laboral»; no canibalizar `/finiquito`, `/indemnizacion-anos-servicio` ni `/indemnizacion-aviso-previo`. Art. 489: indemnización especial 6 a 11 meses que fija el juez. No es IAS, aviso, nulidad del despido ni mora art. 63. Alias `/indemnizacion-tutela` e `/indemnizacion-derechos-fundamentales` redirigen. No crear `/tutela`, `/derechos-fundamentales` ni `/art-489` |
+| Calcular despido injustificado | despido injustificado / recargo despido injustificado / art. 168 | `/despido-injustificado` | Title/H1 «calcular despido injustificado»; no canibalizar `/finiquito`, `/indemnizacion-anos-servicio`, `/indemnizacion-aviso-previo`, `/tutela-laboral`, `/nulidad-despido` ni `/interes-mora`. Art. 168: recargo 30/50/80/100 % sobre la IAS; el aviso no se recarga. Alias `/recargo-despido-injustificado` e `/indemnizacion-despido-injustificado` redirigen. No crear `/art-168` ni `/recargo-168` |
 | Índice de guías | — | `/guias` | Hub: 17 guías, grupo liquidación vs finiquito |
 
 ## Guías pilar (contenido + calculadora embebida)
@@ -291,6 +292,13 @@ del procedimiento de tutela laboral (arts. 485–489: el juez fija entre 6 y 11 
 `/finiquito`, `/indemnizacion-anos-servicio` ni `/indemnizacion-aviso-previo`. No es IAS
 (art. 163), aviso de 30 días, nulidad del despido por cotizaciones impagas ni mora del art. 63.
 No inventar topes fuera del rango 6–11 ni recargos judiciales.
+
+No publicar `/art-168` ni `/recargo-168`. El recargo del artículo 168 sobre la IAS (despido
+declarado injustificado, indebido o improcedente: 30 %, 50 %, 80 % o 100 %) vive en
+`/despido-injustificado`. `/recargo-despido-injustificado` e `/indemnizacion-despido-injustificado`
+redirigen a esa ruta canónica. No canibalizar `/finiquito`, `/indemnizacion-anos-servicio`,
+`/indemnizacion-aviso-previo`, `/tutela-laboral`, `/nulidad-despido` ni `/interes-mora`.
+El recargo no se aplica al aviso del art. 162. Haberes no declara el despido ni elige el tramo.
 
 No publicar hermanas de semana corrida: `/septimo-dia`, `/pago-domingo-festivo`,
 `/semana-corrida-mensual`. El haber del artículo 45 vive en `/semana-corrida`.

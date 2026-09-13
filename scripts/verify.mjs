@@ -50,6 +50,8 @@ import {
   TRABAJO_PESADO_TASA_TRABAJADOR,
   TUTELA_MESES_MAX,
   TUTELA_MESES_MIN,
+  RECARGO_168_DEFAULT,
+  RECARGO_168_PORCENTAJES,
   RETENCION_BOLETA_ANIO_DEFAULT,
   RETENCION_BOLETA_HONORARIOS,
   UMBRAL_SALA_CUNA,
@@ -76,6 +78,7 @@ import {
   calcularFiniquitoCompleto,
   calcularIas,
   calcularTutelaLaboral,
+  calcularDespidoInjustificado,
   feriadoProporcional,
   vigenciaUnAnioOMas,
 } from "../js/finiquito.js";
@@ -2765,6 +2768,105 @@ assert("4 años 7 meses redondea a 5", aniosServicio("2020-01-15", "2024-08-15")
     /import\s*\{[^}]*calcularTutelaLaboral[^}]*\}\s*from\s*["']\.\/finiquito\.js["']/.test(tutelaApp) &&
       /calcularTutelaLaboral\s*\(/.test(tutelaApp),
   );
+  assert(
+    "Art. 168 tramos 30/50/80/100",
+    RECARGO_168_DEFAULT === 30 &&
+      RECARGO_168_PORCENTAJES.join(",") === "30,50,80,100",
+  );
+  const g30 = calcularDespidoInjustificado({ baseIas: 3_000_000, porcentaje: 30 });
+  assert(
+    "Art. 168 gold $3.000.000 × 30 % → recargo $900.000, IAS+recargo $3.900.000",
+    g30.recargo === 900_000 &&
+      g30.totalIasConRecargo === 3_900_000 &&
+      g30.baseIas === 3_000_000 &&
+      g30.porcentaje === 30 &&
+      g30.recargoSobreAviso === false &&
+      g30.aviso === 0,
+    JSON.stringify({ recargo: g30.recargo, total: g30.totalIasConRecargo }),
+  );
+  const g50 = calcularDespidoInjustificado({ baseIas: 3_000_000, porcentaje: 50 });
+  assert(
+    "Art. 168 gold $3.000.000 × 50 % → recargo $1.500.000, IAS+recargo $4.500.000",
+    g50.recargo === 1_500_000 && g50.totalIasConRecargo === 4_500_000,
+    String(g50.recargo),
+  );
+  const g80 = calcularDespidoInjustificado({ baseIas: 3_000_000, porcentaje: 80 });
+  assert(
+    "Art. 168 gold $3.000.000 × 80 % → recargo $2.400.000, IAS+recargo $5.400.000",
+    g80.recargo === 2_400_000 && g80.totalIasConRecargo === 5_400_000,
+    String(g80.recargo),
+  );
+  const g100 = calcularDespidoInjustificado({ baseIas: 3_000_000, porcentaje: 100 });
+  assert(
+    "Art. 168 gold $3.000.000 × 100 % → recargo $3.000.000, IAS+recargo $6.000.000",
+    g100.recargo === 3_000_000 && g100.totalIasConRecargo === 6_000_000,
+    String(g100.recargo),
+  );
+  const g1m = calcularDespidoInjustificado({ baseIas: 1_000_000, porcentaje: 30 });
+  assert(
+    "Art. 168 gold $1.000.000 × 30 % → recargo $300.000, IAS+recargo $1.300.000",
+    g1m.recargo === 300_000 && g1m.totalIasConRecargo === 1_300_000,
+    String(g1m.recargo),
+  );
+  const def168 = calcularDespidoInjustificado({ baseIas: 3_000_000 });
+  assert("Art. 168 default tramo = 30 %", def168.porcentaje === 30 && def168.recargo === 900_000);
+  const invalido = calcularDespidoInjustificado({ baseIas: 3_000_000, porcentaje: 40 });
+  assert(
+    "Art. 168 tramo 40 se recorta a 30",
+    invalido.porcentaje === 30 && invalido.recargo === 900_000 && invalido.recortoTramo,
+  );
+  const round = calcularDespidoInjustificado({ baseIas: 1_000_001, porcentaje: 30 });
+  assert(
+    "Art. 168 usa roundPeso: $1.000.001 × 30 % → $300.000",
+    round.recargo === 300_000 && round.totalIasConRecargo === 1_300_001,
+    String(round.recargo),
+  );
+  const conAviso = calcularDespidoInjustificado(
+    { baseIas: 3_000_000, porcentaje: 30, incluirAviso: true, remuneracion: 1_000_000 },
+    { uf: FALLBACK_UF },
+  );
+  assert(
+    "Art. 168 no recarga el aviso: aviso $1.000.000, recargo $900.000, total $4.900.000",
+    conAviso.aviso === 1_000_000 &&
+      conAviso.recargo === 900_000 &&
+      conAviso.totalIasConRecargo === 3_900_000 &&
+      conAviso.total === 4_900_000 &&
+      conAviso.recargoSobreAviso === false,
+    JSON.stringify({ aviso: conAviso.aviso, recargo: conAviso.recargo, total: conAviso.total }),
+  );
+  const helperIas = calcularDespidoInjustificado(
+    { ingreso: "2020-01-15", termino: "2024-05-15", remuneracion: 1_000_000, porcentaje: 30 },
+    { uf: FALLBACK_UF },
+  );
+  assert(
+    "Art. 168 reusa calcularIas: 4 años × $1.000.000 → recargo $1.200.000",
+    helperIas.baseIas === 4_000_000 &&
+      helperIas.recargo === 1_200_000 &&
+      helperIas.totalIasConRecargo === 5_200_000,
+    String(helperIas.baseIas),
+  );
+  const aniosRem = calcularDespidoInjustificado(
+    { anios: 3, remuneracion: 1_000_000, porcentaje: 50 },
+    { uf: FALLBACK_UF },
+  );
+  assert(
+    "Art. 168 reusa años × remuneración (tope art. 172): 3 × $1.000.000 × 50 % → $1.500.000",
+    aniosRem.baseIas === 3_000_000 &&
+      aniosRem.recargo === 1_500_000 &&
+      aniosRem.totalIasConRecargo === 4_500_000,
+    String(aniosRem.baseIas),
+  );
+  assert(
+    "Art. 168 base 0 o negativa → $0",
+    calcularDespidoInjustificado({ baseIas: 0, porcentaje: 80 }).recargo === 0 &&
+      calcularDespidoInjustificado({ baseIas: -1, porcentaje: 100 }).recargo === 0,
+  );
+  const despidoApp = readFileSync(join(root, "js/app-despido-injustificado.js"), "utf8");
+  assert(
+    "app-despido-injustificado usa calcularDespidoInjustificado",
+    /import\s*\{[^}]*calcularDespidoInjustificado[^}]*\}\s*from\s*["']\.\/finiquito\.js["']/.test(despidoApp) &&
+      /calcularDespidoInjustificado\s*\(/.test(despidoApp),
+  );
 }
 assert("Feriado dias*rem/30", feriadoProporcional(15, 900000) === 450000);
 assert("Feriado 10 días × 900000 / 30 = 300000", feriadoProporcional(10, 900000) === 300000);
@@ -3260,6 +3362,7 @@ const required = [
   "sueldo-proporcional.html",
   "indemnizacion-aviso-previo.html",
   "tutela-laboral.html",
+  "despido-injustificado.html",
   "finiquito.html",
   "js/app-horas-extras.js",
   "js/app-vacaciones-proporcionales.js",
@@ -3299,6 +3402,7 @@ const required = [
   "js/app-sueldo-proporcional.js",
   "js/app-indemnizacion-aviso-previo.js",
   "js/app-tutela-laboral.js",
+  "js/app-despido-injustificado.js",
   "empresa.html",
   "privacidad.html",
   "terminos.html",
@@ -3467,6 +3571,7 @@ const htmlFiles = [
   "sueldo-proporcional.html",
   "indemnizacion-aviso-previo.html",
   "tutela-laboral.html",
+  "despido-injustificado.html",
   "finiquito.html",
   "empresa.html",
   "privacidad.html",
@@ -3581,6 +3686,7 @@ const appEntries = [
   "js/app-sueldo-proporcional.js",
   "js/app-indemnizacion-aviso-previo.js",
   "js/app-tutela-laboral.js",
+  "js/app-despido-injustificado.js",
   "js/app-finiquito.js",
   "js/app-empresa.js",
   "js/app-admin.js",
@@ -3613,7 +3719,7 @@ assert("robots Allow /", /Allow:\s*\//.test(robots));
 assert("robots Disallow /admin", /Disallow:\s*\/admin/.test(robots));
 assert("robots Disallow /api", /Disallow:\s*\/api/.test(robots));
 assert("robots Disallow /docs", /Disallow:\s*\/docs/.test(robots));
-assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/trabajo-pesado/.test(robots) && !/Disallow:\s*\/nulidad-despido/.test(robots) && !/Disallow:\s*\/tutela-laboral/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/feriado-anual/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/licencia-medica/.test(robots) && !/Disallow:\s*\/boleta-honorarios/.test(robots) && !/Disallow:\s*\/retencion-judicial/.test(robots) && !/Disallow:\s*\/apv/.test(robots) && !/Disallow:\s*\/sala-cuna/.test(robots) && !/Disallow:\s*\/postnatal-parental/.test(robots) && !/Disallow:\s*\/permiso-prenatal/.test(robots) && !/Disallow:\s*\/fuero-maternal/.test(robots) && !/Disallow:\s*\/permiso-paternidad/.test(robots) && !/Disallow:\s*\/permiso-matrimonio/.test(robots) && !/Disallow:\s*\/permiso-fallecimiento/.test(robots) && !/Disallow:\s*\/interes-mora/.test(robots) && !/Disallow:\s*\/hora-lactancia/.test(robots) && !/Disallow:\s*\/jornada-40-horas/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots));
+assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/trabajo-pesado/.test(robots) && !/Disallow:\s*\/nulidad-despido/.test(robots) && !/Disallow:\s*\/tutela-laboral/.test(robots) && !/Disallow:\s*\/despido-injustificado/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/feriado-anual/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/licencia-medica/.test(robots) && !/Disallow:\s*\/boleta-honorarios/.test(robots) && !/Disallow:\s*\/retencion-judicial/.test(robots) && !/Disallow:\s*\/apv/.test(robots) && !/Disallow:\s*\/sala-cuna/.test(robots) && !/Disallow:\s*\/postnatal-parental/.test(robots) && !/Disallow:\s*\/permiso-prenatal/.test(robots) && !/Disallow:\s*\/fuero-maternal/.test(robots) && !/Disallow:\s*\/permiso-paternidad/.test(robots) && !/Disallow:\s*\/permiso-matrimonio/.test(robots) && !/Disallow:\s*\/permiso-fallecimiento/.test(robots) && !/Disallow:\s*\/interes-mora/.test(robots) && !/Disallow:\s*\/hora-lactancia/.test(robots) && !/Disallow:\s*\/jornada-40-horas/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots));
 assert("robots Sitemap", /Sitemap:\s*https:\/\/www\.haberes\.cl\/sitemap\.xml/.test(robots));
 
 const { seoPaths, GUIDE_SLUGS, GUIDES, CAUSAL_PAGES, BASE_PATHS, lastmodForPath } = await import("../content/registry.js");
@@ -3669,6 +3775,7 @@ assert(
     BASE_PATHS.includes("/indemnizacion-aviso-previo") &&
     BASE_PATHS.includes("/nulidad-despido"),
     BASE_PATHS.includes("/tutela-laboral"),
+    BASE_PATHS.includes("/despido-injustificado"),
   `${locs.length} vs ${expectedFromRegistry.length}`,
 );
 assert(
@@ -4023,7 +4130,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 85,
+      seoPaths().length === 86,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -4035,7 +4142,7 @@ try {
   const docsSeo = await hitLocal("/docs/seo-map.md");
   assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
   assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
-  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
   }
@@ -4081,6 +4188,7 @@ try {
     "/indemnizacion-aviso-previo",
     "/nulidad-despido",
     "/tutela-laboral",
+    "/despido-injustificado",
     "/gratificacion",
     "/impuesto-unico",
     "/cotizaciones-previsionales",
@@ -4140,6 +4248,18 @@ try {
     "301 /indemnizacion-derechos-fundamentales → /tutela-laboral",
     tutelaAlias2.status === 301 && tutelaAlias2.location === "/tutela-laboral",
     `${tutelaAlias2.status} ${tutelaAlias2.location}`,
+  );
+  const despidoAlias = await hitLocal("/recargo-despido-injustificado");
+  assert(
+    "301 /recargo-despido-injustificado → /despido-injustificado",
+    despidoAlias.status === 301 && despidoAlias.location === "/despido-injustificado",
+    `${despidoAlias.status} ${despidoAlias.location}`,
+  );
+  const despidoAlias2 = await hitLocal("/indemnizacion-despido-injustificado");
+  assert(
+    "301 /indemnizacion-despido-injustificado → /despido-injustificado",
+    despidoAlias2.status === 301 && despidoAlias2.location === "/despido-injustificado",
+    `${despidoAlias2.status} ${despidoAlias2.location}`,
   );
   writeFileSync(join(root, "sitemap.xml"), "<urlset>STATIC-LEFTOVER</urlset>");
   try {
@@ -7868,6 +7988,7 @@ assert(
     ["indemnizacion-aviso-previo.html", "/indemnizacion-aviso-previo"],
     ["nulidad-despido.html", "/nulidad-despido"],
     ["tutela-laboral.html", "/tutela-laboral"],
+    ["despido-injustificado.html", "/despido-injustificado"],
     ["finiquito.html", "/finiquito"],
     ["empresa.html", "/empresa"],
     ["como.html", "/como"],
@@ -10718,6 +10839,127 @@ assert(
           readFileSync(join(root, "docs/seo-map.md"), "utf8"),
         ),
     );
+    const despidoHtml = readFileSync(join(root, "despido-injustificado.html"), "utf8");
+    const despidoTitle = (despidoHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const despidoH1 = (despidoHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const despidoDesc = (despidoHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "";
+    const finiHtmlD = readFileSync(join(root, "finiquito.html"), "utf8");
+    const finiTitleD = (finiHtmlD.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const finiH1D = (finiHtmlD.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const iasHtmlD = readFileSync(join(root, "indemnizacion-anos-servicio.html"), "utf8");
+    const iasTitleD = (iasHtmlD.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const iasH1D = (iasHtmlD.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const avisoHtmlD = readFileSync(join(root, "indemnizacion-aviso-previo.html"), "utf8");
+    const avisoTitleD = (avisoHtmlD.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const avisoH1D = (avisoHtmlD.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const gold30 = calcularDespidoInjustificado({ baseIas: 3_000_000, porcentaje: 30 });
+    const gold50 = calcularDespidoInjustificado({ baseIas: 3_000_000, porcentaje: 50 });
+    const gold80 = calcularDespidoInjustificado({ baseIas: 3_000_000, porcentaje: 80 });
+    const gold100 = calcularDespidoInjustificado({ baseIas: 3_000_000, porcentaje: 100 });
+    const gold1m = calcularDespidoInjustificado({ baseIas: 1_000_000, porcentaje: 30 });
+    const vercelDespido = JSON.parse(readFileSync(join(root, "vercel.json"), "utf8"));
+    assert(
+      "SEO title despido injustificado apunta a calcular despido injustificado",
+      /calcular despido injustificado/i.test(despidoTitle) &&
+        !/calculadora de finiquito/i.test(despidoTitle) &&
+        !/a[nñ]os de servicio/i.test(despidoTitle) &&
+        !/aviso previo/i.test(despidoTitle) &&
+        despidoTitle !== finiTitleD &&
+        despidoTitle !== iasTitleD &&
+        despidoTitle !== avisoTitleD &&
+        despidoTitle.length <= 65,
+      despidoTitle,
+    );
+    assert(
+      "SEO H1 despido injustificado distinto de /finiquito, IAS y aviso",
+      despidoH1 === "Calcular despido injustificado Chile 2026" &&
+        despidoH1 !== finiH1D &&
+        despidoH1 !== iasH1D &&
+        despidoH1 !== avisoH1D,
+      despidoH1,
+    );
+    assert(
+      "SEO despido meta distinta de /finiquito, IAS y aviso",
+      despidoDesc &&
+        despidoDesc !== ((finiHtmlD.match(/meta name="description" content="([^"]*)"/) || [])[1] || "") &&
+        despidoDesc !== ((iasHtmlD.match(/meta name="description" content="([^"]*)"/) || [])[1] || "") &&
+        despidoDesc !== ((avisoHtmlD.match(/meta name="description" content="([^"]*)"/) || [])[1] || ""),
+    );
+    assert(
+      "SEO despido cita art. 168, BCN y DT",
+      /art[ií]culo 168/i.test(despidoHtml) &&
+        /C[oó]digo del Trabajo/.test(despidoHtml) &&
+        /bcn\.cl\/leychile\/navegar\?idNorma=207436/.test(despidoHtml) &&
+        /dt\.gob\.cl\/legislacion\/1624\/w3-article-114437/.test(despidoHtml) &&
+        /30\s*%/.test(despidoHtml) &&
+        /50\s*%/.test(despidoHtml) &&
+        /80\s*%/.test(despidoHtml) &&
+        /100\s*%/.test(despidoHtml),
+    );
+    assert(
+      "SEO despido golden $900.000, $1.500.000, $2.400.000, $3.000.000 y $300.000",
+      gold30.recargo === 900_000 &&
+        gold30.totalIasConRecargo === 3_900_000 &&
+        gold50.recargo === 1_500_000 &&
+        gold80.recargo === 2_400_000 &&
+        gold100.recargo === 3_000_000 &&
+        gold1m.recargo === 300_000 &&
+        /\$900\.000/.test(despidoHtml) &&
+        /\$1\.500\.000/.test(despidoHtml) &&
+        /\$2\.400\.000/.test(despidoHtml) &&
+        /\$3\.000\.000/.test(despidoHtml) &&
+        /\$300\.000/.test(despidoHtml) &&
+        /\$3\.900\.000/.test(despidoHtml) &&
+        /\$4\.500\.000/.test(despidoHtml) &&
+        /\$5\.400\.000/.test(despidoHtml) &&
+        /\$6\.000\.000/.test(despidoHtml) &&
+        /\$1\.300\.000/.test(despidoHtml),
+    );
+    assert("SEO despido FAQPage", /"@type": "FAQPage"/.test(despidoHtml));
+    assert(
+      "SEO despido no es finiquito, IAS ni aviso; el juez declara",
+      /juez declara y fija/i.test(despidoHtml) &&
+        /Estimaci[oó]n educativa/.test(despidoHtml) &&
+        /no litiga ni asesora/i.test(despidoHtml) &&
+        /href="\/finiquito"/.test(despidoHtml) &&
+        /href="\/indemnizacion-anos-servicio"/.test(despidoHtml) &&
+        /href="\/indemnizacion-aviso-previo"/.test(despidoHtml) &&
+        /href="\/tutela-laboral"/.test(despidoHtml) &&
+        /href="\/nulidad-despido"/.test(despidoHtml) &&
+        /href="\/interes-mora"/.test(despidoHtml) &&
+        /Inspecci[oó]n del Trabajo|Direcci[oó]n del Trabajo/.test(despidoHtml) &&
+        /acoso sexual/i.test(despidoHtml) &&
+        !/<input[^>]*id="acoso/.test(despidoHtml) &&
+        !existsSync(join(root, "art-168.html")) &&
+        !existsSync(join(root, "recargo-168.html")) &&
+        !existsSync(join(root, "recargo-despido-injustificado.html")),
+    );
+    assert(
+      "SEO despido métrica principal es el recargo art. 168",
+      /Recargo del art[ií]culo 168/.test(despidoHtml) &&
+        !/<p class="metric-label">Indemnizaci[oó]n por a[nñ]os de servicio<\/p>/.test(despidoHtml),
+    );
+    assert(
+      "home y nav enlazan /despido-injustificado",
+      /href="\/despido-injustificado"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/despido-injustificado" data-nav>Despido injustificado<\/a>/.test(
+          readFileSync(join(root, "index.html"), "utf8"),
+        ) &&
+        /href="\/despido-injustificado" data-nav>Despido injustificado<\/a>/.test(despidoHtml),
+    );
+    assert(
+      "sitemap incluye /despido-injustificado",
+      locs.includes("https://www.haberes.cl/despido-injustificado") &&
+        lastmodForPath("/despido-injustificado") === "2026-09-13",
+    );
+    assert(
+      "seo-map documenta /despido-injustificado y no-canibalizar hermanas",
+      /\/despido-injustificado/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no canibalizar `\/finiquito`/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no crear `\/art-168` ni `\/recargo-168`/i.test(
+          readFileSync(join(root, "docs/seo-map.md"), "utf8"),
+        ),
+    );
     assert(
       "finiquito, IAS y aviso enlazan /tutela-laboral",
       /href="\/tutela-laboral"/.test(finiHtmlT) &&
@@ -10741,6 +10983,35 @@ assert(
           (r) =>
             r.source === "/indemnizacion-derechos-fundamentales" &&
             r.destination === "/tutela-laboral" &&
+            r.permanent === true,
+        ),
+    );
+    assert(
+      "finiquito, IAS y aviso enlazan /despido-injustificado",
+      /href="\/despido-injustificado"/.test(finiHtmlD) &&
+        /href="\/despido-injustificado"/.test(iasHtmlD) &&
+        /href="\/despido-injustificado"/.test(avisoHtmlD),
+    );
+    assert(
+      "hub /guias enlaza /despido-injustificado en el cluster de finiquito",
+      /href="\/despido-injustificado"/.test(readFileSync(join(root, "guias.html"), "utf8")) &&
+        /<h2>Finiquito<\/h2>[\s\S]*href="\/despido-injustificado"/.test(
+          readFileSync(join(root, "guias.html"), "utf8"),
+        ),
+    );
+    assert(
+      "alias /recargo-despido-injustificado e /indemnizacion-despido-injustificado redirigen a /despido-injustificado",
+      Array.isArray(vercelDespido.redirects) &&
+        vercelDespido.redirects.some(
+          (r) =>
+            r.source === "/recargo-despido-injustificado" &&
+            r.destination === "/despido-injustificado" &&
+            r.permanent === true,
+        ) &&
+        vercelDespido.redirects.some(
+          (r) =>
+            r.source === "/indemnizacion-despido-injustificado" &&
+            r.destination === "/despido-injustificado" &&
             r.permanent === true,
         ),
     );
@@ -12781,6 +13052,7 @@ assert(
       "indemnizacion-aviso-previo.html",
       "nulidad-despido.html",
       "tutela-laboral.html",
+      "despido-injustificado.html",
       "finiquito.html",
       "empresa.html",
       "precios.html",
@@ -12958,7 +13230,7 @@ assert(
     return acc;
   }
   const pages = listHtml(root);
-  assert("87 páginas HTML", pages.length === 87, String(pages.length));
+  assert("88 páginas HTML", pages.length === 88, String(pages.length));
   for (const file of pages) {
     const html = readFileSync(file, "utf8");
     const rel = file.slice(root.length + 1);
