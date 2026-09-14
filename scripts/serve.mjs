@@ -115,6 +115,10 @@ export function handleRequest(req, res) {
     send(res, 301, { Location: `/nulidad-despido${url.search}` }, "");
     return;
   }
+  if (urlPath === "/indemnizacion-tutela" || urlPath === "/indemnizacion-derechos-fundamentales") {
+    send(res, 301, { Location: `/tutela-laboral${url.search}` }, "");
+    return;
+  }
   const hit = resolvePath(urlPath);
   if (hit.kind === "bad") {
     send(res, 400, { "Content-Type": "text/plain; charset=utf-8" }, "Bad Request");

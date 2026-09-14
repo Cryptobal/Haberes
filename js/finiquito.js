@@ -8,6 +8,8 @@ import {
   FALLBACK_UF,
   IAS_TOPE_ANIOS,
   TOPE_AFP_SALUD_UF,
+  TUTELA_MESES_MAX,
+  TUTELA_MESES_MIN,
 } from "./constants.js";
 import { causalPorId } from "./causales.js";
 import { gratificacionArt50, roundPeso, valorHoraExtra } from "./sueldo.js";
@@ -242,6 +244,44 @@ export function calcularAvisoPrevio(input = {}, indicadores = {}) {
     recortoTopeUf: baseIngresada > fin.topeMensual,
     aviso,
     uf: fin.uf,
+    motivo,
+  };
+}
+
+/**
+ * Indemnización especial del procedimiento de tutela laboral (art. 489).
+ * Estimación educativa: round(última remuneración mensual × meses),
+ * con meses enteros recortados al rango legal 6–11 (piso 6).
+ * No es IAS (art. 163), aviso (art. 162), recargo art. 168, nulidad del despido
+ * ni mora art. 63. No aplica el tope de 90 UF del art. 172.
+ */
+export function calcularTutelaLaboral(input = {}) {
+  const remuneracion = roundPeso(Math.max(0, Number(input.remuneracion) || 0));
+  let mesesIngresados;
+  if (input.meses == null || input.meses === "") {
+    mesesIngresados = TUTELA_MESES_MIN;
+  } else {
+    const n = Math.trunc(Number(input.meses));
+    mesesIngresados = Number.isFinite(n) ? n : TUTELA_MESES_MIN;
+  }
+  const meses = Math.min(TUTELA_MESES_MAX, Math.max(TUTELA_MESES_MIN, mesesIngresados));
+  const total = roundPeso(remuneracion * meses);
+  const piso = roundPeso(remuneracion * TUTELA_MESES_MIN);
+  const techo = roundPeso(remuneracion * TUTELA_MESES_MAX);
+  let motivo = "ok";
+  if (remuneracion <= 0) motivo = "sin_remuneracion";
+  else if (mesesIngresados !== meses) motivo = "rango_legal";
+  return {
+    remuneracion,
+    meses,
+    mesesIngresados,
+    mesesMin: TUTELA_MESES_MIN,
+    mesesMax: TUTELA_MESES_MAX,
+    recortoRango: mesesIngresados !== meses,
+    aplicaTopeUf: false,
+    total,
+    piso,
+    techo,
     motivo,
   };
 }

@@ -11,7 +11,11 @@
     { "source": "/despido-nulo", "destination": "/nulidad-despido", "permanent": true },
     { "source": "/despido-nulo/", "destination": "/nulidad-despido", "permanent": true },
     { "source": "/convalidacion-despido", "destination": "/nulidad-despido", "permanent": true },
-    { "source": "/convalidacion-despido/", "destination": "/nulidad-despido", "permanent": true }
+    { "source": "/convalidacion-despido/", "destination": "/nulidad-despido", "permanent": true },
+    { "source": "/indemnizacion-tutela", "destination": "/tutela-laboral", "permanent": true },
+    { "source": "/indemnizacion-tutela/", "destination": "/tutela-laboral", "permanent": true },
+    { "source": "/indemnizacion-derechos-fundamentales", "destination": "/tutela-laboral", "permanent": true },
+    { "source": "/indemnizacion-derechos-fundamentales/", "destination": "/tutela-laboral", "permanent": true }
   ],
   "rewrites": [
     { "source": "/sitemap.xml", "destination": "/api/sitemap" },

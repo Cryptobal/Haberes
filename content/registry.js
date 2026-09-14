@@ -98,6 +98,7 @@ export const PATH_LASTMOD = {
   "/sueldo-proporcional": "2026-08-29",
   "/indemnizacion-aviso-previo": "2026-08-29",
   "/nulidad-despido": "2026-09-12",
+  "/tutela-laboral": "2026-09-13",
   "/privacidad": "2026-08-18",
   "/terminos": "2026-08-18",
 };
@@ -140,6 +141,7 @@ export const BASE_PATHS = [
   "/indemnizacion-aviso-previo",
   "/interes-mora",
   "/nulidad-despido",
+  "/tutela-laboral",
   "/licencia-medica",
   "/postnatal-parental",
   "/permiso-prenatal",

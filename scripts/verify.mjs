@@ -48,6 +48,8 @@ import {
   TRABAJO_PESADO_REBAJA_MAX,
   TRABAJO_PESADO_TASA_EMPLEADOR,
   TRABAJO_PESADO_TASA_TRABAJADOR,
+  TUTELA_MESES_MAX,
+  TUTELA_MESES_MIN,
   RETENCION_BOLETA_ANIO_DEFAULT,
   RETENCION_BOLETA_HONORARIOS,
   UMBRAL_SALA_CUNA,
@@ -73,6 +75,7 @@ import {
   calcularFiniquitoCasaParticular,
   calcularFiniquitoCompleto,
   calcularIas,
+  calcularTutelaLaboral,
   feriadoProporcional,
   vigenciaUnAnioOMas,
 } from "../js/finiquito.js";
@@ -2713,6 +2716,56 @@ assert("4 años 7 meses redondea a 5", aniosServicio("2020-01-15", "2024-08-15")
       /calcularAvisoPrevio\s*\(/.test(avisoApp),
   );
 }
+{
+  assert("Tutela art. 489 rango legal 6–11", TUTELA_MESES_MIN === 6 && TUTELA_MESES_MAX === 11);
+  const piso = calcularTutelaLaboral({ remuneracion: 1_000_000, meses: 6 });
+  assert(
+    "Tutela gold $1.000.000 × 6 → $6.000.000",
+    piso.total === 6_000_000 && piso.meses === 6 && piso.piso === 6_000_000 && !piso.aplicaTopeUf,
+    String(piso.total),
+  );
+  const techo = calcularTutelaLaboral({ remuneracion: 1_000_000, meses: 11 });
+  assert(
+    "Tutela gold $1.000.000 × 11 → $11.000.000",
+    techo.total === 11_000_000 && techo.meses === 11 && techo.techo === 11_000_000,
+    String(techo.total),
+  );
+  const ocho = calcularTutelaLaboral({ remuneracion: 900_000, meses: 8 });
+  assert(
+    "Tutela gold $900.000 × 8 → $7.200.000",
+    ocho.total === 7_200_000 && ocho.meses === 8,
+    String(ocho.total),
+  );
+  const def = calcularTutelaLaboral({ remuneracion: 1_000_000 });
+  assert("Tutela default meses = piso 6", def.meses === 6 && def.total === 6_000_000);
+  const bajo = calcularTutelaLaboral({ remuneracion: 1_000_000, meses: 5 });
+  assert(
+    "Tutela meses 5 se recorta a 6",
+    bajo.meses === 6 && bajo.total === 6_000_000 && bajo.recortoRango,
+  );
+  const alto = calcularTutelaLaboral({ remuneracion: 1_000_000, meses: 12 });
+  assert(
+    "Tutela meses 12 se recorta a 11",
+    alto.meses === 11 && alto.total === 11_000_000 && alto.recortoRango,
+  );
+  const sinUf = calcularTutelaLaboral({ remuneracion: 10_000_000, meses: 6 });
+  assert(
+    "Tutela no inventa tope 90 UF: $10.000.000 × 6 → $60.000.000",
+    sinUf.total === 60_000_000 && sinUf.aplicaTopeUf === false,
+    String(sinUf.total),
+  );
+  assert(
+    "Tutela remuneración 0 o negativa → $0",
+    calcularTutelaLaboral({ remuneracion: 0, meses: 6 }).total === 0 &&
+      calcularTutelaLaboral({ remuneracion: -1, meses: 11 }).total === 0,
+  );
+  const tutelaApp = readFileSync(join(root, "js/app-tutela-laboral.js"), "utf8");
+  assert(
+    "app-tutela-laboral usa calcularTutelaLaboral",
+    /import\s*\{[^}]*calcularTutelaLaboral[^}]*\}\s*from\s*["']\.\/finiquito\.js["']/.test(tutelaApp) &&
+      /calcularTutelaLaboral\s*\(/.test(tutelaApp),
+  );
+}
 assert("Feriado dias*rem/30", feriadoProporcional(15, 900000) === 450000);
 assert("Feriado 10 días × 900000 / 30 = 300000", feriadoProporcional(10, 900000) === 300000);
 assert("Feriado 0 días → 0", feriadoProporcional(0, 900000) === 0);
@@ -3206,6 +3259,7 @@ const required = [
   "finiquito-casa-particular.html",
   "sueldo-proporcional.html",
   "indemnizacion-aviso-previo.html",
+  "tutela-laboral.html",
   "finiquito.html",
   "js/app-horas-extras.js",
   "js/app-vacaciones-proporcionales.js",
@@ -3244,6 +3298,7 @@ const required = [
   "js/app-finiquito-casa-particular.js",
   "js/app-sueldo-proporcional.js",
   "js/app-indemnizacion-aviso-previo.js",
+  "js/app-tutela-laboral.js",
   "empresa.html",
   "privacidad.html",
   "terminos.html",
@@ -3411,6 +3466,7 @@ const htmlFiles = [
   "finiquito-casa-particular.html",
   "sueldo-proporcional.html",
   "indemnizacion-aviso-previo.html",
+  "tutela-laboral.html",
   "finiquito.html",
   "empresa.html",
   "privacidad.html",
@@ -3524,6 +3580,7 @@ const appEntries = [
   "js/app-finiquito-casa-particular.js",
   "js/app-sueldo-proporcional.js",
   "js/app-indemnizacion-aviso-previo.js",
+  "js/app-tutela-laboral.js",
   "js/app-finiquito.js",
   "js/app-empresa.js",
   "js/app-admin.js",
@@ -3556,7 +3613,7 @@ assert("robots Allow /", /Allow:\s*\//.test(robots));
 assert("robots Disallow /admin", /Disallow:\s*\/admin/.test(robots));
 assert("robots Disallow /api", /Disallow:\s*\/api/.test(robots));
 assert("robots Disallow /docs", /Disallow:\s*\/docs/.test(robots));
-assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/trabajo-pesado/.test(robots) && !/Disallow:\s*\/nulidad-despido/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/feriado-anual/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/licencia-medica/.test(robots) && !/Disallow:\s*\/boleta-honorarios/.test(robots) && !/Disallow:\s*\/retencion-judicial/.test(robots) && !/Disallow:\s*\/apv/.test(robots) && !/Disallow:\s*\/sala-cuna/.test(robots) && !/Disallow:\s*\/postnatal-parental/.test(robots) && !/Disallow:\s*\/permiso-prenatal/.test(robots) && !/Disallow:\s*\/fuero-maternal/.test(robots) && !/Disallow:\s*\/permiso-paternidad/.test(robots) && !/Disallow:\s*\/permiso-matrimonio/.test(robots) && !/Disallow:\s*\/permiso-fallecimiento/.test(robots) && !/Disallow:\s*\/interes-mora/.test(robots) && !/Disallow:\s*\/hora-lactancia/.test(robots) && !/Disallow:\s*\/jornada-40-horas/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots));
+assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/trabajo-pesado/.test(robots) && !/Disallow:\s*\/nulidad-despido/.test(robots) && !/Disallow:\s*\/tutela-laboral/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/feriado-anual/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/licencia-medica/.test(robots) && !/Disallow:\s*\/boleta-honorarios/.test(robots) && !/Disallow:\s*\/retencion-judicial/.test(robots) && !/Disallow:\s*\/apv/.test(robots) && !/Disallow:\s*\/sala-cuna/.test(robots) && !/Disallow:\s*\/postnatal-parental/.test(robots) && !/Disallow:\s*\/permiso-prenatal/.test(robots) && !/Disallow:\s*\/fuero-maternal/.test(robots) && !/Disallow:\s*\/permiso-paternidad/.test(robots) && !/Disallow:\s*\/permiso-matrimonio/.test(robots) && !/Disallow:\s*\/permiso-fallecimiento/.test(robots) && !/Disallow:\s*\/interes-mora/.test(robots) && !/Disallow:\s*\/hora-lactancia/.test(robots) && !/Disallow:\s*\/jornada-40-horas/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots));
 assert("robots Sitemap", /Sitemap:\s*https:\/\/www\.haberes\.cl\/sitemap\.xml/.test(robots));
 
 const { seoPaths, GUIDE_SLUGS, GUIDES, CAUSAL_PAGES, BASE_PATHS, lastmodForPath } = await import("../content/registry.js");
@@ -3611,6 +3668,7 @@ assert(
     BASE_PATHS.includes("/jornada-40-horas") &&
     BASE_PATHS.includes("/indemnizacion-aviso-previo") &&
     BASE_PATHS.includes("/nulidad-despido"),
+    BASE_PATHS.includes("/tutela-laboral"),
   `${locs.length} vs ${expectedFromRegistry.length}`,
 );
 assert(
@@ -3965,7 +4023,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 84,
+      seoPaths().length === 85,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -3977,7 +4035,7 @@ try {
   const docsSeo = await hitLocal("/docs/seo-map.md");
   assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
   assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
-  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
   }
@@ -4022,6 +4080,7 @@ try {
     "/jornada-40-horas",
     "/indemnizacion-aviso-previo",
     "/nulidad-despido",
+    "/tutela-laboral",
     "/gratificacion",
     "/impuesto-unico",
     "/cotizaciones-previsionales",
@@ -4069,6 +4128,18 @@ try {
     "301 /convalidacion-despido → /nulidad-despido",
     convAlias.status === 301 && convAlias.location === "/nulidad-despido",
     `${convAlias.status} ${convAlias.location}`,
+  );
+  const tutelaAlias = await hitLocal("/indemnizacion-tutela");
+  assert(
+    "301 /indemnizacion-tutela → /tutela-laboral",
+    tutelaAlias.status === 301 && tutelaAlias.location === "/tutela-laboral",
+    `${tutelaAlias.status} ${tutelaAlias.location}`,
+  );
+  const tutelaAlias2 = await hitLocal("/indemnizacion-derechos-fundamentales");
+  assert(
+    "301 /indemnizacion-derechos-fundamentales → /tutela-laboral",
+    tutelaAlias2.status === 301 && tutelaAlias2.location === "/tutela-laboral",
+    `${tutelaAlias2.status} ${tutelaAlias2.location}`,
   );
   writeFileSync(join(root, "sitemap.xml"), "<urlset>STATIC-LEFTOVER</urlset>");
   try {
@@ -7796,6 +7867,7 @@ assert(
     ["sueldo-proporcional.html", "/sueldo-proporcional"],
     ["indemnizacion-aviso-previo.html", "/indemnizacion-aviso-previo"],
     ["nulidad-despido.html", "/nulidad-despido"],
+    ["tutela-laboral.html", "/tutela-laboral"],
     ["finiquito.html", "/finiquito"],
     ["empresa.html", "/empresa"],
     ["como.html", "/como"],
@@ -10544,6 +10616,136 @@ assert(
     );
   }
   {
+    const tutelaHtml = readFileSync(join(root, "tutela-laboral.html"), "utf8");
+    const tutelaTitle = (tutelaHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const tutelaH1 = (tutelaHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const tutelaDesc = (tutelaHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "";
+    const finiHtmlT = readFileSync(join(root, "finiquito.html"), "utf8");
+    const finiTitleT = (finiHtmlT.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const finiH1T = (finiHtmlT.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const iasHtmlT = readFileSync(join(root, "indemnizacion-anos-servicio.html"), "utf8");
+    const iasTitleT = (iasHtmlT.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const iasH1T = (iasHtmlT.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const avisoHtmlT = readFileSync(join(root, "indemnizacion-aviso-previo.html"), "utf8");
+    const avisoTitleT = (avisoHtmlT.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const avisoH1T = (avisoHtmlT.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const gold6 = calcularTutelaLaboral({ remuneracion: 1_000_000, meses: 6 });
+    const gold11 = calcularTutelaLaboral({ remuneracion: 1_000_000, meses: 11 });
+    const gold8 = calcularTutelaLaboral({ remuneracion: 900_000, meses: 8 });
+    const vercelTutela = JSON.parse(readFileSync(join(root, "vercel.json"), "utf8"));
+    assert(
+      "SEO title tutela laboral apunta a calcular tutela laboral",
+      /calcular tutela laboral/i.test(tutelaTitle) &&
+        !/calculadora de finiquito/i.test(tutelaTitle) &&
+        !/a[nñ]os de servicio/i.test(tutelaTitle) &&
+        !/aviso previo/i.test(tutelaTitle) &&
+        tutelaTitle !== finiTitleT &&
+        tutelaTitle !== iasTitleT &&
+        tutelaTitle !== avisoTitleT &&
+        tutelaTitle.length <= 65,
+      tutelaTitle,
+    );
+    assert(
+      "SEO H1 tutela laboral distinto de /finiquito, IAS y aviso",
+      tutelaH1 === "Calcular tutela laboral Chile 2026" &&
+        tutelaH1 !== finiH1T &&
+        tutelaH1 !== iasH1T &&
+        tutelaH1 !== avisoH1T,
+      tutelaH1,
+    );
+    assert(
+      "SEO tutela meta distinta de /finiquito, IAS y aviso",
+      tutelaDesc &&
+        tutelaDesc !== ((finiHtmlT.match(/meta name="description" content="([^"]*)"/) || [])[1] || "") &&
+        tutelaDesc !== ((iasHtmlT.match(/meta name="description" content="([^"]*)"/) || [])[1] || "") &&
+        tutelaDesc !== ((avisoHtmlT.match(/meta name="description" content="([^"]*)"/) || [])[1] || ""),
+    );
+    assert(
+      "SEO tutela cita arts. 485-489, BCN y DT",
+      /art[ií]culos 485 a 489/i.test(tutelaHtml) &&
+        /art[ií]culo 489/i.test(tutelaHtml) &&
+        /C[oó]digo del Trabajo/.test(tutelaHtml) &&
+        /bcn\.cl\/leychile\/navegar\?idNorma=207436/.test(tutelaHtml) &&
+        /dt\.gob\.cl\/legislacion\/1624\/w3-propertyvalue-157363/.test(tutelaHtml),
+    );
+    assert(
+      "SEO tutela golden $6.000.000, $11.000.000 y $7.200.000",
+      gold6.total === 6_000_000 &&
+        gold11.total === 11_000_000 &&
+        gold8.total === 7_200_000 &&
+        /\$6\.000\.000/.test(tutelaHtml) &&
+        /\$11\.000\.000/.test(tutelaHtml) &&
+        /\$7\.200\.000/.test(tutelaHtml),
+    );
+    assert("SEO tutela FAQPage", /"@type": "FAQPage"/.test(tutelaHtml));
+    assert(
+      "SEO tutela no es finiquito, IAS ni aviso; el juez fija 6 a 11",
+      /juez fija el monto/i.test(tutelaHtml) &&
+        /6 a 11/.test(tutelaHtml) &&
+        /Estimaci[oó]n educativa/.test(tutelaHtml) &&
+        /href="\/finiquito"/.test(tutelaHtml) &&
+        /href="\/indemnizacion-anos-servicio"/.test(tutelaHtml) &&
+        /href="\/indemnizacion-aviso-previo"/.test(tutelaHtml) &&
+        /Inspecci[oó]n del Trabajo|Direcci[oó]n del Trabajo/.test(tutelaHtml) &&
+        !existsSync(join(root, "tutela.html")) &&
+        !existsSync(join(root, "derechos-fundamentales.html")) &&
+        !existsSync(join(root, "art-489.html")) &&
+        !existsSync(join(root, "indemnizacion-tutela.html")),
+    );
+    assert(
+      "SEO tutela métrica principal es la indemnización especial",
+      /Indemnizaci[oó]n especial \(art\. 489\)/.test(tutelaHtml) &&
+        !/<p class="metric-label">Indemnizaci[oó]n por a[nñ]os de servicio<\/p>/.test(tutelaHtml),
+    );
+    assert(
+      "home y nav enlazan /tutela-laboral",
+      /href="\/tutela-laboral"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/tutela-laboral" data-nav>Tutela laboral<\/a>/.test(
+          readFileSync(join(root, "index.html"), "utf8"),
+        ) &&
+        /href="\/tutela-laboral" data-nav>Tutela laboral<\/a>/.test(tutelaHtml),
+    );
+    assert(
+      "sitemap incluye /tutela-laboral",
+      locs.includes("https://www.haberes.cl/tutela-laboral") &&
+        lastmodForPath("/tutela-laboral") === "2026-09-13",
+    );
+    assert(
+      "seo-map documenta /tutela-laboral y no-canibalizar hermanas",
+      /\/tutela-laboral/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no canibalizar `\/finiquito`/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no crear `\/tutela`, `\/derechos-fundamentales` ni `\/art-489`/i.test(
+          readFileSync(join(root, "docs/seo-map.md"), "utf8"),
+        ),
+    );
+    assert(
+      "finiquito, IAS y aviso enlazan /tutela-laboral",
+      /href="\/tutela-laboral"/.test(finiHtmlT) &&
+        /href="\/tutela-laboral"/.test(iasHtmlT) &&
+        /href="\/tutela-laboral"/.test(avisoHtmlT),
+    );
+    assert(
+      "hub /guias enlaza /tutela-laboral en el cluster de finiquito",
+      /href="\/tutela-laboral"/.test(readFileSync(join(root, "guias.html"), "utf8")) &&
+        /<h2>Finiquito<\/h2>[\s\S]*href="\/tutela-laboral"/.test(
+          readFileSync(join(root, "guias.html"), "utf8"),
+        ),
+    );
+    assert(
+      "alias /indemnizacion-tutela y /indemnizacion-derechos-fundamentales redirigen a /tutela-laboral",
+      Array.isArray(vercelTutela.redirects) &&
+        vercelTutela.redirects.some(
+          (r) => r.source === "/indemnizacion-tutela" && r.destination === "/tutela-laboral" && r.permanent === true,
+        ) &&
+        vercelTutela.redirects.some(
+          (r) =>
+            r.source === "/indemnizacion-derechos-fundamentales" &&
+            r.destination === "/tutela-laboral" &&
+            r.permanent === true,
+        ),
+    );
+  }
+  {
     const grHtml = readFileSync(join(root, "gratificacion.html"), "utf8");
     const grTitle = (grHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
     const grH1 = (grHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
@@ -12578,6 +12780,7 @@ assert(
       "sueldo-proporcional.html",
       "indemnizacion-aviso-previo.html",
       "nulidad-despido.html",
+      "tutela-laboral.html",
       "finiquito.html",
       "empresa.html",
       "precios.html",
@@ -12755,7 +12958,7 @@ assert(
     return acc;
   }
   const pages = listHtml(root);
-  assert("86 páginas HTML", pages.length === 86, String(pages.length));
+  assert("87 páginas HTML", pages.length === 87, String(pages.length));
   for (const file of pages) {
     const html = readFileSync(file, "utf8");
     const rel = file.slice(root.length + 1);

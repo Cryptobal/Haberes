@@ -239,6 +239,14 @@ export const ASIGNACION_FAMILIAR_TRAMOS = [
 export const IAS_TOPE_ANIOS = 11;
 
 /**
+ * Indemnización especial de tutela laboral (art. 489 CT).
+ * El juez fija el monto entre 6 y 11 meses de la última remuneración mensual.
+ * No hay otro tope legal publicado en ese artículo (no se inventa el de 90 UF del art. 172).
+ */
+export const TUTELA_MESES_MIN = 6;
+export const TUTELA_MESES_MAX = 11;
+
+/**
  * Indemnización a todo evento de casa particular (art. 163, incisos finales).
  * Ley 21.269 (1 oct. 2020): el 4,11 % se redistribuyó en 3 % seguro de cesantía
  * (AFC) + 1,11 % que sigue yendo a la cuenta de indemnización en la AFP.
