@@ -239,6 +239,20 @@ export const ASIGNACION_FAMILIAR_TRAMOS = [
 export const IAS_TOPE_ANIOS = 11;
 
 /**
+ * Indemnización por tiempo servido en contrato por obra o faena (art. 163
+ * inciso Ley 21.122 / art. 10 bis). Régimen pleno: 2,5 días de remuneración
+ * por cada mes trabajado y fracción superior a 15 días, si el contrato
+ * estuvo vigente un mes o más y termina por art. 159 N°5.
+ * Gradualidad (dictamen DT 954/9, consulta DT w3-article-118059):
+ * 1 día (1-ene-2019 a 30-jun-2020), 1,5 (1-jul-2020 a 30-jun-2021),
+ * 2 (1-jul-2021 a 31-dic-2021), 2,5 después del 31-dic-2021.
+ * Base art. 172 (tope 90 UF). No es la IAS de 30 días/año ni un tope de 11 años.
+ */
+export const OBRA_FAENA_FACTOR_PLENO = 2.5;
+export const OBRA_FAENA_VIGENCIA_MIN_MESES = 1;
+export const OBRA_FAENA_FRACCION_DIAS = 15;
+
+/**
  * Indemnización especial de tutela laboral (art. 489 CT).
  * El juez fija el monto entre 6 y 11 meses de la última remuneración mensual.
  * No hay otro tope legal publicado en ese artículo (no se inventa el de 90 UF del art. 172).

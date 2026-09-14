@@ -50,6 +50,7 @@ import {
   TRABAJO_PESADO_TASA_TRABAJADOR,
   TUTELA_MESES_MAX,
   TUTELA_MESES_MIN,
+  OBRA_FAENA_FACTOR_PLENO,
   RECARGO_168_DEFAULT,
   RECARGO_168_PORCENTAJES,
   RETENCION_BOLETA_ANIO_DEFAULT,
@@ -77,9 +78,12 @@ import {
   calcularFiniquitoCasaParticular,
   calcularFiniquitoCompleto,
   calcularIas,
+  calcularIndemnizacionObraFaena,
   calcularTutelaLaboral,
   calcularDespidoInjustificado,
+  factorIndemnizacionObraFaena,
   feriadoProporcional,
+  mesesObraFaena,
   vigenciaUnAnioOMas,
 } from "../js/finiquito.js";
 import {
@@ -2702,6 +2706,85 @@ console.log("\nAutodespido art. 171 (reusa calcularIas; gold 2026)");
       !/window\.open/.test(adApp),
   );
 }
+
+console.log("\nIndemnización obra o faena art. 163 (Ley 21.122; gold 2026)");
+{
+  // Fuentes: art. 159 N°5, 163 inciso, 172 y 23 transitorio CT; Ley 21.122;
+  // consulta DT w3-article-118059 y dictamen 954/9. Valor día = rem/30, roundPeso.
+  const gold = calcularIndemnizacionObraFaena(
+    { ingreso: "2026-01-01", termino: "2026-09-01", remuneracion: 900_000, celebracion: "2026-01-01" },
+    { uf: FALLBACK_UF },
+  );
+  assert(
+    "gold 2026 base $900.000 × 8 meses exactos → 20 días × $30.000 = $600.000 (roundPeso)",
+    gold.mesesComputables === 8 &&
+      gold.diasIndemnizacion === 20 &&
+      gold.valorDia === 30_000 &&
+      gold.monto === 600_000 &&
+      gold.factor === OBRA_FAENA_FACTOR_PLENO &&
+      gold.vigenciaUnMes &&
+      !gold.recortoTopeUf &&
+      gold.base === 900_000 &&
+      gold.motivo === "ok",
+    JSON.stringify({
+      meses: gold.mesesComputables,
+      dias: gold.diasIndemnizacion,
+      monto: gold.monto,
+      factor: gold.factor,
+    }),
+  );
+  const frac15 = calcularIndemnizacionObraFaena(
+    { ingreso: "2026-01-01", termino: "2026-09-16", remuneracion: 900_000 },
+    { uf: FALLBACK_UF },
+  );
+  assert(
+    "8 meses y 15 días → 15 no suma; siguen 8 meses y $600.000",
+    frac15.diasFraccion === 15 && frac15.mesesComputables === 8 && frac15.monto === 600_000,
+    JSON.stringify({ dias: frac15.diasFraccion, meses: frac15.mesesComputables, monto: frac15.monto }),
+  );
+  const frac16 = calcularIndemnizacionObraFaena(
+    { ingreso: "2026-01-01", termino: "2026-09-17", remuneracion: 900_000 },
+    { uf: FALLBACK_UF },
+  );
+  assert(
+    "8 meses y 16 días → 9 × 2,5 = 22,5 días → $675.000",
+    frac16.mesesComputables === 9 &&
+      frac16.diasIndemnizacion === 22.5 &&
+      frac16.monto === 675_000,
+    JSON.stringify({ meses: frac16.mesesComputables, dias: frac16.diasIndemnizacion, monto: frac16.monto }),
+  );
+  const corto = calcularIndemnizacionObraFaena(
+    { ingreso: "2026-01-01", termino: "2026-01-20", remuneracion: 900_000 },
+    { uf: FALLBACK_UF },
+  );
+  assert(
+    "menos de un mes → $0",
+    corto.mesesComputables === 0 && corto.monto === 0 && corto.motivo === "menos_un_mes",
+    JSON.stringify({ meses: corto.mesesComputables, monto: corto.monto, motivo: corto.motivo }),
+  );
+  assert(
+    "gradualidad dictamen 954/9: 1 / 1,5 / 2 / 2,5",
+    factorIndemnizacionObraFaena("2020-03-01") === 1 &&
+      factorIndemnizacionObraFaena("2020-07-01") === 1.5 &&
+      factorIndemnizacionObraFaena("2021-07-01") === 2 &&
+      factorIndemnizacionObraFaena("2022-01-01") === 2.5 &&
+      factorIndemnizacionObraFaena("2018-12-31") === 0,
+  );
+  const ofApp = readFileSync(join(root, "js/app-obra-faena.js"), "utf8");
+  assert(
+    "app-obra-faena usa calcularIndemnizacionObraFaena (no reimplementa la fórmula)",
+    /import\s*\{[^}]*calcularIndemnizacionObraFaena[^}]*\}\s*from\s*["']\.\/finiquito\.js["']/.test(ofApp) &&
+      /calcularIndemnizacionObraFaena\s*\(/.test(ofApp) &&
+      !/\balert\s*\(/.test(ofApp) &&
+      !/\bconfirm\s*\(/.test(ofApp) &&
+      !/\bprompt\s*\(/.test(ofApp) &&
+      !/window\.open/.test(ofApp),
+  );
+  assert(
+    "mesesObraFaena 8 meses exactos",
+    mesesObraFaena("2026-01-01", "2026-09-01").mesesComputables === 8,
+  );
+}
 {
   const millon = calcularAvisoPrevio(
     { causal: "161-necesidades", remuneracion: 1_000_000, avisoPrevio: false },
@@ -3417,6 +3500,7 @@ const required = [
   "tutela-laboral.html",
   "despido-injustificado.html",
   "autodespido.html",
+  "obra-faena.html",
   "finiquito.html",
   "js/app-horas-extras.js",
   "js/app-vacaciones-proporcionales.js",
@@ -3458,6 +3542,7 @@ const required = [
   "js/app-tutela-laboral.js",
   "js/app-despido-injustificado.js",
   "js/app-autodespido.js",
+  "js/app-obra-faena.js",
   "empresa.html",
   "privacidad.html",
   "terminos.html",
@@ -3628,6 +3713,7 @@ const htmlFiles = [
   "tutela-laboral.html",
   "despido-injustificado.html",
   "autodespido.html",
+  "obra-faena.html",
   "finiquito.html",
   "empresa.html",
   "privacidad.html",
@@ -3744,6 +3830,7 @@ const appEntries = [
   "js/app-tutela-laboral.js",
   "js/app-despido-injustificado.js",
   "js/app-autodespido.js",
+  "js/app-obra-faena.js",
   "js/app-finiquito.js",
   "js/app-empresa.js",
   "js/app-admin.js",
@@ -3776,7 +3863,7 @@ assert("robots Allow /", /Allow:\s*\//.test(robots));
 assert("robots Disallow /admin", /Disallow:\s*\/admin/.test(robots));
 assert("robots Disallow /api", /Disallow:\s*\/api/.test(robots));
 assert("robots Disallow /docs", /Disallow:\s*\/docs/.test(robots));
-assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/trabajo-pesado/.test(robots) && !/Disallow:\s*\/nulidad-despido/.test(robots) && !/Disallow:\s*\/tutela-laboral/.test(robots) && !/Disallow:\s*\/despido-injustificado/.test(robots) && !/Disallow:\s*\/autodespido/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/feriado-anual/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/licencia-medica/.test(robots) && !/Disallow:\s*\/boleta-honorarios/.test(robots) && !/Disallow:\s*\/retencion-judicial/.test(robots) && !/Disallow:\s*\/apv/.test(robots) && !/Disallow:\s*\/sala-cuna/.test(robots) && !/Disallow:\s*\/postnatal-parental/.test(robots) && !/Disallow:\s*\/permiso-prenatal/.test(robots) && !/Disallow:\s*\/fuero-maternal/.test(robots) && !/Disallow:\s*\/permiso-paternidad/.test(robots) && !/Disallow:\s*\/permiso-matrimonio/.test(robots) && !/Disallow:\s*\/permiso-fallecimiento/.test(robots) && !/Disallow:\s*\/interes-mora/.test(robots) && !/Disallow:\s*\/hora-lactancia/.test(robots) && !/Disallow:\s*\/jornada-40-horas/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots));
+assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/trabajo-pesado/.test(robots) && !/Disallow:\s*\/nulidad-despido/.test(robots) && !/Disallow:\s*\/tutela-laboral/.test(robots) && !/Disallow:\s*\/despido-injustificado/.test(robots) && !/Disallow:\s*\/autodespido/.test(robots) && !/Disallow:\s*\/obra-faena/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/feriado-anual/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/licencia-medica/.test(robots) && !/Disallow:\s*\/boleta-honorarios/.test(robots) && !/Disallow:\s*\/retencion-judicial/.test(robots) && !/Disallow:\s*\/apv/.test(robots) && !/Disallow:\s*\/sala-cuna/.test(robots) && !/Disallow:\s*\/postnatal-parental/.test(robots) && !/Disallow:\s*\/permiso-prenatal/.test(robots) && !/Disallow:\s*\/fuero-maternal/.test(robots) && !/Disallow:\s*\/permiso-paternidad/.test(robots) && !/Disallow:\s*\/permiso-matrimonio/.test(robots) && !/Disallow:\s*\/permiso-fallecimiento/.test(robots) && !/Disallow:\s*\/interes-mora/.test(robots) && !/Disallow:\s*\/hora-lactancia/.test(robots) && !/Disallow:\s*\/jornada-40-horas/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots));
 assert("robots Sitemap", /Sitemap:\s*https:\/\/www\.haberes\.cl\/sitemap\.xml/.test(robots));
 
 const { seoPaths, GUIDE_SLUGS, GUIDES, CAUSAL_PAGES, BASE_PATHS, lastmodForPath } = await import("../content/registry.js");
@@ -3833,7 +3920,8 @@ assert(
     BASE_PATHS.includes("/nulidad-despido"),
     BASE_PATHS.includes("/tutela-laboral"),
     BASE_PATHS.includes("/despido-injustificado"),
-    BASE_PATHS.includes("/autodespido"),
+    BASE_PATHS.includes("/autodespido") &&
+    BASE_PATHS.includes("/obra-faena"),
   `${locs.length} vs ${expectedFromRegistry.length}`,
 );
 assert(
@@ -4188,7 +4276,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 87,
+      seoPaths().length === 88,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -4200,7 +4288,7 @@ try {
   const docsSeo = await hitLocal("/docs/seo-map.md");
   assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
   assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
-  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/obra-faena/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
   }
@@ -4248,6 +4336,7 @@ try {
     "/tutela-laboral",
     "/despido-injustificado",
     "/autodespido",
+    "/obra-faena",
     "/gratificacion",
     "/impuesto-unico",
     "/cotizaciones-previsionales",
@@ -8055,6 +8144,7 @@ assert(
     ["tutela-laboral.html", "/tutela-laboral"],
     ["despido-injustificado.html", "/despido-injustificado"],
     ["autodespido.html", "/autodespido"],
+    ["obra-faena.html", "/obra-faena"],
     ["finiquito.html", "/finiquito"],
     ["empresa.html", "/empresa"],
     ["como.html", "/como"],
@@ -8570,6 +8660,122 @@ assert(
           (r) => r.source === "/despido-indirecto" && r.destination === "/autodespido" && r.permanent === true,
         ) &&
         /urlPath === "\/despido-indirecto"/.test(serveAd),
+    );
+  }
+  {
+    const ofHtml = readFileSync(join(root, "obra-faena.html"), "utf8");
+    const ofTitle = (ofHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const ofH1 = (ofHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const ofDesc = (ofHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "";
+    const iasHtmlOf = readFileSync(join(root, "indemnizacion-anos-servicio.html"), "utf8");
+    const finiHtmlOf = readFileSync(join(root, "finiquito.html"), "utf8");
+    const causalHtmlOf = readFileSync(join(root, "finiquito/art-159-conclusion-del-trabajo.html"), "utf8");
+    const goldOf = calcularIndemnizacionObraFaena(
+      { ingreso: "2026-01-01", termino: "2026-09-01", remuneracion: 900_000, celebracion: "2026-01-01" },
+      { uf: FALLBACK_UF },
+    );
+    const goldOfFrac = calcularIndemnizacionObraFaena(
+      { ingreso: "2026-01-01", termino: "2026-09-17", remuneracion: 900_000 },
+      { uf: FALLBACK_UF },
+    );
+    assert(
+      "SEO obra-faena title único y corto",
+      /calcular indemnizaci[oó]n obra faena/i.test(ofTitle) &&
+        ofTitle.length <= 65 &&
+        !/calculadora de finiquito/i.test(ofTitle) &&
+        !/indemnizaci[oó]n por a[nñ]os de servicio/i.test(ofTitle) &&
+        ofTitle !== ((iasHtmlOf.match(/<title>([^<]*)<\/title>/) || [])[1] || ""),
+      ofTitle,
+    );
+    assert(
+      "SEO obra-faena H1 único art. 163 / 159 N°5",
+      ofH1 === "Calcular indemnización obra faena Chile 2026" &&
+        /art[ií]culo 163/.test(ofHtml) &&
+        /159/.test(ofHtml) &&
+        !/30 d[ií]as por a[nñ]o/.test(ofH1),
+      ofH1,
+    );
+    assert(
+      "SEO obra-faena description propia",
+      ofDesc.length >= 110 &&
+        ofDesc.length <= 160 &&
+        /obra o faena/.test(ofDesc) &&
+        /2,5/.test(ofDesc) &&
+        /159/.test(ofDesc),
+      `${ofDesc.length}:${ofDesc}`,
+    );
+    assert(
+      "SEO obra-faena cita art. 163, 159 N°5, 10 bis, 172, BCN, DT y 954/9",
+      /art[ií]culo 163/.test(ofHtml) &&
+        /bcn\.cl\/leychile\/navegar\?idNorma=207436/.test(ofHtml) &&
+        /bcn\.cl\/leychile\/navegar\?idNorma=1125900/.test(ofHtml) &&
+        /dt\.gob\.cl\/portal\/1628\/w3-article-118059/.test(ofHtml) &&
+        /dt\.gob\.cl\/portal\/1628\/w3-article-118056/.test(ofHtml) &&
+        /954\/9/.test(ofHtml) &&
+        /art[ií]culo 172/.test(ofHtml) &&
+        /10 bis/.test(ofHtml),
+    );
+    assert(
+      "SEO obra-faena gold 2026 $600.000 en copy",
+      goldOf.mesesComputables === 8 &&
+        goldOf.diasIndemnizacion === 20 &&
+        goldOf.monto === 600_000 &&
+        goldOfFrac.mesesComputables === 9 &&
+        goldOfFrac.monto === 675_000 &&
+        /\$600\.000/.test(ofHtml) &&
+        /\$675\.000/.test(ofHtml) &&
+        /1 de enero de 2026/.test(ofHtml) &&
+        /1 de septiembre de 2026/.test(ofHtml),
+    );
+    assert("SEO obra-faena FAQPage", /"@type": "FAQPage"/.test(ofHtml));
+    assert(
+      "SEO obra-faena no canibaliza hermanas vetadas",
+      /href="\/finiquito"/.test(ofHtml) &&
+        /href="\/finiquito\/art-159-conclusion-del-trabajo"/.test(ofHtml) &&
+        /href="\/indemnizacion-anos-servicio"/.test(ofHtml) &&
+        /href="\/vacaciones-proporcionales"/.test(ofHtml) &&
+        /href="\/despido-injustificado"/.test(ofHtml) &&
+        /estimaci[oó]n educativa/.test(ofHtml) &&
+        /no constituye asesor[ií]a legal/i.test(ofHtml) &&
+        /no es finiquito completo/i.test(ofHtml) &&
+        !existsSync(join(root, "finiquito-obra-faena.html")) &&
+        !existsSync(join(root, "indemnizacion-obra-faena.html")),
+    );
+    assert(
+      "home y nav enlazan /obra-faena",
+      /href="\/obra-faena"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/obra-faena" data-nav>Obra o faena<\/a>/.test(
+          readFileSync(join(root, "index.html"), "utf8"),
+        ) &&
+        /href="\/obra-faena" data-nav>Obra o faena<\/a>/.test(ofHtml),
+    );
+    assert(
+      "sitemap incluye /obra-faena",
+      locs.includes("https://www.haberes.cl/obra-faena") &&
+        lastmodForPath("/obra-faena") === "2026-09-14",
+    );
+    assert(
+      "seo-map documenta /obra-faena y no-canibalizar hermanas",
+      /\/obra-faena/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no canibalizar `\/finiquito`, `\/finiquito\/art-159-conclusion-del-trabajo`/.test(
+          readFileSync(join(root, "docs/seo-map.md"), "utf8"),
+        ) &&
+        /no crear `\/finiquito-obra-faena`/i.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")),
+    );
+    assert(
+      "hub /guias enlaza /obra-faena en el cluster de finiquito",
+      /href="\/obra-faena"/.test(readFileSync(join(root, "guias.html"), "utf8")) &&
+        /<h2>Finiquito<\/h2>[\s\S]*href="\/obra-faena"/.test(
+          readFileSync(join(root, "guias.html"), "utf8"),
+        ),
+    );
+    assert(
+      "hermanas enlazan /obra-faena",
+      /href="\/obra-faena"/.test(iasHtmlOf) &&
+        /href="\/obra-faena"/.test(finiHtmlOf) &&
+        /href="\/obra-faena"/.test(causalHtmlOf) &&
+        /href="\/obra-faena"/.test(readFileSync(join(root, "despido-injustificado.html"), "utf8")) &&
+        /href="\/obra-faena"/.test(readFileSync(join(root, "vacaciones-proporcionales.html"), "utf8")),
     );
   }
   {
@@ -13254,6 +13460,7 @@ assert(
       "tutela-laboral.html",
       "despido-injustificado.html",
       "autodespido.html",
+      "obra-faena.html",
       "finiquito.html",
       "empresa.html",
       "precios.html",

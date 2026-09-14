@@ -7,6 +7,9 @@ import {
   CASA_PARTICULAR_PRUEBA_DIAS,
   FALLBACK_UF,
   IAS_TOPE_ANIOS,
+  OBRA_FAENA_FACTOR_PLENO,
+  OBRA_FAENA_FRACCION_DIAS,
+  OBRA_FAENA_VIGENCIA_MIN_MESES,
   RECARGO_168_DEFAULT,
   RECARGO_168_PORCENTAJES,
   TOPE_AFP_SALUD_UF,
@@ -196,6 +199,140 @@ export function calcularIas(input = {}, indicadores = {}) {
     recortoTopeAnios: aniosSinTope > IAS_TOPE_ANIOS,
     totalIasAviso: ias + aviso,
     uf: fin.uf,
+  };
+}
+
+function isoDate(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+/**
+ * Factor de días por mes de la indemnización de obra o faena.
+ * Ventanas del dictamen DT 954/9 (consulta DT w3-article-118059), no años
+ * calendario sueltos. Sin fecha o contrato posterior al 31-dic-2021: 2,5.
+ * Antes del 1-ene-2019 el régimen de la Ley 21.122 no aplica (factor 0).
+ */
+export function factorIndemnizacionObraFaena(celebracion) {
+  if (!celebracion) return OBRA_FAENA_FACTOR_PLENO;
+  let iso;
+  try {
+    iso = isoDate(toDate(celebracion));
+  } catch {
+    return OBRA_FAENA_FACTOR_PLENO;
+  }
+  if (iso < "2019-01-01") return 0;
+  if (iso <= "2020-06-30") return 1;
+  if (iso <= "2021-06-30") return 1.5;
+  if (iso <= "2021-12-31") return 2;
+  return OBRA_FAENA_FACTOR_PLENO;
+}
+
+/**
+ * Meses computables: cada mes calendario de fecha a fecha, más la fracción
+ * estrictamente superior a 15 días. Exige un mes o más de vigencia (art. 163
+ * inciso obra/faena). 15 días exactos no suman. No es la fracción > 6 meses
+ * de la IAS de indefinidos.
+ */
+export function mesesObraFaena(ingreso, termino) {
+  const start = toDate(ingreso);
+  const end = toDate(termino);
+  if (end < start) {
+    return {
+      mesesCompletos: 0,
+      diasFraccion: 0,
+      mesesComputables: 0,
+      vigenciaUnMes: false,
+    };
+  }
+
+  let years = end.getFullYear() - start.getFullYear();
+  let months = end.getMonth() - start.getMonth();
+  let days = end.getDate() - start.getDate();
+
+  if (days < 0) {
+    months -= 1;
+    const prev = new Date(end.getFullYear(), end.getMonth(), 0);
+    days += prev.getDate();
+  }
+  if (months < 0) {
+    years -= 1;
+    months += 12;
+  }
+
+  const mesesCompletos = Math.max(0, years * 12 + months);
+  const vigenciaUnMes = mesesCompletos >= OBRA_FAENA_VIGENCIA_MIN_MESES;
+  const extra = days > OBRA_FAENA_FRACCION_DIAS ? 1 : 0;
+  const mesesComputables = vigenciaUnMes ? mesesCompletos + extra : 0;
+  return {
+    mesesCompletos,
+    diasFraccion: days,
+    mesesComputables,
+    vigenciaUnMes,
+  };
+}
+
+/**
+ * Indemnización por tiempo servido en contrato por obra o faena (art. 163
+ * inciso Ley 21.122): meses × factor × (base art. 172 / 30), `roundPeso`.
+ * Solo si el término es por art. 159 N°5. No es IAS de 30 días/año, no hay
+ * tope de 11 años. Reusa el tope de 90 UF del art. 172 y el divisor 30 del sitio.
+ */
+export function calcularIndemnizacionObraFaena(input = {}, indicadores = {}) {
+  const remuneracion = roundPeso(Math.max(0, Number(input.remuneracion) || 0));
+  const ingreso = input.ingreso || "";
+  const termino = input.termino || "";
+  const celebracion = input.celebracion || ingreso || "";
+  const uf = Number(indicadores.uf) || FALLBACK_UF;
+  const topeMensual = TOPE_AFP_SALUD_UF * uf;
+  const base = Math.min(remuneracion, topeMensual);
+
+  let meses = {
+    mesesCompletos: 0,
+    diasFraccion: 0,
+    mesesComputables: 0,
+    vigenciaUnMes: false,
+  };
+  if (ingreso && termino) {
+    try {
+      meses = mesesObraFaena(ingreso, termino);
+    } catch {
+      meses = {
+        mesesCompletos: 0,
+        diasFraccion: 0,
+        mesesComputables: 0,
+        vigenciaUnMes: false,
+      };
+    }
+  }
+
+  const factor = factorIndemnizacionObraFaena(celebracion);
+  const diasIndemnizacion = meses.mesesComputables * factor;
+  const valorDia = base / 30;
+  const monto = feriadoProporcional(diasIndemnizacion, base);
+
+  let motivo = "ok";
+  if (factor === 0) motivo = "sin_regimen";
+  else if (!ingreso || !termino) motivo = "sin_fechas";
+  else if (!meses.vigenciaUnMes) motivo = "menos_un_mes";
+
+  return {
+    remuneracion,
+    base: roundPeso(base),
+    topeMensual,
+    recortoTopeUf: remuneracion > topeMensual,
+    uf,
+    factor,
+    mesesCompletos: meses.mesesCompletos,
+    diasFraccion: meses.diasFraccion,
+    mesesComputables: meses.mesesComputables,
+    vigenciaUnMes: meses.vigenciaUnMes,
+    diasIndemnizacion,
+    valorDia,
+    monto,
+    motivo,
   };
 }
 
