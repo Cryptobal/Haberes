@@ -102,6 +102,7 @@ def check_http():
         ("/sueldo-proporcional", 200, "html"),
         ("/indemnizacion-aviso-previo", 200, "html"),
         ("/tutela-laboral", 200, "html"),
+        ("/despido-injustificado", 200, "html"),
         ("/blog", 404, None),
         ("/noticias", 404, None),
     ]
@@ -174,6 +175,7 @@ PAGES = [
     ("feriado-anual.html", "feriado-anual"),
     ("indemnizacion-aviso-previo.html", "indemnizacion-aviso-previo"),
     ("tutela-laboral.html", "tutela-laboral"),
+    ("despido-injustificado.html", "despido-injustificado"),
     ("finiquito.html", "finiquito"),
     ("empresa.html", "empresa"),
     ("precios.html", "precios"),

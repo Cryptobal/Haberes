@@ -7,6 +7,8 @@ import {
   CASA_PARTICULAR_PRUEBA_DIAS,
   FALLBACK_UF,
   IAS_TOPE_ANIOS,
+  RECARGO_168_DEFAULT,
+  RECARGO_168_PORCENTAJES,
   TOPE_AFP_SALUD_UF,
   TUTELA_MESES_MAX,
   TUTELA_MESES_MIN,
@@ -282,6 +284,110 @@ export function calcularTutelaLaboral(input = {}) {
     total,
     piso,
     techo,
+    motivo,
+  };
+}
+
+export function tramoRecargo168(porcentaje) {
+  const n = Math.round(Number(porcentaje));
+  if (RECARGO_168_PORCENTAJES.includes(n)) return n;
+  return RECARGO_168_DEFAULT;
+}
+
+/**
+ * Recargo del artículo 168 sobre la IAS (arts. 163 y 168).
+ * El juez declara el despido injustificado, indebido o improcedente y fija el tramo.
+ * El recargo NUNCA se aplica a la indemnización sustitutiva del aviso (art. 162 inc. 4).
+ * Reusa calcularIas / calcularFiniquito (tope 11 años y 90 UF) y calcularAvisoPrevio.
+ */
+export function calcularDespidoInjustificado(input = {}, indicadores = {}) {
+  const porcentajeIngresado =
+    input.porcentaje == null || input.porcentaje === ""
+      ? RECARGO_168_DEFAULT
+      : Number(input.porcentaje);
+  const porcentaje = tramoRecargo168(porcentajeIngresado);
+  const recortoTramo =
+    Number.isFinite(porcentajeIngresado) && porcentajeIngresado !== porcentaje;
+
+  const tieneFechas = Boolean(input.ingreso && input.termino);
+  const tieneAnios = input.anios != null && input.anios !== "";
+  const baseExplicita = input.baseIas != null && input.baseIas !== "";
+
+  let iasDetalle = null;
+  let baseIas = 0;
+  if (baseExplicita) {
+    baseIas = roundPeso(Math.max(0, Number(input.baseIas) || 0));
+  } else if (tieneFechas) {
+    iasDetalle = calcularIas(
+      {
+        ingreso: input.ingreso,
+        termino: input.termino,
+        remuneracion: input.remuneracion,
+        avisoPrevio: true,
+      },
+      indicadores,
+    );
+    baseIas = iasDetalle.ias;
+  } else if (tieneAnios) {
+    const fin = calcularFiniquito(
+      {
+        articulo: "161",
+        anios: input.anios,
+        remuneracion: input.remuneracion,
+        avisoPrevio: true,
+      },
+      indicadores,
+    );
+    baseIas = fin.ias;
+    iasDetalle = {
+      ias: fin.ias,
+      anios: fin.anios,
+      baseIas: fin.baseIas,
+      recortoTopeUf: (Number(input.remuneracion) || 0) > fin.topeMensual,
+      topeMensual: fin.topeMensual,
+      uf: fin.uf,
+    };
+  }
+
+  const recargo = roundPeso((baseIas * porcentaje) / 100);
+  const totalIasConRecargo = baseIas + recargo;
+
+  const incluirAviso = Boolean(input.incluirAviso);
+  let aviso = 0;
+  let avisoDetalle = null;
+  if (incluirAviso) {
+    avisoDetalle = calcularAvisoPrevio(
+      {
+        causal: "161-necesidades",
+        remuneracion: input.remuneracion,
+        colacion: input.colacion,
+        movilizacion: input.movilizacion,
+        avisoPrevio: false,
+      },
+      indicadores,
+    );
+    aviso = avisoDetalle.aviso;
+  }
+
+  let motivo = "ok";
+  if (baseIas <= 0) motivo = "sin_base";
+  else if (recortoTramo) motivo = "tramo_legal";
+
+  return {
+    baseIas,
+    porcentaje,
+    porcentajeIngresado: Number.isFinite(porcentajeIngresado)
+      ? porcentajeIngresado
+      : RECARGO_168_DEFAULT,
+    recortoTramo,
+    recargo,
+    totalIasConRecargo,
+    aviso,
+    incluirAviso,
+    recargoSobreAviso: false,
+    total: totalIasConRecargo + aviso,
+    iasDetalle,
+    avisoDetalle,
     motivo,
   };
 }

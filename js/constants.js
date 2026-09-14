@@ -247,6 +247,15 @@ export const TUTELA_MESES_MIN = 6;
 export const TUTELA_MESES_MAX = 11;
 
 /**
+ * Recargo del artículo 168 sobre la IAS (art. 163).
+ * a) 30 % art. 161 improcedente; b) 50 % art. 159 injustificado o sin causal;
+ * c) 80 % art. 160 indebido; 100 % art. 160 N° 1, 5 o 6 y carente de motivo plausible.
+ * No se aplica a la indemnización del art. 162 inc. 4 (aviso).
+ */
+export const RECARGO_168_PORCENTAJES = Object.freeze([30, 50, 80, 100]);
+export const RECARGO_168_DEFAULT = 30;
+
+/**
  * Indemnización a todo evento de casa particular (art. 163, incisos finales).
  * Ley 21.269 (1 oct. 2020): el 4,11 % se redistribuyó en 3 % seguro de cesantía
  * (AFC) + 1,11 % que sigue yendo a la cuenta de indemnización en la AFP.

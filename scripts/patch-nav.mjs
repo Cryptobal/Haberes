@@ -55,6 +55,7 @@ const DRAWER_LINKS = [
   ["/indemnizacion-aviso-previo", "Indemnización aviso previo"],
   ["/nulidad-despido", "Nulidad del despido"],
   ["/tutela-laboral", "Tutela laboral"],
+  ["/despido-injustificado", "Despido injustificado"],
   ["/finiquito-casa-particular", "Finiquito casa particular"],
   ["/finiquito", "Finiquito"],
 ];
