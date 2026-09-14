@@ -50,7 +50,7 @@ Actualizar este archivo antes de crear URLs nuevas para evitar canibalización.
 | Calcular nulidad del despido | nulidad del despido / despido nulo cotizaciones / convalidación despido / art. 162 cotizaciones impagas | `/nulidad-despido` | Title/H1 «calcular nulidad del despido» + art. 162 Chile 2026; no canibalizar `/finiquito`, `/cotizaciones-previsionales`, `/indemnizacion-anos-servicio`, `/indemnizacion-aviso-previo`, `/sueldo` ni `/descuento-atrasos`. Remuneraciones del período de nulidad (cotizaciones impagas, Ley 19.631) hasta la convalidación; no es IAS, aviso de 30 días, mora art. 63 ni deuda Previred. `/despido-nulo` y `/convalidacion-despido` redirigen. No crear `/art-162` ni `/convalidacion-despido` como páginas paralelas |
 | Calcular tutela laboral | tutela laboral / indemnización derechos fundamentales / art. 489 | `/tutela-laboral` | Title/H1 «calcular tutela laboral»; no canibalizar `/finiquito`, `/indemnizacion-anos-servicio` ni `/indemnizacion-aviso-previo`. Art. 489: indemnización especial 6 a 11 meses que fija el juez. No es IAS, aviso, nulidad del despido ni mora art. 63. Alias `/indemnizacion-tutela` e `/indemnizacion-derechos-fundamentales` redirigen. No crear `/tutela`, `/derechos-fundamentales` ni `/art-489` |
 | Calcular despido injustificado | despido injustificado / recargo despido injustificado / art. 168 | `/despido-injustificado` | Title/H1 «calcular despido injustificado»; no canibalizar `/finiquito`, `/indemnizacion-anos-servicio`, `/indemnizacion-aviso-previo`, `/tutela-laboral`, `/nulidad-despido` ni `/interes-mora`. Art. 168: recargo 30/50/80/100 % sobre la IAS; el aviso no se recarga. Alias `/recargo-despido-injustificado` e `/indemnizacion-despido-injustificado` redirigen. No crear `/art-168` ni `/recargo-168` |
-| Calcular autodespido | autodespido / despido indirecto / art. 171 / indemnización incumplimiento empleador | `/autodespido` | Title/H1 «calcular autodespido»; no canibalizar `/finiquito`, `/indemnizacion-anos-servicio`, `/indemnizacion-aviso-previo`, `/guias/carta-aviso-termino-contrato` ni `/guias/me-reservo-el-derecho-en-el-finiquito`. Art. 171 (trabajador pone término): IAS art. 163 + aviso art. 162 inc. 4 si el juez acoge. No es recargo art. 168 ni tutela art. 489. `/despido-indirecto` redirige. No crear `/art-171` ni `/auto-despido` |
+| Calcular autodespido | autodespido / despido indirecto / art. 171 / indemnización incumplimiento empleador | `/autodespido` | Title/H1 «calcular autodespido»; no canibalizar `/finiquito`, `/indemnizacion-anos-servicio`, `/indemnizacion-aviso-previo`, `/despido-injustificado`, `/tutela-laboral`, `/nulidad-despido`, `/interes-mora`, `/trabajo-pesado`, `/guias/carta-aviso-termino-contrato` ni `/guias/me-reservo-el-derecho-en-el-finiquito`. Art. 171 (trabajador pone término): IAS art. 163 + aviso art. 162 inc. 4 si el juez acoge. No es recargo art. 168 ni tutela art. 489. `/despido-indirecto` redirige. No crear `/art-171` ni `/auto-despido` |
 | Índice de guías | — | `/guias` | Hub: 17 guías, grupo liquidación vs finiquito |
 
 ## Guías pilar (contenido + calculadora embebida)
@@ -305,10 +305,12 @@ No publicar `/art-171` ni `/auto-despido`. El autodespido o despido indirecto (a
 trabajador pone término por incumplimiento grave del empleador y reclama IAS art. 163 y, si el
 juez acoge, aviso art. 162 inc. 4) vive en `/autodespido`. `/despido-indirecto` redirige a esa
 ruta canónica. No canibalizar `/finiquito`, `/indemnizacion-anos-servicio`,
-`/indemnizacion-aviso-previo`, `/guias/carta-aviso-termino-contrato` ni
+`/indemnizacion-aviso-previo`, `/despido-injustificado`, `/tutela-laboral`, `/nulidad-despido`,
+`/interes-mora`, `/trabajo-pesado`, `/guias/carta-aviso-termino-contrato` ni
 `/guias/me-reservo-el-derecho-en-el-finiquito`. El recargo 30/50/80/100 % del art. 168
-(cuando despide el empleador) no abre URL propia. Tutela laboral (art. 489) y nulidad del
-despido tampoco. El finiquito completo sigue en `/finiquito`. La IAS sola sigue en
+(cuando despide el empleador) vive en `/despido-injustificado`. Tutela laboral (art. 489)
+vive en `/tutela-laboral`. Nulidad del despido vive en `/nulidad-despido`.
+El finiquito completo sigue en `/finiquito`. La IAS sola sigue en
 `/indemnizacion-anos-servicio`.
 
 No publicar hermanas de semana corrida: `/septimo-dia`, `/pago-domingo-festivo`,
