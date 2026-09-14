@@ -4128,6 +4128,7 @@ try {
     "301 /convalidacion-despido → /nulidad-despido",
     convAlias.status === 301 && convAlias.location === "/nulidad-despido",
     `${convAlias.status} ${convAlias.location}`,
+  );
   const tutelaAlias = await hitLocal("/indemnizacion-tutela");
   assert(
     "301 /indemnizacion-tutela → /tutela-laboral",
