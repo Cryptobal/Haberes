@@ -3865,7 +3865,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 82,
+      seoPaths().length === 83,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -12501,7 +12501,7 @@ assert(
     return acc;
   }
   const pages = listHtml(root);
-  assert("84 páginas HTML", pages.length === 84, String(pages.length));
+  assert("85 páginas HTML", pages.length === 85, String(pages.length));
   for (const file of pages) {
     const html = readFileSync(file, "utf8");
     const rel = file.slice(root.length + 1);
