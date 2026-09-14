@@ -8519,9 +8519,9 @@ assert(
         /estimaci[oó]n educativa/.test(adHtml) &&
         /no constituye asesor[ií]a legal/i.test(adHtml) &&
         /no es una demanda/i.test(adHtml) &&
-        !/href="\/despido-injustificado"/.test(adHtml) &&
-        !/href="\/tutela-laboral"/.test(adHtml) &&
-        !/href="\/nulidad-despido"/.test(adHtml) &&
+        /href="\/despido-injustificado"/.test(adHtml) &&
+        /href="\/tutela-laboral"/.test(adHtml) &&
+        /href="\/nulidad-despido"/.test(adHtml) &&
         !existsSync(join(root, "art-171.html")) &&
         !existsSync(join(root, "auto-despido.html")) &&
         !existsSync(join(root, "despido-indirecto.html")),
@@ -8558,7 +8558,10 @@ assert(
       "hermanas enlazan /autodespido",
       /href="\/autodespido"/.test(iasHtmlAd) &&
         /href="\/autodespido"/.test(avisoHtmlAd) &&
-        /href="\/autodespido"/.test(finiHtmlAd),
+        /href="\/autodespido"/.test(finiHtmlAd) &&
+        /href="\/autodespido"/.test(readFileSync(join(root, "despido-injustificado.html"), "utf8")) &&
+        /href="\/autodespido"/.test(readFileSync(join(root, "tutela-laboral.html"), "utf8")) &&
+        /href="\/autodespido"/.test(readFileSync(join(root, "nulidad-despido.html"), "utf8")),
     );
     assert(
       "alias /despido-indirecto redirige a /autodespido",
