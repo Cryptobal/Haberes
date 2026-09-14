@@ -202,6 +202,7 @@ assert(
     AFP_COMISION.provida === 1.45,
 );
 assert("Tope AFP/salud 90 UF", TOPE_AFP_SALUD_UF === 90);
+assert("Obra o faena factor pleno 2,5", OBRA_FAENA_FACTOR_PLENO === 2.5);
 assert("Tope cesantía 135.2 UF", TOPE_CESANTIA_UF === 135.2);
 assert(
   "Trabajo pesado CEN 2 %+2 % y 1 %+1 %",
@@ -13638,7 +13639,7 @@ assert(
     return acc;
   }
   const pages = listHtml(root);
-  assert("89 páginas HTML", pages.length === 89, String(pages.length));
+  assert("90 páginas HTML", pages.length === 90, String(pages.length));
   for (const file of pages) {
     const html = readFileSync(file, "utf8");
     const rel = file.slice(root.length + 1);
