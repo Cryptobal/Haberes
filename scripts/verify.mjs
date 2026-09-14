@@ -3354,7 +3354,8 @@ assert(
     lastmodForPath("/guias/aguinaldo-fiestas-patrias") === "2026-08-30" &&
     lastmodForPath("/guias/horas-extras") === "2026-08-31" &&
     lastmodForPath("/guias/me-reservo-el-derecho-en-el-finiquito") === "2026-09-07" &&
-    lastmodForPath("/guias") === "2026-09-07" &&
+    lastmodForPath("/guias/vacaciones-proporcionales") === "2026-09-14" &&
+    lastmodForPath("/guias") === "2026-09-14" &&
     /<loc>https:\/\/www\.haberes\.cl\/guias\/liquidacion-de-sueldo<\/loc>\s*<lastmod>2026-08-18<\/lastmod>/.test(sitemap) &&
     /<loc>https:\/\/www\.haberes\.cl\/guias\/gratificacion-legal<\/loc>\s*<lastmod>2026-08-18<\/lastmod>/.test(sitemap) &&
     /<loc>https:\/\/www\.haberes\.cl\/guias\/indemnizacion-por-anos-de-servicio<\/loc>\s*<lastmod>2026-08-19<\/lastmod>/.test(sitemap) &&
@@ -3362,7 +3363,8 @@ assert(
     /<loc>https:\/\/www\.haberes\.cl\/guias\/aguinaldo-fiestas-patrias<\/loc>\s*<lastmod>2026-08-30<\/lastmod>/.test(sitemap) &&
     /<loc>https:\/\/www\.haberes\.cl\/guias\/horas-extras<\/loc>\s*<lastmod>2026-08-31<\/lastmod>/.test(sitemap) &&
     /<loc>https:\/\/www\.haberes\.cl\/guias\/me-reservo-el-derecho-en-el-finiquito<\/loc>\s*<lastmod>2026-09-07<\/lastmod>/.test(sitemap) &&
-    /<loc>https:\/\/www\.haberes\.cl\/guias<\/loc>\s*<lastmod>2026-09-07<\/lastmod>/.test(sitemap),
+    /<loc>https:\/\/www\.haberes\.cl\/guias\/vacaciones-proporcionales<\/loc>\s*<lastmod>2026-09-14<\/lastmod>/.test(sitemap) &&
+    /<loc>https:\/\/www\.haberes\.cl\/guias<\/loc>\s*<lastmod>2026-09-14<\/lastmod>/.test(sitemap),
 );
 assert("sin ruta /blog ni /noticias", !existsSync(join(root, "blog.html")) && !existsSync(join(root, "noticias.html")));
 assert("sitemap sin .html (cleanUrls)", !locs.some((u) => u.endsWith(".html")));
@@ -11002,6 +11004,7 @@ assert(
       ["guias/aguinaldo-fiestas-patrias.html", "/aguinaldo", /artículo 41/, /dt\.gob\.cl/],
       ["guias/horas-extras.html", "/horas-extras", /artículo 32/, /dt\.gob\.cl/],
       ["guias/me-reservo-el-derecho-en-el-finiquito.html", "/finiquito", /artículo 177/, /dt\.gob\.cl/],
+      ["guias/vacaciones-proporcionales.html", "/vacaciones-proporcionales", /artículo 73/, /dt\.gob\.cl/],
     ];
     function visibleWords(html) {
       const main = html.match(/<main\b[\s\S]*?<\/main>/i)?.[0] || html;
@@ -11024,11 +11027,14 @@ assert(
         file.includes("semana-corrida") ||
         file.includes("aguinaldo-fiestas-patrias") ||
         file.includes("horas-extras") ||
-        file.includes("me-reservo-el-derecho-en-el-finiquito")
+        file.includes("me-reservo-el-derecho-en-el-finiquito") ||
+        file.includes("vacaciones-proporcionales")
           ? 900
           : 800;
       const dateRe =
-        file.includes("me-reservo-el-derecho-en-el-finiquito")
+        file.includes("vacaciones-proporcionales")
+          ? /<time datetime="2026-09-14">/
+          : file.includes("me-reservo-el-derecho-en-el-finiquito")
           ? /<time datetime="2026-09-07">/
           : file.includes("horas-extras")
           ? /<time datetime="2026-08-31">/
@@ -11240,6 +11246,76 @@ assert(
           readFileSync(join(root, "docs/seo-map.md"), "utf8"),
         ) &&
           /No crear `\/guias\/reserva-de-derechos`/.test(
+            readFileSync(join(root, "docs/seo-map.md"), "utf8"),
+          ),
+      );
+    }
+    {
+      const html = readFileSync(join(root, "guias/vacaciones-proporcionales.html"), "utf8");
+      const landing = readFileSync(join(root, "vacaciones-proporcionales.html"), "utf8");
+      const faHtml = readFileSync(join(root, "feriado-anual.html"), "utf8");
+      const fpHtml = readFileSync(join(root, "feriado-progresivo.html"), "utf8");
+      const finiLanding = readFileSync(join(root, "finiquito.html"), "utf8");
+      const finiGuide = readFileSync(join(root, "guias/finiquito.html"), "utf8");
+      const sueldoHtml = readFileSync(join(root, "sueldo.html"), "utf8");
+      const title = (html.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+      const h1 = (html.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+      const landingTitle = (landing.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+      const landingH1 = (landing.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+      const faH1 = (faHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+      const fpH1 = (fpHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+      const finiH1 = (finiLanding.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+      const guideH1 = (finiGuide.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+      const sueldoH1 = (sueldoHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+      assert(
+        "SEO guía vacaciones proporcionales title/H1 únicos y no canibalizan /sueldo ni /finiquito",
+        title &&
+          h1 &&
+          title !== landingTitle &&
+          h1 !== landingH1 &&
+          h1 !== faH1 &&
+          h1 !== fpH1 &&
+          h1 !== finiH1 &&
+          h1 !== guideH1 &&
+          h1 !== sueldoH1 &&
+          /vacaciones proporcionales/i.test(title) &&
+          /73/.test(title) &&
+          /vacaciones proporcionales/i.test(h1) &&
+          /feriado pendiente/i.test(h1) &&
+          /73/.test(h1) &&
+          /remuneraci[oó]n \/ 30/.test(h1) &&
+          !/calculadora/i.test(title) &&
+          !/calculadora/i.test(h1) &&
+          !/^Calcular /i.test(h1) &&
+          !/sueldo l[ií]quido/i.test(h1) &&
+          !/calculadora de finiquito/i.test(h1) &&
+          /data-seo-calc="feriado"/.test(html) &&
+          /d[ií]as × \(remuneraci[oó]n mensual \/ 30\)/.test(html) &&
+          /\$900\.000/.test(html) &&
+          /\$300\.000/.test(html) &&
+          /10 × \$900\.000 \/ 30/.test(html) &&
+          feriadoProporcional(10, 900000) === 300000 &&
+          /href="\/vacaciones-proporcionales"/.test(html) &&
+          /href="\/feriado-anual"/.test(html) &&
+          /href="\/feriado-progresivo"/.test(html) &&
+          /href="\/finiquito"/.test(html) &&
+          /href="\/guias\/finiquito"/.test(html) &&
+          /href="\/guias\/con-que-sueldo-se-calcula-el-finiquito"/.test(html) &&
+          /href="\/guias"/.test(html) &&
+          /w3-article-60200/.test(html) &&
+          /207436/.test(html) &&
+          /"url": "https:\/\/www\.haberes\.cl\/vacaciones-proporcionales"/.test(html) &&
+          !/"name": "Calculadora de sueldo l[ií]quido Haberes"/.test(html) &&
+          !existsSync(join(root, "guias/feriado-proporcional.html")) &&
+          landingH1 === "Calcular vacaciones proporcionales Chile 2026",
+        `${title} | ${h1} | ${landingH1}`,
+      );
+      assert(
+        "seo-map documenta guía vacaciones proporcionales sin slug paralelo",
+        /\/guias\/vacaciones-proporcionales/.test(
+          readFileSync(join(root, "docs/seo-map.md"), "utf8"),
+        ) &&
+          /No crear `\/guias\/feriado-proporcional`/.test(
             readFileSync(join(root, "docs/seo-map.md"), "utf8"),
           ),
       );
@@ -11807,8 +11883,10 @@ assert(
       "SEO hub tiene últimas con fecha",
       /<h2>Últimas actualizaciones<\/h2>/.test(hub) &&
         /<ol class="guide-latest">/.test(hub) &&
+        /datetime="2026-09-14"/.test(hub) &&
         /datetime="2026-09-07"/.test(hub) &&
         /datetime="2026-08-31"/.test(hub) &&
+        /href="\/guias\/vacaciones-proporcionales"/.test(hub) &&
         /href="\/guias\/me-reservo-el-derecho-en-el-finiquito"/.test(hub) &&
         /href="\/guias\/horas-extras"/.test(hub) &&
         !/href="\/blog"/.test(hub),

@@ -50,7 +50,7 @@ export const GUIDES = [
   { slug: "liquidacion-de-sueldo-y-previred", group: "liquidacion", calc: "/sueldo", updated: "2026-08-17" },
   { slug: "finiquito", group: "finiquito", calc: "/finiquito", updated: "2026-08-18" },
   { slug: "indemnizacion-por-anos-de-servicio", group: "finiquito", calc: "/indemnizacion-anos-servicio", updated: "2026-08-19" },
-  { slug: "vacaciones-proporcionales", group: "finiquito", calc: "/vacaciones-proporcionales", updated: "2026-08-17" },
+  { slug: "vacaciones-proporcionales", group: "finiquito", calc: "/vacaciones-proporcionales", updated: "2026-09-14" },
   { slug: "carta-aviso-termino-contrato", group: "finiquito", calc: "/finiquito", updated: "2026-08-18" },
   { slug: "plazo-de-pago-del-finiquito", group: "finiquito", calc: "/finiquito", updated: "2026-08-17" },
   { slug: "con-que-sueldo-se-calcula-el-finiquito", group: "finiquito", calc: "/finiquito", updated: "2026-08-17" },
@@ -60,7 +60,7 @@ export const GUIDES = [
 
 /** lastmod de rutas base que sí cambiaron después del lote SEO inicial. */
 export const PATH_LASTMOD = {
-  "/guias": "2026-09-07",
+  "/guias": "2026-09-14",
   "/finiquito-casa-particular": "2026-08-31",
   "/costo-empresa": "2026-08-30",
   "/seguro-cesantia": "2026-09-01",
