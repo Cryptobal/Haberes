@@ -123,6 +123,10 @@ export function handleRequest(req, res) {
     send(res, 301, { Location: `/despido-injustificado${url.search}` }, "");
     return;
   }
+  if (urlPath === "/despido-indirecto") {
+    send(res, 301, { Location: `/autodespido${url.search}` }, "");
+    return;
+  }
   const hit = resolvePath(urlPath);
   if (hit.kind === "bad") {
     send(res, 400, { "Content-Type": "text/plain; charset=utf-8" }, "Bad Request");

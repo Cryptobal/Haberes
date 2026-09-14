@@ -2649,6 +2649,59 @@ assert("4 años 7 meses redondea a 5", aniosServicio("2020-01-15", "2024-08-15")
       /calcularIas\s*\(/.test(iasApp),
   );
 }
+
+console.log("\nAutodespido art. 171 (reusa calcularIas; gold 2026)");
+{
+  // Fuente: art. 171 CT (BCN / ORD. N°335/2) + consulta DT w3-article-60579.
+  // Núcleo: IAS art. 163 + aviso art. 162 inc. 4 si el juez acoge. Recargo 50/80 % no se calcula aquí.
+  const gold = calcularIas(
+    { ingreso: "2020-03-01", termino: "2026-03-01", remuneracion: 1_000_000, avisoPrevio: true },
+    { uf: FALLBACK_UF },
+  );
+  assert(
+    "gold 2026 base $1.000.000 × 6 años exactos → IAS $6.000.000 (roundPeso)",
+    gold.anios === 6 &&
+      gold.ias === 6_000_000 &&
+      gold.aviso === 0 &&
+      gold.totalIasAviso === 6_000_000 &&
+      gold.vigenciaUnAnio &&
+      !gold.recortoTopeUf &&
+      !gold.recortoTopeAnios &&
+      gold.baseIas === 1_000_000,
+    JSON.stringify({ anios: gold.anios, ias: gold.ias, aviso: gold.aviso, total: gold.totalIasAviso }),
+  );
+  const goldAviso = calcularIas(
+    { ingreso: "2020-03-01", termino: "2026-03-01", remuneracion: 1_000_000, avisoPrevio: false },
+    { uf: FALLBACK_UF },
+  );
+  assert(
+    "gold 2026 + aviso sustitutivo → total $7.000.000",
+    goldAviso.anios === 6 &&
+      goldAviso.ias === 6_000_000 &&
+      goldAviso.aviso === 1_000_000 &&
+      goldAviso.totalIasAviso === 7_000_000,
+    JSON.stringify({ ias: goldAviso.ias, aviso: goldAviso.aviso, total: goldAviso.totalIasAviso }),
+  );
+  const frac = calcularIas(
+    { ingreso: "2020-03-01", termino: "2026-10-01", remuneracion: 1_000_000, avisoPrevio: true },
+    { uf: FALLBACK_UF },
+  );
+  assert(
+    "6 años 7 meses → 7 × $1.000.000 = $7.000.000",
+    frac.anios === 7 && frac.ias === 7_000_000,
+    String(frac.ias),
+  );
+  const adApp = readFileSync(join(root, "js/app-autodespido.js"), "utf8");
+  assert(
+    "app-autodespido usa calcularIas (no reimplementa la fórmula)",
+    /import\s*\{[^}]*calcularIas[^}]*\}\s*from\s*["']\.\/finiquito\.js["']/.test(adApp) &&
+      /calcularIas\s*\(/.test(adApp) &&
+      !/\balert\s*\(/.test(adApp) &&
+      !/\bconfirm\s*\(/.test(adApp) &&
+      !/\bprompt\s*\(/.test(adApp) &&
+      !/window\.open/.test(adApp),
+  );
+}
 {
   const millon = calcularAvisoPrevio(
     { causal: "161-necesidades", remuneracion: 1_000_000, avisoPrevio: false },
@@ -3363,6 +3416,7 @@ const required = [
   "indemnizacion-aviso-previo.html",
   "tutela-laboral.html",
   "despido-injustificado.html",
+  "autodespido.html",
   "finiquito.html",
   "js/app-horas-extras.js",
   "js/app-vacaciones-proporcionales.js",
@@ -3403,6 +3457,7 @@ const required = [
   "js/app-indemnizacion-aviso-previo.js",
   "js/app-tutela-laboral.js",
   "js/app-despido-injustificado.js",
+  "js/app-autodespido.js",
   "empresa.html",
   "privacidad.html",
   "terminos.html",
@@ -3572,6 +3627,7 @@ const htmlFiles = [
   "indemnizacion-aviso-previo.html",
   "tutela-laboral.html",
   "despido-injustificado.html",
+  "autodespido.html",
   "finiquito.html",
   "empresa.html",
   "privacidad.html",
@@ -3687,6 +3743,7 @@ const appEntries = [
   "js/app-indemnizacion-aviso-previo.js",
   "js/app-tutela-laboral.js",
   "js/app-despido-injustificado.js",
+  "js/app-autodespido.js",
   "js/app-finiquito.js",
   "js/app-empresa.js",
   "js/app-admin.js",
@@ -3719,7 +3776,7 @@ assert("robots Allow /", /Allow:\s*\//.test(robots));
 assert("robots Disallow /admin", /Disallow:\s*\/admin/.test(robots));
 assert("robots Disallow /api", /Disallow:\s*\/api/.test(robots));
 assert("robots Disallow /docs", /Disallow:\s*\/docs/.test(robots));
-assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/trabajo-pesado/.test(robots) && !/Disallow:\s*\/nulidad-despido/.test(robots) && !/Disallow:\s*\/tutela-laboral/.test(robots) && !/Disallow:\s*\/despido-injustificado/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/feriado-anual/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/licencia-medica/.test(robots) && !/Disallow:\s*\/boleta-honorarios/.test(robots) && !/Disallow:\s*\/retencion-judicial/.test(robots) && !/Disallow:\s*\/apv/.test(robots) && !/Disallow:\s*\/sala-cuna/.test(robots) && !/Disallow:\s*\/postnatal-parental/.test(robots) && !/Disallow:\s*\/permiso-prenatal/.test(robots) && !/Disallow:\s*\/fuero-maternal/.test(robots) && !/Disallow:\s*\/permiso-paternidad/.test(robots) && !/Disallow:\s*\/permiso-matrimonio/.test(robots) && !/Disallow:\s*\/permiso-fallecimiento/.test(robots) && !/Disallow:\s*\/interes-mora/.test(robots) && !/Disallow:\s*\/hora-lactancia/.test(robots) && !/Disallow:\s*\/jornada-40-horas/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots));
+assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/trabajo-pesado/.test(robots) && !/Disallow:\s*\/nulidad-despido/.test(robots) && !/Disallow:\s*\/tutela-laboral/.test(robots) && !/Disallow:\s*\/despido-injustificado/.test(robots) && !/Disallow:\s*\/autodespido/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/feriado-anual/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/licencia-medica/.test(robots) && !/Disallow:\s*\/boleta-honorarios/.test(robots) && !/Disallow:\s*\/retencion-judicial/.test(robots) && !/Disallow:\s*\/apv/.test(robots) && !/Disallow:\s*\/sala-cuna/.test(robots) && !/Disallow:\s*\/postnatal-parental/.test(robots) && !/Disallow:\s*\/permiso-prenatal/.test(robots) && !/Disallow:\s*\/fuero-maternal/.test(robots) && !/Disallow:\s*\/permiso-paternidad/.test(robots) && !/Disallow:\s*\/permiso-matrimonio/.test(robots) && !/Disallow:\s*\/permiso-fallecimiento/.test(robots) && !/Disallow:\s*\/interes-mora/.test(robots) && !/Disallow:\s*\/hora-lactancia/.test(robots) && !/Disallow:\s*\/jornada-40-horas/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots));
 assert("robots Sitemap", /Sitemap:\s*https:\/\/www\.haberes\.cl\/sitemap\.xml/.test(robots));
 
 const { seoPaths, GUIDE_SLUGS, GUIDES, CAUSAL_PAGES, BASE_PATHS, lastmodForPath } = await import("../content/registry.js");
@@ -3776,6 +3833,7 @@ assert(
     BASE_PATHS.includes("/nulidad-despido"),
     BASE_PATHS.includes("/tutela-laboral"),
     BASE_PATHS.includes("/despido-injustificado"),
+    BASE_PATHS.includes("/autodespido"),
   `${locs.length} vs ${expectedFromRegistry.length}`,
 );
 assert(
@@ -4130,7 +4188,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 86,
+      seoPaths().length === 87,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -4142,7 +4200,7 @@ try {
   const docsSeo = await hitLocal("/docs/seo-map.md");
   assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
   assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
-  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
   }
@@ -4189,6 +4247,7 @@ try {
     "/nulidad-despido",
     "/tutela-laboral",
     "/despido-injustificado",
+    "/autodespido",
     "/gratificacion",
     "/impuesto-unico",
     "/cotizaciones-previsionales",
@@ -4260,6 +4319,12 @@ try {
     "301 /indemnizacion-despido-injustificado → /despido-injustificado",
     despidoAlias2.status === 301 && despidoAlias2.location === "/despido-injustificado",
     `${despidoAlias2.status} ${despidoAlias2.location}`,
+  );
+  const autodespidoAlias = await hitLocal("/despido-indirecto");
+  assert(
+    "301 /despido-indirecto → /autodespido",
+    autodespidoAlias.status === 301 && autodespidoAlias.location === "/autodespido",
+    `${autodespidoAlias.status} ${autodespidoAlias.location}`,
   );
   writeFileSync(join(root, "sitemap.xml"), "<urlset>STATIC-LEFTOVER</urlset>");
   try {
@@ -7989,6 +8054,7 @@ assert(
     ["nulidad-despido.html", "/nulidad-despido"],
     ["tutela-laboral.html", "/tutela-laboral"],
     ["despido-injustificado.html", "/despido-injustificado"],
+    ["autodespido.html", "/autodespido"],
     ["finiquito.html", "/finiquito"],
     ["empresa.html", "/empresa"],
     ["como.html", "/como"],
@@ -8375,6 +8441,132 @@ assert(
     assert(
       "SEO guía IAS sigue enlazando /finiquito",
       /href="\/finiquito"/.test(guideHtml),
+    );
+  }
+
+  {
+    const adHtml = readFileSync(join(root, "autodespido.html"), "utf8");
+    const adTitle = (adHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const adH1 = (adHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const adDesc = (adHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "";
+    const iasHtmlAd = readFileSync(join(root, "indemnizacion-anos-servicio.html"), "utf8");
+    const avisoHtmlAd = readFileSync(join(root, "indemnizacion-aviso-previo.html"), "utf8");
+    const finiHtmlAd = readFileSync(join(root, "finiquito.html"), "utf8");
+    const vercelAd = JSON.parse(readFileSync(join(root, "vercel.json"), "utf8"));
+    const serveAd = readFileSync(join(root, "scripts/serve.mjs"), "utf8");
+    const goldAd = calcularIas(
+      { ingreso: "2020-03-01", termino: "2026-03-01", remuneracion: 1_000_000, avisoPrevio: true },
+      { uf: FALLBACK_UF },
+    );
+    const goldAdAviso = calcularIas(
+      { ingreso: "2020-03-01", termino: "2026-03-01", remuneracion: 1_000_000, avisoPrevio: false },
+      { uf: FALLBACK_UF },
+    );
+    assert(
+      "SEO autodespido title único y corto",
+      /calcular autodespido/i.test(adTitle) &&
+        adTitle.length <= 65 &&
+        !/calculadora de finiquito/i.test(adTitle) &&
+        !/indemnizaci[oó]n por a[nñ]os de servicio/i.test(adTitle) &&
+        adTitle !== ((iasHtmlAd.match(/<title>([^<]*)<\/title>/) || [])[1] || ""),
+      adTitle,
+    );
+    assert(
+      "SEO autodespido H1 único art. 171",
+      adH1 === "Calcular autodespido Chile 2026" &&
+        /art[ií]culo 171/.test(adHtml) &&
+        !/art\. 168/.test(adH1) &&
+        !/tutela/.test(adH1),
+      adH1,
+    );
+    assert(
+      "SEO autodespido description propia",
+      adDesc.length >= 110 &&
+        adDesc.length <= 160 &&
+        /art\. 171/.test(adDesc) &&
+        /autodespido/.test(adDesc) &&
+        /despido indirecto/.test(adDesc),
+      `${adDesc.length}:${adDesc}`,
+    );
+    assert(
+      "SEO autodespido cita art. 171, BCN, DT y ORD 335/2",
+      /art[ií]culo 171/.test(adHtml) &&
+        /bcn\.cl\/leychile\/navegar\?idNorma=207436/.test(adHtml) &&
+        /dt\.gob\.cl\/portal\/1628\/w3-article-60579/.test(adHtml) &&
+        /110967/.test(adHtml) &&
+        /art[ií]culo 163/.test(adHtml) &&
+        /162/.test(adHtml),
+    );
+    assert(
+      "SEO autodespido gold 2026 $6.000.000 en copy",
+      goldAd.anios === 6 &&
+        goldAd.ias === 6_000_000 &&
+        goldAdAviso.aviso === 1_000_000 &&
+        goldAdAviso.totalIasAviso === 7_000_000 &&
+        /\$6\.000\.000/.test(adHtml) &&
+        /\$7\.000\.000/.test(adHtml) &&
+        /1 de marzo de 2020/.test(adHtml) &&
+        /1 de marzo de 2026/.test(adHtml),
+    );
+    assert("SEO autodespido FAQPage", /"@type": "FAQPage"/.test(adHtml));
+    assert(
+      "SEO autodespido no canibaliza hermanas vetadas",
+      /href="\/finiquito"/.test(adHtml) &&
+        /href="\/indemnizacion-anos-servicio"/.test(adHtml) &&
+        /href="\/indemnizacion-aviso-previo"/.test(adHtml) &&
+        /href="\/guias\/carta-aviso-termino-contrato"/.test(adHtml) &&
+        /href="\/guias\/me-reservo-el-derecho-en-el-finiquito"/.test(adHtml) &&
+        /estimaci[oó]n educativa/.test(adHtml) &&
+        /no constituye asesor[ií]a legal/i.test(adHtml) &&
+        /no es una demanda/i.test(adHtml) &&
+        !/href="\/despido-injustificado"/.test(adHtml) &&
+        !/href="\/tutela-laboral"/.test(adHtml) &&
+        !/href="\/nulidad-despido"/.test(adHtml) &&
+        !existsSync(join(root, "art-171.html")) &&
+        !existsSync(join(root, "auto-despido.html")) &&
+        !existsSync(join(root, "despido-indirecto.html")),
+    );
+    assert(
+      "home y nav enlazan /autodespido",
+      /href="\/autodespido"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/autodespido" data-nav>Autodespido<\/a>/.test(
+          readFileSync(join(root, "index.html"), "utf8"),
+        ) &&
+        /href="\/autodespido" data-nav>Autodespido<\/a>/.test(adHtml),
+    );
+    assert(
+      "sitemap incluye /autodespido",
+      locs.includes("https://www.haberes.cl/autodespido") &&
+        lastmodForPath("/autodespido") === "2026-09-14",
+    );
+    assert(
+      "seo-map documenta /autodespido y no-canibalizar hermanas",
+      /\/autodespido/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no canibalizar `\/finiquito`, `\/indemnizacion-anos-servicio`, `\/indemnizacion-aviso-previo`/.test(
+          readFileSync(join(root, "docs/seo-map.md"), "utf8"),
+        ) &&
+        /no crear `\/art-171`/i.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")),
+    );
+    assert(
+      "hub /guias enlaza /autodespido en el cluster de finiquito",
+      /href="\/autodespido"/.test(readFileSync(join(root, "guias.html"), "utf8")) &&
+        /<h2>Finiquito<\/h2>[\s\S]*href="\/autodespido"/.test(
+          readFileSync(join(root, "guias.html"), "utf8"),
+        ),
+    );
+    assert(
+      "hermanas enlazan /autodespido",
+      /href="\/autodespido"/.test(iasHtmlAd) &&
+        /href="\/autodespido"/.test(avisoHtmlAd) &&
+        /href="\/autodespido"/.test(finiHtmlAd),
+    );
+    assert(
+      "alias /despido-indirecto redirige a /autodespido",
+      Array.isArray(vercelAd.redirects) &&
+        vercelAd.redirects.some(
+          (r) => r.source === "/despido-indirecto" && r.destination === "/autodespido" && r.permanent === true,
+        ) &&
+        /urlPath === "\/despido-indirecto"/.test(serveAd),
     );
   }
   {
@@ -13058,6 +13250,7 @@ assert(
       "nulidad-despido.html",
       "tutela-laboral.html",
       "despido-injustificado.html",
+      "autodespido.html",
       "finiquito.html",
       "empresa.html",
       "precios.html",
@@ -13235,7 +13428,7 @@ assert(
     return acc;
   }
   const pages = listHtml(root);
-  assert("88 páginas HTML", pages.length === 88, String(pages.length));
+  assert("89 páginas HTML", pages.length === 89, String(pages.length));
   for (const file of pages) {
     const html = readFileSync(file, "utf8");
     const rel = file.slice(root.length + 1);

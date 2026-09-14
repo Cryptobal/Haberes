@@ -19,7 +19,9 @@
     { "source": "/recargo-despido-injustificado", "destination": "/despido-injustificado", "permanent": true },
     { "source": "/recargo-despido-injustificado/", "destination": "/despido-injustificado", "permanent": true },
     { "source": "/indemnizacion-despido-injustificado", "destination": "/despido-injustificado", "permanent": true },
-    { "source": "/indemnizacion-despido-injustificado/", "destination": "/despido-injustificado", "permanent": true }
+    { "source": "/indemnizacion-despido-injustificado/", "destination": "/despido-injustificado", "permanent": true },
+    { "source": "/despido-indirecto", "destination": "/autodespido", "permanent": true },
+    { "source": "/despido-indirecto/", "destination": "/autodespido", "permanent": true }
   ],
   "rewrites": [
     { "source": "/sitemap.xml", "destination": "/api/sitemap" },
