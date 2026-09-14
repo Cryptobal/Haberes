@@ -57,6 +57,7 @@ const DRAWER_LINKS = [
   ["/tutela-laboral", "Tutela laboral"],
   ["/despido-injustificado", "Despido injustificado"],
   ["/autodespido", "Autodespido"],
+  ["/obra-faena", "Obra o faena"],
   ["/finiquito-casa-particular", "Finiquito casa particular"],
   ["/finiquito", "Finiquito"],
 ];
