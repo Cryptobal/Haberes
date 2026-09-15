@@ -51,6 +51,7 @@ import {
   TUTELA_MESES_MAX,
   TUTELA_MESES_MIN,
   OBRA_FAENA_FACTOR_PLENO,
+  PRESCRIPCION_GOLD,
   RECARGO_168_DEFAULT,
   RECARGO_168_PORCENTAJES,
   RETENCION_BOLETA_ANIO_DEFAULT,
@@ -146,6 +147,7 @@ import {
   rutParaLre,
 } from "../js/lre.js";
 import { fallbackIndicadores } from "../js/indicadores.js";
+import { calcularPrescripcionLaboral } from "../js/prescripcion-laboral.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 let failed = 0;
@@ -2786,6 +2788,104 @@ console.log("\nIndemnización obra o faena art. 163 (Ley 21.122; gold 2026)");
     mesesObraFaena("2026-01-01", "2026-09-01").mesesComputables === 8,
   );
 }
+
+console.log("\nPrescripción laboral art. 510 y art. 168 (gold 2026)");
+{
+  // Fuentes: art. 510 y 168 CT (BCN idNorma=207436); consulta DT w3-article-60622.
+  // Días hábiles: lun–vie excl. FERIADOS_LEGALES_CL; art. 168 cuenta desde el día
+  // siguiente a la separación (art. 48 Código Civil).
+  const gGen = calcularPrescripcionLaboral({
+    modo: PRESCRIPCION_GOLD.generales.modo,
+    fechaAncla: PRESCRIPCION_GOLD.generales.fechaAncla,
+    fechaHoy: "2026-03-01",
+  });
+  assert(
+    "gold derechos generales 2024-03-15 → 2026-03-15",
+    gGen.ok &&
+      gGen.fechaLimite === "2026-03-15" &&
+      gGen.estado === "por_vencer" &&
+      gGen.norma.includes("510"),
+    JSON.stringify(gGen),
+  );
+  const gPost = calcularPrescripcionLaboral({
+    modo: PRESCRIPCION_GOLD.postTermino.modo,
+    fechaAncla: PRESCRIPCION_GOLD.postTermino.fechaAncla,
+    fechaHoy: "2026-04-01",
+  });
+  assert(
+    "gold post-término 2026-01-15 → 2026-07-15",
+    gPost.ok && gPost.fechaLimite === "2026-07-15" && gPost.estado === "vigente",
+    JSON.stringify(gPost),
+  );
+  const gHe = calcularPrescripcionLaboral({
+    modo: PRESCRIPCION_GOLD.horasExtras.modo,
+    fechaAncla: PRESCRIPCION_GOLD.horasExtras.fechaAncla,
+    fechaHoy: "2026-03-01",
+  });
+  assert(
+    "gold HE 2025-09-30 → 2026-03-30",
+    gHe.ok && gHe.fechaLimite === "2026-03-30" && gHe.hermana === "/horas-extras",
+    JSON.stringify(gHe),
+  );
+  const gNul = calcularPrescripcionLaboral({
+    modo: PRESCRIPCION_GOLD.nulidad162.modo,
+    fechaAncla: PRESCRIPCION_GOLD.nulidad162.fechaAncla,
+    fechaHoy: "2026-04-01",
+  });
+  assert(
+    "gold nulidad 162 2026-01-10 → 2026-07-10",
+    gNul.ok && gNul.fechaLimite === "2026-07-10" && gNul.hermana === "/nulidad-despido",
+    JSON.stringify(gNul),
+  );
+  const g168 = calcularPrescripcionLaboral({
+    modo: PRESCRIPCION_GOLD.art168.modo,
+    fechaAncla: PRESCRIPCION_GOLD.art168.fechaAncla,
+    fechaHoy: "2026-02-01",
+  });
+  assert(
+    "gold art. 168 2026-01-02 → 2026-03-27 (60 hábiles lun–vie + feriados legales)",
+    g168.ok &&
+      g168.fechaLimite === "2026-03-27" &&
+      g168.tipoPlazo === "habiles" &&
+      g168.plazoValor === 60 &&
+      g168.hermana === "/despido-injustificado",
+    JSON.stringify(g168),
+  );
+  const gVen = calcularPrescripcionLaboral({
+    modo: PRESCRIPCION_GOLD.vencido.modo,
+    fechaAncla: PRESCRIPCION_GOLD.vencido.fechaAncla,
+    fechaHoy: "2026-09-15",
+  });
+  assert(
+    "gold vencido término 2025-01-01 → límite 2025-07-01 estado vencido",
+    gVen.ok &&
+      gVen.fechaLimite === "2025-07-01" &&
+      gVen.estado === "vencido" &&
+      gVen.diasRestantes < 0,
+    JSON.stringify(gVen),
+  );
+  const rec = calcularPrescripcionLaboral({
+    modo: "post_termino",
+    fechaAncla: "2026-01-15",
+    fechaReclamoDt: "2026-02-01",
+    fechaHoy: "2026-03-01",
+  });
+  assert(
+    "reclamo DT anota suspensión y tope 1 año; no mueve el límite de 6 meses",
+    rec.suspensionReclamo &&
+      rec.topeUnAnio === "2027-01-15" &&
+      rec.fechaLimite === "2026-07-15",
+    JSON.stringify(rec),
+  );
+  const plApp = readFileSync(join(root, "js/app-prescripcion-laboral.js"), "utf8");
+  assert(
+    "app-prescripcion-laboral usa calcularPrescripcionLaboral",
+    /import\s*\{[^}]*calcularPrescripcionLaboral[^}]*\}\s*from\s*["']\.\/prescripcion-laboral\.js["']/.test(plApp) &&
+      /calcularPrescripcionLaboral\s*\(/.test(plApp) &&
+      !/\balert\s*\(/.test(plApp),
+  );
+}
+
 {
   const millon = calcularAvisoPrevio(
     { causal: "161-necesidades", remuneracion: 1_000_000, avisoPrevio: false },
@@ -3502,6 +3602,7 @@ const required = [
   "despido-injustificado.html",
   "autodespido.html",
   "obra-faena.html",
+  "prescripcion-laboral.html",
   "finiquito.html",
   "js/app-horas-extras.js",
   "js/app-vacaciones-proporcionales.js",
@@ -3544,6 +3645,7 @@ const required = [
   "js/app-despido-injustificado.js",
   "js/app-autodespido.js",
   "js/app-obra-faena.js",
+  "js/app-prescripcion-laboral.js",
   "empresa.html",
   "privacidad.html",
   "terminos.html",
@@ -3555,6 +3657,7 @@ const required = [
   "js/sueldo.js",
   "js/feriados.js",
   "js/interes-mora.js",
+  "js/prescripcion-laboral.js",
   "js/causales.js",
   "js/finiquito.js",
   "js/indicadores.js",
@@ -3715,6 +3818,7 @@ const htmlFiles = [
   "despido-injustificado.html",
   "autodespido.html",
   "obra-faena.html",
+  "prescripcion-laboral.html",
   "finiquito.html",
   "empresa.html",
   "privacidad.html",
@@ -3832,6 +3936,7 @@ const appEntries = [
   "js/app-despido-injustificado.js",
   "js/app-autodespido.js",
   "js/app-obra-faena.js",
+  "js/app-prescripcion-laboral.js",
   "js/app-finiquito.js",
   "js/app-empresa.js",
   "js/app-admin.js",
@@ -3864,7 +3969,7 @@ assert("robots Allow /", /Allow:\s*\//.test(robots));
 assert("robots Disallow /admin", /Disallow:\s*\/admin/.test(robots));
 assert("robots Disallow /api", /Disallow:\s*\/api/.test(robots));
 assert("robots Disallow /docs", /Disallow:\s*\/docs/.test(robots));
-assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/trabajo-pesado/.test(robots) && !/Disallow:\s*\/nulidad-despido/.test(robots) && !/Disallow:\s*\/tutela-laboral/.test(robots) && !/Disallow:\s*\/despido-injustificado/.test(robots) && !/Disallow:\s*\/autodespido/.test(robots) && !/Disallow:\s*\/obra-faena/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/feriado-anual/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/licencia-medica/.test(robots) && !/Disallow:\s*\/boleta-honorarios/.test(robots) && !/Disallow:\s*\/retencion-judicial/.test(robots) && !/Disallow:\s*\/apv/.test(robots) && !/Disallow:\s*\/sala-cuna/.test(robots) && !/Disallow:\s*\/postnatal-parental/.test(robots) && !/Disallow:\s*\/permiso-prenatal/.test(robots) && !/Disallow:\s*\/fuero-maternal/.test(robots) && !/Disallow:\s*\/permiso-paternidad/.test(robots) && !/Disallow:\s*\/permiso-matrimonio/.test(robots) && !/Disallow:\s*\/permiso-fallecimiento/.test(robots) && !/Disallow:\s*\/interes-mora/.test(robots) && !/Disallow:\s*\/hora-lactancia/.test(robots) && !/Disallow:\s*\/jornada-40-horas/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots));
+assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/trabajo-pesado/.test(robots) && !/Disallow:\s*\/nulidad-despido/.test(robots) && !/Disallow:\s*\/tutela-laboral/.test(robots) && !/Disallow:\s*\/despido-injustificado/.test(robots) && !/Disallow:\s*\/autodespido/.test(robots) && !/Disallow:\s*\/obra-faena/.test(robots) && !/Disallow:\s*\/prescripcion-laboral/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/feriado-anual/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/licencia-medica/.test(robots) && !/Disallow:\s*\/boleta-honorarios/.test(robots) && !/Disallow:\s*\/retencion-judicial/.test(robots) && !/Disallow:\s*\/apv/.test(robots) && !/Disallow:\s*\/sala-cuna/.test(robots) && !/Disallow:\s*\/postnatal-parental/.test(robots) && !/Disallow:\s*\/permiso-prenatal/.test(robots) && !/Disallow:\s*\/fuero-maternal/.test(robots) && !/Disallow:\s*\/permiso-paternidad/.test(robots) && !/Disallow:\s*\/permiso-matrimonio/.test(robots) && !/Disallow:\s*\/permiso-fallecimiento/.test(robots) && !/Disallow:\s*\/interes-mora/.test(robots) && !/Disallow:\s*\/hora-lactancia/.test(robots) && !/Disallow:\s*\/jornada-40-horas/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots));
 assert("robots Sitemap", /Sitemap:\s*https:\/\/www\.haberes\.cl\/sitemap\.xml/.test(robots));
 
 const { seoPaths, GUIDE_SLUGS, GUIDES, CAUSAL_PAGES, BASE_PATHS, lastmodForPath } = await import("../content/registry.js");
@@ -3922,7 +4027,8 @@ assert(
     BASE_PATHS.includes("/tutela-laboral"),
     BASE_PATHS.includes("/despido-injustificado"),
     BASE_PATHS.includes("/autodespido") &&
-    BASE_PATHS.includes("/obra-faena"),
+    BASE_PATHS.includes("/obra-faena") &&
+    BASE_PATHS.includes("/prescripcion-laboral"),
   `${locs.length} vs ${expectedFromRegistry.length}`,
 );
 assert(
@@ -4277,7 +4383,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 88,
+      seoPaths().length === 89,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -4289,7 +4395,7 @@ try {
   const docsSeo = await hitLocal("/docs/seo-map.md");
   assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
   assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
-  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/obra-faena/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/obra-faena/", "/prescripcion-laboral/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
   }
@@ -4338,6 +4444,7 @@ try {
     "/despido-injustificado",
     "/autodespido",
     "/obra-faena",
+    "/prescripcion-laboral",
     "/gratificacion",
     "/impuesto-unico",
     "/cotizaciones-previsionales",
@@ -8146,6 +8253,7 @@ assert(
     ["despido-injustificado.html", "/despido-injustificado"],
     ["autodespido.html", "/autodespido"],
     ["obra-faena.html", "/obra-faena"],
+    ["prescripcion-laboral.html", "/prescripcion-laboral"],
     ["finiquito.html", "/finiquito"],
     ["empresa.html", "/empresa"],
     ["como.html", "/como"],
@@ -8777,6 +8885,119 @@ assert(
         /href="\/obra-faena"/.test(causalHtmlOf) &&
         /href="\/obra-faena"/.test(readFileSync(join(root, "despido-injustificado.html"), "utf8")) &&
         /href="\/obra-faena"/.test(readFileSync(join(root, "vacaciones-proporcionales.html"), "utf8")),
+    );
+  }
+  {
+    const plHtml = readFileSync(join(root, "prescripcion-laboral.html"), "utf8");
+    const plTitle = (plHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const plH1 = (plHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const plDesc = (plHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "";
+    const goldPl168 = calcularPrescripcionLaboral({
+      modo: PRESCRIPCION_GOLD.art168.modo,
+      fechaAncla: PRESCRIPCION_GOLD.art168.fechaAncla,
+      fechaHoy: "2026-02-01",
+    });
+    assert(
+      "SEO prescripción laboral title único y corto",
+      /calcular prescripci[oó]n laboral/i.test(plTitle) &&
+        plTitle.length <= 65 &&
+        !/calculadora de finiquito/i.test(plTitle) &&
+        !/despido injustificado/i.test(plTitle),
+      plTitle,
+    );
+    assert(
+      "SEO prescripción laboral H1 único art. 510",
+      plH1 === "Calcular plazo de prescripción laboral Chile 2026" &&
+        /art[ií]culo 510/.test(plHtml) &&
+        /art[ií]culo 168/.test(plHtml) &&
+        !/30 d[ií]as por a[nñ]o/.test(plH1),
+      plH1,
+    );
+    assert(
+      "SEO prescripción laboral description propia",
+      plDesc.length >= 110 &&
+        plDesc.length <= 160 &&
+        /art\. 510/.test(plDesc) &&
+        /168/.test(plDesc) &&
+        /plazo/.test(plDesc),
+      `${plDesc.length}:${plDesc}`,
+    );
+    assert(
+      "SEO prescripción laboral cita art. 510, 168, BCN y DT 60622",
+      /art[ií]culo 510/.test(plHtml) &&
+        /art[ií]culo 168/.test(plHtml) &&
+        /bcn\.cl\/leychile\/navegar\?idNorma=207436/.test(plHtml) &&
+        /dt\.gob\.cl\/portal\/1628\/w3-article-60622/.test(plHtml) &&
+        /alegarse en juicio/.test(plHtml),
+    );
+    assert(
+      "SEO prescripción laboral gold 2026 en copy",
+      goldPl168.fechaLimite === "2026-03-27" &&
+        /15 de marzo de 2024/.test(plHtml) &&
+        /15 de marzo de 2026/.test(plHtml) &&
+        /15 de enero de 2026/.test(plHtml) &&
+        /15 de julio de 2026/.test(plHtml) &&
+        /30 de septiembre de 2025/.test(plHtml) &&
+        /30 de marzo de 2026/.test(plHtml) &&
+        /10 de enero de 2026/.test(plHtml) &&
+        /10 de julio de 2026/.test(plHtml) &&
+        /2 de enero de 2026/.test(plHtml) &&
+        /27 de marzo de 2026/.test(plHtml) &&
+        /1 de julio de 2025/.test(plHtml),
+    );
+    assert("SEO prescripción laboral FAQPage", /"@type": "FAQPage"/.test(plHtml));
+    assert(
+      "SEO prescripción laboral no canibaliza hermanas vetadas",
+      /href="\/finiquito"/.test(plHtml) &&
+        /href="\/despido-injustificado"/.test(plHtml) &&
+        /href="\/nulidad-despido"/.test(plHtml) &&
+        /href="\/autodespido"/.test(plHtml) &&
+        /href="\/tutela-laboral"/.test(plHtml) &&
+        /href="\/interes-mora"/.test(plHtml) &&
+        /href="\/horas-extras"/.test(plHtml) &&
+        /href="\/indemnizacion-anos-servicio"/.test(plHtml) &&
+        /href="\/indemnizacion-aviso-previo"/.test(plHtml) &&
+        /href="\/obra-faena"/.test(plHtml) &&
+        /estimaci[oó]n educativa/.test(plHtml) &&
+        /no constituye asesor[ií]a legal/i.test(plHtml) &&
+        !existsSync(join(root, "art-510.html")) &&
+        !existsSync(join(root, "plazo-prescripcion.html")) &&
+        !existsSync(join(root, "60-dias-habiles.html")),
+    );
+    assert(
+      "home y nav enlazan /prescripcion-laboral",
+      /href="\/prescripcion-laboral"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/prescripcion-laboral" data-nav>Prescripción laboral<\/a>/.test(
+          readFileSync(join(root, "index.html"), "utf8"),
+        ) &&
+        /href="\/prescripcion-laboral" data-nav>Prescripción laboral<\/a>/.test(plHtml),
+    );
+    assert(
+      "sitemap incluye /prescripcion-laboral",
+      locs.includes("https://www.haberes.cl/prescripcion-laboral") &&
+        lastmodForPath("/prescripcion-laboral") === "2026-09-15",
+    );
+    assert(
+      "seo-map documenta /prescripcion-laboral y no-canibalizar hermanas",
+      /\/prescripcion-laboral/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no canibalizar `\/finiquito`, `\/despido-injustificado`/.test(
+          readFileSync(join(root, "docs/seo-map.md"), "utf8"),
+        ) &&
+        /no crear `\/art-510`/i.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")),
+    );
+    assert(
+      "hub /guias enlaza /prescripcion-laboral en el cluster de finiquito",
+      /href="\/prescripcion-laboral"/.test(readFileSync(join(root, "guias.html"), "utf8")) &&
+        /<h2>Finiquito<\/h2>[\s\S]*href="\/prescripcion-laboral"/.test(
+          readFileSync(join(root, "guias.html"), "utf8"),
+        ),
+    );
+    assert(
+      "hermanas enlazan /prescripcion-laboral",
+      /href="\/prescripcion-laboral"/.test(readFileSync(join(root, "finiquito.html"), "utf8")) &&
+        /href="\/prescripcion-laboral"/.test(readFileSync(join(root, "despido-injustificado.html"), "utf8")) &&
+        /href="\/prescripcion-laboral"/.test(readFileSync(join(root, "horas-extras.html"), "utf8")) &&
+        /href="\/prescripcion-laboral"/.test(readFileSync(join(root, "nulidad-despido.html"), "utf8")),
     );
   }
   {
@@ -13462,6 +13683,7 @@ assert(
       "despido-injustificado.html",
       "autodespido.html",
       "obra-faena.html",
+      "prescripcion-laboral.html",
       "finiquito.html",
       "empresa.html",
       "precios.html",
@@ -13639,7 +13861,7 @@ assert(
     return acc;
   }
   const pages = listHtml(root);
-  assert("90 páginas HTML", pages.length === 90, String(pages.length));
+  assert("91 páginas HTML", pages.length === 91, String(pages.length));
   for (const file of pages) {
     const html = readFileSync(file, "utf8");
     const rel = file.slice(root.length + 1);

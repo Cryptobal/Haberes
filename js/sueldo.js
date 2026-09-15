@@ -423,6 +423,7 @@ export {
   calcularPermisoFallecimiento,
   calcularPermisoMatrimonio,
   calcularPermisoPaternidad,
+  addDiasHabilesPosteriores,
   esDiaHabilFeriadoAnual,
   feriadoLegal,
   FERIADOS_LEGALES_CL,

@@ -253,6 +253,41 @@ export const OBRA_FAENA_VIGENCIA_MIN_MESES = 1;
 export const OBRA_FAENA_FRACCION_DIAS = 15;
 
 /**
+ * Plazos educativos de /prescripcion-laboral (art. 510 CT y art. 168).
+ * No son montos de dinero. El 168 usa días hábiles lun–vie excluyendo
+ * FERIADOS_LEGALES_CL (js/feriados.js), contados desde el día siguiente a la
+ * separación (art. 48 Código Civil).
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=207436
+ * @see https://www.dt.gob.cl/portal/1628/w3-article-60622.html
+ */
+export const PRESCRIPCION_DIAS_HABILES_168 = 60;
+export const PRESCRIPCION_DIAS_HABILES_168_TOPE_RECLAMO = 90;
+export const PRESCRIPCION_ANIOS_GENERALES = 2;
+export const PRESCRIPCION_MESES_POST_TERMINO = 6;
+export const PRESCRIPCION_MESES_HORAS_EXTRAS = 6;
+export const PRESCRIPCION_MESES_NULIDAD_162 = 6;
+export const PRESCRIPCION_TOPE_ANIOS_RECLAMO = 1;
+export const PRESCRIPCION_POR_VENCER_DIAS = 30;
+
+export const PRESCRIPCION_MODOS = Object.freeze({
+  generales: "generales",
+  post_termino: "post_termino",
+  horas_extras: "horas_extras",
+  nulidad_162: "nulidad_162",
+  art_168: "art_168",
+});
+
+/** Casos gold 2026 para verify y copy. Art. 168: 2026-01-02 → 2026-03-27. */
+export const PRESCRIPCION_GOLD = Object.freeze({
+  generales: { modo: "generales", fechaAncla: "2024-03-15", fechaLimite: "2026-03-15" },
+  postTermino: { modo: "post_termino", fechaAncla: "2026-01-15", fechaLimite: "2026-07-15" },
+  horasExtras: { modo: "horas_extras", fechaAncla: "2025-09-30", fechaLimite: "2026-03-30" },
+  nulidad162: { modo: "nulidad_162", fechaAncla: "2026-01-10", fechaLimite: "2026-07-10" },
+  art168: { modo: "art_168", fechaAncla: "2026-01-02", fechaLimite: "2026-03-27" },
+  vencido: { modo: "post_termino", fechaAncla: "2025-01-01", fechaLimite: "2025-07-01" },
+});
+
+/**
  * Indemnización especial de tutela laboral (art. 489 CT).
  * El juez fija el monto entre 6 y 11 meses de la última remuneración mensual.
  * No hay otro tope legal publicado en ese artículo (no se inventa el de 90 UF del art. 172).

@@ -238,6 +238,7 @@ function paintLoggedInNav(emp) {
         <a href="/despido-injustificado" data-nav>Despido injustificado</a>
         <a href="/autodespido" data-nav>Autodespido</a>
         <a href="/obra-faena" data-nav>Obra o faena</a>
+        <a href="/prescripcion-laboral" data-nav>Prescripción laboral</a>
         <a href="/finiquito-casa-particular" data-nav>Finiquito casa particular</a>
         <a href="/finiquito" data-nav>Finiquito</a>`;
     const anchor = foot || null;

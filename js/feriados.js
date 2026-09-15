@@ -145,6 +145,37 @@ export function esDiaHabilFeriadoAnual(iso) {
   return !feriadoLegal(isoOf(parts));
 }
 
+/**
+ * N-ésimo día hábil posterior a `isoAncla` (sin contar esa fecha).
+ * Hábil = lunes a viernes y no feriado legal nacional (`esDiaHabilFeriadoAnual`).
+ * Sirve al plazo de 60 días hábiles del art. 168: el día de la separación
+ * no se consume (art. 48 Código Civil: el plazo corre desde el día siguiente).
+ *
+ * @param {string} isoAncla YYYY-MM-DD
+ * @param {number} n
+ * @returns {string} YYYY-MM-DD o ""
+ */
+export function addDiasHabilesPosteriores(isoAncla, n) {
+  const inicio = parseIsoFecha(isoAncla);
+  const cupo = Math.max(0, Math.floor(Number(n) || 0));
+  if (!inicio || cupo <= 0) return "";
+  let cursor = addDays(inicio, 1);
+  let consumed = 0;
+  let last = "";
+  let steps = 0;
+  const maxSteps = Math.max(MAX_STEPS, cupo * 4);
+  while (consumed < cupo && steps < maxSteps) {
+    const iso = isoOf(cursor);
+    if (esDiaHabilFeriadoAnual(iso)) {
+      consumed += 1;
+      last = iso;
+    }
+    cursor = addDays(cursor, 1);
+    steps += 1;
+  }
+  return consumed === cupo ? last : "";
+}
+
 const MAX_HABLES = 90;
 const MAX_STEPS = 400;
 
