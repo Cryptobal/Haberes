@@ -128,9 +128,22 @@ export const FERIADOS_LEGALES_CL = [
 ];
 
 const FERIADO_POR_FECHA = new Map(FERIADOS_LEGALES_CL.map((f) => [f.fecha, f]));
+const ANIOS_FERIADOS_LEGALES = new Set(
+  FERIADOS_LEGALES_CL.map((f) => Number(String(f.fecha).slice(0, 4))),
+);
 
 export function feriadoLegal(iso) {
   return FERIADO_POR_FECHA.get(String(iso || "")) || null;
+}
+
+/** Años con feriados nacionales listados (hoy: 2025–2027). */
+export function rangoAniosFeriadosLegales() {
+  const ys = [...ANIOS_FERIADOS_LEGALES].sort((a, b) => a - b);
+  return { min: ys[0] || 0, max: ys[ys.length - 1] || 0 };
+}
+
+export function esAnioCubiertoFeriados(y) {
+  return ANIOS_FERIADOS_LEGALES.has(Number(y));
 }
 
 /**
@@ -151,9 +164,8 @@ export function esDiaHabilFeriadoAnual(iso) {
  * Sirve al plazo de 60 días hábiles del art. 168: el día de la separación
  * no se consume (art. 48 Código Civil: el plazo corre desde el día siguiente).
  *
- * @param {string} isoAncla YYYY-MM-DD
- * @param {number} n
- * @returns {string} YYYY-MM-DD o ""
+ * Si el conteo entra en un año sin feriados listados, devuelve "" (no trata
+ * feriados de otros años como hábiles).
  */
 export function addDiasHabilesPosteriores(isoAncla, n) {
   const inicio = parseIsoFecha(isoAncla);
@@ -165,6 +177,7 @@ export function addDiasHabilesPosteriores(isoAncla, n) {
   let steps = 0;
   const maxSteps = Math.max(MAX_STEPS, cupo * 4);
   while (consumed < cupo && steps < maxSteps) {
+    if (!esAnioCubiertoFeriados(cursor.y)) return "";
     const iso = isoOf(cursor);
     if (esDiaHabilFeriadoAnual(iso)) {
       consumed += 1;

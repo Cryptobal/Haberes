@@ -2874,8 +2874,36 @@ console.log("\nPrescripción laboral art. 510 y art. 168 (gold 2026)");
     "reclamo DT anota suspensión y tope 1 año; no mueve el límite de 6 meses",
     rec.suspensionReclamo &&
       rec.topeUnAnio === "2027-01-15" &&
-      rec.fechaLimite === "2026-07-15",
+      rec.fechaLimite === "2026-07-15" &&
+      rec.estado === "indeterminado",
     JSON.stringify(rec),
+  );
+  const recVenc = calcularPrescripcionLaboral({
+    modo: "post_termino",
+    fechaAncla: "2025-01-01",
+    fechaReclamoDt: "2025-03-01",
+    fechaHoy: "2026-09-15",
+  });
+  assert(
+    "reclamo DT pendiente no declara vencido aunque el límite original ya pasó",
+    recVenc.ok &&
+      recVenc.fechaLimite === "2025-07-01" &&
+      recVenc.estado === "indeterminado" &&
+      recVenc.diasRestantes < 0,
+    JSON.stringify(recVenc),
+  );
+  const fueraCal = calcularPrescripcionLaboral({
+    modo: "art_168",
+    fechaAncla: "2024-09-02",
+    fechaHoy: "2024-10-01",
+  });
+  assert(
+    "art. 168 2024-09-02 no estima (calendario feriados 2025–2027)",
+    !fueraCal.ok &&
+      fueraCal.motivo === "fuera_calendario_habiles" &&
+      fueraCal.fechaLimite === "" &&
+      fueraCal.fechaLimite !== "2024-11-25",
+    JSON.stringify(fueraCal),
   );
   const plApp = readFileSync(join(root, "js/app-prescripcion-laboral.js"), "utf8");
   assert(

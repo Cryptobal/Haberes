@@ -16,7 +16,7 @@ const HINT_MODO = {
   nulidad_162:
     "Nulidad del despido por cotizaciones impagas (art. 162): 6 meses desde la suspensión de los servicios. El monto está en /nulidad-despido.",
   art_168:
-    "Plazo para demandar el despido injustificado, indebido o improcedente: 60 días hábiles desde la separación. No es el art. 510. El recargo está en /despido-injustificado.",
+    "Plazo para demandar el despido injustificado, indebido o improcedente: 60 días hábiles desde la separación. No es el art. 510. Haberes solo cuenta feriados nacionales 2025–2027. El recargo está en /despido-injustificado.",
 };
 
 let anclaPick = null;
@@ -42,6 +42,7 @@ function estadoTexto(estado) {
   if (estado === "vencido") return "Vencido";
   if (estado === "por_vencer") return "Por vencer";
   if (estado === "vigente") return "Vigente";
+  if (estado === "indeterminado") return "Indeterminado";
   return "—";
 }
 
@@ -60,6 +61,9 @@ function leer() {
 function nota(calc) {
   if (!calc.ok) {
     if (calc.motivo === "sin_fecha") return "Indique la fecha ancla del plazo.";
+    if (calc.motivo === "fuera_calendario_habiles") {
+      return `El art. 168 usa feriados nacionales de ${calc.calendarioMin} a ${calc.calendarioMax}. Esa separación cae fuera de ese calendario: Haberes no estima el plazo para no tratar feriados como días hábiles.`;
+    }
     return "No se pudo estimar la fecha límite con esos datos.";
   }
   const partes = [];
@@ -68,14 +72,18 @@ function nota(calc) {
   );
   if (calc.tipoPlazo === "habiles") {
     partes.push(
-      `${calc.plazoValor} días hábiles lun–vie, excluidos feriados legales nacionales (calendario js/feriados.js), contados desde el día siguiente (art. 48 Código Civil).`,
+      `${calc.plazoValor} días hábiles lun–vie, excluidos feriados legales nacionales ${calc.calendarioMin}–${calc.calendarioMax} (js/feriados.js), contados desde el día siguiente (art. 48 Código Civil).`,
     );
   } else if (calc.tipoPlazo === "anios") {
     partes.push(`Suma ${calc.plazoValor} años de fecha a fecha.`);
   } else {
     partes.push(`Suma ${calc.plazoValor} meses de fecha a fecha.`);
   }
-  if (calc.estado === "vencido") {
+  if (calc.estado === "indeterminado") {
+    partes.push(
+      "Estado indeterminado: hay reclamo DT y falta la notificación del resultado. Haberes no declara el plazo vencido ni suma días de suspensión.",
+    );
+  } else if (calc.estado === "vencido") {
     partes.push(`Estado vencido (${Math.abs(calc.diasRestantes)} días después del límite).`);
   } else if (calc.estado === "por_vencer") {
     partes.push(`Estado por vencer: quedan ${calc.diasRestantes} días calendario (el último día todavía cuenta).`);
@@ -84,7 +92,7 @@ function nota(calc) {
   }
   if (calc.suspensionReclamo) {
     partes.push(
-      `Hay reclamo DT notificado el ${fechaEs(calc.fechaReclamoDt)}: el art. 510 suspende el plazo hasta la notificación del resultado. Haberes no inventa esos días.`,
+      `Hay reclamo DT notificado el ${fechaEs(calc.fechaReclamoDt)}: el art. 510 suspende el plazo hasta la notificación del resultado. El límite ISO es el original, sin esa suspensión.`,
     );
     if (calc.topeUnAnio) {
       partes.push(`Tope absoluto del 510: 1 año desde el término (${fechaEs(calc.topeUnAnio)}).`);
@@ -109,10 +117,15 @@ function syncModoUi() {
 
 function render(calc) {
   el("outLimite").textContent = calc.ok ? fechaEs(calc.fechaLimite) : "—";
-  el("outEstado").textContent = calc.ok ? estadoTexto(calc.estado) : "—";
-  el("outDias").textContent = calc.ok ? String(calc.diasRestantes) : "—";
+  el("outEstado").textContent =
+    calc.motivo === "fuera_calendario_habiles"
+      ? "Sin estimar"
+      : calc.ok
+        ? estadoTexto(calc.estado)
+        : "—";
+  el("outDias").textContent = calc.ok && calc.estado !== "indeterminado" ? String(calc.diasRestantes) : "—";
   el("outModo").textContent = PRESCRIPCION_ETIQUETAS[calc.modo] || "—";
-  el("outNorma").textContent = calc.ok ? calc.norma : "—";
+  el("outNorma").textContent = calc.ok || calc.norma ? calc.norma || "—" : "—";
   el("outAncla").textContent = calc.fechaAncla ? fechaEs(calc.fechaAncla) : "—";
   el("outLimiteIso").textContent = calc.ok ? calc.fechaLimite : "—";
   el("outTopeAnio").textContent = calc.topeUnAnio ? fechaEs(calc.topeUnAnio) : "No aplica";

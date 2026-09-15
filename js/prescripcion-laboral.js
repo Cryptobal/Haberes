@@ -13,6 +13,7 @@ import {
 import {
   addDiasHabilesPosteriores,
   parseIsoFecha,
+  rangoAniosFeriadosLegales,
   ymdIso,
 } from "./feriados.js";
 
@@ -84,6 +85,8 @@ function vacio({ modo = "generales", fechaAncla = "", fechaReclamoDt = "", fecha
     topeUnAnio: "",
     tope90Habiles: "",
     hermana: "",
+    calendarioMin: 0,
+    calendarioMax: 0,
   };
 }
 
@@ -133,7 +136,8 @@ function fechaLimiteDeModo(modo, fechaAncla) {
   };
 }
 
-function estadoDe(diasRestantes) {
+function estadoDe(diasRestantes, suspensionReclamo) {
+  if (suspensionReclamo) return "indeterminado";
   if (diasRestantes < 0) return "vencido";
   if (diasRestantes <= PRESCRIPCION_POR_VENCER_DIAS) return "por_vencer";
   return "vigente";
@@ -142,8 +146,9 @@ function estadoDe(diasRestantes) {
 /**
  * Estima la fecha límite educativa de prescripción (art. 510) o del
  * plazo de impugnación del despido (art. 168, 60 días hábiles).
- * No calcula pesos. El reclamo DT, si se indica, solo anota la suspensión:
- * no mueve la fecha límite porque falta la notificación del resultado.
+ * No calcula pesos. El reclamo DT, si se indica, no mueve la fecha límite
+ * (falta la notificación del resultado) y el estado queda indeterminado:
+ * no se declara vencido mientras la suspensión no se puede cerrar.
  *
  * @param {object} input
  * @param {string} [input.modo]
@@ -165,8 +170,18 @@ export function calcularPrescripcionLaboral(input = {}) {
   }
 
   const meta = fechaLimiteDeModo(modo, fechaAncla);
+  const cal = rangoAniosFeriadosLegales();
   if (!meta.fechaLimite) {
-    return { ...base, motivo: "sin_limite", norma: meta.norma, tipoPlazo: meta.tipoPlazo };
+    return {
+      ...base,
+      motivo: modo === "art_168" ? "fuera_calendario_habiles" : "sin_limite",
+      norma: meta.norma,
+      tipoPlazo: meta.tipoPlazo,
+      plazoValor: meta.plazoValor,
+      hermana: meta.hermana,
+      calendarioMin: cal.min,
+      calendarioMax: cal.max,
+    };
   }
 
   const diasRestantes = diffDaysIso(fechaHoy, meta.fechaLimite);
@@ -193,12 +208,14 @@ export function calcularPrescripcionLaboral(input = {}) {
     fechaLimite: meta.fechaLimite,
     fechaHoy,
     diasRestantes,
-    estado: estadoDe(diasRestantes),
+    estado: estadoDe(diasRestantes, suspensionReclamo),
     fechaReclamoDt: reclamo,
     suspensionReclamo,
     topeUnAnio,
     tope90Habiles,
     hermana: meta.hermana,
+    calendarioMin: cal.min,
+    calendarioMax: cal.max,
   };
 }
 

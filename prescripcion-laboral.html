@@ -91,7 +91,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
       "name": "¿El reclamo en la Inspección del Trabajo suspende el plazo?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Sí, el artículo 510 indica que el reclamo ante la Inspección del Trabajo suspende el plazo de prescripción, que vuelve a correr cuando se notifica el resultado. En ningún caso el plazo de prescripción puede exceder de un año desde la terminación de los servicios. Haberes no inventa días extra: sin la fecha de notificación del resultado no mueve la fecha límite. En el artículo 168 el reclamo suspende los 60 días hábiles, con tope de 90 días hábiles."
+        "text": "Sí, el artículo 510 indica que el reclamo ante la Inspección del Trabajo suspende el plazo de prescripción, que vuelve a correr cuando se notifica el resultado. En ningún caso el plazo de prescripción puede exceder de un año desde la terminación de los servicios. Haberes no inventa días extra: sin la fecha de notificación del resultado no mueve la fecha límite y el estado queda indeterminado, no vencido. En el artículo 168 el reclamo suspende los 60 días hábiles, con tope de 90 días hábiles. El conteo de hábiles solo usa feriados nacionales 2025–2027."
       }
     },
     {
@@ -339,6 +339,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             Hábil = lunes a viernes, excluido feriado legal nacional del calendario
             <code>js/feriados.js</code>
             (2025–2027; no incluye feriados regionales). El sábado es inhábil.
+            Si el plazo de 60 hábiles sale de ese calendario, Haberes no estima la fecha.
             No es prescripción del 510. El recargo 30/50/80/100 % está en
             <a href="/despido-injustificado">calcular despido injustificado</a>.
           </li>
@@ -351,6 +352,12 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           si quedan 0 a 30;
           <strong>vencido</strong>
           si la fecha de hoy es posterior al límite (el último día todavía cuenta).
+          Si hay reclamo DT y no está la notificación del resultado, el estado es
+          <strong>indeterminado</strong>:
+          no se declara vencido. El art. 168 solo se estima si los 60 días hábiles
+          caen en el calendario de feriados
+          <strong>2025–2027</strong>;
+          fuera de ese rango Haberes no calcula (no trata feriados de otros años como hábiles).
         </p>
         <h3>Reclamo administrativo (suspensión)</h3>
         <p>
@@ -471,8 +478,9 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           de los servicios
           (<a href="https://www.dt.gob.cl/portal/1628/w3-article-60622.html">consulta DT</a>).
           Haberes no inventa días extra: sin la fecha de notificación del resultado no mueve
-          la fecha límite. En el artículo 168 el reclamo suspende los 60 días hábiles, con
-          tope de 90 días hábiles.
+          la fecha límite y el estado queda indeterminado, no vencido. En el artículo 168
+          el reclamo suspende los 60 días hábiles, con tope de 90 días hábiles.
+          El conteo de hábiles solo usa feriados nacionales 2025–2027.
         </p>
         <h3>¿La prescripción se aplica sola o hay que alegarla?</h3>
         <p>
