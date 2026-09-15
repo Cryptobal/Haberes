@@ -52,6 +52,7 @@ import {
   TUTELA_MESES_MIN,
   OBRA_FAENA_FACTOR_PLENO,
   PRESCRIPCION_GOLD,
+  DESCANSO_COMPENSATORIO_GOLD,
   RECARGO_168_DEFAULT,
   RECARGO_168_PORCENTAJES,
   RETENCION_BOLETA_ANIO_DEFAULT,
@@ -148,6 +149,7 @@ import {
 } from "../js/lre.js";
 import { fallbackIndicadores } from "../js/indicadores.js";
 import { calcularPrescripcionLaboral } from "../js/prescripcion-laboral.js";
+import { calcularDescansoCompensatorio } from "../js/descanso-compensatorio.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 let failed = 0;
@@ -205,6 +207,12 @@ assert(
 );
 assert("Tope AFP/salud 90 UF", TOPE_AFP_SALUD_UF === 90);
 assert("Obra o faena factor pleno 2,5", OBRA_FAENA_FACTOR_PLENO === 2.5);
+assert(
+  "Descanso compensatorio gold 4+1−2 → 3",
+  DESCANSO_COMPENSATORIO_GOLD.pendientes === 3 &&
+    DESCANSO_COMPENSATORIO_GOLD.valorDia === 30_000 &&
+    DESCANSO_COMPENSATORIO_GOLD.estimacion === 90_000,
+);
 assert("Tope cesantía 135.2 UF", TOPE_CESANTIA_UF === 135.2);
 assert(
   "Trabajo pesado CEN 2 %+2 % y 1 %+1 %",
@@ -2886,6 +2894,75 @@ console.log("\nPrescripción laboral art. 510 y art. 168 (gold 2026)");
   );
 }
 
+console.log("\nDescanso compensatorio art. 38 (gold 2026)");
+{
+  // Fuentes: art. 35–38 CT (BCN idNorma=207436); ORD. 2938/227 y ORD. 712/20 DT.
+  // 1 día por domingo trabajado + 1 por festivo trabajado − ya otorgados.
+  // Valor día educativo = rem/30, roundPeso. No es recargo 30 % art. 38 N°7.
+  const g = DESCANSO_COMPENSATORIO_GOLD;
+  const gold = calcularDescansoCompensatorio({
+    domingos: g.domingos,
+    festivos: g.festivos,
+    otorgados: g.otorgados,
+    remuneracion: g.remuneracion,
+  });
+  assert(
+    "gold 4 domingos + 1 festivo − 2 otorgados → 3 días; $900.000 / 30 × 3 = $90.000 (roundPeso)",
+    gold.pendientes === 3 &&
+      gold.generados === 5 &&
+      gold.valorDia === 30_000 &&
+      gold.estimacion === 90_000 &&
+      gold.remuneracion === 900_000,
+    JSON.stringify(gold),
+  );
+  const cero = calcularDescansoCompensatorio({
+    domingos: 2,
+    festivos: 0,
+    otorgados: 5,
+    remuneracion: 900_000,
+  });
+  assert(
+    "más otorgados que generados → 0 pendientes y $0",
+    cero.pendientes === 0 && cero.estimacion === 0 && cero.generados === 2,
+    JSON.stringify(cero),
+  );
+  const sinRem = calcularDescansoCompensatorio({
+    domingos: 4,
+    festivos: 1,
+    otorgados: 2,
+    remuneracion: 0,
+  });
+  assert(
+    "sin remuneración: 3 días y estimación 0",
+    sinRem.pendientes === 3 && sinRem.valorDia === 0 && sinRem.estimacion === 0,
+    JSON.stringify(sinRem),
+  );
+  const neg = calcularDescansoCompensatorio({
+    domingos: -3,
+    festivos: 1.9,
+    otorgados: -1,
+    remuneracion: 600_000,
+  });
+  assert(
+    "negativos a 0; festivos 1,9 → 1; rem/30 × 1 = $20.000",
+    neg.domingos === 0 &&
+      neg.festivos === 1 &&
+      neg.otorgados === 0 &&
+      neg.pendientes === 1 &&
+      neg.valorDia === 20_000 &&
+      neg.estimacion === 20_000,
+    JSON.stringify(neg),
+  );
+  const dcApp = readFileSync(join(root, "js/app-descanso-compensatorio.js"), "utf8");
+  assert(
+    "app-descanso-compensatorio usa calcularDescansoCompensatorio",
+    /import\s*\{[^}]*calcularDescansoCompensatorio[^}]*\}\s*from\s*["']\.\/descanso-compensatorio\.js["']/.test(dcApp) &&
+      /calcularDescansoCompensatorio\s*\(/.test(dcApp) &&
+      !/\balert\s*\(/.test(dcApp) &&
+      !/\bconfirm\s*\(/.test(dcApp),
+  );
+}
+
 {
   const millon = calcularAvisoPrevio(
     { causal: "161-necesidades", remuneracion: 1_000_000, avisoPrevio: false },
@@ -3603,6 +3680,7 @@ const required = [
   "autodespido.html",
   "obra-faena.html",
   "prescripcion-laboral.html",
+  "descanso-compensatorio.html",
   "finiquito.html",
   "js/app-horas-extras.js",
   "js/app-vacaciones-proporcionales.js",
@@ -3646,6 +3724,7 @@ const required = [
   "js/app-autodespido.js",
   "js/app-obra-faena.js",
   "js/app-prescripcion-laboral.js",
+  "js/app-descanso-compensatorio.js",
   "empresa.html",
   "privacidad.html",
   "terminos.html",
@@ -3658,6 +3737,7 @@ const required = [
   "js/feriados.js",
   "js/interes-mora.js",
   "js/prescripcion-laboral.js",
+  "js/descanso-compensatorio.js",
   "js/causales.js",
   "js/finiquito.js",
   "js/indicadores.js",
@@ -3819,6 +3899,7 @@ const htmlFiles = [
   "autodespido.html",
   "obra-faena.html",
   "prescripcion-laboral.html",
+  "descanso-compensatorio.html",
   "finiquito.html",
   "empresa.html",
   "privacidad.html",
@@ -3937,6 +4018,7 @@ const appEntries = [
   "js/app-autodespido.js",
   "js/app-obra-faena.js",
   "js/app-prescripcion-laboral.js",
+  "js/app-descanso-compensatorio.js",
   "js/app-finiquito.js",
   "js/app-empresa.js",
   "js/app-admin.js",
@@ -3969,7 +4051,7 @@ assert("robots Allow /", /Allow:\s*\//.test(robots));
 assert("robots Disallow /admin", /Disallow:\s*\/admin/.test(robots));
 assert("robots Disallow /api", /Disallow:\s*\/api/.test(robots));
 assert("robots Disallow /docs", /Disallow:\s*\/docs/.test(robots));
-assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/trabajo-pesado/.test(robots) && !/Disallow:\s*\/nulidad-despido/.test(robots) && !/Disallow:\s*\/tutela-laboral/.test(robots) && !/Disallow:\s*\/despido-injustificado/.test(robots) && !/Disallow:\s*\/autodespido/.test(robots) && !/Disallow:\s*\/obra-faena/.test(robots) && !/Disallow:\s*\/prescripcion-laboral/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/feriado-anual/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/licencia-medica/.test(robots) && !/Disallow:\s*\/boleta-honorarios/.test(robots) && !/Disallow:\s*\/retencion-judicial/.test(robots) && !/Disallow:\s*\/apv/.test(robots) && !/Disallow:\s*\/sala-cuna/.test(robots) && !/Disallow:\s*\/postnatal-parental/.test(robots) && !/Disallow:\s*\/permiso-prenatal/.test(robots) && !/Disallow:\s*\/fuero-maternal/.test(robots) && !/Disallow:\s*\/permiso-paternidad/.test(robots) && !/Disallow:\s*\/permiso-matrimonio/.test(robots) && !/Disallow:\s*\/permiso-fallecimiento/.test(robots) && !/Disallow:\s*\/interes-mora/.test(robots) && !/Disallow:\s*\/hora-lactancia/.test(robots) && !/Disallow:\s*\/jornada-40-horas/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots));
+assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/trabajo-pesado/.test(robots) && !/Disallow:\s*\/nulidad-despido/.test(robots) && !/Disallow:\s*\/tutela-laboral/.test(robots) && !/Disallow:\s*\/despido-injustificado/.test(robots) && !/Disallow:\s*\/autodespido/.test(robots) && !/Disallow:\s*\/obra-faena/.test(robots) && !/Disallow:\s*\/prescripcion-laboral/.test(robots) && !/Disallow:\s*\/descanso-compensatorio/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/feriado-anual/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/licencia-medica/.test(robots) && !/Disallow:\s*\/boleta-honorarios/.test(robots) && !/Disallow:\s*\/retencion-judicial/.test(robots) && !/Disallow:\s*\/apv/.test(robots) && !/Disallow:\s*\/sala-cuna/.test(robots) && !/Disallow:\s*\/postnatal-parental/.test(robots) && !/Disallow:\s*\/permiso-prenatal/.test(robots) && !/Disallow:\s*\/fuero-maternal/.test(robots) && !/Disallow:\s*\/permiso-paternidad/.test(robots) && !/Disallow:\s*\/permiso-matrimonio/.test(robots) && !/Disallow:\s*\/permiso-fallecimiento/.test(robots) && !/Disallow:\s*\/interes-mora/.test(robots) && !/Disallow:\s*\/hora-lactancia/.test(robots) && !/Disallow:\s*\/jornada-40-horas/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots));
 assert("robots Sitemap", /Sitemap:\s*https:\/\/www\.haberes\.cl\/sitemap\.xml/.test(robots));
 
 const { seoPaths, GUIDE_SLUGS, GUIDES, CAUSAL_PAGES, BASE_PATHS, lastmodForPath } = await import("../content/registry.js");
@@ -4028,7 +4110,8 @@ assert(
     BASE_PATHS.includes("/despido-injustificado"),
     BASE_PATHS.includes("/autodespido") &&
     BASE_PATHS.includes("/obra-faena") &&
-    BASE_PATHS.includes("/prescripcion-laboral"),
+    BASE_PATHS.includes("/prescripcion-laboral") &&
+    BASE_PATHS.includes("/descanso-compensatorio"),
   `${locs.length} vs ${expectedFromRegistry.length}`,
 );
 assert(
@@ -4383,7 +4466,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 89,
+      seoPaths().length === 90,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -4395,7 +4478,7 @@ try {
   const docsSeo = await hitLocal("/docs/seo-map.md");
   assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
   assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
-  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/obra-faena/", "/prescripcion-laboral/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/obra-faena/", "/prescripcion-laboral/", "/descanso-compensatorio/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
   }
@@ -4445,6 +4528,7 @@ try {
     "/autodespido",
     "/obra-faena",
     "/prescripcion-laboral",
+    "/descanso-compensatorio",
     "/gratificacion",
     "/impuesto-unico",
     "/cotizaciones-previsionales",
@@ -8254,6 +8338,7 @@ assert(
     ["autodespido.html", "/autodespido"],
     ["obra-faena.html", "/obra-faena"],
     ["prescripcion-laboral.html", "/prescripcion-laboral"],
+    ["descanso-compensatorio.html", "/descanso-compensatorio"],
     ["finiquito.html", "/finiquito"],
     ["empresa.html", "/empresa"],
     ["como.html", "/como"],
@@ -8998,6 +9083,118 @@ assert(
         /href="\/prescripcion-laboral"/.test(readFileSync(join(root, "despido-injustificado.html"), "utf8")) &&
         /href="\/prescripcion-laboral"/.test(readFileSync(join(root, "horas-extras.html"), "utf8")) &&
         /href="\/prescripcion-laboral"/.test(readFileSync(join(root, "nulidad-despido.html"), "utf8")),
+    );
+  }
+  {
+    const dcHtml = readFileSync(join(root, "descanso-compensatorio.html"), "utf8");
+    const dcTitle = (dcHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const dcH1 = (dcHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const dcDesc = (dcHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "";
+    const rdHtmlDc = readFileSync(join(root, "recargo-domingo-comercio.html"), "utf8");
+    const fiHtmlDc = readFileSync(join(root, "feriado-irrenunciable.html"), "utf8");
+    const heHtmlDc = readFileSync(join(root, "horas-extras.html"), "utf8");
+    const goldDc = calcularDescansoCompensatorio({
+      domingos: DESCANSO_COMPENSATORIO_GOLD.domingos,
+      festivos: DESCANSO_COMPENSATORIO_GOLD.festivos,
+      otorgados: DESCANSO_COMPENSATORIO_GOLD.otorgados,
+      remuneracion: DESCANSO_COMPENSATORIO_GOLD.remuneracion,
+    });
+    assert(
+      "SEO descanso compensatorio title único y corto",
+      /calcular descanso compensatorio/i.test(dcTitle) &&
+        dcTitle.length <= 65 &&
+        !/recargo domingo/i.test(dcTitle) &&
+        !/horas extras/i.test(dcTitle),
+      dcTitle,
+    );
+    assert(
+      "SEO descanso compensatorio H1 único art. 38",
+      dcH1 === "Calcular descanso compensatorio Chile 2026" &&
+        /art[ií]culo 38/.test(dcHtml) &&
+        !/30\s*%/.test(dcH1),
+      dcH1,
+    );
+    assert(
+      "SEO descanso compensatorio description propia",
+      dcDesc.length >= 110 &&
+        dcDesc.length <= 160 &&
+        /art\. 38/.test(dcDesc) &&
+        /descanso compensatorio/.test(dcDesc) &&
+        /recargo 30/.test(dcDesc),
+      `${dcDesc.length}:${dcDesc}`,
+    );
+    assert(
+      "SEO descanso compensatorio cita art. 35–38, BCN, DT 2938/227 y 712/20",
+      /art[ií]culo 35/.test(dcHtml) &&
+        /art[ií]culo 38/.test(dcHtml) &&
+        /bcn\.cl\/leychile\/navegar\?idNorma=207436/.test(dcHtml) &&
+        /dt\.gob\.cl\/legislacion\/1624\/w3-article-61852/.test(dcHtml) &&
+        /dt\.gob\.cl\/legislacion\/1624\/w3-article-111155/.test(dcHtml) &&
+        /712\/20/.test(dcHtml),
+    );
+    assert(
+      "SEO descanso compensatorio gold 2026 3 días y $90.000 en copy",
+      goldDc.pendientes === 3 &&
+        goldDc.estimacion === 90_000 &&
+        /4 domingo/.test(dcHtml) &&
+        /\$90\.000/.test(dcHtml) &&
+        /3 d[ií]as pendientes/.test(dcHtml) &&
+        /\$900\.000/.test(dcHtml),
+    );
+    assert("SEO descanso compensatorio FAQPage", /"@type": "FAQPage"/.test(dcHtml));
+    assert(
+      "SEO descanso compensatorio no canibaliza hermanas vetadas",
+      /href="\/recargo-domingo-comercio"/.test(dcHtml) &&
+        /href="\/feriado-irrenunciable"/.test(dcHtml) &&
+        /href="\/horas-extras"/.test(dcHtml) &&
+        /href="\/jornada-40-horas"/.test(dcHtml) &&
+        /href="\/semana-corrida"/.test(dcHtml) &&
+        /href="\/sueldo"/.test(dcHtml) &&
+        /href="\/descuento-atrasos"/.test(dcHtml) &&
+        /estimaci[oó]n educativa/.test(dcHtml) &&
+        /no constituye asesor[ií]a legal/i.test(dcHtml) &&
+        !existsSync(join(root, "descanso-dominical.html")) &&
+        !existsSync(join(root, "dias-compensatorios.html")) &&
+        !existsSync(join(root, "art-38.html")),
+    );
+    assert(
+      "home y nav enlazan /descanso-compensatorio",
+      /href="\/descanso-compensatorio"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/descanso-compensatorio" data-nav>Descanso compensatorio<\/a>/.test(
+          readFileSync(join(root, "index.html"), "utf8"),
+        ) &&
+        /href="\/descanso-compensatorio" data-nav>Descanso compensatorio<\/a>/.test(dcHtml) &&
+        /href="\/descanso-compensatorio" data-nav>Descanso compensatorio<\/a>/.test(
+          readFileSync(join(root, "js/ui.js"), "utf8"),
+        ),
+    );
+    assert(
+      "sitemap incluye /descanso-compensatorio",
+      locs.includes("https://www.haberes.cl/descanso-compensatorio") &&
+        lastmodForPath("/descanso-compensatorio") === "2026-09-15",
+    );
+    assert(
+      "seo-map documenta /descanso-compensatorio y no-canibalizar hermanas",
+      /\/descanso-compensatorio/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no canibalizar `\/recargo-domingo-comercio`/.test(
+          readFileSync(join(root, "docs/seo-map.md"), "utf8"),
+        ) &&
+        /no crear `\/descanso-dominical`/i.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")),
+    );
+    assert(
+      "hub /guias enlaza /descanso-compensatorio en el cluster de liquidación",
+      /href="\/descanso-compensatorio"/.test(readFileSync(join(root, "guias.html"), "utf8")) &&
+        /<h2>Liquidaci[oó]n de sueldo<\/h2>[\s\S]*href="\/descanso-compensatorio"/.test(
+          readFileSync(join(root, "guias.html"), "utf8"),
+        ),
+    );
+    assert(
+      "hermanas enlazan /descanso-compensatorio",
+      /href="\/descanso-compensatorio"/.test(rdHtmlDc) &&
+        /href="\/descanso-compensatorio"/.test(fiHtmlDc) &&
+        /href="\/descanso-compensatorio"/.test(heHtmlDc) &&
+        /href="\/descanso-compensatorio"/.test(readFileSync(join(root, "jornada-40-horas.html"), "utf8")) &&
+        /href="\/descanso-compensatorio"/.test(readFileSync(join(root, "semana-corrida.html"), "utf8")),
     );
   }
   {
@@ -13684,6 +13881,7 @@ assert(
       "autodespido.html",
       "obra-faena.html",
       "prescripcion-laboral.html",
+      "descanso-compensatorio.html",
       "finiquito.html",
       "empresa.html",
       "precios.html",
@@ -13861,7 +14059,7 @@ assert(
     return acc;
   }
   const pages = listHtml(root);
-  assert("91 páginas HTML", pages.length === 91, String(pages.length));
+  assert("92 páginas HTML", pages.length === 92, String(pages.length));
   for (const file of pages) {
     const html = readFileSync(file, "utf8");
     const rel = file.slice(root.length + 1);
