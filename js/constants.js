@@ -288,6 +288,23 @@ export const PRESCRIPCION_GOLD = Object.freeze({
 });
 
 /**
+ * Gold educativo de /descanso-compensatorio (art. 38 CT).
+ * 1 día por domingo trabajado + 1 por festivo efectivamente trabajado,
+ * menos descansos ya otorgados. Valor día = rem/30, roundPeso.
+ * No es el recargo 30 % del art. 38 N°7.
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=207436
+ */
+export const DESCANSO_COMPENSATORIO_GOLD = Object.freeze({
+  domingos: 4,
+  festivos: 1,
+  otorgados: 2,
+  pendientes: 3,
+  remuneracion: 900_000,
+  valorDia: 30_000,
+  estimacion: 90_000,
+});
+
+/**
  * Indemnización especial de tutela laboral (art. 489 CT).
  * El juez fija el monto entre 6 y 11 meses de la última remuneración mensual.
  * No hay otro tope legal publicado en ese artículo (no se inventa el de 90 UF del art. 172).
