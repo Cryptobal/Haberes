@@ -52,6 +52,7 @@ Actualizar este archivo antes de crear URLs nuevas para evitar canibalización.
 | Calcular despido injustificado | despido injustificado / recargo despido injustificado / art. 168 | `/despido-injustificado` | Title/H1 «calcular despido injustificado»; no canibalizar `/finiquito`, `/indemnizacion-anos-servicio`, `/indemnizacion-aviso-previo`, `/tutela-laboral`, `/nulidad-despido` ni `/interes-mora`. Art. 168: recargo 30/50/80/100 % sobre la IAS; el aviso no se recarga. Alias `/recargo-despido-injustificado` e `/indemnizacion-despido-injustificado` redirigen. No crear `/art-168` ni `/recargo-168` |
 | Calcular autodespido | autodespido / despido indirecto / art. 171 / indemnización incumplimiento empleador | `/autodespido` | Title/H1 «calcular autodespido»; no canibalizar `/finiquito`, `/indemnizacion-anos-servicio`, `/indemnizacion-aviso-previo`, `/despido-injustificado`, `/tutela-laboral`, `/nulidad-despido`, `/interes-mora`, `/trabajo-pesado`, `/guias/carta-aviso-termino-contrato` ni `/guias/me-reservo-el-derecho-en-el-finiquito`. Art. 171 (trabajador pone término): IAS art. 163 + aviso art. 162 inc. 4 si el juez acoge. No es recargo art. 168 ni tutela art. 489. `/despido-indirecto` redirige. No crear `/art-171` ni `/auto-despido` |
 | Calcular indemnización obra o faena | indemnización obra faena / finiquito contrato obra faena / 2,5 días por mes / art. 159 N°5 | `/obra-faena` | Title/H1 «calcular indemnización obra faena»; no canibalizar `/finiquito`, `/finiquito/art-159-conclusion-del-trabajo`, `/indemnizacion-anos-servicio`, `/vacaciones-proporcionales` ni `/despido-injustificado`. Art. 163 inciso Ley 21.122: 2,5 días/mes y fracción >15 días si concluye la obra. No es IAS 30 días/año. No crear `/finiquito-obra-faena` ni `/indemnizacion-obra-faena` |
+| Calcular prescripción laboral | plazo para reclamar derechos laborales / prescripción art. 510 / 60 días hábiles despido | `/prescripcion-laboral` | Title/H1 «calcular prescripción laboral» + plazo para reclamar Chile 2026; no canibalizar `/finiquito`, `/despido-injustificado`, `/nulidad-despido`, `/autodespido`, `/tutela-laboral`, `/interes-mora`, `/horas-extras`, `/indemnizacion-anos-servicio`, `/indemnizacion-aviso-previo` ni `/obra-faena`. Art. 510 (2 años o 6 meses) y 60 días hábiles del art. 168. No es un monto ni una demanda. No crear `/art-510`, `/plazo-prescripcion` ni `/60-dias-habiles` |
 | Índice de guías | — | `/guias` | Hub: 17 guías, grupo liquidación vs finiquito |
 
 ## Guías pilar (contenido + calculadora embebida)
@@ -324,6 +325,16 @@ término es por art. 159 N°5) vive en `/obra-faena`. No canibalizar
 El recargo del art. 168 (incompatible con esta prestación) vive en
 `/despido-injustificado`. El feriado proporcional sigue en
 `/vacaciones-proporcionales`. El finiquito completo sigue en `/finiquito`.
+
+No publicar `/art-510`, `/plazo-prescripcion` ni `/60-dias-habiles`. El plazo
+para reclamar derechos laborales (art. 510: 2 años o 6 meses) y los 60 días
+hábiles del art. 168 viven en `/prescripcion-laboral`. No canibalizar
+`/finiquito`, `/despido-injustificado`, `/nulidad-despido`, `/autodespido`,
+`/tutela-laboral`, `/interes-mora`, `/horas-extras`, `/indemnizacion-anos-servicio`,
+`/indemnizacion-aviso-previo` ni `/obra-faena`. No es un monto: el recargo del
+art. 168 sigue en `/despido-injustificado`; las horas extras, en `/horas-extras`;
+la nulidad del despido, en `/nulidad-despido`. El finiquito completo sigue en
+`/finiquito`.
 
 No publicar hermanas de semana corrida: `/septimo-dia`, `/pago-domingo-festivo`,
 `/semana-corrida-mensual`. El haber del artículo 45 vive en `/semana-corrida`.
