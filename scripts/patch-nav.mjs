@@ -26,6 +26,7 @@ const DRAWER_LINKS = [
   ["/apv", "APV Régimen B"],
   ["/horas-extras", "Horas extras"],
   ["/jornada-40-horas", "Jornada 40 horas"],
+  ["/jornada-parcial", "Jornada parcial"],
   ["/recargo-domingo-comercio", "Recargo domingo comercio"],
   ["/descanso-compensatorio", "Descanso compensatorio"],
   ["/feriado-irrenunciable", "Feriado irrenunciable"],
