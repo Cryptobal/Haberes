@@ -56,6 +56,13 @@ import {
   CUOTA_INCLUSION_LABORAL,
   DONACION_INCLUSION_IMM_ANUAL,
   INCLUSION_LABORAL_GOLD,
+  JORNADA_ORDINARIA_MAX_H,
+  JORNADA_ORDINARIA_MIN_H,
+  JORNADA_ORDINARIA_REF_H,
+  JORNADA_PARCIAL_FERIADO_BASE_DIAS,
+  JORNADA_PARCIAL_FRACCION_TOPE,
+  JORNADA_PARCIAL_GOLD,
+  JORNADA_PARCIAL_TOLERANCIA_H,
   UMBRAL_INCLUSION_LABORAL,
   RECARGO_168_DEFAULT,
   RECARGO_168_PORCENTAJES,
@@ -155,6 +162,7 @@ import { fallbackIndicadores } from "../js/indicadores.js";
 import { calcularPrescripcionLaboral } from "../js/prescripcion-laboral.js";
 import { calcularDescansoCompensatorio } from "../js/descanso-compensatorio.js";
 import { calcularInclusionLaboral } from "../js/inclusion-laboral.js";
+import { calcularJornadaParcial } from "../js/jornada-parcial.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 let failed = 0;
@@ -217,6 +225,13 @@ assert(
   DESCANSO_COMPENSATORIO_GOLD.pendientes === 3 &&
     DESCANSO_COMPENSATORIO_GOLD.valorDia === 30_000 &&
     DESCANSO_COMPENSATORIO_GOLD.estimacion === 90_000,
+);
+assert(
+  "Jornada parcial gold 40/20 → $450.000 y 7,50 días",
+  JORNADA_PARCIAL_GOLD.medioTiempo.sueldoParcial === 450_000 &&
+    JORNADA_PARCIAL_GOLD.medioTiempo.diasFeriado === 7.5 &&
+    JORNADA_PARCIAL_GOLD.excede.cumpleTope === false &&
+    JORNADA_PARCIAL_GOLD.alTope.sueldoParcial === 533_400,
 );
 assert("Tope cesantía 135.2 UF", TOPE_CESANTIA_UF === 135.2);
 assert(
@@ -3059,6 +3074,104 @@ console.log("\nInclusión laboral Ley 21.015 (gold 2026)");
   );
 }
 
+console.log("\nJornada parcial art. 40 bis (gold 2026)");
+{
+  // Fuentes: art. 40 bis y 67 CT (BCN 207436); Ley 21.561 (BCN 1191554).
+  // Tope = (2/3)×ordinaria; sueldo = round(ref × parcial / ordinaria);
+  // feriado días = 15 × parcial / ordinaria; % = 100 × parcial / ordinaria.
+  // Comparación del tope con tolerancia 0,01 h.
+  assert(
+    "constantes jornada parcial: 2/3, 15 días, 0,01 h, 40 h ref, rango 30–45",
+    JORNADA_PARCIAL_FRACCION_TOPE === 2 / 3 &&
+      JORNADA_PARCIAL_FERIADO_BASE_DIAS === 15 &&
+      JORNADA_PARCIAL_TOLERANCIA_H === 0.01 &&
+      JORNADA_ORDINARIA_REF_H === 40 &&
+      JORNADA_ORDINARIA_MIN_H === 30 &&
+      JORNADA_ORDINARIA_MAX_H === 45,
+  );
+  const medio = calcularJornadaParcial(JORNADA_PARCIAL_GOLD.medioTiempo);
+  const gMedio = JORNADA_PARCIAL_GOLD.medioTiempo;
+  assert(
+    "gold 40 h / 20 h / $900.000 → cumple, máx 26,67, $450.000, 50 %, 7,50 días",
+    medio.cumpleTope === true &&
+      medio.maxParcialHoras === gMedio.maxParcialHoras &&
+      Number(medio.maxParcialHoras.toFixed(2)) === 26.67 &&
+      medio.sueldoParcial === 450_000 &&
+      medio.porcentajeJornada === 50 &&
+      medio.diasFeriado === 7.5,
+    JSON.stringify(medio),
+  );
+  const excede = calcularJornadaParcial(JORNADA_PARCIAL_GOLD.excede);
+  assert(
+    "gold 40 h / 30 h / $900.000 → no cumple tope; proporcional $675.000, 75 %, 11,25 días",
+    excede.cumpleTope === false &&
+      excede.horasParcialContrato === 30 &&
+      excede.maxParcialHoras === (2 / 3) * 40 &&
+      30 > 26.67 &&
+      excede.sueldoParcial === 675_000 &&
+      excede.porcentajeJornada === 75 &&
+      excede.diasFeriado === 11.25,
+    JSON.stringify(excede),
+  );
+  const o45 = calcularJornadaParcial(JORNADA_PARCIAL_GOLD.ordinaria45);
+  assert(
+    "gold 45 h / 30 h / $900.000 → cumple, máx 30, $600.000, 66,67 %, 10 días",
+    o45.cumpleTope === true &&
+      o45.maxParcialHoras === 30 &&
+      o45.sueldoParcial === 600_000 &&
+      Number(o45.porcentajeJornada.toFixed(2)) === 66.67 &&
+      o45.diasFeriado === 10,
+    JSON.stringify(o45),
+  );
+  const tope = calcularJornadaParcial(JORNADA_PARCIAL_GOLD.alTope);
+  assert(
+    "gold 40 h / 26,67 h / $800.000 → cumple ≈ tope; $533.400; ~66,675 %; ~10,00 días",
+    tope.cumpleTope === true &&
+      tope.horasParcialContrato === 26.67 &&
+      tope.sueldoParcial === 533_400 &&
+      tope.sueldoParcial === Math.round((800_000 * 26.67) / 40) &&
+      Math.abs(tope.porcentajeJornada - 66.675) < 1e-10 &&
+      Math.abs(tope.diasFeriado - (15 * 26.67) / 40) < 1e-10 &&
+      tope.horasParcialContrato - tope.maxParcialHoras <= JORNADA_PARCIAL_TOLERANCIA_H,
+    JSON.stringify(tope),
+  );
+  const cero = calcularJornadaParcial({
+    jornadaOrdinariaSemanal: 0,
+    horasParcialContrato: 20,
+    sueldoOrdinarioReferencia: 900_000,
+  });
+  assert(
+    "ordinaria 0 → máximo 0, sueldo 0, no cumple",
+    cero.jornadaOrdinariaSemanal === 0 &&
+      cero.maxParcialHoras === 0 &&
+      cero.sueldoParcial === 0 &&
+      cero.cumpleTope === false,
+    JSON.stringify(cero),
+  );
+  const clamp = calcularJornadaParcial({
+    jornadaOrdinariaSemanal: 50,
+    horasParcialContrato: -3,
+    sueldoOrdinarioReferencia: 900_000,
+  });
+  assert(
+    "ordinaria 50 se acota a 45; horas negativas → 0",
+    clamp.jornadaOrdinariaSemanal === 45 &&
+      clamp.horasParcialContrato === 0 &&
+      clamp.maxParcialHoras === 30 &&
+      clamp.sueldoParcial === 0,
+    JSON.stringify(clamp),
+  );
+  const jpApp = readFileSync(join(root, "js/app-jornada-parcial.js"), "utf8");
+  assert(
+    "app-jornada-parcial usa calcularJornadaParcial",
+    /import\s*\{[^}]*calcularJornadaParcial[^}]*\}\s*from\s*["']\.\/jornada-parcial\.js["']/.test(jpApp) &&
+      /calcularJornadaParcial\s*\(/.test(jpApp) &&
+      !/\balert\s*\(/.test(jpApp) &&
+      !/\bconfirm\s*\(/.test(jpApp) &&
+      !/\bprompt\s*\(/.test(jpApp),
+  );
+}
+
 {
   const millon = calcularAvisoPrevio(
     { causal: "161-necesidades", remuneracion: 1_000_000, avisoPrevio: false },
@@ -3778,6 +3891,7 @@ const required = [
   "prescripcion-laboral.html",
   "descanso-compensatorio.html",
   "inclusion-laboral.html",
+  "jornada-parcial.html",
   "finiquito.html",
   "js/app-horas-extras.js",
   "js/app-vacaciones-proporcionales.js",
@@ -3823,6 +3937,7 @@ const required = [
   "js/app-prescripcion-laboral.js",
   "js/app-descanso-compensatorio.js",
   "js/app-inclusion-laboral.js",
+  "js/app-jornada-parcial.js",
   "empresa.html",
   "privacidad.html",
   "terminos.html",
@@ -3837,6 +3952,7 @@ const required = [
   "js/prescripcion-laboral.js",
   "js/descanso-compensatorio.js",
   "js/inclusion-laboral.js",
+  "js/jornada-parcial.js",
   "js/causales.js",
   "js/finiquito.js",
   "js/indicadores.js",
@@ -4000,6 +4116,7 @@ const htmlFiles = [
   "prescripcion-laboral.html",
   "descanso-compensatorio.html",
   "inclusion-laboral.html",
+  "jornada-parcial.html",
   "finiquito.html",
   "empresa.html",
   "privacidad.html",
@@ -4120,6 +4237,7 @@ const appEntries = [
   "js/app-prescripcion-laboral.js",
   "js/app-descanso-compensatorio.js",
   "js/app-inclusion-laboral.js",
+  "js/app-jornada-parcial.js",
   "js/app-finiquito.js",
   "js/app-empresa.js",
   "js/app-admin.js",
@@ -4152,7 +4270,7 @@ assert("robots Allow /", /Allow:\s*\//.test(robots));
 assert("robots Disallow /admin", /Disallow:\s*\/admin/.test(robots));
 assert("robots Disallow /api", /Disallow:\s*\/api/.test(robots));
 assert("robots Disallow /docs", /Disallow:\s*\/docs/.test(robots));
-assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/trabajo-pesado/.test(robots) && !/Disallow:\s*\/nulidad-despido/.test(robots) && !/Disallow:\s*\/tutela-laboral/.test(robots) && !/Disallow:\s*\/despido-injustificado/.test(robots) && !/Disallow:\s*\/autodespido/.test(robots) && !/Disallow:\s*\/obra-faena/.test(robots) && !/Disallow:\s*\/prescripcion-laboral/.test(robots) && !/Disallow:\s*\/descanso-compensatorio/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/feriado-anual/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/licencia-medica/.test(robots) && !/Disallow:\s*\/boleta-honorarios/.test(robots) && !/Disallow:\s*\/retencion-judicial/.test(robots) && !/Disallow:\s*\/apv/.test(robots) && !/Disallow:\s*\/sala-cuna/.test(robots) && !/Disallow:\s*\/postnatal-parental/.test(robots) && !/Disallow:\s*\/permiso-prenatal/.test(robots) && !/Disallow:\s*\/fuero-maternal/.test(robots) && !/Disallow:\s*\/permiso-paternidad/.test(robots) && !/Disallow:\s*\/permiso-matrimonio/.test(robots) && !/Disallow:\s*\/permiso-fallecimiento/.test(robots) && !/Disallow:\s*\/interes-mora/.test(robots) && !/Disallow:\s*\/hora-lactancia/.test(robots) && !/Disallow:\s*\/jornada-40-horas/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots) && !/Disallow:\s*\/inclusion-laboral/.test(robots));
+assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/trabajo-pesado/.test(robots) && !/Disallow:\s*\/nulidad-despido/.test(robots) && !/Disallow:\s*\/tutela-laboral/.test(robots) && !/Disallow:\s*\/despido-injustificado/.test(robots) && !/Disallow:\s*\/autodespido/.test(robots) && !/Disallow:\s*\/obra-faena/.test(robots) && !/Disallow:\s*\/prescripcion-laboral/.test(robots) && !/Disallow:\s*\/descanso-compensatorio/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/feriado-anual/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/licencia-medica/.test(robots) && !/Disallow:\s*\/boleta-honorarios/.test(robots) && !/Disallow:\s*\/retencion-judicial/.test(robots) && !/Disallow:\s*\/apv/.test(robots) && !/Disallow:\s*\/sala-cuna/.test(robots) && !/Disallow:\s*\/postnatal-parental/.test(robots) && !/Disallow:\s*\/permiso-prenatal/.test(robots) && !/Disallow:\s*\/fuero-maternal/.test(robots) && !/Disallow:\s*\/permiso-paternidad/.test(robots) && !/Disallow:\s*\/permiso-matrimonio/.test(robots) && !/Disallow:\s*\/permiso-fallecimiento/.test(robots) && !/Disallow:\s*\/interes-mora/.test(robots) && !/Disallow:\s*\/hora-lactancia/.test(robots) && !/Disallow:\s*\/jornada-40-horas/.test(robots) && !/Disallow:\s*\/jornada-parcial/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots) && !/Disallow:\s*\/inclusion-laboral/.test(robots));
 assert("robots Sitemap", /Sitemap:\s*https:\/\/www\.haberes\.cl\/sitemap\.xml/.test(robots));
 
 const { seoPaths, GUIDE_SLUGS, GUIDES, CAUSAL_PAGES, BASE_PATHS, lastmodForPath } = await import("../content/registry.js");
@@ -4213,7 +4331,8 @@ assert(
     BASE_PATHS.includes("/obra-faena") &&
     BASE_PATHS.includes("/prescripcion-laboral") &&
     BASE_PATHS.includes("/descanso-compensatorio") &&
-    BASE_PATHS.includes("/inclusion-laboral"),
+    BASE_PATHS.includes("/inclusion-laboral") &&
+    BASE_PATHS.includes("/jornada-parcial"),
   `${locs.length} vs ${expectedFromRegistry.length}`,
 );
 assert(
@@ -4568,7 +4687,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 91,
+      seoPaths().length === 92,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -4580,7 +4699,7 @@ try {
   const docsSeo = await hitLocal("/docs/seo-map.md");
   assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
   assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
-  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/obra-faena/", "/prescripcion-laboral/", "/descanso-compensatorio/", "/inclusion-laboral/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/obra-faena/", "/prescripcion-laboral/", "/descanso-compensatorio/", "/inclusion-laboral/", "/jornada-parcial/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
   }
@@ -4632,6 +4751,7 @@ try {
     "/prescripcion-laboral",
     "/descanso-compensatorio",
     "/inclusion-laboral",
+    "/jornada-parcial",
     "/gratificacion",
     "/impuesto-unico",
     "/cotizaciones-previsionales",
@@ -8443,6 +8563,7 @@ assert(
     ["prescripcion-laboral.html", "/prescripcion-laboral"],
     ["descanso-compensatorio.html", "/descanso-compensatorio"],
     ["inclusion-laboral.html", "/inclusion-laboral"],
+    ["jornada-parcial.html", "/jornada-parcial"],
     ["finiquito.html", "/finiquito"],
     ["empresa.html", "/empresa"],
     ["como.html", "/como"],
@@ -9413,6 +9534,131 @@ assert(
         /href="\/inclusion-laboral"/.test(scHtmlIl) &&
         /href="\/inclusion-laboral"/.test(smHtmlIl) &&
         /href="\/inclusion-laboral"/.test(readFileSync(join(root, "empresa.html"), "utf8")),
+    );
+  }
+  {
+    const jpHtml = readFileSync(join(root, "jornada-parcial.html"), "utf8");
+    const jpTitle = (jpHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const jpH1 = (jpHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const jpDesc = (jpHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "";
+    const j40HtmlJp = readFileSync(join(root, "jornada-40-horas.html"), "utf8");
+    const sueldoHtmlJp = readFileSync(join(root, "sueldo.html"), "utf8");
+    const spHtmlJp = readFileSync(join(root, "sueldo-proporcional.html"), "utf8");
+    const vpHtmlJp = readFileSync(join(root, "vacaciones-proporcionales.html"), "utf8");
+    const heHtmlJp = readFileSync(join(root, "horas-extras.html"), "utf8");
+    const goldJp = calcularJornadaParcial(JORNADA_PARCIAL_GOLD.medioTiempo);
+    const goldEx = calcularJornadaParcial(JORNADA_PARCIAL_GOLD.excede);
+    const goldTope = calcularJornadaParcial(JORNADA_PARCIAL_GOLD.alTope);
+    assert(
+      "SEO jornada parcial title único y corto",
+      /calcular jornada parcial/i.test(jpTitle) &&
+        jpTitle.length <= 65 &&
+        !/jornada 40 horas/i.test(jpTitle) &&
+        !/sueldo l[ií]quido/i.test(jpTitle),
+      jpTitle,
+    );
+    assert(
+      "SEO jornada parcial H1 único tope 2/3",
+      jpH1 === "Calcular jornada parcial Chile 2026" &&
+        /art[ií]culo 40 bis/.test(jpHtml) &&
+        /2\/3/.test(jpHtml),
+      jpH1,
+    );
+    assert(
+      "SEO jornada parcial description propia",
+      jpDesc.length >= 110 &&
+        jpDesc.length <= 160 &&
+        /art\. 40 bis/.test(jpDesc) &&
+        /jornada parcial/.test(jpDesc) &&
+        /2\/3/.test(jpDesc),
+      `${jpDesc.length}:${jpDesc}`,
+    );
+    assert(
+      "SEO jornada parcial cita art. 40 bis, Ley 21.561, art. 67 y BCN",
+      /bcn\.cl\/leychile\/navegar\?idNorma=207436/.test(jpHtml) &&
+        /bcn\.cl\/leychile\/navegar\?idNorma=1191554/.test(jpHtml) &&
+        /40 bis/.test(jpHtml) &&
+        /art[ií]culo 67/.test(jpHtml) &&
+        /Ley 21\.561/.test(jpHtml),
+    );
+    assert(
+      "SEO jornada parcial gold 2026 20 h $450.000, 30 h no cumple y $533.400",
+      goldJp.sueldoParcial === 450_000 &&
+        goldJp.diasFeriado === 7.5 &&
+        goldEx.cumpleTope === false &&
+        goldEx.sueldoParcial === 675_000 &&
+        goldTope.sueldoParcial === 533_400 &&
+        /\$450\.000/.test(jpHtml) &&
+        /\$675\.000/.test(jpHtml) &&
+        /\$533\.400/.test(jpHtml) &&
+        /26,67/.test(jpHtml) &&
+        /7,50/.test(jpHtml) &&
+        /no cumple/.test(jpHtml),
+    );
+    assert("SEO jornada parcial FAQPage", /"@type": "FAQPage"/.test(jpHtml));
+    assert(
+      "SEO jornada parcial no canibaliza hermanas vetadas",
+      /href="\/jornada-40-horas"/.test(jpHtml) &&
+        /href="\/sueldo"/.test(jpHtml) &&
+        /href="\/sueldo-proporcional"/.test(jpHtml) &&
+        /href="\/vacaciones-proporcionales"/.test(jpHtml) &&
+        /href="\/horas-extras"/.test(jpHtml) &&
+        /href="\/semana-corrida"/.test(jpHtml) &&
+        /href="\/descuento-atrasos"/.test(jpHtml) &&
+        /href="\/costo-empresa"/.test(jpHtml) &&
+        /href="\/empresa"/.test(jpHtml) &&
+        /estimaci[oó]n educativa/.test(jpHtml) &&
+        /no constituye asesor[ií]a legal/i.test(jpHtml) &&
+        !existsSync(join(root, "part-time.html")) &&
+        !existsSync(join(root, "medio-tiempo.html")) &&
+        !existsSync(join(root, "jornada-media.html")) &&
+        !existsSync(join(root, "contrato-parcial.html")),
+    );
+    assert(
+      "home y nav enlazan /jornada-parcial",
+      /href="\/jornada-parcial"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/jornada-parcial" data-nav>Jornada parcial<\/a>/.test(
+          readFileSync(join(root, "index.html"), "utf8"),
+        ) &&
+        /href="\/jornada-parcial" data-nav>Jornada parcial<\/a>/.test(jpHtml) &&
+        /href="\/jornada-parcial" data-nav>Jornada parcial<\/a>/.test(
+          readFileSync(join(root, "js/ui.js"), "utf8"),
+        ),
+    );
+    assert(
+      "sitemap incluye /jornada-parcial",
+      locs.includes("https://www.haberes.cl/jornada-parcial") &&
+        lastmodForPath("/jornada-parcial") === "2026-09-16",
+    );
+    assert(
+      "seo-map documenta /jornada-parcial y no-canibalizar hermanas",
+      /\/jornada-parcial/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no canibalizar `\/jornada-40-horas`, `\/sueldo`/.test(
+          readFileSync(join(root, "docs/seo-map.md"), "utf8"),
+        ) &&
+        /no crear `\/part-time`/i.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")),
+    );
+    assert(
+      "hub /guias enlaza /jornada-parcial en el cluster de liquidación",
+      /href="\/jornada-parcial"/.test(readFileSync(join(root, "guias.html"), "utf8")) &&
+        /<h2>Liquidaci[oó]n de sueldo<\/h2>[\s\S]*href="\/jornada-parcial"/.test(
+          readFileSync(join(root, "guias.html"), "utf8"),
+        ) &&
+        !/<h2>Finiquito<\/h2>[\s\S]*href="\/jornada-parcial"/.test(
+          readFileSync(join(root, "guias.html"), "utf8"),
+        ),
+    );
+    assert(
+      "hermanas enlazan /jornada-parcial",
+      /href="\/jornada-parcial"/.test(j40HtmlJp) &&
+        /href="\/jornada-parcial"/.test(sueldoHtmlJp) &&
+        /href="\/jornada-parcial"/.test(spHtmlJp) &&
+        /href="\/jornada-parcial"/.test(vpHtmlJp) &&
+        /href="\/jornada-parcial"/.test(heHtmlJp) &&
+        /href="\/jornada-parcial"/.test(readFileSync(join(root, "semana-corrida.html"), "utf8")) &&
+        /href="\/jornada-parcial"/.test(readFileSync(join(root, "descuento-atrasos.html"), "utf8")) &&
+        /href="\/jornada-parcial"/.test(readFileSync(join(root, "costo-empresa.html"), "utf8")) &&
+        /href="\/jornada-parcial"/.test(readFileSync(join(root, "empresa.html"), "utf8")),
     );
   }
   {
@@ -14101,6 +14347,7 @@ assert(
       "prescripcion-laboral.html",
       "descanso-compensatorio.html",
       "inclusion-laboral.html",
+      "jornada-parcial.html",
       "finiquito.html",
       "empresa.html",
       "precios.html",
@@ -14278,7 +14525,7 @@ assert(
     return acc;
   }
   const pages = listHtml(root);
-  assert("93 páginas HTML", pages.length === 93, String(pages.length));
+  assert("94 páginas HTML", pages.length === 94, String(pages.length));
   for (const file of pages) {
     const html = readFileSync(file, "utf8");
     const rel = file.slice(root.length + 1);

@@ -86,6 +86,65 @@ export const INCLUSION_LABORAL_GOLD = Object.freeze({
 });
 
 /**
+ * Jornada parcial (art. 40 bis CT): no puede exceder los 2/3 de la
+ * jornada ordinaria de la empresa. Referencia ordinaria típica 40 h
+ * (Ley 21.561 / transición); el usuario puede editar 30–45 h.
+ * Sueldo proporcional: round(sueldoOrdinario × horasParcial / ordinaria).
+ * Feriado en días (educativo): 15 × horasParcial / ordinaria (art. 67).
+ * Comparación del tope con tolerancia de 0,01 h.
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=207436
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=1191554
+ */
+export const JORNADA_PARCIAL_FRACCION_TOPE = 2 / 3;
+export const JORNADA_PARCIAL_FERIADO_BASE_DIAS = 15;
+export const JORNADA_PARCIAL_TOLERANCIA_H = 0.01;
+export const JORNADA_ORDINARIA_REF_H = 40;
+export const JORNADA_ORDINARIA_MIN_H = 30;
+export const JORNADA_ORDINARIA_MAX_H = 45;
+export const JORNADA_PARCIAL_GOLD = Object.freeze({
+  medioTiempo: Object.freeze({
+    jornadaOrdinariaSemanal: 40,
+    horasParcialContrato: 20,
+    sueldoOrdinarioReferencia: 900_000,
+    cumpleTope: true,
+    maxParcialHoras: (2 / 3) * 40,
+    sueldoParcial: 450_000,
+    porcentajeJornada: 50,
+    diasFeriado: 7.5,
+  }),
+  excede: Object.freeze({
+    jornadaOrdinariaSemanal: 40,
+    horasParcialContrato: 30,
+    sueldoOrdinarioReferencia: 900_000,
+    cumpleTope: false,
+    maxParcialHoras: (2 / 3) * 40,
+    sueldoParcial: 675_000,
+    porcentajeJornada: 75,
+    diasFeriado: 11.25,
+  }),
+  ordinaria45: Object.freeze({
+    jornadaOrdinariaSemanal: 45,
+    horasParcialContrato: 30,
+    sueldoOrdinarioReferencia: 900_000,
+    cumpleTope: true,
+    maxParcialHoras: 30,
+    sueldoParcial: 600_000,
+    porcentajeJornada: (100 * 30) / 45,
+    diasFeriado: 10,
+  }),
+  alTope: Object.freeze({
+    jornadaOrdinariaSemanal: 40,
+    horasParcialContrato: 26.67,
+    sueldoOrdinarioReferencia: 800_000,
+    cumpleTope: true,
+    maxParcialHoras: (2 / 3) * 40,
+    sueldoParcial: 533_400,
+    porcentajeJornada: (100 * 26.67) / 40,
+    diasFeriado: (15 * 26.67) / 40,
+  }),
+});
+
+/**
  * Permiso postnatal parental (art. 197 bis CT / Ley 20.545).
  * Completa: 12 semanas (84 días). Parcial: 18 semanas (126 días).
  * La madre goza al menos las primeras 6 semanas; el padre, si se cede,

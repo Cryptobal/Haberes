@@ -215,6 +215,8 @@ function paintLoggedInNav(emp) {
         <a href="/sueldo-proporcional" data-nav>Sueldo proporcional</a>
         <a href="/sueldo-minimo" data-nav>Sueldo mínimo</a>
         <a href="/horas-extras" data-nav>Horas extras</a>
+        <a href="/jornada-40-horas" data-nav>Jornada 40 horas</a>
+        <a href="/jornada-parcial" data-nav>Jornada parcial</a>
         <a href="/recargo-domingo-comercio" data-nav>Recargo domingo comercio</a>
         <a href="/descanso-compensatorio" data-nav>Descanso compensatorio</a>
         <a href="/feriado-irrenunciable" data-nav>Feriado irrenunciable</a>

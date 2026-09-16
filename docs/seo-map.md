@@ -14,6 +14,7 @@ Actualizar este archivo antes de crear URLs nuevas para evitar canibalización.
 | Calcular sueldo mínimo | sueldo mínimo / ingreso mínimo mensual / IMM 2026 | `/sueldo-minimo` | Title/H1 «calcular sueldo mínimo»; no canibalizar `/sueldo`, `/gratificacion`, `/colacion-movilizacion` ni `/costo-empresa`. Piso legal del IMM (Ley 21.830), jornada parcial y tope art. 50. No es el líquido. No crear `/imm`, `/ingreso-minimo` ni `/sueldo-minimo-2026` |
 | Calcular horas extras | calcular horas extras / cálculo horas extras (8.100/17) | `/horas-extras` | Title/H1 «calcular horas extras»; no canibalizar `/sueldo` ni `/guias/horas-extras` |
 | Calcular jornada 40 horas | jornada 40 horas / ley 21.561 / tope 42 horas 2026 | `/jornada-40-horas` | Title/H1 «Calculadora jornada 40 horas Chile»; no canibalizar `/horas-extras`, `/sueldo`, `/sueldo-proporcional`, `/sueldo-minimo`, `/recargo-domingo-comercio`, `/descanso-compensatorio`, `/feriado-irrenunciable` ni `/finiquito-casa-particular`. Tope gradual art. 22 (Ley 21.561), distribución a falta de acuerdo (Ley 21.755 / ORD. N°253/21) y valor hora DT. No es el monto de extras. No crear `/40-horas`, `/ley-21561` ni `/reduccion-jornada` |
+| Calcular jornada parcial | jornada parcial / contrato parcial / tope 2/3 art. 40 bis | `/jornada-parcial` | Title/H1 «calcular jornada parcial» + tope 2/3 Chile 2026; no canibalizar `/jornada-40-horas`, `/sueldo`, `/sueldo-proporcional`, `/vacaciones-proporcionales`, `/horas-extras`, `/semana-corrida`, `/descuento-atrasos`, `/costo-empresa` ni `/empresa`. Tope 2/3 de la ordinaria (art. 40 bis), sueldo proporcional a horas y feriado en días (15 × horas/ordinaria, art. 67). No es líquido, extras, IAS ni cotizaciones. No crear `/part-time`, `/medio-tiempo`, `/jornada-media` ni `/contrato-parcial` |
 | Calcular vacaciones proporcionales | vacaciones proporcionales (1.300/16), feriado proporcional (590/13), calcular feriado proporcional (320/14) | `/vacaciones-proporcionales` | Title/H1 «calcular vacaciones proporcionales»; no canibalizar `/finiquito` ni `/guias/vacaciones-proporcionales` |
 | Calcular gratificación | gratificación legal (4.400/17) — intención calcular | `/gratificacion` | Title/H1 «calcular gratificación»; no canibalizar `/sueldo` ni `/guias/gratificacion-legal` |
 | Calcular impuesto único | calcular impuesto unico (480/mes), tabla impuesto unico (2.900/mes) | `/impuesto-unico` | Title/H1 «calcular impuesto único»; no canibalizar `/sueldo` ni `/guias/impuesto-unico` |
@@ -155,6 +156,14 @@ No publicar `/40-horas`, `/ley-21561` ni `/reduccion-jornada`. El tope gradual d
 ordinaria (Ley 21.561: 44/42/40 h), la distribución a falta de acuerdo y el valor hora DT
 viven en `/jornada-40-horas`. El monto de extras con recargo 50 % sigue en `/horas-extras`.
 El líquido sigue en `/sueldo`. El costo de cotizaciones del empleador sigue en `/costo-empresa`.
+
+No publicar `/part-time`, `/medio-tiempo`, `/jornada-media` ni `/contrato-parcial`. El tope
+de 2/3 de la jornada parcial (art. 40 bis), el sueldo proporcional a horas y el feriado
+en días (15 × horas/ordinaria, art. 67) viven en `/jornada-parcial`. No canibalizar
+`/jornada-40-horas`, `/sueldo`, `/sueldo-proporcional`, `/vacaciones-proporcionales`,
+`/horas-extras`, `/semana-corrida`, `/descuento-atrasos`, `/costo-empresa` ni `/empresa`.
+El tope gradual 44/42/40 h sigue en `/jornada-40-horas`. El bruto de un mes incompleto
+sigue en `/sueldo-proporcional`. El feriado en dinero sigue en `/vacaciones-proporcionales`.
 
 No publicar `/pago-feriado`, `/trabajo-feriado`, `/feriados` ni `/irrenunciable`.
 El pago educativo de un feriado irrenunciable (Ley 19.973 + recargo 50 % art. 32)
