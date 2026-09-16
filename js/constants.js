@@ -40,6 +40,52 @@ export const GRATIFICACION_TOPE = 219115;
 export const UMBRAL_SALA_CUNA = 20;
 
 /**
+ * Inclusión laboral (Ley 21.015 / arts. 157 bis y 157 ter CT).
+ * Empresas con promedio ≥ 100 trabajadores: al menos el 1 % de personas con
+ * discapacidad y/o asignatarias de pensión de invalidez.
+ * DS N°64 MINTRAB art. 6 c): si 1 % × dotación da decimales, se aproxima
+ * al entero inferior (no al superior).
+ * Donación subsidiaria (art. 157 ter): piso de 24 IMM por cada persona del
+ * déficit, por año. Techo: 12 × tope imponible (D.L. 3.500 art. 16); no se
+ * usa como resultado principal.
+ * El 2 % de la Ley 21.690 aún no rige: queda sujeto a un informe de
+ * cumplimiento del 1 % en el 80 % de las empresas obligadas.
+ * IMM de donación: tramo general vigente (Ley 21.830, 1-may-2026).
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=1103997
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=1114287
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=207436
+ * @see https://www.dt.gob.cl/portal/1626/w3-article-118013.html
+ * @see https://www.dt.gob.cl/legislacion/1624/w3-article-125364.html
+ */
+export const UMBRAL_INCLUSION_LABORAL = 100;
+export const CUOTA_INCLUSION_LABORAL = 0.01;
+export const DONACION_INCLUSION_IMM_ANUAL = 24;
+export const INCLUSION_LABORAL_GOLD = Object.freeze({
+  bajoUmbral: Object.freeze({ dotacion: 80, contratados: 0 }),
+  umbral: Object.freeze({
+    dotacion: 100,
+    contratados: 0,
+    cuota: 1,
+    gap: 1,
+    donacion: 24 * IMM,
+  }),
+  redondeo: Object.freeze({
+    dotacion: 250,
+    contratados: 2,
+    cuota: 2,
+    gap: 0,
+    donacion: 0,
+  }),
+  cumple: Object.freeze({
+    dotacion: 250,
+    contratados: 3,
+    cuota: 2,
+    gap: 0,
+    donacion: 0,
+  }),
+});
+
+/**
  * Permiso postnatal parental (art. 197 bis CT / Ley 20.545).
  * Completa: 12 semanas (84 días). Parcial: 18 semanas (126 días).
  * La madre goza al menos las primeras 6 semanas; el padre, si se cede,

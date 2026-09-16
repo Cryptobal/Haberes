@@ -53,6 +53,10 @@ import {
   OBRA_FAENA_FACTOR_PLENO,
   PRESCRIPCION_GOLD,
   DESCANSO_COMPENSATORIO_GOLD,
+  CUOTA_INCLUSION_LABORAL,
+  DONACION_INCLUSION_IMM_ANUAL,
+  INCLUSION_LABORAL_GOLD,
+  UMBRAL_INCLUSION_LABORAL,
   RECARGO_168_DEFAULT,
   RECARGO_168_PORCENTAJES,
   RETENCION_BOLETA_ANIO_DEFAULT,
@@ -150,6 +154,7 @@ import {
 import { fallbackIndicadores } from "../js/indicadores.js";
 import { calcularPrescripcionLaboral } from "../js/prescripcion-laboral.js";
 import { calcularDescansoCompensatorio } from "../js/descanso-compensatorio.js";
+import { calcularInclusionLaboral } from "../js/inclusion-laboral.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 let failed = 0;
@@ -2963,6 +2968,97 @@ console.log("\nDescanso compensatorio art. 38 (gold 2026)");
   );
 }
 
+console.log("\nInclusión laboral Ley 21.015 (gold 2026)");
+{
+  // Fuentes: Ley 21.015 (BCN 1103997); arts. 157 bis y 157 ter CT (207436);
+  // DS N°64 art. 6 c) entero inferior (BCN 1114287); ORD. 1513/42 DT;
+  // donación piso 24 IMM / persona / año. IMM = constants.IMM (Ley 21.830).
+  assert(
+    "constantes inclusión: umbral 100, 1 %, 24 IMM",
+    UMBRAL_INCLUSION_LABORAL === 100 &&
+      CUOTA_INCLUSION_LABORAL === 0.01 &&
+      DONACION_INCLUSION_IMM_ANUAL === 24 &&
+      INCLUSION_LABORAL_GOLD.umbral.donacion === 24 * IMM,
+  );
+  const bajo = calcularInclusionLaboral(INCLUSION_LABORAL_GOLD.bajoUmbral);
+  assert(
+    "gold dotación 80 → no aplica; cuota 0; gap 0; donación 0",
+    bajo.aplica === false &&
+      bajo.cuota === 0 &&
+      bajo.gap === 0 &&
+      bajo.donacion === 0 &&
+      bajo.dotacion === 80,
+    JSON.stringify(bajo),
+  );
+  const umbral = calcularInclusionLaboral(INCLUSION_LABORAL_GOLD.umbral);
+  assert(
+    "gold 100 contratados 0 → cuota 1, gap 1, donación 24×IMM",
+    umbral.aplica &&
+      umbral.cuota === 1 &&
+      umbral.gap === 1 &&
+      umbral.donacion === 24 * IMM &&
+      umbral.donacion === 13_285_272 &&
+      umbral.imm === IMM,
+    JSON.stringify(umbral),
+  );
+  const redondeo = calcularInclusionLaboral(INCLUSION_LABORAL_GOLD.redondeo);
+  assert(
+    "gold 250 contratados 2 → 2,5 al entero inferior = 2; gap 0; donación 0",
+    redondeo.aplica &&
+      redondeo.cuota === 2 &&
+      redondeo.gap === 0 &&
+      redondeo.donacion === 0,
+    JSON.stringify(redondeo),
+  );
+  const cumple = calcularInclusionLaboral(INCLUSION_LABORAL_GOLD.cumple);
+  assert(
+    "gold 250 contratados 3 ≥ cuota 2 → gap 0, donación 0",
+    cumple.aplica &&
+      cumple.cuota === 2 &&
+      cumple.gap === 0 &&
+      cumple.donacion === 0,
+    JSON.stringify(cumple),
+  );
+  const gapUno = calcularInclusionLaboral({ dotacion: 250, contratados: 1 });
+  assert(
+    "250 contratados 1 → cuota 2, gap 1, donación 24×IMM",
+    gapUno.cuota === 2 && gapUno.gap === 1 && gapUno.donacion === 24 * IMM,
+    JSON.stringify(gapUno),
+  );
+  const decimales = calcularInclusionLaboral({
+    dotacion: 149.9,
+    contratados: -2,
+    imm: 0,
+  });
+  assert(
+    "149,9 → 149; 1,49 al entero inferior = 1; contratados negativos → 0",
+    decimales.dotacion === 149 &&
+      decimales.contratados === 0 &&
+      decimales.cuota === 1 &&
+      decimales.gap === 1 &&
+      decimales.imm === IMM,
+    JSON.stringify(decimales),
+  );
+  const immCustom = calcularInclusionLaboral({
+    dotacion: 100,
+    contratados: 0,
+    imm: 500_000,
+  });
+  assert(
+    "IMM opcional 500.000 → donación 12.000.000",
+    immCustom.donacion === 12_000_000 && immCustom.imm === 500_000,
+    JSON.stringify(immCustom),
+  );
+  const ilApp = readFileSync(join(root, "js/app-inclusion-laboral.js"), "utf8");
+  assert(
+    "app-inclusion-laboral usa calcularInclusionLaboral",
+    /import\s*\{[^}]*calcularInclusionLaboral[^}]*\}\s*from\s*["']\.\/inclusion-laboral\.js["']/.test(ilApp) &&
+      /calcularInclusionLaboral\s*\(/.test(ilApp) &&
+      !/\balert\s*\(/.test(ilApp) &&
+      !/\bconfirm\s*\(/.test(ilApp),
+  );
+}
+
 {
   const millon = calcularAvisoPrevio(
     { causal: "161-necesidades", remuneracion: 1_000_000, avisoPrevio: false },
@@ -3681,6 +3777,7 @@ const required = [
   "obra-faena.html",
   "prescripcion-laboral.html",
   "descanso-compensatorio.html",
+  "inclusion-laboral.html",
   "finiquito.html",
   "js/app-horas-extras.js",
   "js/app-vacaciones-proporcionales.js",
@@ -3725,6 +3822,7 @@ const required = [
   "js/app-obra-faena.js",
   "js/app-prescripcion-laboral.js",
   "js/app-descanso-compensatorio.js",
+  "js/app-inclusion-laboral.js",
   "empresa.html",
   "privacidad.html",
   "terminos.html",
@@ -3738,6 +3836,7 @@ const required = [
   "js/interes-mora.js",
   "js/prescripcion-laboral.js",
   "js/descanso-compensatorio.js",
+  "js/inclusion-laboral.js",
   "js/causales.js",
   "js/finiquito.js",
   "js/indicadores.js",
@@ -3900,6 +3999,7 @@ const htmlFiles = [
   "obra-faena.html",
   "prescripcion-laboral.html",
   "descanso-compensatorio.html",
+  "inclusion-laboral.html",
   "finiquito.html",
   "empresa.html",
   "privacidad.html",
@@ -4019,6 +4119,7 @@ const appEntries = [
   "js/app-obra-faena.js",
   "js/app-prescripcion-laboral.js",
   "js/app-descanso-compensatorio.js",
+  "js/app-inclusion-laboral.js",
   "js/app-finiquito.js",
   "js/app-empresa.js",
   "js/app-admin.js",
@@ -4051,7 +4152,7 @@ assert("robots Allow /", /Allow:\s*\//.test(robots));
 assert("robots Disallow /admin", /Disallow:\s*\/admin/.test(robots));
 assert("robots Disallow /api", /Disallow:\s*\/api/.test(robots));
 assert("robots Disallow /docs", /Disallow:\s*\/docs/.test(robots));
-assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/trabajo-pesado/.test(robots) && !/Disallow:\s*\/nulidad-despido/.test(robots) && !/Disallow:\s*\/tutela-laboral/.test(robots) && !/Disallow:\s*\/despido-injustificado/.test(robots) && !/Disallow:\s*\/autodespido/.test(robots) && !/Disallow:\s*\/obra-faena/.test(robots) && !/Disallow:\s*\/prescripcion-laboral/.test(robots) && !/Disallow:\s*\/descanso-compensatorio/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/feriado-anual/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/licencia-medica/.test(robots) && !/Disallow:\s*\/boleta-honorarios/.test(robots) && !/Disallow:\s*\/retencion-judicial/.test(robots) && !/Disallow:\s*\/apv/.test(robots) && !/Disallow:\s*\/sala-cuna/.test(robots) && !/Disallow:\s*\/postnatal-parental/.test(robots) && !/Disallow:\s*\/permiso-prenatal/.test(robots) && !/Disallow:\s*\/fuero-maternal/.test(robots) && !/Disallow:\s*\/permiso-paternidad/.test(robots) && !/Disallow:\s*\/permiso-matrimonio/.test(robots) && !/Disallow:\s*\/permiso-fallecimiento/.test(robots) && !/Disallow:\s*\/interes-mora/.test(robots) && !/Disallow:\s*\/hora-lactancia/.test(robots) && !/Disallow:\s*\/jornada-40-horas/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots));
+assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/trabajo-pesado/.test(robots) && !/Disallow:\s*\/nulidad-despido/.test(robots) && !/Disallow:\s*\/tutela-laboral/.test(robots) && !/Disallow:\s*\/despido-injustificado/.test(robots) && !/Disallow:\s*\/autodespido/.test(robots) && !/Disallow:\s*\/obra-faena/.test(robots) && !/Disallow:\s*\/prescripcion-laboral/.test(robots) && !/Disallow:\s*\/descanso-compensatorio/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/feriado-anual/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/licencia-medica/.test(robots) && !/Disallow:\s*\/boleta-honorarios/.test(robots) && !/Disallow:\s*\/retencion-judicial/.test(robots) && !/Disallow:\s*\/apv/.test(robots) && !/Disallow:\s*\/sala-cuna/.test(robots) && !/Disallow:\s*\/postnatal-parental/.test(robots) && !/Disallow:\s*\/permiso-prenatal/.test(robots) && !/Disallow:\s*\/fuero-maternal/.test(robots) && !/Disallow:\s*\/permiso-paternidad/.test(robots) && !/Disallow:\s*\/permiso-matrimonio/.test(robots) && !/Disallow:\s*\/permiso-fallecimiento/.test(robots) && !/Disallow:\s*\/interes-mora/.test(robots) && !/Disallow:\s*\/hora-lactancia/.test(robots) && !/Disallow:\s*\/jornada-40-horas/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots) && !/Disallow:\s*\/inclusion-laboral/.test(robots));
 assert("robots Sitemap", /Sitemap:\s*https:\/\/www\.haberes\.cl\/sitemap\.xml/.test(robots));
 
 const { seoPaths, GUIDE_SLUGS, GUIDES, CAUSAL_PAGES, BASE_PATHS, lastmodForPath } = await import("../content/registry.js");
@@ -4111,7 +4212,8 @@ assert(
     BASE_PATHS.includes("/autodespido") &&
     BASE_PATHS.includes("/obra-faena") &&
     BASE_PATHS.includes("/prescripcion-laboral") &&
-    BASE_PATHS.includes("/descanso-compensatorio"),
+    BASE_PATHS.includes("/descanso-compensatorio") &&
+    BASE_PATHS.includes("/inclusion-laboral"),
   `${locs.length} vs ${expectedFromRegistry.length}`,
 );
 assert(
@@ -4466,7 +4568,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 90,
+      seoPaths().length === 91,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -4478,7 +4580,7 @@ try {
   const docsSeo = await hitLocal("/docs/seo-map.md");
   assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
   assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
-  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/obra-faena/", "/prescripcion-laboral/", "/descanso-compensatorio/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/obra-faena/", "/prescripcion-laboral/", "/descanso-compensatorio/", "/inclusion-laboral/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
   }
@@ -4529,6 +4631,7 @@ try {
     "/obra-faena",
     "/prescripcion-laboral",
     "/descanso-compensatorio",
+    "/inclusion-laboral",
     "/gratificacion",
     "/impuesto-unico",
     "/cotizaciones-previsionales",
@@ -8339,6 +8442,7 @@ assert(
     ["obra-faena.html", "/obra-faena"],
     ["prescripcion-laboral.html", "/prescripcion-laboral"],
     ["descanso-compensatorio.html", "/descanso-compensatorio"],
+    ["inclusion-laboral.html", "/inclusion-laboral"],
     ["finiquito.html", "/finiquito"],
     ["empresa.html", "/empresa"],
     ["como.html", "/como"],
@@ -9195,6 +9299,120 @@ assert(
         /href="\/descanso-compensatorio"/.test(heHtmlDc) &&
         /href="\/descanso-compensatorio"/.test(readFileSync(join(root, "jornada-40-horas.html"), "utf8")) &&
         /href="\/descanso-compensatorio"/.test(readFileSync(join(root, "semana-corrida.html"), "utf8")),
+    );
+  }
+  {
+    const ilHtml = readFileSync(join(root, "inclusion-laboral.html"), "utf8");
+    const ilTitle = (ilHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const ilH1 = (ilHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const ilDesc = (ilHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "";
+    const ceHtmlIl = readFileSync(join(root, "costo-empresa.html"), "utf8");
+    const scHtmlIl = readFileSync(join(root, "sala-cuna.html"), "utf8");
+    const smHtmlIl = readFileSync(join(root, "sueldo-minimo.html"), "utf8");
+    const goldIl = calcularInclusionLaboral(INCLUSION_LABORAL_GOLD.umbral);
+    const goldRed = calcularInclusionLaboral(INCLUSION_LABORAL_GOLD.redondeo);
+    assert(
+      "SEO inclusión laboral title único y corto",
+      /calcular inclusión laboral/i.test(ilTitle) &&
+        ilTitle.length <= 65 &&
+        !/costo empresa/i.test(ilTitle) &&
+        !/sueldo mínimo/i.test(ilTitle),
+      ilTitle,
+    );
+    assert(
+      "SEO inclusión laboral H1 único Ley 21.015",
+      ilH1 === "Calcular inclusión laboral Chile 2026" &&
+        /Ley N° 21\.015/.test(ilHtml) &&
+        /1\s*%/.test(ilHtml),
+      ilH1,
+    );
+    assert(
+      "SEO inclusión laboral description propia",
+      ilDesc.length >= 110 &&
+        ilDesc.length <= 160 &&
+        /Ley 21\.015/.test(ilDesc) &&
+        /cuota del 1%/.test(ilDesc) &&
+        /inclusión laboral/.test(ilDesc),
+      `${ilDesc.length}:${ilDesc}`,
+    );
+    assert(
+      "SEO inclusión laboral cita Ley 21.015, DS 64, 157 bis/ter, DT y 1513/42",
+      /bcn\.cl\/leychile\/navegar\?idNorma=1103997/.test(ilHtml) &&
+        /bcn\.cl\/leychile\/navegar\?idNorma=1114287/.test(ilHtml) &&
+        /bcn\.cl\/leychile\/navegar\?idNorma=207436/.test(ilHtml) &&
+        /157 bis/.test(ilHtml) &&
+        /157 ter/.test(ilHtml) &&
+        /dt\.gob\.cl\/portal\/1626\/w3-article-118013/.test(ilHtml) &&
+        /dt\.gob\.cl\/legislacion\/1624\/w3-article-125364/.test(ilHtml) &&
+        /1513\/42/.test(ilHtml) &&
+        /entero inferior/.test(ilHtml),
+    );
+    assert(
+      "SEO inclusión laboral gold 2026 80/100/250 y $13.285.272 en copy",
+      goldIl.cuota === 1 &&
+        goldIl.donacion === 13_285_272 &&
+        goldRed.cuota === 2 &&
+        goldRed.gap === 0 &&
+        /80/.test(ilHtml) &&
+        /no aplica/.test(ilHtml) &&
+        /\$13\.285\.272/.test(ilHtml) &&
+        /250/.test(ilHtml) &&
+        /2,5/.test(ilHtml),
+    );
+    assert("SEO inclusión laboral FAQPage", /"@type": "FAQPage"/.test(ilHtml));
+    assert(
+      "SEO inclusión laboral no canibaliza hermanas vetadas",
+      /href="\/sala-cuna"/.test(ilHtml) &&
+        /href="\/costo-empresa"/.test(ilHtml) &&
+        /href="\/sueldo-minimo"/.test(ilHtml) &&
+        /href="\/asignacion-familiar"/.test(ilHtml) &&
+        /href="\/fuero-maternal"/.test(ilHtml) &&
+        /href="\/postnatal-parental"/.test(ilHtml) &&
+        /href="\/empresa"/.test(ilHtml) &&
+        /estimaci[oó]n educativa/.test(ilHtml) &&
+        /no constituye asesor[ií]a legal/i.test(ilHtml) &&
+        !existsSync(join(root, "ley-21015.html")) &&
+        !existsSync(join(root, "cuota-inclusion.html")) &&
+        !existsSync(join(root, "donacion-inclusion.html")) &&
+        !existsSync(join(root, "1-poriento.html")),
+    );
+    assert(
+      "home y nav enlazan /inclusion-laboral",
+      /href="\/inclusion-laboral"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/inclusion-laboral" data-nav>Inclusión laboral<\/a>/.test(
+          readFileSync(join(root, "index.html"), "utf8"),
+        ) &&
+        /href="\/inclusion-laboral" data-nav>Inclusión laboral<\/a>/.test(ilHtml) &&
+        /href="\/inclusion-laboral" data-nav>Inclusión laboral<\/a>/.test(
+          readFileSync(join(root, "js/ui.js"), "utf8"),
+        ),
+    );
+    assert(
+      "sitemap incluye /inclusion-laboral",
+      locs.includes("https://www.haberes.cl/inclusion-laboral") &&
+        lastmodForPath("/inclusion-laboral") === "2026-09-16",
+    );
+    assert(
+      "seo-map documenta /inclusion-laboral y no-canibalizar hermanas",
+      /\/inclusion-laboral/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no canibalizar `\/sala-cuna`, `\/costo-empresa`/.test(
+          readFileSync(join(root, "docs/seo-map.md"), "utf8"),
+        ) &&
+        /no crear `\/ley-21015`/i.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")),
+    );
+    assert(
+      "hub /guias enlaza /inclusion-laboral en el cluster de liquidación",
+      /href="\/inclusion-laboral"/.test(readFileSync(join(root, "guias.html"), "utf8")) &&
+        /<h2>Liquidaci[oó]n de sueldo<\/h2>[\s\S]*href="\/inclusion-laboral"/.test(
+          readFileSync(join(root, "guias.html"), "utf8"),
+        ),
+    );
+    assert(
+      "hermanas enlazan /inclusion-laboral",
+      /href="\/inclusion-laboral"/.test(ceHtmlIl) &&
+        /href="\/inclusion-laboral"/.test(scHtmlIl) &&
+        /href="\/inclusion-laboral"/.test(smHtmlIl) &&
+        /href="\/inclusion-laboral"/.test(readFileSync(join(root, "empresa.html"), "utf8")),
     );
   }
   {
@@ -13882,6 +14100,7 @@ assert(
       "obra-faena.html",
       "prescripcion-laboral.html",
       "descanso-compensatorio.html",
+      "inclusion-laboral.html",
       "finiquito.html",
       "empresa.html",
       "precios.html",

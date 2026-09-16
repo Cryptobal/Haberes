@@ -225,6 +225,7 @@ function paintLoggedInNav(emp) {
         <a href="/boleta-honorarios" data-nav>Boleta honorarios</a>
         <a href="/cotizaciones-previsionales" data-nav>Cotizaciones previsionales</a>
         <a href="/costo-empresa" data-nav>Costo empresa</a>
+        <a href="/inclusion-laboral" data-nav>Inclusión laboral</a>
         <a href="/seguro-cesantia" data-nav>Seguro de cesantía</a>
         <a href="/trabajo-pesado" data-nav>Trabajo pesado</a>
         <a href="/asignacion-familiar" data-nav>Asignación familiar</a>
