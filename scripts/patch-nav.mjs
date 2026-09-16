@@ -40,6 +40,7 @@ const DRAWER_LINKS = [
   ["/trabajo-pesado", "Trabajo pesado"],
   ["/asignacion-familiar", "Asignación familiar"],
   ["/sala-cuna", "Sala cuna"],
+  ["/inclusion-laboral", "Inclusión laboral"],
   ["/permiso-prenatal", "Permiso prenatal"],
   ["/postnatal-parental", "Postnatal parental"],
   ["/fuero-maternal", "Fuero maternal"],

@@ -28,6 +28,7 @@ Actualizar este archivo antes de crear URLs nuevas para evitar canibalización.
 | Calcular semana corrida | semana corrida (1.300/21) — intención calcular | `/semana-corrida` | Title/H1 «calcular semana corrida»; no canibalizar `/guias/semana-corrida`, `/recargo-domingo-comercio` ni `/sueldo`. Art. 45 (pago del descanso), no recargo 30 % art. 38 N°7 ni hora extra art. 32. No crear `/septimo-dia` ni `/pago-domingo-festivo` |
 | Calcular asignación familiar | asignación familiar / tramos asignación familiar / cargas familiares | `/asignacion-familiar` | Title/H1 «calcular asignación familiar»; no canibalizar `/sueldo`, `/cotizaciones-previsionales` ni `/guias/liquidacion-de-sueldo`. Sistema Único (D.F.L. 150), no SUF municipal. No crear `/suf`, `/asignacion-maternal` ni `/cargas-familiares` |
 | Calcular sala cuna | sala cuna / obligación sala cuna / art. 203 / costo sala cuna empresa | `/sala-cuna` | Title/H1 «calcular sala cuna» + art. 203 Chile 2026; no canibalizar `/asignacion-familiar`, `/costo-empresa`, `/colacion-movilizacion` ni `/aguinaldo`. Umbral 20 trabajadoras y costo si paga el establecimiento. El bono compensatorio no es la regla general. No crear `/bono-sala-cuna` ni `/jardín-infantil` |
+| Calcular inclusión laboral | inclusión laboral / cuota 1% Ley 21.015 / donación inclusión discapacidad | `/inclusion-laboral` | Title/H1 «calcular inclusión laboral» + cuota 1 % Ley 21.015 Chile 2026; no canibalizar `/sala-cuna`, `/costo-empresa`, `/sueldo-minimo`, `/asignacion-familiar`, `/fuero-maternal`, `/postnatal-parental` ni `/empresa`. Umbral 100, redondeo entero inferior (DS N°64 art. 6 c), gap y donación 24 IMM. No crear `/ley-21015`, `/cuota-inclusion`, `/donacion-inclusion` ni `/1-poriento` |
 | Calcular postnatal parental | postnatal parental / permiso postnatal parental / art. 197 bis / Ley 20.545 | `/postnatal-parental` | Title/H1 «calcular postnatal parental» + art. 197 bis Chile 2026; no canibalizar `/licencia-medica`, `/sala-cuna`, `/sueldo`, `/sueldo-proporcional` ni `/asignacion-familiar`. Completa 12 sem vs parcial 18 sem (subsidio D.F.L. 44 art. 8 + empleador ≥ 50 % estipendios fijos). No es prenatal/postnatal 6+12 ni SIL genérico. El calendario del prenatal vive en `/permiso-prenatal`. No crear `/postnatal`, `/permiso-parental` ni `/subsidio-maternal` |
 | Calcular permiso prenatal | permiso prenatal / descanso prenatal / prenatal maternidad / art. 195 6 semanas | `/permiso-prenatal` | Title/H1 «calcular permiso prenatal» + art. 195 Chile 2026; no canibalizar `/postnatal-parental`, `/fuero-maternal`, `/licencia-medica`, `/sala-cuna`, `/hora-lactancia`, `/permiso-paternidad`, `/sueldo` ni `/sueldo-proporcional`. Calendario 6 semanas (42 días corridos) + término postnatal legal 12 semanas y subsidio SIL (D.F.L. 44 art. 8). No es parental ni fuero art. 201. `/descanso-prenatal` redirige. No crear `/prenatal`, `/pre-natal` ni `/art-195-prenatal` |
 | Calcular fuero maternal | fuero maternal / fuero embarazo / art. 201 / protección despido embarazo | `/fuero-maternal` | Title/H1 «Calculadora fuero maternal Chile»; no canibalizar `/permiso-prenatal`, `/postnatal-parental`, `/sala-cuna`, `/hora-lactancia`, `/permiso-paternidad` ni `/licencia-medica`. Art. 201: desde el embarazo hasta un año después del postnatal, excluido el parental (art. 197 bis). No es permiso pagado ni SIL. No crear `/fuero`, `/fuero-laboral`, `/proteccion-maternal`, `/art-201` ni `/despido-embarazo` |
@@ -174,6 +175,16 @@ La asignación familiar (D.F.L. 150) sigue en `/asignacion-familiar`. El costo
 de cotizaciones del empleador sigue en `/costo-empresa`. Colación y movilización
 del artículo 41 siguen en `/colacion-movilizacion`. El aguinaldo sigue en
 `/aguinaldo`.
+
+No publicar `/ley-21015`, `/cuota-inclusion`, `/donacion-inclusion` ni `/1-poriento`.
+La cuota del 1 % de inclusión laboral (Ley 21.015 / arts. 157 bis y 157 ter:
+umbral 100, redondeo al entero inferior del DS N°64 art. 6 c, gap y piso de
+24 IMM de donación subsidiaria) vive en `/inclusion-laboral`. No canibalizar
+`/sala-cuna`, `/costo-empresa`, `/sueldo-minimo`, `/asignacion-familiar`,
+`/fuero-maternal`, `/postnatal-parental` ni `/empresa`. La sala cuna (art. 203)
+sigue en `/sala-cuna`. El costo de cotizaciones del empleador sigue en
+`/costo-empresa`. El piso del IMM sigue en `/sueldo-minimo`. La cuenta de
+empresa sigue en `/empresa`.
 
 No publicar `/postnatal`, `/permiso-parental` ni `/subsidio-maternal`. El permiso
 postnatal parental (art. 197 bis / Ley 20.545: 12 semanas completas o 18 a media
