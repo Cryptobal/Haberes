@@ -181,6 +181,91 @@ export const TELETRABAJO_GOLD = Object.freeze({
 });
 
 /**
+ * Contrato a plazo fijo (art. 159 N°4 CT). Tope general 12 meses; 24 si
+ * gerente o título profesional/técnico de institución de educación superior
+ * del Estado o reconocida por éste. Una renovación; la segunda o la
+ * continuidad con conocimiento del empleador transforman en indefinido.
+ * Comparación del tope con tolerancia de 1 día calendario.
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=207436
+ * @see https://www.dt.gob.cl/legislacion/1624/w3-article-102862.html
+ * @see https://www.dt.gob.cl/portal/1628/w3-article-60792.html
+ */
+export const CONTRATO_PLAZO_FIJO_TOPE_GENERAL_MESES = 12;
+export const CONTRATO_PLAZO_FIJO_TOPE_TITULO_MESES = 24;
+export const CONTRATO_PLAZO_FIJO_TOLERANCIA_DIAS = 1;
+export const CONTRATO_PLAZO_FIJO_GOLD = Object.freeze({
+  doceMeses: Object.freeze({
+    fechaInicio: "2026-01-01",
+    plazoMeses: 12,
+    esTituloProfesionalOTecnico: false,
+    esRenovacion: false,
+    continuaTrasVencimiento: false,
+    fechaReferencia: "2026-01-01",
+    topeLegalMeses: 12,
+    fechaTermino: "2027-01-01",
+    duracionMeses: 12,
+    cumpleTope: true,
+    seTransformaEnIndefinido: false,
+    motivoIndefinido: "ninguno",
+    diasRestantes: 365,
+  }),
+  dieciochoSinTitulo: Object.freeze({
+    fechaInicio: "2026-01-01",
+    plazoMeses: 18,
+    esTituloProfesionalOTecnico: false,
+    esRenovacion: false,
+    continuaTrasVencimiento: false,
+    fechaReferencia: "2026-01-01",
+    topeLegalMeses: 12,
+    fechaTermino: "2027-07-01",
+    duracionMeses: 18,
+    cumpleTope: false,
+    seTransformaEnIndefinido: false,
+    motivoIndefinido: "ninguno",
+  }),
+  dieciochoConTitulo: Object.freeze({
+    fechaInicio: "2026-01-01",
+    plazoMeses: 18,
+    esTituloProfesionalOTecnico: true,
+    esRenovacion: false,
+    continuaTrasVencimiento: false,
+    fechaReferencia: "2026-01-01",
+    topeLegalMeses: 24,
+    fechaTermino: "2027-07-01",
+    duracionMeses: 18,
+    cumpleTope: true,
+    seTransformaEnIndefinido: false,
+    motivoIndefinido: "ninguno",
+  }),
+  renovacionVencida: Object.freeze({
+    fechaInicio: "2025-01-01",
+    plazoMeses: 12,
+    esTituloProfesionalOTecnico: false,
+    esRenovacion: true,
+    continuaTrasVencimiento: false,
+    fechaReferencia: "2026-02-01",
+    topeLegalMeses: 12,
+    fechaTermino: "2026-01-01",
+    seTransformaEnIndefinido: true,
+    motivoIndefinido: "renovacion_agotada",
+    diasRestantes: 0,
+  }),
+  continuidad: Object.freeze({
+    fechaInicio: "2026-01-01",
+    plazoMeses: 18,
+    esTituloProfesionalOTecnico: true,
+    esRenovacion: true,
+    continuaTrasVencimiento: true,
+    fechaReferencia: "2026-01-01",
+    topeLegalMeses: 24,
+    fechaTermino: "2027-07-01",
+    cumpleTope: true,
+    seTransformaEnIndefinido: true,
+    motivoIndefinido: "renovacion_agotada_y_continuidad",
+  }),
+});
+
+/**
  * Permiso postnatal parental (art. 197 bis CT / Ley 20.545).
  * Completa: 12 semanas (84 días). Parcial: 18 semanas (126 días).
  * La madre goza al menos las primeras 6 semanas; el padre, si se cede,
