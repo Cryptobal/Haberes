@@ -67,6 +67,10 @@ import {
   TELETRABAJO_GOLD,
   TELETRABAJO_PERIODO_H,
   TELETRABAJO_TOLERANCIA_H,
+  CONTRATO_PLAZO_FIJO_GOLD,
+  CONTRATO_PLAZO_FIJO_TOLERANCIA_DIAS,
+  CONTRATO_PLAZO_FIJO_TOPE_GENERAL_MESES,
+  CONTRATO_PLAZO_FIJO_TOPE_TITULO_MESES,
   UMBRAL_INCLUSION_LABORAL,
   RECARGO_168_DEFAULT,
   RECARGO_168_PORCENTAJES,
@@ -168,6 +172,7 @@ import { calcularDescansoCompensatorio } from "../js/descanso-compensatorio.js";
 import { calcularInclusionLaboral } from "../js/inclusion-laboral.js";
 import { calcularJornadaParcial } from "../js/jornada-parcial.js";
 import { calcularTeletrabajo } from "../js/teletrabajo.js";
+import { calcularContratoPlazoFijo } from "../js/contrato-plazo-fijo.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 let failed = 0;
@@ -3272,6 +3277,143 @@ console.log("\nTeletrabajo y derecho a desconexión Ley 21.220 (gold 2026)");
   );
 }
 
+console.log("\nContrato a plazo fijo art. 159 N°4 (gold 2026)");
+{
+  // Fuentes: art. 159 N°4 CT (BCN 207436); DT ORD. 65/1 (w3-article-102862);
+  // DT consulta renovación (w3-article-60792). Tope 12/24 meses; 1 día de tolerancia.
+  assert(
+    "constantes contrato plazo fijo: tope 12/24, tolerancia 1 día",
+    CONTRATO_PLAZO_FIJO_TOPE_GENERAL_MESES === 12 &&
+      CONTRATO_PLAZO_FIJO_TOPE_TITULO_MESES === 24 &&
+      CONTRATO_PLAZO_FIJO_TOLERANCIA_DIAS === 1 &&
+      CONTRATO_PLAZO_FIJO_GOLD.doceMeses.cumpleTope === true &&
+      CONTRATO_PLAZO_FIJO_GOLD.dieciochoSinTitulo.cumpleTope === false &&
+      CONTRATO_PLAZO_FIJO_GOLD.dieciochoConTitulo.cumpleTope === true &&
+      CONTRATO_PLAZO_FIJO_GOLD.continuidad.seTransformaEnIndefinido === true,
+  );
+  const g12 = calcularContratoPlazoFijo(
+    (({ fechaTermino, ...rest }) => rest)(CONTRATO_PLAZO_FIJO_GOLD.doceMeses),
+  );
+  assert(
+    "gold 2026-01-01 + 12 meses sin título → tope 12, término 2027-01-01, cumple, no indefinido",
+    g12.ok &&
+      g12.topeLegalMeses === 12 &&
+      g12.fechaTermino === "2027-01-01" &&
+      g12.duracionMeses === 12 &&
+      g12.duracionDias === 365 &&
+      g12.cumpleTope === true &&
+      g12.seTransformaEnIndefinido === false &&
+      g12.motivoIndefinido === "ninguno" &&
+      g12.fuentePlazo === "plazoMeses" &&
+      g12.diasRestantes === 365,
+    JSON.stringify(g12),
+  );
+  const g18 = calcularContratoPlazoFijo(
+    (({ fechaTermino, ...rest }) => rest)(CONTRATO_PLAZO_FIJO_GOLD.dieciochoSinTitulo),
+  );
+  assert(
+    "gold 2026-01-01 + 18 meses sin título → tope 12, término 2027-07-01, no cumple",
+    g18.ok &&
+      g18.topeLegalMeses === 12 &&
+      g18.fechaTermino === "2027-07-01" &&
+      g18.duracionMeses === 18 &&
+      g18.cumpleTope === false &&
+      g18.seTransformaEnIndefinido === false,
+    JSON.stringify(g18),
+  );
+  const gTit = calcularContratoPlazoFijo(
+    (({ fechaTermino, ...rest }) => rest)(CONTRATO_PLAZO_FIJO_GOLD.dieciochoConTitulo),
+  );
+  assert(
+    "gold 2026-01-01 + 18 meses con título → tope 24, cumple",
+    gTit.ok &&
+      gTit.topeLegalMeses === 24 &&
+      gTit.fechaTermino === "2027-07-01" &&
+      gTit.cumpleTope === true &&
+      gTit.seTransformaEnIndefinido === false &&
+      gTit.motivoIndefinido === "ninguno",
+    JSON.stringify(gTit),
+  );
+  const gRen = calcularContratoPlazoFijo(
+    (({ fechaTermino, ...rest }) => rest)(CONTRATO_PLAZO_FIJO_GOLD.renovacionVencida),
+  );
+  assert(
+    "gold renovación ya vencida → seTransformaEnIndefinido renovacion_agotada",
+    gRen.ok &&
+      gRen.seTransformaEnIndefinido === true &&
+      gRen.motivoIndefinido === "renovacion_agotada" &&
+      gRen.vencido === true &&
+      gRen.diasRestantes === 0 &&
+      gRen.fechaTermino === "2026-01-01",
+    JSON.stringify(gRen),
+  );
+  const gCont = calcularContratoPlazoFijo(
+    (({ fechaTermino, ...rest }) => rest)(CONTRATO_PLAZO_FIJO_GOLD.continuidad),
+  );
+  assert(
+    "gold 18 meses con título + renovación + continuidad → indefinido combinado",
+    gCont.ok &&
+      gCont.cumpleTope === true &&
+      gCont.seTransformaEnIndefinido === true &&
+      gCont.motivoIndefinido === "renovacion_agotada_y_continuidad" &&
+      gCont.topeLegalMeses === 24,
+    JSON.stringify(gCont),
+  );
+  const soloCont = calcularContratoPlazoFijo({
+    fechaInicio: "2026-01-01",
+    plazoMeses: 12,
+    continuaTrasVencimiento: true,
+    fechaReferencia: "2026-01-01",
+  });
+  assert(
+    "continuidad sola (sin renovación) → continuidad_tras_vencimiento",
+    soloCont.seTransformaEnIndefinido === true &&
+      soloCont.motivoIndefinido === "continuidad_tras_vencimiento" &&
+      soloCont.cumpleTope === true,
+    JSON.stringify(soloCont),
+  );
+  const expl = calcularContratoPlazoFijo({
+    fechaInicio: "2026-01-01",
+    plazoMeses: 12,
+    fechaTermino: "2027-07-01",
+    fechaReferencia: "2026-01-01",
+  });
+  assert(
+    "fechaTermino explícita tiene precedencia sobre plazoMeses (18 meses > 12)",
+    expl.fuentePlazo === "fechaTermino" &&
+      expl.fechaTermino === "2027-07-01" &&
+      expl.duracionMeses === 18 &&
+      expl.cumpleTope === false,
+    JSON.stringify(expl),
+  );
+  const ger = calcularContratoPlazoFijo({
+    fechaInicio: "2026-01-01",
+    plazoMeses: 18,
+    esGerente: true,
+    fechaReferencia: "2026-01-01",
+  });
+  assert(
+    "esGerente activa tope 24 igual que el título",
+    ger.topeLegalMeses === 24 && ger.cumpleTope === true,
+    JSON.stringify(ger),
+  );
+  const vacio = calcularContratoPlazoFijo({ plazoMeses: 12 });
+  assert(
+    "sin fechaInicio → ok false",
+    vacio.ok === false && vacio.motivo === "fecha_inicio",
+    JSON.stringify(vacio),
+  );
+  const pfApp = readFileSync(join(root, "js/app-contrato-plazo-fijo.js"), "utf8");
+  assert(
+    "app-contrato-plazo-fijo usa calcularContratoPlazoFijo",
+    /import\s*\{[^}]*calcularContratoPlazoFijo[^}]*\}\s*from\s*["']\.\/contrato-plazo-fijo\.js["']/.test(pfApp) &&
+      /calcularContratoPlazoFijo\s*\(/.test(pfApp) &&
+      !/\balert\s*\(/.test(pfApp) &&
+      !/\bconfirm\s*\(/.test(pfApp) &&
+      !/\bprompt\s*\(/.test(pfApp),
+  );
+}
+
 {
   const millon = calcularAvisoPrevio(
     { causal: "161-necesidades", remuneracion: 1_000_000, avisoPrevio: false },
@@ -3993,6 +4135,7 @@ const required = [
   "inclusion-laboral.html",
   "jornada-parcial.html",
   "teletrabajo.html",
+  "contrato-plazo-fijo.html",
   "finiquito.html",
   "js/app-horas-extras.js",
   "js/app-vacaciones-proporcionales.js",
@@ -4040,6 +4183,7 @@ const required = [
   "js/app-inclusion-laboral.js",
   "js/app-jornada-parcial.js",
   "js/app-teletrabajo.js",
+  "js/app-contrato-plazo-fijo.js",
   "empresa.html",
   "privacidad.html",
   "terminos.html",
@@ -4056,6 +4200,7 @@ const required = [
   "js/inclusion-laboral.js",
   "js/jornada-parcial.js",
   "js/teletrabajo.js",
+  "js/contrato-plazo-fijo.js",
   "js/causales.js",
   "js/finiquito.js",
   "js/indicadores.js",
@@ -4221,6 +4366,7 @@ const htmlFiles = [
   "inclusion-laboral.html",
   "jornada-parcial.html",
   "teletrabajo.html",
+  "contrato-plazo-fijo.html",
   "finiquito.html",
   "empresa.html",
   "privacidad.html",
@@ -4343,6 +4489,7 @@ const appEntries = [
   "js/app-inclusion-laboral.js",
   "js/app-jornada-parcial.js",
   "js/app-teletrabajo.js",
+  "js/app-contrato-plazo-fijo.js",
   "js/app-finiquito.js",
   "js/app-empresa.js",
   "js/app-admin.js",
@@ -4375,7 +4522,7 @@ assert("robots Allow /", /Allow:\s*\//.test(robots));
 assert("robots Disallow /admin", /Disallow:\s*\/admin/.test(robots));
 assert("robots Disallow /api", /Disallow:\s*\/api/.test(robots));
 assert("robots Disallow /docs", /Disallow:\s*\/docs/.test(robots));
-assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/trabajo-pesado/.test(robots) && !/Disallow:\s*\/nulidad-despido/.test(robots) && !/Disallow:\s*\/tutela-laboral/.test(robots) && !/Disallow:\s*\/despido-injustificado/.test(robots) && !/Disallow:\s*\/autodespido/.test(robots) && !/Disallow:\s*\/obra-faena/.test(robots) && !/Disallow:\s*\/prescripcion-laboral/.test(robots) && !/Disallow:\s*\/descanso-compensatorio/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/feriado-anual/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/licencia-medica/.test(robots) && !/Disallow:\s*\/boleta-honorarios/.test(robots) && !/Disallow:\s*\/retencion-judicial/.test(robots) && !/Disallow:\s*\/apv/.test(robots) && !/Disallow:\s*\/sala-cuna/.test(robots) && !/Disallow:\s*\/postnatal-parental/.test(robots) && !/Disallow:\s*\/permiso-prenatal/.test(robots) && !/Disallow:\s*\/fuero-maternal/.test(robots) && !/Disallow:\s*\/permiso-paternidad/.test(robots) && !/Disallow:\s*\/permiso-matrimonio/.test(robots) && !/Disallow:\s*\/permiso-fallecimiento/.test(robots) && !/Disallow:\s*\/interes-mora/.test(robots) && !/Disallow:\s*\/hora-lactancia/.test(robots) && !/Disallow:\s*\/jornada-40-horas/.test(robots) && !/Disallow:\s*\/jornada-parcial/.test(robots) && !/Disallow:\s*\/teletrabajo/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots) && !/Disallow:\s*\/inclusion-laboral/.test(robots));
+assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/trabajo-pesado/.test(robots) && !/Disallow:\s*\/nulidad-despido/.test(robots) && !/Disallow:\s*\/tutela-laboral/.test(robots) && !/Disallow:\s*\/despido-injustificado/.test(robots) && !/Disallow:\s*\/autodespido/.test(robots) && !/Disallow:\s*\/obra-faena/.test(robots) && !/Disallow:\s*\/prescripcion-laboral/.test(robots) && !/Disallow:\s*\/descanso-compensatorio/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/feriado-anual/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/licencia-medica/.test(robots) && !/Disallow:\s*\/boleta-honorarios/.test(robots) && !/Disallow:\s*\/retencion-judicial/.test(robots) && !/Disallow:\s*\/apv/.test(robots) && !/Disallow:\s*\/sala-cuna/.test(robots) && !/Disallow:\s*\/postnatal-parental/.test(robots) && !/Disallow:\s*\/permiso-prenatal/.test(robots) && !/Disallow:\s*\/fuero-maternal/.test(robots) && !/Disallow:\s*\/permiso-paternidad/.test(robots) && !/Disallow:\s*\/permiso-matrimonio/.test(robots) && !/Disallow:\s*\/permiso-fallecimiento/.test(robots) && !/Disallow:\s*\/interes-mora/.test(robots) && !/Disallow:\s*\/hora-lactancia/.test(robots) && !/Disallow:\s*\/jornada-40-horas/.test(robots) && !/Disallow:\s*\/jornada-parcial/.test(robots) && !/Disallow:\s*\/teletrabajo/.test(robots) && !/Disallow:\s*\/contrato-plazo-fijo/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots) && !/Disallow:\s*\/inclusion-laboral/.test(robots));
 assert("robots Sitemap", /Sitemap:\s*https:\/\/www\.haberes\.cl\/sitemap\.xml/.test(robots));
 
 const { seoPaths, GUIDE_SLUGS, GUIDES, CAUSAL_PAGES, BASE_PATHS, lastmodForPath } = await import("../content/registry.js");
@@ -4438,7 +4585,8 @@ assert(
     BASE_PATHS.includes("/descanso-compensatorio") &&
     BASE_PATHS.includes("/inclusion-laboral") &&
     BASE_PATHS.includes("/jornada-parcial") &&
-    BASE_PATHS.includes("/teletrabajo"),
+    BASE_PATHS.includes("/teletrabajo") &&
+    BASE_PATHS.includes("/contrato-plazo-fijo"),
   `${locs.length} vs ${expectedFromRegistry.length}`,
 );
 assert(
@@ -4793,7 +4941,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 93,
+      seoPaths().length === 94,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -4805,7 +4953,7 @@ try {
   const docsSeo = await hitLocal("/docs/seo-map.md");
   assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
   assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
-  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/obra-faena/", "/prescripcion-laboral/", "/descanso-compensatorio/", "/inclusion-laboral/", "/jornada-parcial/", "/teletrabajo/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/obra-faena/", "/prescripcion-laboral/", "/descanso-compensatorio/", "/inclusion-laboral/", "/jornada-parcial/", "/teletrabajo/", "/contrato-plazo-fijo/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
   }
@@ -4859,6 +5007,7 @@ try {
     "/inclusion-laboral",
     "/jornada-parcial",
     "/teletrabajo",
+    "/contrato-plazo-fijo",
     "/gratificacion",
     "/impuesto-unico",
     "/cotizaciones-previsionales",
@@ -8672,6 +8821,7 @@ assert(
     ["inclusion-laboral.html", "/inclusion-laboral"],
     ["jornada-parcial.html", "/jornada-parcial"],
     ["teletrabajo.html", "/teletrabajo"],
+    ["contrato-plazo-fijo.html", "/contrato-plazo-fijo"],
     ["finiquito.html", "/finiquito"],
     ["empresa.html", "/empresa"],
     ["como.html", "/como"],
@@ -9901,6 +10051,142 @@ assert(
         /href="\/teletrabajo"/.test(sueldoHtmlTt) &&
         /href="\/teletrabajo"/.test(ceHtmlTt) &&
         /href="\/teletrabajo"/.test(readFileSync(join(root, "empresa.html"), "utf8")),
+    );
+  }
+  {
+    const pfHtml = readFileSync(join(root, "contrato-plazo-fijo.html"), "utf8");
+    const pfTitle = (pfHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const pfH1 = (pfHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const pfDesc = (pfHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "";
+    const finiHtmlPf = readFileSync(join(root, "finiquito.html"), "utf8");
+    const causalHtmlPf = readFileSync(join(root, "finiquito/art-159-vencimiento-del-plazo.html"), "utf8");
+    const ofHtmlPf = readFileSync(join(root, "obra-faena.html"), "utf8");
+    const iasHtmlPf = readFileSync(join(root, "indemnizacion-anos-servicio.html"), "utf8");
+    const avisoHtmlPf = readFileSync(join(root, "indemnizacion-aviso-previo.html"), "utf8");
+    const plHtmlPf = readFileSync(join(root, "prescripcion-laboral.html"), "utf8");
+    const goldPf12 = calcularContratoPlazoFijo(
+      (({ fechaTermino, ...rest }) => rest)(CONTRATO_PLAZO_FIJO_GOLD.doceMeses),
+    );
+    const goldPf18 = calcularContratoPlazoFijo(
+      (({ fechaTermino, ...rest }) => rest)(CONTRATO_PLAZO_FIJO_GOLD.dieciochoSinTitulo),
+    );
+    const goldPfTit = calcularContratoPlazoFijo(
+      (({ fechaTermino, ...rest }) => rest)(CONTRATO_PLAZO_FIJO_GOLD.dieciochoConTitulo),
+    );
+    const goldPfCont = calcularContratoPlazoFijo(
+      (({ fechaTermino, ...rest }) => rest)(CONTRATO_PLAZO_FIJO_GOLD.continuidad),
+    );
+    assert(
+      "SEO contrato-plazo-fijo title único y corto",
+      /calcular contrato a plazo fijo/i.test(pfTitle) &&
+        pfTitle.length <= 65 &&
+        !/calculadora de finiquito/i.test(pfTitle) &&
+        !/sueldo l[ií]quido/i.test(pfTitle),
+      pfTitle,
+    );
+    assert(
+      "SEO contrato-plazo-fijo H1 único art. 159 N°4",
+      pfH1 === "Calcular contrato a plazo fijo Chile 2026" &&
+        /159/.test(pfHtml) &&
+        /plazo fijo/.test(pfHtml) &&
+        /indefinido/.test(pfHtml),
+      pfH1,
+    );
+    assert(
+      "SEO contrato-plazo-fijo description propia",
+      pfDesc.length >= 110 &&
+        pfDesc.length <= 160 &&
+        /plazo fijo/.test(pfDesc) &&
+        /indefinido/.test(pfDesc) &&
+        /159/.test(pfDesc),
+      `${pfDesc.length}:${pfDesc}`,
+    );
+    assert(
+      "SEO contrato-plazo-fijo cita art. 159 N°4, BCN y DT",
+      /bcn\.cl\/leychile\/navegar\?idNorma=207436/.test(pfHtml) &&
+        /dt\.gob\.cl\/legislacion\/1624\/w3-article-102862/.test(pfHtml) &&
+        /dt\.gob\.cl\/portal\/1628\/w3-article-60792/.test(pfHtml) &&
+        /159/.test(pfHtml),
+    );
+    assert(
+      "SEO contrato-plazo-fijo gold 2026 12/18 meses en copy",
+      goldPf12.topeLegalMeses === 12 &&
+        goldPf12.fechaTermino === "2027-01-01" &&
+        goldPf12.cumpleTope === true &&
+        goldPf18.cumpleTope === false &&
+        goldPfTit.topeLegalMeses === 24 &&
+        goldPfTit.cumpleTope === true &&
+        goldPfCont.seTransformaEnIndefinido === true &&
+        /12 meses/.test(pfHtml) &&
+        /18 meses/.test(pfHtml) &&
+        /24 meses/.test(pfHtml) &&
+        /1 de enero de 2027/.test(pfHtml) &&
+        /1 de julio de 2027/.test(pfHtml) &&
+        /no cumple/.test(pfHtml) &&
+        /pasa a indefinido/.test(pfHtml),
+    );
+    assert("SEO contrato-plazo-fijo FAQPage", /"@type": "FAQPage"/.test(pfHtml));
+    assert(
+      "SEO contrato-plazo-fijo no canibaliza hermanas vetadas",
+      /href="\/finiquito"/.test(pfHtml) &&
+        /href="\/finiquito\/art-159-vencimiento-del-plazo"/.test(pfHtml) &&
+        /href="\/obra-faena"/.test(pfHtml) &&
+        /href="\/indemnizacion-anos-servicio"/.test(pfHtml) &&
+        /href="\/indemnizacion-aviso-previo"/.test(pfHtml) &&
+        /href="\/prescripcion-laboral"/.test(pfHtml) &&
+        /href="\/despido-injustificado"/.test(pfHtml) &&
+        /href="\/autodespido"/.test(pfHtml) &&
+        /href="\/sueldo"/.test(pfHtml) &&
+        /href="\/empresa"/.test(pfHtml) &&
+        /estimaci[oó]n educativa/.test(pfHtml) &&
+        /no constituye asesor[ií]a legal/i.test(pfHtml) &&
+        !existsSync(join(root, "plazo-fijo.html")) &&
+        !existsSync(join(root, "contrato-fijo.html")) &&
+        !existsSync(join(root, "paso-a-indefinido.html")) &&
+        !existsSync(join(root, "art-159-4.html")),
+    );
+    assert(
+      "home y nav enlazan /contrato-plazo-fijo",
+      /href="\/contrato-plazo-fijo"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/contrato-plazo-fijo" data-nav>Contrato a plazo fijo<\/a>/.test(
+          readFileSync(join(root, "index.html"), "utf8"),
+        ) &&
+        /href="\/contrato-plazo-fijo" data-nav>Contrato a plazo fijo<\/a>/.test(pfHtml) &&
+        /href="\/contrato-plazo-fijo" data-nav>Contrato a plazo fijo<\/a>/.test(
+          readFileSync(join(root, "js/ui.js"), "utf8"),
+        ),
+    );
+    assert(
+      "sitemap incluye /contrato-plazo-fijo",
+      locs.includes("https://www.haberes.cl/contrato-plazo-fijo") &&
+        lastmodForPath("/contrato-plazo-fijo") === "2026-09-17",
+    );
+    assert(
+      "seo-map documenta /contrato-plazo-fijo y no-canibalizar hermanas",
+      /\/contrato-plazo-fijo/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no canibalizar `\/finiquito`, `\/finiquito\/art-159-vencimiento-del-plazo`/.test(
+          readFileSync(join(root, "docs/seo-map.md"), "utf8"),
+        ) &&
+        /no crear `\/plazo-fijo`/i.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")),
+    );
+    assert(
+      "hub /guias enlaza /contrato-plazo-fijo en el cluster de finiquito",
+      /href="\/contrato-plazo-fijo"/.test(readFileSync(join(root, "guias.html"), "utf8")) &&
+        /<h2>Finiquito<\/h2>[\s\S]*href="\/contrato-plazo-fijo"/.test(
+          readFileSync(join(root, "guias.html"), "utf8"),
+        ),
+    );
+    assert(
+      "hermanas enlazan /contrato-plazo-fijo",
+      /href="\/contrato-plazo-fijo"/.test(finiHtmlPf) &&
+        /href="\/contrato-plazo-fijo"/.test(causalHtmlPf) &&
+        /href="\/contrato-plazo-fijo"/.test(ofHtmlPf) &&
+        /href="\/contrato-plazo-fijo"/.test(iasHtmlPf) &&
+        /href="\/contrato-plazo-fijo"/.test(avisoHtmlPf) &&
+        /href="\/contrato-plazo-fijo"/.test(plHtmlPf) &&
+        /href="\/contrato-plazo-fijo"/.test(readFileSync(join(root, "despido-injustificado.html"), "utf8")) &&
+        /href="\/contrato-plazo-fijo"/.test(readFileSync(join(root, "autodespido.html"), "utf8")) &&
+        /href="\/contrato-plazo-fijo"/.test(readFileSync(join(root, "empresa.html"), "utf8")),
     );
   }
   {
@@ -14591,6 +14877,7 @@ assert(
       "inclusion-laboral.html",
       "jornada-parcial.html",
       "teletrabajo.html",
+      "contrato-plazo-fijo.html",
       "finiquito.html",
       "empresa.html",
       "precios.html",
@@ -14768,7 +15055,7 @@ assert(
     return acc;
   }
   const pages = listHtml(root);
-  assert("95 páginas HTML", pages.length === 95, String(pages.length));
+  assert("96 páginas HTML", pages.length === 96, String(pages.length));
   for (const file of pages) {
     const html = readFileSync(file, "utf8");
     const rel = file.slice(root.length + 1);
