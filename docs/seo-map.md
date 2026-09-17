@@ -15,6 +15,7 @@ Actualizar este archivo antes de crear URLs nuevas para evitar canibalización.
 | Calcular horas extras | calcular horas extras / cálculo horas extras (8.100/17) | `/horas-extras` | Title/H1 «calcular horas extras»; no canibalizar `/sueldo` ni `/guias/horas-extras` |
 | Calcular jornada 40 horas | jornada 40 horas / ley 21.561 / tope 42 horas 2026 | `/jornada-40-horas` | Title/H1 «Calculadora jornada 40 horas Chile»; no canibalizar `/horas-extras`, `/sueldo`, `/sueldo-proporcional`, `/sueldo-minimo`, `/recargo-domingo-comercio`, `/descanso-compensatorio`, `/feriado-irrenunciable` ni `/finiquito-casa-particular`. Tope gradual art. 22 (Ley 21.561), distribución a falta de acuerdo (Ley 21.755 / ORD. N°253/21) y valor hora DT. No es el monto de extras. No crear `/40-horas`, `/ley-21561` ni `/reduccion-jornada` |
 | Calcular jornada parcial | jornada parcial / contrato parcial / tope 2/3 art. 40 bis | `/jornada-parcial` | Title/H1 «calcular jornada parcial» + tope 2/3 Chile 2026; no canibalizar `/jornada-40-horas`, `/sueldo`, `/sueldo-proporcional`, `/vacaciones-proporcionales`, `/horas-extras`, `/semana-corrida`, `/descuento-atrasos`, `/costo-empresa` ni `/empresa`. Tope 2/3 de la ordinaria (art. 40 bis), sueldo proporcional a horas y feriado en días (15 × horas/ordinaria, art. 67). No es líquido, extras, IAS ni cotizaciones. No crear `/part-time`, `/medio-tiempo`, `/jornada-media` ni `/contrato-parcial` |
+| Calcular teletrabajo | teletrabajo / derecho a desconexión / trabajo a distancia / Ley 21.220 | `/teletrabajo` | Title/H1 «calcular teletrabajo» + derecho a desconexión Chile 2026; no canibalizar `/jornada-40-horas`, `/jornada-parcial`, `/horas-extras`, `/descanso-compensatorio`, `/recargo-domingo-comercio`, `/descuento-atrasos`, `/sueldo`, `/costo-empresa` ni `/empresa`. 12 h continuas en 24 h (art. 152 quáter J); rem/30 solo referencia de días bajo modalidad. No es líquido, extras ni finiquito. No crear `/home-office`, `/trabajo-remoto`, `/derecho-desconexion` ni `/ley-21220` |
 | Calcular vacaciones proporcionales | vacaciones proporcionales (1.300/16), feriado proporcional (590/13), calcular feriado proporcional (320/14) | `/vacaciones-proporcionales` | Title/H1 «calcular vacaciones proporcionales»; no canibalizar `/finiquito` ni `/guias/vacaciones-proporcionales` |
 | Calcular gratificación | gratificación legal (4.400/17) — intención calcular | `/gratificacion` | Title/H1 «calcular gratificación»; no canibalizar `/sueldo` ni `/guias/gratificacion-legal` |
 | Calcular impuesto único | calcular impuesto unico (480/mes), tabla impuesto unico (2.900/mes) | `/impuesto-unico` | Title/H1 «calcular impuesto único»; no canibalizar `/sueldo` ni `/guias/impuesto-unico` |
@@ -164,6 +165,14 @@ en días (15 × horas/ordinaria, art. 67) viven en `/jornada-parcial`. No caniba
 `/horas-extras`, `/semana-corrida`, `/descuento-atrasos`, `/costo-empresa` ni `/empresa`.
 El tope gradual 44/42/40 h sigue en `/jornada-40-horas`. El bruto de un mes incompleto
 sigue en `/sueldo-proporcional`. El feriado en dinero sigue en `/vacaciones-proporcionales`.
+
+No publicar `/home-office`, `/trabajo-remoto`, `/derecho-desconexion` ni `/ley-21220`. El
+derecho a desconexión de al menos 12 horas continuas (Ley 21.220 / art. 152 quáter J) y
+la referencia de días bajo modalidad (rem/30) viven en `/teletrabajo`. No canibalizar
+`/jornada-40-horas`, `/jornada-parcial`, `/horas-extras`, `/descanso-compensatorio`,
+`/recargo-domingo-comercio`, `/descuento-atrasos`, `/sueldo`, `/costo-empresa` ni `/empresa`.
+El tope gradual 44/42/40 h sigue en `/jornada-40-horas`. El tope 2/3 de la parcial sigue
+en `/jornada-parcial`. El líquido sigue en `/sueldo`. Las extras siguen en `/horas-extras`.
 
 No publicar `/pago-feriado`, `/trabajo-feriado`, `/feriados` ni `/irrenunciable`.
 El pago educativo de un feriado irrenunciable (Ley 19.973 + recargo 50 % art. 32)

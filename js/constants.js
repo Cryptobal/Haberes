@@ -145,6 +145,42 @@ export const JORNADA_PARCIAL_GOLD = Object.freeze({
 });
 
 /**
+ * Teletrabajo / trabajo a distancia (Ley 21.220 / arts. 152 quáter A y ss. CT).
+ * Derecho a desconexión (art. 152 quáter J): al menos 12 horas continuas
+ * en un período de 24 horas, para trabajadores a distancia que distribuyen
+ * libremente su horario o teletrabajadores excluidos de la limitación de
+ * jornada. Haberes estima horasDesconexion = 24 − jornada diaria de
+ * conectividad/disponibilidad (intervalo inicio–fin, con cruce de medianoche,
+ * o horasJornadaDiaria 0–24). Cumple si horasDesconexion ≥ 12 − 0,01 h.
+ * La remuneración × días / 30 es solo referencia de días bajo modalidad:
+ * no es líquido, cotizaciones ni finiquito. No inventa un recargo legal.
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=1143741
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=207436
+ * @see https://www.dt.gob.cl/portal/1628/w3-article-118665.html
+ */
+export const TELETRABAJO_DESCONEXION_MIN_H = 12;
+export const TELETRABAJO_PERIODO_H = 24;
+export const TELETRABAJO_TOLERANCIA_H = 0.01;
+export const TELETRABAJO_GOLD = Object.freeze({
+  jornada0900: Object.freeze({
+    horaInicioJornada: "09:00",
+    horaFinJornada: "18:00",
+    cumpleDesconexion: true,
+  }),
+  jornada0800: Object.freeze({
+    horaInicioJornada: "08:00",
+    horaFinJornada: "22:00",
+    cumpleDesconexion: false,
+  }),
+  remDias: Object.freeze({
+    remuneracionMensual: 900_000,
+    diasTeletrabajoMes: 10,
+    valorDia: 30_000,
+    estimacionDiasModalidad: 300_000,
+  }),
+});
+
+/**
  * Permiso postnatal parental (art. 197 bis CT / Ley 20.545).
  * Completa: 12 semanas (84 días). Parcial: 18 semanas (126 días).
  * La madre goza al menos las primeras 6 semanas; el padre, si se cede,
