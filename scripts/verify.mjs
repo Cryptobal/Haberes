@@ -63,6 +63,10 @@ import {
   JORNADA_PARCIAL_FRACCION_TOPE,
   JORNADA_PARCIAL_GOLD,
   JORNADA_PARCIAL_TOLERANCIA_H,
+  TELETRABAJO_DESCONEXION_MIN_H,
+  TELETRABAJO_GOLD,
+  TELETRABAJO_PERIODO_H,
+  TELETRABAJO_TOLERANCIA_H,
   UMBRAL_INCLUSION_LABORAL,
   RECARGO_168_DEFAULT,
   RECARGO_168_PORCENTAJES,
@@ -163,6 +167,7 @@ import { calcularPrescripcionLaboral } from "../js/prescripcion-laboral.js";
 import { calcularDescansoCompensatorio } from "../js/descanso-compensatorio.js";
 import { calcularInclusionLaboral } from "../js/inclusion-laboral.js";
 import { calcularJornadaParcial } from "../js/jornada-parcial.js";
+import { calcularTeletrabajo } from "../js/teletrabajo.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 let failed = 0;
@@ -3172,6 +3177,101 @@ console.log("\nJornada parcial art. 40 bis (gold 2026)");
   );
 }
 
+console.log("\nTeletrabajo y derecho a desconexión Ley 21.220 (gold 2026)");
+{
+  // Fuentes: Ley 21.220 (BCN 1143741); arts. 152 quáter A y ss., 152 quáter J CT (207436);
+  // DT consulta desconexión (w3-article-118665). 12 h continuas / 24 h; tolerancia 0,01 h.
+  // valorDia = rem/30; estimación = valorDia × días. Modalidad informativa.
+  assert(
+    "constantes teletrabajo: 12 h, 24 h, tolerancia 0,01 h",
+    TELETRABAJO_DESCONEXION_MIN_H === 12 &&
+      TELETRABAJO_PERIODO_H === 24 &&
+      TELETRABAJO_TOLERANCIA_H === 0.01 &&
+      TELETRABAJO_GOLD.jornada0900.cumpleDesconexion === true &&
+      TELETRABAJO_GOLD.jornada0800.cumpleDesconexion === false &&
+      TELETRABAJO_GOLD.remDias.estimacionDiasModalidad === 300_000,
+  );
+  const g9 = calcularTeletrabajo(TELETRABAJO_GOLD.jornada0900);
+  assert(
+    "gold 09:00–18:00 → 9 h jornada, 15 h desconexión, cumple",
+    g9.horasJornadaDiaria === 9 &&
+      g9.horasDesconexion === 15 &&
+      g9.cumpleDesconexion === true &&
+      g9.fuenteJornada === "intervalo",
+    JSON.stringify(g9),
+  );
+  const g8 = calcularTeletrabajo(TELETRABAJO_GOLD.jornada0800);
+  assert(
+    "gold 08:00–22:00 → 14 h jornada, 10 h desconexión, no cumple",
+    g8.horasJornadaDiaria === 14 &&
+      g8.horasDesconexion === 10 &&
+      g8.cumpleDesconexion === false,
+    JSON.stringify(g8),
+  );
+  const gRem = calcularTeletrabajo(TELETRABAJO_GOLD.remDias);
+  assert(
+    "gold rem $900.000 × 10 días → valorDia 30.000, estimación 300.000",
+    gRem.valorDia === 30_000 &&
+      gRem.estimacionDiasModalidad === 300_000 &&
+      gRem.remuneracionMensual === 900_000 &&
+      gRem.diasTeletrabajoMes === 10,
+    JSON.stringify(gRem),
+  );
+  const porHoras = calcularTeletrabajo({ horasJornadaDiaria: 9 });
+  assert(
+    "horasJornadaDiaria 9 sin intervalo → 15 h desconexión, cumple",
+    porHoras.fuenteJornada === "horas" &&
+      porHoras.horasJornadaDiaria === 9 &&
+      porHoras.horasDesconexion === 15 &&
+      porHoras.cumpleDesconexion === true,
+    JSON.stringify(porHoras),
+  );
+  const medianoche = calcularTeletrabajo({
+    horaInicioJornada: "22:00",
+    horaFinJornada: "06:00",
+  });
+  assert(
+    "cruce de medianoche 22:00–06:00 → 8 h jornada, 16 h desconexión, cumple",
+    medianoche.horasJornadaDiaria === 8 &&
+      medianoche.horasDesconexion === 16 &&
+      medianoche.cumpleDesconexion === true,
+    JSON.stringify(medianoche),
+  );
+  const tope = calcularTeletrabajo({ horasJornadaDiaria: 12 });
+  assert(
+    "jornada 12 h → desconexión 12 h, cumple (igual al mínimo)",
+    tope.horasDesconexion === 12 && tope.cumpleDesconexion === true,
+    JSON.stringify(tope),
+  );
+  const bajo = calcularTeletrabajo({ horasJornadaDiaria: 12.02 });
+  assert(
+    "jornada 12,02 h → desconexión 11,98 h, no cumple (fuera de tolerancia 0,01)",
+    Math.abs(bajo.horasDesconexion - 11.98) < 1e-10 && bajo.cumpleDesconexion === false,
+    JSON.stringify(bajo),
+  );
+  const modalidad = calcularTeletrabajo({
+    horaInicioJornada: "09:00",
+    horaFinJornada: "18:00",
+    modalidad: "hibrido",
+  });
+  assert(
+    "modalidad híbrido es informativa: no cambia 15 h ni el cumplimiento",
+    modalidad.modalidad === "hibrido" &&
+      modalidad.horasDesconexion === 15 &&
+      modalidad.cumpleDesconexion === true,
+    JSON.stringify(modalidad),
+  );
+  const ttApp = readFileSync(join(root, "js/app-teletrabajo.js"), "utf8");
+  assert(
+    "app-teletrabajo usa calcularTeletrabajo",
+    /import\s*\{[^}]*calcularTeletrabajo[^}]*\}\s*from\s*["']\.\/teletrabajo\.js["']/.test(ttApp) &&
+      /calcularTeletrabajo\s*\(/.test(ttApp) &&
+      !/\balert\s*\(/.test(ttApp) &&
+      !/\bconfirm\s*\(/.test(ttApp) &&
+      !/\bprompt\s*\(/.test(ttApp),
+  );
+}
+
 {
   const millon = calcularAvisoPrevio(
     { causal: "161-necesidades", remuneracion: 1_000_000, avisoPrevio: false },
@@ -3892,6 +3992,7 @@ const required = [
   "descanso-compensatorio.html",
   "inclusion-laboral.html",
   "jornada-parcial.html",
+  "teletrabajo.html",
   "finiquito.html",
   "js/app-horas-extras.js",
   "js/app-vacaciones-proporcionales.js",
@@ -3938,6 +4039,7 @@ const required = [
   "js/app-descanso-compensatorio.js",
   "js/app-inclusion-laboral.js",
   "js/app-jornada-parcial.js",
+  "js/app-teletrabajo.js",
   "empresa.html",
   "privacidad.html",
   "terminos.html",
@@ -3953,6 +4055,7 @@ const required = [
   "js/descanso-compensatorio.js",
   "js/inclusion-laboral.js",
   "js/jornada-parcial.js",
+  "js/teletrabajo.js",
   "js/causales.js",
   "js/finiquito.js",
   "js/indicadores.js",
@@ -4117,6 +4220,7 @@ const htmlFiles = [
   "descanso-compensatorio.html",
   "inclusion-laboral.html",
   "jornada-parcial.html",
+  "teletrabajo.html",
   "finiquito.html",
   "empresa.html",
   "privacidad.html",
@@ -4238,6 +4342,7 @@ const appEntries = [
   "js/app-descanso-compensatorio.js",
   "js/app-inclusion-laboral.js",
   "js/app-jornada-parcial.js",
+  "js/app-teletrabajo.js",
   "js/app-finiquito.js",
   "js/app-empresa.js",
   "js/app-admin.js",
@@ -4270,7 +4375,7 @@ assert("robots Allow /", /Allow:\s*\//.test(robots));
 assert("robots Disallow /admin", /Disallow:\s*\/admin/.test(robots));
 assert("robots Disallow /api", /Disallow:\s*\/api/.test(robots));
 assert("robots Disallow /docs", /Disallow:\s*\/docs/.test(robots));
-assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/trabajo-pesado/.test(robots) && !/Disallow:\s*\/nulidad-despido/.test(robots) && !/Disallow:\s*\/tutela-laboral/.test(robots) && !/Disallow:\s*\/despido-injustificado/.test(robots) && !/Disallow:\s*\/autodespido/.test(robots) && !/Disallow:\s*\/obra-faena/.test(robots) && !/Disallow:\s*\/prescripcion-laboral/.test(robots) && !/Disallow:\s*\/descanso-compensatorio/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/feriado-anual/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/licencia-medica/.test(robots) && !/Disallow:\s*\/boleta-honorarios/.test(robots) && !/Disallow:\s*\/retencion-judicial/.test(robots) && !/Disallow:\s*\/apv/.test(robots) && !/Disallow:\s*\/sala-cuna/.test(robots) && !/Disallow:\s*\/postnatal-parental/.test(robots) && !/Disallow:\s*\/permiso-prenatal/.test(robots) && !/Disallow:\s*\/fuero-maternal/.test(robots) && !/Disallow:\s*\/permiso-paternidad/.test(robots) && !/Disallow:\s*\/permiso-matrimonio/.test(robots) && !/Disallow:\s*\/permiso-fallecimiento/.test(robots) && !/Disallow:\s*\/interes-mora/.test(robots) && !/Disallow:\s*\/hora-lactancia/.test(robots) && !/Disallow:\s*\/jornada-40-horas/.test(robots) && !/Disallow:\s*\/jornada-parcial/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots) && !/Disallow:\s*\/inclusion-laboral/.test(robots));
+assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/trabajo-pesado/.test(robots) && !/Disallow:\s*\/nulidad-despido/.test(robots) && !/Disallow:\s*\/tutela-laboral/.test(robots) && !/Disallow:\s*\/despido-injustificado/.test(robots) && !/Disallow:\s*\/autodespido/.test(robots) && !/Disallow:\s*\/obra-faena/.test(robots) && !/Disallow:\s*\/prescripcion-laboral/.test(robots) && !/Disallow:\s*\/descanso-compensatorio/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/feriado-anual/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/licencia-medica/.test(robots) && !/Disallow:\s*\/boleta-honorarios/.test(robots) && !/Disallow:\s*\/retencion-judicial/.test(robots) && !/Disallow:\s*\/apv/.test(robots) && !/Disallow:\s*\/sala-cuna/.test(robots) && !/Disallow:\s*\/postnatal-parental/.test(robots) && !/Disallow:\s*\/permiso-prenatal/.test(robots) && !/Disallow:\s*\/fuero-maternal/.test(robots) && !/Disallow:\s*\/permiso-paternidad/.test(robots) && !/Disallow:\s*\/permiso-matrimonio/.test(robots) && !/Disallow:\s*\/permiso-fallecimiento/.test(robots) && !/Disallow:\s*\/interes-mora/.test(robots) && !/Disallow:\s*\/hora-lactancia/.test(robots) && !/Disallow:\s*\/jornada-40-horas/.test(robots) && !/Disallow:\s*\/jornada-parcial/.test(robots) && !/Disallow:\s*\/teletrabajo/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots) && !/Disallow:\s*\/inclusion-laboral/.test(robots));
 assert("robots Sitemap", /Sitemap:\s*https:\/\/www\.haberes\.cl\/sitemap\.xml/.test(robots));
 
 const { seoPaths, GUIDE_SLUGS, GUIDES, CAUSAL_PAGES, BASE_PATHS, lastmodForPath } = await import("../content/registry.js");
@@ -4332,7 +4437,8 @@ assert(
     BASE_PATHS.includes("/prescripcion-laboral") &&
     BASE_PATHS.includes("/descanso-compensatorio") &&
     BASE_PATHS.includes("/inclusion-laboral") &&
-    BASE_PATHS.includes("/jornada-parcial"),
+    BASE_PATHS.includes("/jornada-parcial") &&
+    BASE_PATHS.includes("/teletrabajo"),
   `${locs.length} vs ${expectedFromRegistry.length}`,
 );
 assert(
@@ -4687,7 +4793,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 92,
+      seoPaths().length === 93,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -4699,7 +4805,7 @@ try {
   const docsSeo = await hitLocal("/docs/seo-map.md");
   assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
   assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
-  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/obra-faena/", "/prescripcion-laboral/", "/descanso-compensatorio/", "/inclusion-laboral/", "/jornada-parcial/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/obra-faena/", "/prescripcion-laboral/", "/descanso-compensatorio/", "/inclusion-laboral/", "/jornada-parcial/", "/teletrabajo/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
   }
@@ -4752,6 +4858,7 @@ try {
     "/descanso-compensatorio",
     "/inclusion-laboral",
     "/jornada-parcial",
+    "/teletrabajo",
     "/gratificacion",
     "/impuesto-unico",
     "/cotizaciones-previsionales",
@@ -8564,6 +8671,7 @@ assert(
     ["descanso-compensatorio.html", "/descanso-compensatorio"],
     ["inclusion-laboral.html", "/inclusion-laboral"],
     ["jornada-parcial.html", "/jornada-parcial"],
+    ["teletrabajo.html", "/teletrabajo"],
     ["finiquito.html", "/finiquito"],
     ["empresa.html", "/empresa"],
     ["como.html", "/como"],
@@ -9659,6 +9767,140 @@ assert(
         /href="\/jornada-parcial"/.test(readFileSync(join(root, "descuento-atrasos.html"), "utf8")) &&
         /href="\/jornada-parcial"/.test(readFileSync(join(root, "costo-empresa.html"), "utf8")) &&
         /href="\/jornada-parcial"/.test(readFileSync(join(root, "empresa.html"), "utf8")),
+    );
+  }
+  {
+    const ttHtml = readFileSync(join(root, "teletrabajo.html"), "utf8");
+    const ttTitle = (ttHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const ttH1 = (ttHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const ttDesc = (ttHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "";
+    const j40HtmlTt = readFileSync(join(root, "jornada-40-horas.html"), "utf8");
+    const jpHtmlTt = readFileSync(join(root, "jornada-parcial.html"), "utf8");
+    const heHtmlTt = readFileSync(join(root, "horas-extras.html"), "utf8");
+    const dcHtmlTt = readFileSync(join(root, "descanso-compensatorio.html"), "utf8");
+    const rdHtmlTt = readFileSync(join(root, "recargo-domingo-comercio.html"), "utf8");
+    const daHtmlTt = readFileSync(join(root, "descuento-atrasos.html"), "utf8");
+    const sueldoHtmlTt = readFileSync(join(root, "sueldo.html"), "utf8");
+    const ceHtmlTt = readFileSync(join(root, "costo-empresa.html"), "utf8");
+    const goldTt9 = calcularTeletrabajo(TELETRABAJO_GOLD.jornada0900);
+    const goldTt8 = calcularTeletrabajo(TELETRABAJO_GOLD.jornada0800);
+    const goldTtRem = calcularTeletrabajo(TELETRABAJO_GOLD.remDias);
+    assert(
+      "SEO teletrabajo title único y corto",
+      /calcular teletrabajo/i.test(ttTitle) &&
+        ttTitle.length <= 65 &&
+        !/jornada 40 horas/i.test(ttTitle) &&
+        !/sueldo l[ií]quido/i.test(ttTitle),
+      ttTitle,
+    );
+    assert(
+      "SEO teletrabajo H1 único Ley 21.220",
+      ttH1 === "Calcular teletrabajo Chile 2026" &&
+        /Ley 21\.220/.test(ttHtml) &&
+        /152 qu[aá]ter J/.test(ttHtml) &&
+        /derecho a desconexi[oó]n/.test(ttHtml),
+      ttH1,
+    );
+    assert(
+      "SEO teletrabajo description propia",
+      ttDesc.length >= 110 &&
+        ttDesc.length <= 160 &&
+        /Ley 21\.220/.test(ttDesc) &&
+        /teletrabajo/.test(ttDesc) &&
+        /desconexi[oó]n/.test(ttDesc),
+      `${ttDesc.length}:${ttDesc}`,
+    );
+    assert(
+      "SEO teletrabajo cita Ley 21.220, art. 152 quáter, CT y DT",
+      /bcn\.cl\/leychile\/navegar\?idNorma=1143741/.test(ttHtml) &&
+        /bcn\.cl\/leychile\/navegar\?idNorma=207436/.test(ttHtml) &&
+        /152 qu[aá]ter/.test(ttHtml) &&
+        /dt\.gob\.cl\/portal\/1628\/w3-article-118665/.test(ttHtml),
+    );
+    assert(
+      "SEO teletrabajo gold 2026 09:00–18:00, 08:00–22:00 y $300.000 en copy",
+      goldTt9.horasJornadaDiaria === 9 &&
+        goldTt9.horasDesconexion === 15 &&
+        goldTt9.cumpleDesconexion === true &&
+        goldTt8.horasJornadaDiaria === 14 &&
+        goldTt8.horasDesconexion === 10 &&
+        goldTt8.cumpleDesconexion === false &&
+        goldTtRem.valorDia === 30_000 &&
+        goldTtRem.estimacionDiasModalidad === 300_000 &&
+        /09:00/.test(ttHtml) &&
+        /18:00/.test(ttHtml) &&
+        /15/.test(ttHtml) &&
+        /08:00/.test(ttHtml) &&
+        /22:00/.test(ttHtml) &&
+        /10&nbsp;h/.test(ttHtml) &&
+        /\$30\.000/.test(ttHtml) &&
+        /\$300\.000/.test(ttHtml) &&
+        /no cumple/.test(ttHtml),
+    );
+    assert("SEO teletrabajo FAQPage", /"@type": "FAQPage"/.test(ttHtml));
+    assert(
+      "SEO teletrabajo no canibaliza hermanas vetadas",
+      /href="\/jornada-40-horas"/.test(ttHtml) &&
+        /href="\/jornada-parcial"/.test(ttHtml) &&
+        /href="\/horas-extras"/.test(ttHtml) &&
+        /href="\/descanso-compensatorio"/.test(ttHtml) &&
+        /href="\/recargo-domingo-comercio"/.test(ttHtml) &&
+        /href="\/descuento-atrasos"/.test(ttHtml) &&
+        /href="\/sueldo"/.test(ttHtml) &&
+        /href="\/costo-empresa"/.test(ttHtml) &&
+        /href="\/empresa"/.test(ttHtml) &&
+        /estimaci[oó]n educativa/.test(ttHtml) &&
+        /no constituye asesor[ií]a legal/i.test(ttHtml) &&
+        !existsSync(join(root, "home-office.html")) &&
+        !existsSync(join(root, "trabajo-remoto.html")) &&
+        !existsSync(join(root, "derecho-desconexion.html")) &&
+        !existsSync(join(root, "ley-21220.html")),
+    );
+    assert(
+      "home y nav enlazan /teletrabajo",
+      /href="\/teletrabajo"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/teletrabajo" data-nav>Teletrabajo<\/a>/.test(
+          readFileSync(join(root, "index.html"), "utf8"),
+        ) &&
+        /href="\/teletrabajo" data-nav>Teletrabajo<\/a>/.test(ttHtml) &&
+        /href="\/teletrabajo" data-nav>Teletrabajo<\/a>/.test(
+          readFileSync(join(root, "js/ui.js"), "utf8"),
+        ),
+    );
+    assert(
+      "sitemap incluye /teletrabajo",
+      locs.includes("https://www.haberes.cl/teletrabajo") &&
+        lastmodForPath("/teletrabajo") === "2026-09-17",
+    );
+    assert(
+      "seo-map documenta /teletrabajo y no-canibalizar hermanas",
+      /\/teletrabajo/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no canibalizar `\/jornada-40-horas`, `\/jornada-parcial`/.test(
+          readFileSync(join(root, "docs/seo-map.md"), "utf8"),
+        ) &&
+        /no crear `\/home-office`/i.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")),
+    );
+    assert(
+      "hub /guias enlaza /teletrabajo en el cluster de liquidación",
+      /href="\/teletrabajo"/.test(readFileSync(join(root, "guias.html"), "utf8")) &&
+        /<h2>Liquidaci[oó]n de sueldo<\/h2>[\s\S]*href="\/teletrabajo"/.test(
+          readFileSync(join(root, "guias.html"), "utf8"),
+        ) &&
+        !/<h2>Finiquito<\/h2>[\s\S]*href="\/teletrabajo"/.test(
+          readFileSync(join(root, "guias.html"), "utf8"),
+        ),
+    );
+    assert(
+      "hermanas enlazan /teletrabajo",
+      /href="\/teletrabajo"/.test(j40HtmlTt) &&
+        /href="\/teletrabajo"/.test(jpHtmlTt) &&
+        /href="\/teletrabajo"/.test(heHtmlTt) &&
+        /href="\/teletrabajo"/.test(dcHtmlTt) &&
+        /href="\/teletrabajo"/.test(rdHtmlTt) &&
+        /href="\/teletrabajo"/.test(daHtmlTt) &&
+        /href="\/teletrabajo"/.test(sueldoHtmlTt) &&
+        /href="\/teletrabajo"/.test(ceHtmlTt) &&
+        /href="\/teletrabajo"/.test(readFileSync(join(root, "empresa.html"), "utf8")),
     );
   }
   {
@@ -14348,6 +14590,7 @@ assert(
       "descanso-compensatorio.html",
       "inclusion-laboral.html",
       "jornada-parcial.html",
+      "teletrabajo.html",
       "finiquito.html",
       "empresa.html",
       "precios.html",
