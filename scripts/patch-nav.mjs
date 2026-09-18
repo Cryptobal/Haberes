@@ -28,6 +28,7 @@ const DRAWER_LINKS = [
   ["/jornada-40-horas", "Jornada 40 horas"],
   ["/jornada-parcial", "Jornada parcial"],
   ["/teletrabajo", "Teletrabajo"],
+  ["/bandas-horarias", "Bandas horarias"],
   ["/recargo-domingo-comercio", "Recargo domingo comercio"],
   ["/descanso-compensatorio", "Descanso compensatorio"],
   ["/feriado-irrenunciable", "Feriado irrenunciable"],

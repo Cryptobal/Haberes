@@ -181,6 +181,61 @@ export const TELETRABAJO_GOLD = Object.freeze({
 });
 
 /**
+ * Bandas horarias de cuidado familiar (Ley 21.561 / Código del Trabajo).
+ * Tope educativo: anticipar o retrasar hasta 60 minutos el inicio, con el
+ * mismo desplazamiento al término. Edad máxima del niño/a: 12 años.
+ * La DT describe ~2 h de margen entre extremos (p. ej. 08:00–10:00).
+ * Más de 60 minutos no se aplica.
+ * @see https://www.dt.gob.cl/portal/1626/w3-article-125814.html
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=1191554
+ * @see https://www.mintrab.gob.cl/40horas/
+ */
+export const BANDAS_HORARIAS_MAX_MIN = 60;
+export const BANDAS_HORARIAS_EDAD_MAX_ANIOS = 12;
+export const BANDAS_HORARIAS_GOLD = Object.freeze({
+  anticipar60: Object.freeze({
+    horaInicio: "09:00",
+    horaFin: "18:00",
+    sentido: "anticipar",
+    minutos: 60,
+    horaInicioNueva: "08:00",
+    horaFinNueva: "17:00",
+  }),
+  retrasar60: Object.freeze({
+    horaInicio: "09:00",
+    horaFin: "18:00",
+    sentido: "retrasar",
+    minutos: 60,
+    horaInicioNueva: "10:00",
+    horaFinNueva: "19:00",
+  }),
+  anticipar30: Object.freeze({
+    horaInicio: "08:30",
+    horaFin: "17:30",
+    sentido: "anticipar",
+    minutos: 30,
+    horaInicioNueva: "08:00",
+    horaFinNueva: "17:00",
+  }),
+  cero: Object.freeze({
+    horaInicio: "09:00",
+    horaFin: "18:00",
+    sentido: "anticipar",
+    minutos: 0,
+    horaInicioNueva: "09:00",
+    horaFinNueva: "18:00",
+  }),
+  excede: Object.freeze({
+    horaInicio: "09:00",
+    horaFin: "18:00",
+    sentido: "anticipar",
+    minutos: 90,
+    ok: false,
+    motivo: "tope",
+  }),
+});
+
+/**
  * Contrato a plazo fijo (art. 159 N°4 CT). Tope general 12 meses; 24 si
  * gerente o título profesional/técnico de institución de educación superior
  * del Estado o reconocida por éste. Una renovación; la segunda o la
