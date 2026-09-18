@@ -218,6 +218,7 @@ function paintLoggedInNav(emp) {
         <a href="/jornada-40-horas" data-nav>Jornada 40 horas</a>
         <a href="/jornada-parcial" data-nav>Jornada parcial</a>
         <a href="/teletrabajo" data-nav>Teletrabajo</a>
+        <a href="/bandas-horarias" data-nav>Bandas horarias</a>
         <a href="/permiso-sin-goce" data-nav>Permiso sin goce</a>
         <a href="/recargo-domingo-comercio" data-nav>Recargo domingo comercio</a>
         <a href="/descanso-compensatorio" data-nav>Descanso compensatorio</a>
