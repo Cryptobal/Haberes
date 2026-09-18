@@ -266,6 +266,42 @@ export const CONTRATO_PLAZO_FIJO_GOLD = Object.freeze({
 });
 
 /**
+ * Permiso sin goce de sueldo (pacto; no hay un derecho unilateral en el CT).
+ * Fórmula educativa: descuento = round((sueldoMensual / diasBase) × diasPermiso).
+ * Default de diasBase: días corridos del mes calendario; alternativa: días
+ * laborables que indica el usuario. No se inventa un tope anual legal.
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=207436
+ * @see https://www.dt.gob.cl/legislacion/1624/w3-article-110215.html
+ * @see https://www.dt.gob.cl/portal/1628/w3-article-60216.html
+ */
+export const PERMISO_SIN_GOCE_GOLD = Object.freeze({
+  corridos30: Object.freeze({
+    sueldoMensual: 900_000,
+    diasBase: 30,
+    diasPermiso: 3,
+    tipoBase: "corridos",
+    descuento: 90_000,
+    sueldoMes: 810_000,
+  }),
+  laborables20: Object.freeze({
+    sueldoMensual: 900_000,
+    diasBase: 20,
+    diasPermiso: 2,
+    tipoBase: "laborables",
+    descuento: 90_000,
+    sueldoMes: 810_000,
+  }),
+  ceroDias: Object.freeze({
+    sueldoMensual: 900_000,
+    diasBase: 30,
+    diasPermiso: 0,
+    tipoBase: "corridos",
+    descuento: 0,
+    sueldoMes: 900_000,
+  }),
+});
+
+/**
  * Permiso postnatal parental (art. 197 bis CT / Ley 20.545).
  * Completa: 12 semanas (84 días). Parcial: 18 semanas (126 días).
  * La madre goza al menos las primeras 6 semanas; el padre, si se cede,

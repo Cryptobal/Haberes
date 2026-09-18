@@ -68,6 +68,7 @@ import {
   TELETRABAJO_PERIODO_H,
   TELETRABAJO_TOLERANCIA_H,
   CONTRATO_PLAZO_FIJO_GOLD,
+  PERMISO_SIN_GOCE_GOLD,
   CONTRATO_PLAZO_FIJO_TOLERANCIA_DIAS,
   CONTRATO_PLAZO_FIJO_TOPE_GENERAL_MESES,
   CONTRATO_PLAZO_FIJO_TOPE_TITULO_MESES,
@@ -173,6 +174,7 @@ import { calcularInclusionLaboral } from "../js/inclusion-laboral.js";
 import { calcularJornadaParcial } from "../js/jornada-parcial.js";
 import { calcularTeletrabajo } from "../js/teletrabajo.js";
 import { calcularContratoPlazoFijo } from "../js/contrato-plazo-fijo.js";
+import { calcularPermisoSinGoce, diasCorridosDelMes } from "../js/permiso-sin-goce.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 let failed = 0;
@@ -242,6 +244,14 @@ assert(
     JORNADA_PARCIAL_GOLD.medioTiempo.diasFeriado === 7.5 &&
     JORNADA_PARCIAL_GOLD.excede.cumpleTope === false &&
     JORNADA_PARCIAL_GOLD.alTope.sueldoParcial === 533_400,
+);
+assert(
+  "Permiso sin goce gold $900.000 / 30 × 3 → $90.000 y $810.000",
+  PERMISO_SIN_GOCE_GOLD.corridos30.descuento === 90_000 &&
+    PERMISO_SIN_GOCE_GOLD.corridos30.sueldoMes === 810_000 &&
+    PERMISO_SIN_GOCE_GOLD.laborables20.descuento === 90_000 &&
+    PERMISO_SIN_GOCE_GOLD.ceroDias.descuento === 0 &&
+    PERMISO_SIN_GOCE_GOLD.ceroDias.sueldoMes === 900_000,
 );
 assert("Tope cesantía 135.2 UF", TOPE_CESANTIA_UF === 135.2);
 assert(
@@ -3414,6 +3424,99 @@ console.log("\nContrato a plazo fijo art. 159 N°4 (gold 2026)");
   );
 }
 
+console.log("\nPermiso sin goce de sueldo (gold 2026)");
+{
+  // Fuentes: CT BCN 207436; DT ORD. N°4593; consulta DT 60216 y 60602.
+  // descuento = round((sueldoMensual / diasBase) × diasPermiso).
+  const g1 = calcularPermisoSinGoce(PERMISO_SIN_GOCE_GOLD.corridos30);
+  const gold1 = PERMISO_SIN_GOCE_GOLD.corridos30;
+  assert(
+    "gold $900.000 / 30 corridos × 3 → descuento $90.000, sueldo mes $810.000",
+    g1.ok === true &&
+      g1.descuento === 90_000 &&
+      g1.sueldoMes === 810_000 &&
+      g1.descuento === gold1.descuento &&
+      g1.sueldoMes === gold1.sueldoMes &&
+      g1.descuento === Math.round((900_000 / 30) * 3) &&
+      g1.tipoBase === "corridos",
+    JSON.stringify(g1),
+  );
+  const g2 = calcularPermisoSinGoce(PERMISO_SIN_GOCE_GOLD.laborables20);
+  assert(
+    "gold $900.000 / 20 laborables × 2 → descuento $90.000",
+    g2.ok === true &&
+      g2.descuento === 90_000 &&
+      g2.sueldoMes === 810_000 &&
+      g2.descuento === PERMISO_SIN_GOCE_GOLD.laborables20.descuento &&
+      g2.tipoBase === "laborables" &&
+      g2.diasBase === 20 &&
+      g2.diasPermiso === 2,
+    JSON.stringify(g2),
+  );
+  const g3 = calcularPermisoSinGoce(PERMISO_SIN_GOCE_GOLD.ceroDias);
+  assert(
+    "gold 0 días permiso → descuento 0, sueldo = sueldoMensual",
+    g3.ok === true &&
+      g3.descuento === 0 &&
+      g3.sueldoMes === 900_000 &&
+      g3.sueldoMes === g3.sueldoMensual &&
+      g3.diasPermisoAplicados === 0,
+    JSON.stringify(g3),
+  );
+  assert(
+    "abril 2026 tiene 30 días corridos; febrero 2026 tiene 28",
+    diasCorridosDelMes(2026, 4) === 30 && diasCorridosDelMes(2026, 2) === 28,
+  );
+  const autoMes = calcularPermisoSinGoce({
+    sueldoMensual: 900_000,
+    diasPermiso: 3,
+    tipoBase: "corridos",
+    mesIso: "2026-04",
+  });
+  assert(
+    "sin diasBase, abril 2026 corridos → misma ficha $90.000",
+    autoMes.ok === true &&
+      autoMes.diasBase === 30 &&
+      autoMes.descuento === 90_000 &&
+      autoMes.sueldoMes === 810_000,
+    JSON.stringify(autoMes),
+  );
+  const tope = calcularPermisoSinGoce({
+    sueldoMensual: 900_000,
+    diasBase: 30,
+    diasPermiso: 40,
+    tipoBase: "corridos",
+  });
+  assert(
+    "días de permiso > base → descuento acotado al sueldo mensual",
+    tope.ok === true &&
+      tope.topeAplicado === true &&
+      tope.diasPermisoAplicados === 30 &&
+      tope.descuento === 900_000 &&
+      tope.sueldoMes === 0,
+    JSON.stringify(tope),
+  );
+  const sinBase = calcularPermisoSinGoce({
+    sueldoMensual: 900_000,
+    diasPermiso: 3,
+    tipoBase: "laborables",
+  });
+  assert(
+    "laborables sin diasBase → ok false",
+    sinBase.ok === false && sinBase.motivo === "dias_base",
+    JSON.stringify(sinBase),
+  );
+  const psgApp = readFileSync(join(root, "js/app-permiso-sin-goce.js"), "utf8");
+  assert(
+    "app-permiso-sin-goce usa calcularPermisoSinGoce",
+    /import\s*\{[^}]*calcularPermisoSinGoce[^}]*\}\s*from\s*["']\.\/permiso-sin-goce\.js["']/.test(psgApp) &&
+      /calcularPermisoSinGoce\s*\(/.test(psgApp) &&
+      !/\balert\s*\(/.test(psgApp) &&
+      !/\bconfirm\s*\(/.test(psgApp) &&
+      !/\bprompt\s*\(/.test(psgApp),
+  );
+}
+
 {
   const millon = calcularAvisoPrevio(
     { causal: "161-necesidades", remuneracion: 1_000_000, avisoPrevio: false },
@@ -4136,6 +4239,7 @@ const required = [
   "jornada-parcial.html",
   "teletrabajo.html",
   "contrato-plazo-fijo.html",
+  "permiso-sin-goce.html",
   "finiquito.html",
   "js/app-horas-extras.js",
   "js/app-vacaciones-proporcionales.js",
@@ -4184,6 +4288,7 @@ const required = [
   "js/app-jornada-parcial.js",
   "js/app-teletrabajo.js",
   "js/app-contrato-plazo-fijo.js",
+  "js/app-permiso-sin-goce.js",
   "empresa.html",
   "privacidad.html",
   "terminos.html",
@@ -4201,6 +4306,7 @@ const required = [
   "js/jornada-parcial.js",
   "js/teletrabajo.js",
   "js/contrato-plazo-fijo.js",
+  "js/permiso-sin-goce.js",
   "js/causales.js",
   "js/finiquito.js",
   "js/indicadores.js",
@@ -4367,6 +4473,7 @@ const htmlFiles = [
   "jornada-parcial.html",
   "teletrabajo.html",
   "contrato-plazo-fijo.html",
+  "permiso-sin-goce.html",
   "finiquito.html",
   "empresa.html",
   "privacidad.html",
@@ -4490,6 +4597,7 @@ const appEntries = [
   "js/app-jornada-parcial.js",
   "js/app-teletrabajo.js",
   "js/app-contrato-plazo-fijo.js",
+  "js/app-permiso-sin-goce.js",
   "js/app-finiquito.js",
   "js/app-empresa.js",
   "js/app-admin.js",
@@ -4522,7 +4630,7 @@ assert("robots Allow /", /Allow:\s*\//.test(robots));
 assert("robots Disallow /admin", /Disallow:\s*\/admin/.test(robots));
 assert("robots Disallow /api", /Disallow:\s*\/api/.test(robots));
 assert("robots Disallow /docs", /Disallow:\s*\/docs/.test(robots));
-assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/trabajo-pesado/.test(robots) && !/Disallow:\s*\/nulidad-despido/.test(robots) && !/Disallow:\s*\/tutela-laboral/.test(robots) && !/Disallow:\s*\/despido-injustificado/.test(robots) && !/Disallow:\s*\/autodespido/.test(robots) && !/Disallow:\s*\/obra-faena/.test(robots) && !/Disallow:\s*\/prescripcion-laboral/.test(robots) && !/Disallow:\s*\/descanso-compensatorio/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/feriado-anual/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/licencia-medica/.test(robots) && !/Disallow:\s*\/boleta-honorarios/.test(robots) && !/Disallow:\s*\/retencion-judicial/.test(robots) && !/Disallow:\s*\/apv/.test(robots) && !/Disallow:\s*\/sala-cuna/.test(robots) && !/Disallow:\s*\/postnatal-parental/.test(robots) && !/Disallow:\s*\/permiso-prenatal/.test(robots) && !/Disallow:\s*\/fuero-maternal/.test(robots) && !/Disallow:\s*\/permiso-paternidad/.test(robots) && !/Disallow:\s*\/permiso-matrimonio/.test(robots) && !/Disallow:\s*\/permiso-fallecimiento/.test(robots) && !/Disallow:\s*\/interes-mora/.test(robots) && !/Disallow:\s*\/hora-lactancia/.test(robots) && !/Disallow:\s*\/jornada-40-horas/.test(robots) && !/Disallow:\s*\/jornada-parcial/.test(robots) && !/Disallow:\s*\/teletrabajo/.test(robots) && !/Disallow:\s*\/contrato-plazo-fijo/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots) && !/Disallow:\s*\/inclusion-laboral/.test(robots));
+assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/trabajo-pesado/.test(robots) && !/Disallow:\s*\/nulidad-despido/.test(robots) && !/Disallow:\s*\/tutela-laboral/.test(robots) && !/Disallow:\s*\/despido-injustificado/.test(robots) && !/Disallow:\s*\/autodespido/.test(robots) && !/Disallow:\s*\/obra-faena/.test(robots) && !/Disallow:\s*\/prescripcion-laboral/.test(robots) && !/Disallow:\s*\/descanso-compensatorio/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/feriado-anual/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/licencia-medica/.test(robots) && !/Disallow:\s*\/boleta-honorarios/.test(robots) && !/Disallow:\s*\/retencion-judicial/.test(robots) && !/Disallow:\s*\/apv/.test(robots) && !/Disallow:\s*\/sala-cuna/.test(robots) && !/Disallow:\s*\/postnatal-parental/.test(robots) && !/Disallow:\s*\/permiso-prenatal/.test(robots) && !/Disallow:\s*\/fuero-maternal/.test(robots) && !/Disallow:\s*\/permiso-paternidad/.test(robots) && !/Disallow:\s*\/permiso-matrimonio/.test(robots) && !/Disallow:\s*\/permiso-fallecimiento/.test(robots) && !/Disallow:\s*\/interes-mora/.test(robots) && !/Disallow:\s*\/hora-lactancia/.test(robots) && !/Disallow:\s*\/jornada-40-horas/.test(robots) && !/Disallow:\s*\/jornada-parcial/.test(robots) && !/Disallow:\s*\/teletrabajo/.test(robots) && !/Disallow:\s*\/contrato-plazo-fijo/.test(robots) && !/Disallow:\s*\/permiso-sin-goce/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots) && !/Disallow:\s*\/inclusion-laboral/.test(robots));
 assert("robots Sitemap", /Sitemap:\s*https:\/\/www\.haberes\.cl\/sitemap\.xml/.test(robots));
 
 const { seoPaths, GUIDE_SLUGS, GUIDES, CAUSAL_PAGES, BASE_PATHS, lastmodForPath } = await import("../content/registry.js");
@@ -4586,7 +4694,8 @@ assert(
     BASE_PATHS.includes("/inclusion-laboral") &&
     BASE_PATHS.includes("/jornada-parcial") &&
     BASE_PATHS.includes("/teletrabajo") &&
-    BASE_PATHS.includes("/contrato-plazo-fijo"),
+    BASE_PATHS.includes("/contrato-plazo-fijo") &&
+    BASE_PATHS.includes("/permiso-sin-goce"),
   `${locs.length} vs ${expectedFromRegistry.length}`,
 );
 assert(
@@ -4941,7 +5050,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 94,
+      seoPaths().length === 95,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -4953,7 +5062,7 @@ try {
   const docsSeo = await hitLocal("/docs/seo-map.md");
   assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
   assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
-  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/obra-faena/", "/prescripcion-laboral/", "/descanso-compensatorio/", "/inclusion-laboral/", "/jornada-parcial/", "/teletrabajo/", "/contrato-plazo-fijo/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/obra-faena/", "/prescripcion-laboral/", "/descanso-compensatorio/", "/inclusion-laboral/", "/jornada-parcial/", "/teletrabajo/", "/contrato-plazo-fijo/", "/permiso-sin-goce/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
   }
@@ -5008,6 +5117,7 @@ try {
     "/jornada-parcial",
     "/teletrabajo",
     "/contrato-plazo-fijo",
+    "/permiso-sin-goce",
     "/gratificacion",
     "/impuesto-unico",
     "/cotizaciones-previsionales",
@@ -8822,6 +8932,7 @@ assert(
     ["jornada-parcial.html", "/jornada-parcial"],
     ["teletrabajo.html", "/teletrabajo"],
     ["contrato-plazo-fijo.html", "/contrato-plazo-fijo"],
+    ["permiso-sin-goce.html", "/permiso-sin-goce"],
     ["finiquito.html", "/finiquito"],
     ["empresa.html", "/empresa"],
     ["como.html", "/como"],
@@ -10187,6 +10298,135 @@ assert(
         /href="\/contrato-plazo-fijo"/.test(readFileSync(join(root, "despido-injustificado.html"), "utf8")) &&
         /href="\/contrato-plazo-fijo"/.test(readFileSync(join(root, "autodespido.html"), "utf8")) &&
         /href="\/contrato-plazo-fijo"/.test(readFileSync(join(root, "empresa.html"), "utf8")),
+    );
+  }
+  {
+    const psgHtml = readFileSync(join(root, "permiso-sin-goce.html"), "utf8");
+    const psgTitle = (psgHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const psgH1 = (psgHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const psgDesc = (psgHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "";
+    const daHtmlPsg = readFileSync(join(root, "descuento-atrasos.html"), "utf8");
+    const spHtmlPsg = readFileSync(join(root, "sueldo-proporcional.html"), "utf8");
+    const sueldoHtmlPsg = readFileSync(join(root, "sueldo.html"), "utf8");
+    const lmHtmlPsg = readFileSync(join(root, "licencia-medica.html"), "utf8");
+    const pmHtmlPsg = readFileSync(join(root, "permiso-matrimonio.html"), "utf8");
+    const pfHtmlPsg = readFileSync(join(root, "permiso-fallecimiento.html"), "utf8");
+    const goldPsg1 = calcularPermisoSinGoce(PERMISO_SIN_GOCE_GOLD.corridos30);
+    const goldPsg2 = calcularPermisoSinGoce(PERMISO_SIN_GOCE_GOLD.laborables20);
+    const goldPsg3 = calcularPermisoSinGoce(PERMISO_SIN_GOCE_GOLD.ceroDias);
+    assert(
+      "SEO permiso-sin-goce title único y corto",
+      /calcular permiso sin goce/i.test(psgTitle) &&
+        psgTitle.length <= 65 &&
+        !/permiso matrimonio/i.test(psgTitle) &&
+        !/sueldo l[ií]quido/i.test(psgTitle) &&
+        !/descuento atrasos/i.test(psgTitle),
+      psgTitle,
+    );
+    assert(
+      "SEO permiso-sin-goce H1 único pacto",
+      psgH1 === "Calcular permiso sin goce Chile 2026" &&
+        /permiso sin goce/.test(psgHtml) &&
+        /suspensi[oó]n convencional/.test(psgHtml) &&
+        !/art\. 207 bis/.test(psgH1),
+      psgH1,
+    );
+    assert(
+      "SEO permiso-sin-goce description propia",
+      psgDesc.length >= 110 &&
+        psgDesc.length <= 160 &&
+        /permiso sin goce/.test(psgDesc) &&
+        /pacto/.test(psgDesc) &&
+        !/permiso matrimonio/i.test(psgDesc),
+      `${psgDesc.length}:${psgDesc}`,
+    );
+    assert(
+      "SEO permiso-sin-goce cita CT, ORD 4593 y consulta DT",
+      /bcn\.cl\/leychile\/navegar\?idNorma=207436/.test(psgHtml) &&
+        /dt\.gob\.cl\/legislacion\/1624\/w3-article-110215/.test(psgHtml) &&
+        /dt\.gob\.cl\/portal\/1628\/w3-article-60216/.test(psgHtml) &&
+        /4593/.test(psgHtml),
+    );
+    assert(
+      "SEO permiso-sin-goce gold 2026 $90.000, $810.000 y 20 días en copy",
+      goldPsg1.descuento === 90_000 &&
+        goldPsg1.sueldoMes === 810_000 &&
+        goldPsg2.descuento === 90_000 &&
+        goldPsg3.descuento === 0 &&
+        goldPsg3.sueldoMes === 900_000 &&
+        /\$90\.000/.test(psgHtml) &&
+        /\$810\.000/.test(psgHtml) &&
+        /20/.test(psgHtml) &&
+        /\$900\.000/.test(psgHtml),
+    );
+    assert("SEO permiso-sin-goce FAQPage", /"@type": "FAQPage"/.test(psgHtml));
+    assert(
+      "SEO permiso-sin-goce no canibaliza hermanas vetadas",
+      /href="\/descuento-atrasos"/.test(psgHtml) &&
+        /href="\/sueldo-proporcional"/.test(psgHtml) &&
+        /href="\/sueldo"/.test(psgHtml) &&
+        /href="\/licencia-medica"/.test(psgHtml) &&
+        /href="\/permiso-matrimonio"/.test(psgHtml) &&
+        /href="\/permiso-fallecimiento"/.test(psgHtml) &&
+        /href="\/permiso-paternidad"/.test(psgHtml) &&
+        /href="\/permiso-prenatal"/.test(psgHtml) &&
+        /href="\/fuero-maternal"/.test(psgHtml) &&
+        /href="\/postnatal-parental"/.test(psgHtml) &&
+        /href="\/hora-lactancia"/.test(psgHtml) &&
+        /href="\/finiquito"/.test(psgHtml) &&
+        /href="\/costo-empresa"/.test(psgHtml) &&
+        /href="\/empresa"/.test(psgHtml) &&
+        /estimaci[oó]n educativa/.test(psgHtml) &&
+        /no constituye asesor[ií]a legal/i.test(psgHtml) &&
+        !existsSync(join(root, "permiso-sin-sueldo.html")) &&
+        !existsSync(join(root, "licencia-sin-goce.html")) &&
+        !existsSync(join(root, "dias-sin-goce.html")),
+    );
+    assert(
+      "home y nav enlazan /permiso-sin-goce",
+      /href="\/permiso-sin-goce"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/permiso-sin-goce" data-nav>Permiso sin goce<\/a>/.test(
+          readFileSync(join(root, "index.html"), "utf8"),
+        ) &&
+        /href="\/permiso-sin-goce" data-nav>Permiso sin goce<\/a>/.test(psgHtml) &&
+        /href="\/permiso-sin-goce" data-nav>Permiso sin goce<\/a>/.test(
+          readFileSync(join(root, "js/ui.js"), "utf8"),
+        ),
+    );
+    assert(
+      "sitemap incluye /permiso-sin-goce",
+      locs.includes("https://www.haberes.cl/permiso-sin-goce") &&
+        lastmodForPath("/permiso-sin-goce") === "2026-09-18",
+    );
+    assert(
+      "seo-map documenta /permiso-sin-goce y no-canibalizar hermanas",
+      /\/permiso-sin-goce/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no canibalizar `\/descuento-atrasos`, `\/sueldo-proporcional`/.test(
+          readFileSync(join(root, "docs/seo-map.md"), "utf8"),
+        ) &&
+        /no crear `\/permiso-sin-sueldo`/i.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")),
+    );
+    assert(
+      "hub /guias enlaza /permiso-sin-goce en el cluster de liquidación",
+      /href="\/permiso-sin-goce"/.test(readFileSync(join(root, "guias.html"), "utf8")) &&
+        /<h2>Liquidaci[oó]n de sueldo<\/h2>[\s\S]*href="\/permiso-sin-goce"/.test(
+          readFileSync(join(root, "guias.html"), "utf8"),
+        ) &&
+        !/<h2>Finiquito<\/h2>[\s\S]*href="\/permiso-sin-goce"/.test(
+          readFileSync(join(root, "guias.html"), "utf8"),
+        ),
+    );
+    assert(
+      "hermanas enlazan /permiso-sin-goce",
+      /href="\/permiso-sin-goce"/.test(daHtmlPsg) &&
+        /href="\/permiso-sin-goce"/.test(spHtmlPsg) &&
+        /href="\/permiso-sin-goce"/.test(sueldoHtmlPsg) &&
+        /href="\/permiso-sin-goce"/.test(lmHtmlPsg) &&
+        /href="\/permiso-sin-goce"/.test(pmHtmlPsg) &&
+        /href="\/permiso-sin-goce"/.test(pfHtmlPsg) &&
+        /href="\/permiso-sin-goce"/.test(readFileSync(join(root, "permiso-paternidad.html"), "utf8")) &&
+        /href="\/permiso-sin-goce"/.test(readFileSync(join(root, "finiquito.html"), "utf8")) &&
+        /href="\/permiso-sin-goce"/.test(readFileSync(join(root, "empresa.html"), "utf8")),
     );
   }
   {
@@ -14878,6 +15118,7 @@ assert(
       "jornada-parcial.html",
       "teletrabajo.html",
       "contrato-plazo-fijo.html",
+      "permiso-sin-goce.html",
       "finiquito.html",
       "empresa.html",
       "precios.html",
@@ -15055,7 +15296,7 @@ assert(
     return acc;
   }
   const pages = listHtml(root);
-  assert("96 páginas HTML", pages.length === 96, String(pages.length));
+  assert("97 páginas HTML", pages.length === 97, String(pages.length));
   for (const file of pages) {
     const html = readFileSync(file, "utf8");
     const rel = file.slice(root.length + 1);
