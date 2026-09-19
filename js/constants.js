@@ -236,6 +236,80 @@ export const BANDAS_HORARIAS_GOLD = Object.freeze({
 });
 
 /**
+ * Pacto 4×3 (Ley 21.561 / art. 8° transitorio y art. 28 CT).
+ * Distribución de jornada ordinaria de hasta 40 h en no menos de 4 ni más
+ * de 6 días. Tope diario ordinario: 10 h. La modificación general del
+ * art. 28 rige el 26-abr-2028; antes, solo si la empresa ya está en ≤40 h
+ * o reduce anticipadamente a 40 (art. 8° transitorio). El pacto es
+ * voluntario y escrito: no es automático por la rebaja a 42 h de abr-2026.
+ * No es el tope gradual 44/42/40, ni el promedio del art. 22 bis, ni las
+ * bandas horarias de cuidado familiar.
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=1191554
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=207436
+ * @see https://www.dt.gob.cl/legislacion/1624/w3-article-125559.html
+ * @see https://www.dt.gob.cl/legislacion/1624/w3-article-125561.html
+ * @see https://www.dt.gob.cl/legislacion/1624/w3-article-128951.html
+ * @see https://www.mintrab.gob.cl/40horas/
+ */
+export const PACTO_4X3_TOPE_SEMANAL_H = 40;
+export const PACTO_4X3_TOPE_DIARIO_H = 10;
+export const PACTO_4X3_DIAS_MIN = 4;
+export const PACTO_4X3_DIAS_MAX = 6;
+export const PACTO_4X3_DIAS_SEMANA = 7;
+export const PACTO_4X3_VIGENCIA_GENERAL = "2028-04-26";
+export const PACTO_4X3_TOLERANCIA_H = 0.01;
+export const PACTO_4X3_GOLD = Object.freeze({
+  clasico40: Object.freeze({
+    horasSemanales: 40,
+    diasTrabajo: 4,
+    reduccionAnticipada: true,
+    horasDiarias: 10,
+    diasDescanso: 3,
+    ok: true,
+    elegibilidad: "ahora",
+  }),
+  treintaSeis: Object.freeze({
+    horasSemanales: 36,
+    diasTrabajo: 4,
+    reduccionAnticipada: false,
+    horasDiarias: 9,
+    diasDescanso: 3,
+    ok: true,
+    elegibilidad: "ahora",
+  }),
+  cuarentaDosSinReduccion: Object.freeze({
+    horasSemanales: 42,
+    diasTrabajo: 4,
+    reduccionAnticipada: false,
+    horasDiarias: 0,
+    diasDescanso: 3,
+    ok: false,
+    elegibilidad: "desde_2028",
+    motivo: "supera_40",
+  }),
+  topeDiario: Object.freeze({
+    horasSemanales: 40,
+    diasTrabajo: 3,
+    reduccionAnticipada: true,
+    horasDiarias: 40 / 3,
+    diasDescanso: 4,
+    ok: false,
+    elegibilidad: "no_aplica",
+    motivo: "tope",
+  }),
+  reduccion42: Object.freeze({
+    horasSemanales: 42,
+    diasTrabajo: 4,
+    reduccionAnticipada: true,
+    horasDiarias: 10,
+    horasParaReparto: 40,
+    diasDescanso: 3,
+    ok: true,
+    elegibilidad: "ahora",
+  }),
+});
+
+/**
  * Contrato a plazo fijo (art. 159 N°4 CT). Tope general 12 meses; 24 si
  * gerente o título profesional/técnico de institución de educación superior
  * del Estado o reconocida por éste. Una renovación; la segunda o la
