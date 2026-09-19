@@ -70,6 +70,12 @@ import {
   BANDAS_HORARIAS_EDAD_MAX_ANIOS,
   BANDAS_HORARIAS_GOLD,
   BANDAS_HORARIAS_MAX_MIN,
+  PACTO_4X3_DIAS_MAX,
+  PACTO_4X3_DIAS_MIN,
+  PACTO_4X3_GOLD,
+  PACTO_4X3_TOPE_DIARIO_H,
+  PACTO_4X3_TOPE_SEMANAL_H,
+  PACTO_4X3_VIGENCIA_GENERAL,
   CONTRATO_PLAZO_FIJO_GOLD,
   PERMISO_SIN_GOCE_GOLD,
   CONTRATO_PLAZO_FIJO_TOLERANCIA_DIAS,
@@ -177,6 +183,7 @@ import { calcularInclusionLaboral } from "../js/inclusion-laboral.js";
 import { calcularJornadaParcial } from "../js/jornada-parcial.js";
 import { calcularTeletrabajo } from "../js/teletrabajo.js";
 import { calcularBandasHorarias } from "../js/bandas-horarias.js";
+import { calcularPacto4x3 } from "../js/pacto-4x3.js";
 import { calcularContratoPlazoFijo } from "../js/contrato-plazo-fijo.js";
 import { calcularPermisoSinGoce, diasCorridosDelMes } from "../js/permiso-sin-goce.js";
 
@@ -268,6 +275,26 @@ assert(
     BANDAS_HORARIAS_GOLD.anticipar30.horaInicioNueva === "08:00" &&
     BANDAS_HORARIAS_GOLD.cero.horaInicioNueva === "09:00" &&
     BANDAS_HORARIAS_GOLD.excede.ok === false,
+);
+assert(
+  "Pacto 4×3 gold 40/4=10, 36/4=9, 42 sin reducción y tope diario",
+  PACTO_4X3_TOPE_SEMANAL_H === 40 &&
+    PACTO_4X3_TOPE_DIARIO_H === 10 &&
+    PACTO_4X3_DIAS_MIN === 4 &&
+    PACTO_4X3_DIAS_MAX === 6 &&
+    PACTO_4X3_VIGENCIA_GENERAL === "2028-04-26" &&
+    PACTO_4X3_GOLD.clasico40.horasDiarias === 10 &&
+    PACTO_4X3_GOLD.clasico40.diasDescanso === 3 &&
+    PACTO_4X3_GOLD.clasico40.elegibilidad === "ahora" &&
+    PACTO_4X3_GOLD.treintaSeis.horasDiarias === 9 &&
+    PACTO_4X3_GOLD.cuarentaDosSinReduccion.ok === false &&
+    PACTO_4X3_GOLD.cuarentaDosSinReduccion.horasDiarias === 0 &&
+    PACTO_4X3_GOLD.topeDiario.ok === false &&
+    PACTO_4X3_GOLD.topeDiario.motivo === "tope" &&
+    PACTO_4X3_GOLD.cincoDias42.horasDiarias === 42 / 5 &&
+    PACTO_4X3_GOLD.cincoDias42.elegibilidad === "ahora" &&
+    PACTO_4X3_GOLD.diasFraccion.motivo === "dias" &&
+    PACTO_4X3_GOLD.diasFraccion.ok === false,
 );
 assert("Tope cesantía 135.2 UF", TOPE_CESANTIA_UF === 135.2);
 assert(
@@ -3413,6 +3440,102 @@ console.log("\nBandas horarias de cuidado familiar Ley 21.561 (gold 2026)");
   );
 }
 
+console.log("\nPacto 4×3 Ley 21.561 art. 8° transitorio / art. 28 (gold 2026)");
+{
+  // Fuentes: Ley 21.561 BCN 1191554; CT 207436; ORD. 81/2, 82/3, 101; Mintrab /40horas/.
+  const g1 = calcularPacto4x3(PACTO_4X3_GOLD.clasico40);
+  assert(
+    "gold 40 h / 4 días, ya ≤40 → 10,00 h/día, 3 descanso, elegible ahora",
+    g1.ok === true &&
+      g1.horasDiarias === 10 &&
+      g1.horasDiarias === PACTO_4X3_GOLD.clasico40.horasDiarias &&
+      g1.diasDescanso === 3 &&
+      g1.diasDescanso === PACTO_4X3_GOLD.clasico40.diasDescanso &&
+      g1.elegibilidad === "ahora" &&
+      g1.cabeEnTopeDiario === true &&
+      g1.horasParaReparto === 40,
+    JSON.stringify(g1),
+  );
+  const g2 = calcularPacto4x3(PACTO_4X3_GOLD.treintaSeis);
+  assert(
+    "gold 36 h / 4 días → 9,00 h/día, 3 descanso, elegible ahora",
+    g2.ok === true &&
+      g2.horasDiarias === 9 &&
+      g2.horasDiarias === PACTO_4X3_GOLD.treintaSeis.horasDiarias &&
+      g2.diasDescanso === 3 &&
+      g2.elegibilidad === "ahora" &&
+      g2.reduccionAnticipada === false,
+    JSON.stringify(g2),
+  );
+  const g3 = calcularPacto4x3(PACTO_4X3_GOLD.cuarentaDosSinReduccion);
+  assert(
+    "gold 42 h sin reducción → no elegible, sin horas/día inventadas",
+    g3.ok === false &&
+      g3.elegibilidad === "desde_2028" &&
+      g3.motivo === "supera_40" &&
+      g3.horasDiarias === 0 &&
+      g3.horasDiarias === PACTO_4X3_GOLD.cuarentaDosSinReduccion.horasDiarias &&
+      g3.horasParaReparto === 0 &&
+      g3.diasDescanso === 3,
+    JSON.stringify(g3),
+  );
+  const g4 = calcularPacto4x3(PACTO_4X3_GOLD.topeDiario);
+  assert(
+    "gold 40 h / 3 días → 13,33 h/día, no aplica (tope 10 h)",
+    g4.ok === false &&
+      g4.motivo === "tope" &&
+      g4.elegibilidad === "no_aplica" &&
+      g4.horasDiarias === 40 / 3 &&
+      g4.horasDiarias === PACTO_4X3_GOLD.topeDiario.horasDiarias &&
+      g4.cabeEnTopeDiario === false &&
+      g4.diasDescanso === 4,
+    JSON.stringify(g4),
+  );
+  const g5 = calcularPacto4x3(PACTO_4X3_GOLD.reduccion42);
+  assert(
+    "gold 42 h con reducción anticipada → reparte 40 h, 10,00 h/día, ahora",
+    g5.ok === true &&
+      g5.horasParaReparto === 40 &&
+      g5.horasDiarias === 10 &&
+      g5.elegibilidad === "ahora" &&
+      g5.diasDescanso === 3,
+    JSON.stringify(g5),
+  );
+  const g6 = calcularPacto4x3(PACTO_4X3_GOLD.cincoDias42);
+  assert(
+    "gold 42 h / 5 días sin reducción → 8,40 h/día, 2 descanso, elegible ahora",
+    g6.ok === true &&
+      g6.horasDiarias === 42 / 5 &&
+      g6.horasDiarias === PACTO_4X3_GOLD.cincoDias42.horasDiarias &&
+      g6.diasDescanso === 2 &&
+      g6.elegibilidad === "ahora" &&
+      g6.horasParaReparto === 42 &&
+      g6.motivo === "",
+    JSON.stringify(g6),
+  );
+  const g7 = calcularPacto4x3(PACTO_4X3_GOLD.diasFraccion);
+  assert(
+    "gold 40 h / 4,5 días → no aplica (días no enteros; no redondea a 5)",
+    g7.ok === false &&
+      g7.motivo === "dias" &&
+      g7.elegibilidad === "no_aplica" &&
+      g7.horasDiarias === 0 &&
+      g7.diasTrabajo === 4.5 &&
+      g7.diasDescanso === 2.5 &&
+      g7.diasTrabajo === PACTO_4X3_GOLD.diasFraccion.diasTrabajo,
+    JSON.stringify(g7),
+  );
+  const p43App = readFileSync(join(root, "js/app-pacto-4x3.js"), "utf8");
+  assert(
+    "app-pacto-4x3 usa calcularPacto4x3",
+    /import\s*\{[^}]*calcularPacto4x3[^}]*\}\s*from\s*["']\.\/pacto-4x3\.js["']/.test(p43App) &&
+      /calcularPacto4x3\s*\(/.test(p43App) &&
+      !/\balert\s*\(/.test(p43App) &&
+      !/\bconfirm\s*\(/.test(p43App) &&
+      !/\bprompt\s*\(/.test(p43App),
+  );
+}
+
 console.log("\nContrato a plazo fijo art. 159 N°4 (gold 2026)");
 {
   // Fuentes: art. 159 N°4 CT (BCN 207436); DT ORD. 65/1 (w3-article-102862);
@@ -4365,6 +4488,7 @@ const required = [
   "jornada-parcial.html",
   "teletrabajo.html",
   "bandas-horarias.html",
+  "pacto-4x3.html",
   "contrato-plazo-fijo.html",
   "permiso-sin-goce.html",
   "finiquito.html",
@@ -4415,6 +4539,7 @@ const required = [
   "js/app-jornada-parcial.js",
   "js/app-teletrabajo.js",
   "js/app-bandas-horarias.js",
+  "js/app-pacto-4x3.js",
   "js/app-contrato-plazo-fijo.js",
   "js/app-permiso-sin-goce.js",
   "empresa.html",
@@ -4434,6 +4559,7 @@ const required = [
   "js/jornada-parcial.js",
   "js/teletrabajo.js",
   "js/bandas-horarias.js",
+  "js/pacto-4x3.js",
   "js/contrato-plazo-fijo.js",
   "js/permiso-sin-goce.js",
   "js/causales.js",
@@ -4602,6 +4728,7 @@ const htmlFiles = [
   "jornada-parcial.html",
   "teletrabajo.html",
   "bandas-horarias.html",
+  "pacto-4x3.html",
   "contrato-plazo-fijo.html",
   "permiso-sin-goce.html",
   "finiquito.html",
@@ -4727,6 +4854,7 @@ const appEntries = [
   "js/app-jornada-parcial.js",
   "js/app-teletrabajo.js",
   "js/app-bandas-horarias.js",
+  "js/app-pacto-4x3.js",
   "js/app-contrato-plazo-fijo.js",
   "js/app-permiso-sin-goce.js",
   "js/app-finiquito.js",
@@ -4761,7 +4889,7 @@ assert("robots Allow /", /Allow:\s*\//.test(robots));
 assert("robots Disallow /admin", /Disallow:\s*\/admin/.test(robots));
 assert("robots Disallow /api", /Disallow:\s*\/api/.test(robots));
 assert("robots Disallow /docs", /Disallow:\s*\/docs/.test(robots));
-assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/trabajo-pesado/.test(robots) && !/Disallow:\s*\/nulidad-despido/.test(robots) && !/Disallow:\s*\/tutela-laboral/.test(robots) && !/Disallow:\s*\/despido-injustificado/.test(robots) && !/Disallow:\s*\/autodespido/.test(robots) && !/Disallow:\s*\/obra-faena/.test(robots) && !/Disallow:\s*\/prescripcion-laboral/.test(robots) && !/Disallow:\s*\/descanso-compensatorio/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/feriado-anual/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/licencia-medica/.test(robots) && !/Disallow:\s*\/boleta-honorarios/.test(robots) && !/Disallow:\s*\/retencion-judicial/.test(robots) && !/Disallow:\s*\/apv/.test(robots) && !/Disallow:\s*\/sala-cuna/.test(robots) && !/Disallow:\s*\/postnatal-parental/.test(robots) && !/Disallow:\s*\/permiso-prenatal/.test(robots) && !/Disallow:\s*\/fuero-maternal/.test(robots) && !/Disallow:\s*\/permiso-paternidad/.test(robots) && !/Disallow:\s*\/permiso-matrimonio/.test(robots) && !/Disallow:\s*\/permiso-fallecimiento/.test(robots) && !/Disallow:\s*\/interes-mora/.test(robots) && !/Disallow:\s*\/hora-lactancia/.test(robots) && !/Disallow:\s*\/jornada-40-horas/.test(robots) && !/Disallow:\s*\/jornada-parcial/.test(robots) && !/Disallow:\s*\/teletrabajo/.test(robots) && !/Disallow:\s*\/bandas-horarias/.test(robots) && !/Disallow:\s*\/contrato-plazo-fijo/.test(robots) && !/Disallow:\s*\/permiso-sin-goce/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots) && !/Disallow:\s*\/inclusion-laboral/.test(robots));
+assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/trabajo-pesado/.test(robots) && !/Disallow:\s*\/nulidad-despido/.test(robots) && !/Disallow:\s*\/tutela-laboral/.test(robots) && !/Disallow:\s*\/despido-injustificado/.test(robots) && !/Disallow:\s*\/autodespido/.test(robots) && !/Disallow:\s*\/obra-faena/.test(robots) && !/Disallow:\s*\/prescripcion-laboral/.test(robots) && !/Disallow:\s*\/descanso-compensatorio/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/feriado-anual/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/licencia-medica/.test(robots) && !/Disallow:\s*\/boleta-honorarios/.test(robots) && !/Disallow:\s*\/retencion-judicial/.test(robots) && !/Disallow:\s*\/apv/.test(robots) && !/Disallow:\s*\/sala-cuna/.test(robots) && !/Disallow:\s*\/postnatal-parental/.test(robots) && !/Disallow:\s*\/permiso-prenatal/.test(robots) && !/Disallow:\s*\/fuero-maternal/.test(robots) && !/Disallow:\s*\/permiso-paternidad/.test(robots) && !/Disallow:\s*\/permiso-matrimonio/.test(robots) && !/Disallow:\s*\/permiso-fallecimiento/.test(robots) && !/Disallow:\s*\/interes-mora/.test(robots) && !/Disallow:\s*\/hora-lactancia/.test(robots) && !/Disallow:\s*\/jornada-40-horas/.test(robots) && !/Disallow:\s*\/jornada-parcial/.test(robots) && !/Disallow:\s*\/teletrabajo/.test(robots) && !/Disallow:\s*\/bandas-horarias/.test(robots) && !/Disallow:\s*\/pacto-4x3/.test(robots) && !/Disallow:\s*\/contrato-plazo-fijo/.test(robots) && !/Disallow:\s*\/permiso-sin-goce/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots) && !/Disallow:\s*\/inclusion-laboral/.test(robots));
 assert("robots Sitemap", /Sitemap:\s*https:\/\/www\.haberes\.cl\/sitemap\.xml/.test(robots));
 
 const { seoPaths, GUIDE_SLUGS, GUIDES, CAUSAL_PAGES, BASE_PATHS, lastmodForPath } = await import("../content/registry.js");
@@ -4826,6 +4954,7 @@ assert(
     BASE_PATHS.includes("/jornada-parcial") &&
     BASE_PATHS.includes("/teletrabajo") &&
     BASE_PATHS.includes("/bandas-horarias") &&
+    BASE_PATHS.includes("/pacto-4x3") &&
     BASE_PATHS.includes("/contrato-plazo-fijo") &&
     BASE_PATHS.includes("/permiso-sin-goce"),
   `${locs.length} vs ${expectedFromRegistry.length}`,
@@ -5182,7 +5311,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 96,
+      seoPaths().length === 97,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -5194,7 +5323,7 @@ try {
   const docsSeo = await hitLocal("/docs/seo-map.md");
   assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
   assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
-  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/obra-faena/", "/prescripcion-laboral/", "/descanso-compensatorio/", "/inclusion-laboral/", "/jornada-parcial/", "/teletrabajo/", "/bandas-horarias/", "/contrato-plazo-fijo/", "/permiso-sin-goce/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/obra-faena/", "/prescripcion-laboral/", "/descanso-compensatorio/", "/inclusion-laboral/", "/jornada-parcial/", "/teletrabajo/", "/bandas-horarias/", "/pacto-4x3/", "/contrato-plazo-fijo/", "/permiso-sin-goce/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
   }
@@ -5249,6 +5378,7 @@ try {
     "/jornada-parcial",
     "/teletrabajo",
     "/bandas-horarias",
+    "/pacto-4x3",
     "/contrato-plazo-fijo",
     "/permiso-sin-goce",
     "/gratificacion",
@@ -9065,6 +9195,7 @@ assert(
     ["jornada-parcial.html", "/jornada-parcial"],
     ["teletrabajo.html", "/teletrabajo"],
     ["bandas-horarias.html", "/bandas-horarias"],
+    ["pacto-4x3.html", "/pacto-4x3"],
     ["contrato-plazo-fijo.html", "/contrato-plazo-fijo"],
     ["permiso-sin-goce.html", "/permiso-sin-goce"],
     ["finiquito.html", "/finiquito"],
@@ -10704,6 +10835,144 @@ assert(
         /href="\/bandas-horarias"/.test(heHtmlBh) &&
         /href="\/bandas-horarias"/.test(dcHtmlBh) &&
         /href="\/bandas-horarias"/.test(readFileSync(join(root, "empresa.html"), "utf8")),
+    );
+  }
+  {
+    const p43Html = readFileSync(join(root, "pacto-4x3.html"), "utf8");
+    const p43Title = (p43Html.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const p43H1 = (p43Html.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const p43Desc = (p43Html.match(/meta name="description" content="([^"]*)"/) || [])[1] || "";
+    const j40HtmlP43 = readFileSync(join(root, "jornada-40-horas.html"), "utf8");
+    const jpHtmlP43 = readFileSync(join(root, "jornada-parcial.html"), "utf8");
+    const ttHtmlP43 = readFileSync(join(root, "teletrabajo.html"), "utf8");
+    const heHtmlP43 = readFileSync(join(root, "horas-extras.html"), "utf8");
+    const dcHtmlP43 = readFileSync(join(root, "descanso-compensatorio.html"), "utf8");
+    const bhHtmlP43 = readFileSync(join(root, "bandas-horarias.html"), "utf8");
+    const goldP1 = calcularPacto4x3(PACTO_4X3_GOLD.clasico40);
+    const goldP2 = calcularPacto4x3(PACTO_4X3_GOLD.treintaSeis);
+    const goldP3 = calcularPacto4x3(PACTO_4X3_GOLD.cuarentaDosSinReduccion);
+    const goldP4 = calcularPacto4x3(PACTO_4X3_GOLD.topeDiario);
+    assert(
+      "SEO pacto 4×3 title único y corto",
+      /calcular pacto 4×3/i.test(p43Title) &&
+        p43Title.length <= 65 &&
+        !/sueldo l[ií]quido/i.test(p43Title) &&
+        !/teletrabajo/i.test(p43Title) &&
+        !/bandas horarias/i.test(p43Title),
+      p43Title,
+    );
+    assert(
+      "SEO pacto 4×3 H1 único distribución 4 días",
+      p43H1 === "Calcular pacto 4×3 Chile 2026" &&
+        /Ley 21\.561/.test(p43Html) &&
+        /art[ií]culo 8/.test(p43Html) &&
+        /4 d[ií]as de trabajo/.test(p43Html),
+      p43H1,
+    );
+    assert(
+      "SEO pacto 4×3 description propia",
+      p43Desc.length >= 110 &&
+        p43Desc.length <= 160 &&
+        /Ley 21\.561/.test(p43Desc) &&
+        /pacto 4×3/.test(p43Desc) &&
+        /10 h/.test(p43Desc),
+      `${p43Desc.length}:${p43Desc}`,
+    );
+    assert(
+      "SEO pacto 4×3 cita DT ORD 81/2 82/3 101, Ley 21.561, CT y Mintrab",
+      /dt\.gob\.cl\/legislacion\/1624\/w3-article-125559/.test(p43Html) &&
+        /dt\.gob\.cl\/legislacion\/1624\/w3-article-125561/.test(p43Html) &&
+        /dt\.gob\.cl\/legislacion\/1624\/w3-article-128951/.test(p43Html) &&
+        /bcn\.cl\/leychile\/navegar\?idNorma=1191554/.test(p43Html) &&
+        /bcn\.cl\/leychile\/navegar\?idNorma=207436/.test(p43Html) &&
+        /mintrab\.gob\.cl\/40horas/.test(p43Html),
+    );
+    assert(
+      "SEO pacto 4×3 gold 2026 10,00 h, 9,00 h, 42 h y tope 10 en copy",
+      goldP1.horasDiarias === 10 &&
+        goldP1.diasDescanso === 3 &&
+        goldP1.elegibilidad === "ahora" &&
+        goldP2.horasDiarias === 9 &&
+        goldP3.ok === false &&
+        goldP3.horasDiarias === 0 &&
+        goldP4.ok === false &&
+        goldP4.motivo === "tope" &&
+        /10,00/.test(p43Html) &&
+        /9,00/.test(p43Html) &&
+        /13,33/.test(p43Html) &&
+        /8,40/.test(p43Html) &&
+        /4,5/.test(p43Html) &&
+        /42 h/.test(p43Html) &&
+        /26-abr-2028|26 de abril de 2028/.test(p43Html),
+    );
+    assert("SEO pacto 4×3 FAQPage", /"@type": "FAQPage"/.test(p43Html));
+    assert(
+      "SEO pacto 4×3 no canibaliza hermanas vetadas",
+      /href="\/jornada-40-horas"/.test(p43Html) &&
+        /href="\/bandas-horarias"/.test(p43Html) &&
+        /href="\/jornada-parcial"/.test(p43Html) &&
+        /href="\/teletrabajo"/.test(p43Html) &&
+        /href="\/horas-extras"/.test(p43Html) &&
+        /href="\/descanso-compensatorio"/.test(p43Html) &&
+        /href="\/recargo-domingo-comercio"/.test(p43Html) &&
+        /href="\/descuento-atrasos"/.test(p43Html) &&
+        /href="\/sueldo"/.test(p43Html) &&
+        /href="\/costo-empresa"/.test(p43Html) &&
+        /href="\/empresa"/.test(p43Html) &&
+        /href="\/permiso-sin-goce"/.test(p43Html) &&
+        /art[ií]culo 22 bis/.test(p43Html) &&
+        /voluntario y escrito/.test(p43Html) &&
+        /estimaci[oó]n educativa/.test(p43Html) &&
+        /no constituye asesor[ií]a legal/i.test(p43Html) &&
+        !existsSync(join(root, "jornada-4x3.html")) &&
+        !existsSync(join(root, "4x3.html")) &&
+        !existsSync(join(root, "art-28-4x3.html")) &&
+        !existsSync(join(root, "distribucion-4-dias.html")) &&
+        !existsSync(join(root, "semana-4x3.html")),
+    );
+    assert(
+      "home y nav enlazan /pacto-4x3",
+      /href="\/pacto-4x3"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/pacto-4x3" data-nav>Pacto 4×3<\/a>/.test(
+          readFileSync(join(root, "index.html"), "utf8"),
+        ) &&
+        /href="\/pacto-4x3" data-nav>Pacto 4×3<\/a>/.test(p43Html) &&
+        /href="\/pacto-4x3" data-nav>Pacto 4×3<\/a>/.test(
+          readFileSync(join(root, "js/ui.js"), "utf8"),
+        ),
+    );
+    assert(
+      "sitemap incluye /pacto-4x3",
+      locs.includes("https://www.haberes.cl/pacto-4x3") &&
+        lastmodForPath("/pacto-4x3") === "2026-09-19",
+    );
+    assert(
+      "seo-map documenta /pacto-4x3 y no-canibalizar hermanas",
+      /\/pacto-4x3/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no canibalizar `\/jornada-40-horas`, `\/bandas-horarias`, `\/jornada-parcial`/.test(
+          readFileSync(join(root, "docs/seo-map.md"), "utf8"),
+        ) &&
+        /no crear `\/jornada-4x3`/i.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")),
+    );
+    assert(
+      "hub /guias enlaza /pacto-4x3 en el cluster de liquidación",
+      /href="\/pacto-4x3"/.test(readFileSync(join(root, "guias.html"), "utf8")) &&
+        /<h2>Liquidaci[oó]n de sueldo<\/h2>[\s\S]*href="\/pacto-4x3"/.test(
+          readFileSync(join(root, "guias.html"), "utf8"),
+        ) &&
+        !/<h2>Finiquito<\/h2>[\s\S]*href="\/pacto-4x3"/.test(
+          readFileSync(join(root, "guias.html"), "utf8"),
+        ),
+    );
+    assert(
+      "hermanas enlazan /pacto-4x3",
+      /href="\/pacto-4x3"/.test(j40HtmlP43) &&
+        /href="\/pacto-4x3"/.test(jpHtmlP43) &&
+        /href="\/pacto-4x3"/.test(ttHtmlP43) &&
+        /href="\/pacto-4x3"/.test(heHtmlP43) &&
+        /href="\/pacto-4x3"/.test(dcHtmlP43) &&
+        /href="\/pacto-4x3"/.test(bhHtmlP43) &&
+        /href="\/pacto-4x3"/.test(readFileSync(join(root, "empresa.html"), "utf8")),
     );
   }
   {
@@ -15395,6 +15664,7 @@ assert(
       "jornada-parcial.html",
       "teletrabajo.html",
       "bandas-horarias.html",
+      "pacto-4x3.html",
       "contrato-plazo-fijo.html",
       "permiso-sin-goce.html",
       "finiquito.html",
@@ -15574,7 +15844,7 @@ assert(
     return acc;
   }
   const pages = listHtml(root);
-  assert("98 páginas HTML", pages.length === 98, String(pages.length));
+  assert("99 páginas HTML", pages.length === 99, String(pages.length));
   for (const file of pages) {
     const html = readFileSync(file, "utf8");
     const rel = file.slice(root.length + 1);
