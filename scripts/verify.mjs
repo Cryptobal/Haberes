@@ -290,7 +290,11 @@ assert(
     PACTO_4X3_GOLD.cuarentaDosSinReduccion.ok === false &&
     PACTO_4X3_GOLD.cuarentaDosSinReduccion.horasDiarias === 0 &&
     PACTO_4X3_GOLD.topeDiario.ok === false &&
-    PACTO_4X3_GOLD.topeDiario.motivo === "tope",
+    PACTO_4X3_GOLD.topeDiario.motivo === "tope" &&
+    PACTO_4X3_GOLD.cincoDias42.horasDiarias === 42 / 5 &&
+    PACTO_4X3_GOLD.cincoDias42.elegibilidad === "ahora" &&
+    PACTO_4X3_GOLD.diasFraccion.motivo === "dias" &&
+    PACTO_4X3_GOLD.diasFraccion.ok === false,
 );
 assert("Tope cesantía 135.2 UF", TOPE_CESANTIA_UF === 135.2);
 assert(
@@ -3496,6 +3500,30 @@ console.log("\nPacto 4×3 Ley 21.561 art. 8° transitorio / art. 28 (gold 2026)"
       g5.elegibilidad === "ahora" &&
       g5.diasDescanso === 3,
     JSON.stringify(g5),
+  );
+  const g6 = calcularPacto4x3(PACTO_4X3_GOLD.cincoDias42);
+  assert(
+    "gold 42 h / 5 días sin reducción → 8,40 h/día, 2 descanso, elegible ahora",
+    g6.ok === true &&
+      g6.horasDiarias === 42 / 5 &&
+      g6.horasDiarias === PACTO_4X3_GOLD.cincoDias42.horasDiarias &&
+      g6.diasDescanso === 2 &&
+      g6.elegibilidad === "ahora" &&
+      g6.horasParaReparto === 42 &&
+      g6.motivo === "",
+    JSON.stringify(g6),
+  );
+  const g7 = calcularPacto4x3(PACTO_4X3_GOLD.diasFraccion);
+  assert(
+    "gold 40 h / 4,5 días → no aplica (días no enteros; no redondea a 5)",
+    g7.ok === false &&
+      g7.motivo === "dias" &&
+      g7.elegibilidad === "no_aplica" &&
+      g7.horasDiarias === 0 &&
+      g7.diasTrabajo === 4.5 &&
+      g7.diasDescanso === 2.5 &&
+      g7.diasTrabajo === PACTO_4X3_GOLD.diasFraccion.diasTrabajo,
+    JSON.stringify(g7),
   );
   const p43App = readFileSync(join(root, "js/app-pacto-4x3.js"), "utf8");
   assert(
@@ -10872,6 +10900,8 @@ assert(
         /10,00/.test(p43Html) &&
         /9,00/.test(p43Html) &&
         /13,33/.test(p43Html) &&
+        /8,40/.test(p43Html) &&
+        /4,5/.test(p43Html) &&
         /42 h/.test(p43Html) &&
         /26-abr-2028|26 de abril de 2028/.test(p43Html),
     );

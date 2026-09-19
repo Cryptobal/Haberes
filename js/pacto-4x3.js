@@ -12,6 +12,10 @@ import {
  * Pacto 4×3 (Ley 21.561): estimar si una jornada ordinaria de hasta 40 h
  * semanales puede repartirse en 4 días de trabajo y 3 de descanso.
  *
+ * El requisito de ≤40 h / art. 8° transitorio / 26-abr-2028 aplica solo a
+ * la distribución en 4 días. 5 y 6 días ya se permiten (art. 28 vigente).
+ * Los días de trabajo deben ser un entero: 4,5 no se redondea a 5.
+ *
  * Estimación educativa. El pacto es voluntario y escrito; no es automático
  * por la rebaja a 42 h de abril de 2026. No es el tope gradual 44/42/40
  * (`/jornada-40-horas`), ni el promedio del art. 22 bis, ni las bandas
@@ -66,11 +70,13 @@ function horasPositiva(raw) {
   return n;
 }
 
-function diasEntero(raw) {
-  if (raw == null || raw === "") return PACTO_4X3_DIAS_MIN;
+function diasParse(raw) {
+  if (raw == null || raw === "") {
+    return { entero: true, valor: PACTO_4X3_DIAS_MIN };
+  }
   const n = Number(raw);
-  if (!Number.isFinite(n)) return null;
-  return Math.round(n);
+  if (!Number.isFinite(n)) return { entero: false, valor: null };
+  return { entero: Number.isInteger(n), valor: n };
 }
 
 /**
@@ -83,7 +89,8 @@ function diasEntero(raw) {
 export function calcularPacto4x3(input = {}) {
   const horasSemanales = horasPositiva(input.horasSemanales);
   const reduccionAnticipada = Boolean(input.reduccionAnticipada);
-  const diasTrabajo = diasEntero(input.diasTrabajo);
+  const dias = diasParse(input.diasTrabajo);
+  const diasTrabajo = dias.valor;
 
   if (diasTrabajo == null || diasTrabajo < 1) {
     return vacio({
@@ -99,6 +106,13 @@ export function calcularPacto4x3(input = {}) {
     horasSemanales,
   };
 
+  if (!dias.entero) {
+    return vacio({
+      ...baseDias,
+      motivo: "dias",
+    });
+  }
+
   if (horasSemanales <= 0) {
     return vacio({
       ...baseDias,
@@ -106,7 +120,9 @@ export function calcularPacto4x3(input = {}) {
     });
   }
 
+  const pactoCuatroDias = diasTrabajo === PACTO_4X3_DIAS_MIN;
   const superaSinReduccion =
+    pactoCuatroDias &&
     horasSemanales - PACTO_4X3_TOPE_SEMANAL_H > PACTO_4X3_TOLERANCIA_H &&
     !reduccionAnticipada;
 
@@ -126,7 +142,9 @@ export function calcularPacto4x3(input = {}) {
   }
 
   const horasParaReparto =
-    horasSemanales > PACTO_4X3_TOPE_SEMANAL_H && reduccionAnticipada
+    pactoCuatroDias &&
+    horasSemanales > PACTO_4X3_TOPE_SEMANAL_H &&
+    reduccionAnticipada
       ? PACTO_4X3_TOPE_SEMANAL_H
       : horasSemanales;
   const horasDiarias = horasParaReparto / diasTrabajo;

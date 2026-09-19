@@ -237,13 +237,13 @@ export const BANDAS_HORARIAS_GOLD = Object.freeze({
 
 /**
  * Pacto 4×3 (Ley 21.561 / art. 8° transitorio y art. 28 CT).
- * Distribución de jornada ordinaria de hasta 40 h en no menos de 4 ni más
- * de 6 días. Tope diario ordinario: 10 h. La modificación general del
- * art. 28 rige el 26-abr-2028; antes, solo si la empresa ya está en ≤40 h
- * o reduce anticipadamente a 40 (art. 8° transitorio). El pacto es
- * voluntario y escrito: no es automático por la rebaja a 42 h de abr-2026.
- * No es el tope gradual 44/42/40, ni el promedio del art. 22 bis, ni las
- * bandas horarias de cuidado familiar.
+ * Distribución de jornada ordinaria en no menos de 4 ni más de 6 días.
+ * Tope diario ordinario: 10 h. La bajada del mínimo a 4 días (art. 28)
+ * rige el 26-abr-2028; antes, el 4×3 solo si la empresa ya está en ≤40 h
+ * o reduce anticipadamente a 40 (art. 8° transitorio). 5 y 6 días ya se
+ * permiten. El pacto es voluntario y escrito: no es automático por la
+ * rebaja a 42 h de abr-2026. No es el tope gradual 44/42/40, ni el
+ * promedio del art. 22 bis, ni las bandas horarias de cuidado familiar.
  * @see https://www.bcn.cl/leychile/navegar?idNorma=1191554
  * @see https://www.bcn.cl/leychile/navegar?idNorma=207436
  * @see https://www.dt.gob.cl/legislacion/1624/w3-article-125559.html
@@ -306,6 +306,25 @@ export const PACTO_4X3_GOLD = Object.freeze({
     diasDescanso: 3,
     ok: true,
     elegibilidad: "ahora",
+  }),
+  cincoDias42: Object.freeze({
+    horasSemanales: 42,
+    diasTrabajo: 5,
+    reduccionAnticipada: false,
+    horasDiarias: 42 / 5,
+    diasDescanso: 2,
+    ok: true,
+    elegibilidad: "ahora",
+  }),
+  diasFraccion: Object.freeze({
+    horasSemanales: 40,
+    diasTrabajo: 4.5,
+    reduccionAnticipada: true,
+    horasDiarias: 0,
+    diasDescanso: 2.5,
+    ok: false,
+    elegibilidad: "no_aplica",
+    motivo: "dias",
   }),
 });
 
