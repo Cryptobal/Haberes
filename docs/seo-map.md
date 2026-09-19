@@ -18,6 +18,7 @@ Actualizar este archivo antes de crear URLs nuevas para evitar canibalización.
 | Calcular teletrabajo | teletrabajo / derecho a desconexión / trabajo a distancia / Ley 21.220 | `/teletrabajo` | Title/H1 «calcular teletrabajo» + derecho a desconexión Chile 2026; no canibalizar `/jornada-40-horas`, `/jornada-parcial`, `/horas-extras`, `/descanso-compensatorio`, `/recargo-domingo-comercio`, `/descuento-atrasos`, `/sueldo`, `/costo-empresa` ni `/empresa`. 12 h continuas en 24 h (art. 152 quáter J); rem/30 solo referencia de días bajo modalidad. No es líquido, extras ni finiquito. No crear `/home-office`, `/trabajo-remoto`, `/derecho-desconexion` ni `/ley-21220` |
 | Calcular bandas horarias | bandas horarias / banda horaria / horario flexible cuidado / Ley 21.561 bandas | `/bandas-horarias` | Title/H1 «calcular bandas horarias» Chile 2026; no canibalizar `/jornada-40-horas`, `/jornada-parcial`, `/teletrabajo`, `/horas-extras`, `/descanso-compensatorio`, `/recargo-domingo-comercio`, `/descuento-atrasos`, `/sueldo`, `/costo-empresa`, `/empresa`, `/permiso-sin-goce`, `/fuero-maternal`, `/postnatal-parental`, `/hora-lactancia` ni `/sala-cuna`. Anticipar o retrasar hasta 1 h el inicio (mismo desplazamiento al término) si es madre, padre o tiene el cuidado de un niño/a ≤12. No es art. 22 bis ni 4×3. No crear `/banda-horaria`, `/horario-flexible`, `/ley-21561-bandas`, `/art-27-bandas` ni `/flexibilidad-horario` |
 | Calcular pacto 4×3 | pacto 4x3 / jornada 4 días 3 descanso / art. 8 transitorio Ley 21.561 | `/pacto-4x3` | Title/H1 «calcular pacto 4×3» Chile 2026; no canibalizar `/jornada-40-horas`, `/bandas-horarias`, `/jornada-parcial`, `/teletrabajo`, `/horas-extras`, `/descanso-compensatorio`, `/recargo-domingo-comercio`, `/descuento-atrasos`, `/sueldo`, `/costo-empresa`, `/empresa` ni `/permiso-sin-goce`. Distribución 4 días trabajo / 3 descanso (art. 28 / art. 8° transitorio), tope 10 h/día. No es el tope 44/42/40 ni el art. 22 bis ni las bandas de cuidado. No crear `/jornada-4x3`, `/4x3`, `/art-28-4x3`, `/distribucion-4-dias` ni `/semana-4x3` |
+| Calcular jornada excepcional | jornada excepcional / sistema excepcional jornada / PHSC / autorización DT art. 38 | `/jornada-excepcional` | Title/H1 «calcular jornada excepcional» Chile 2026; no canibalizar `/jornada-40-horas`, `/pacto-4x3`, `/bandas-horarias`, `/jornada-parcial`, `/teletrabajo`, `/horas-extras`, `/descanso-compensatorio`, `/recargo-domingo-comercio`, `/feriado-irrenunciable`, `/descuento-atrasos`, `/semana-corrida`, `/sueldo`, `/costo-empresa`, `/empresa` ni `/permiso-sin-goce`. PHSC art. 38 inc. 7°–9° / DS N°48: tope 42 h, días extra 0/4,5/9. Requiere resolución DT. No es el pacto 4×3 ni el art. 22 bis. No crear `/sistema-excepcional`, `/art-38`, `/jornada-dt`, `/autorizacion-dt-jornada`, `/4x4`, `/7x7` ni `/ciclo-excepcional` |
 | Calcular vacaciones proporcionales | vacaciones proporcionales (1.300/16), feriado proporcional (590/13), calcular feriado proporcional (320/14) | `/vacaciones-proporcionales` | Title/H1 «calcular vacaciones proporcionales»; no canibalizar `/finiquito` ni `/guias/vacaciones-proporcionales` |
 | Calcular gratificación | gratificación legal (4.400/17) — intención calcular | `/gratificacion` | Title/H1 «calcular gratificación»; no canibalizar `/sueldo` ni `/guias/gratificacion-legal` |
 | Calcular impuesto único | calcular impuesto unico (480/mes), tabla impuesto unico (2.900/mes) | `/impuesto-unico` | Title/H1 «calcular impuesto único»; no canibalizar `/sueldo` ni `/guias/impuesto-unico` |
@@ -199,6 +200,17 @@ en `/pacto-4x3`. No canibalizar `/jornada-40-horas`, `/bandas-horarias`, `/jorna
 El tope gradual 44/42/40 h sigue en `/jornada-40-horas`. `/jornada-40-horas` habla de
 «bandas 4×3» (art. 22 bis) de forma coloquial; esa no es `/pacto-4x3`. Las bandas de
 cuidado familiar siguen en `/bandas-horarias`.
+
+No publicar `/sistema-excepcional`, `/art-38`, `/jornada-dt`, `/autorizacion-dt-jornada`,
+`/4x4`, `/7x7` ni `/ciclo-excepcional`. El PHSC de un sistema excepcional de jornada y
+descansos (art. 38 incisos 7°–9° CT / DS N°48/2023; tope autorizable 42 h; días extra
+0 / 4,5 / 9 del inciso 8°) vive en `/jornada-excepcional`. Requiere resolución de la DT:
+esta página no aprueba ni simula el trámite. No canibalizar `/jornada-40-horas`,
+`/pacto-4x3`, `/bandas-horarias`, `/jornada-parcial`, `/teletrabajo`, `/horas-extras`,
+`/descanso-compensatorio`, `/recargo-domingo-comercio`, `/feriado-irrenunciable`,
+`/descuento-atrasos`, `/semana-corrida`, `/sueldo`, `/costo-empresa`, `/empresa` ni
+`/permiso-sin-goce`. El pacto escrito 4 días / 3 descanso (sin autorización DT) sigue
+en `/pacto-4x3`. El tope gradual y el art. 22 bis siguen en `/jornada-40-horas`.
 
 No publicar `/pago-feriado`, `/trabajo-feriado`, `/feriados` ni `/irrenunciable`.
 El pago educativo de un feriado irrenunciable (Ley 19.973 + recargo 50 % art. 32)

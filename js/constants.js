@@ -329,6 +329,155 @@ export const PACTO_4X3_GOLD = Object.freeze({
 });
 
 /**
+ * Sistema excepcional de distribución de jornada y descansos
+ * (Código del Trabajo art. 38 incisos 7°–9° / DS N°48/2023 Mintrab).
+ *
+ * PHSC = (horas_trabajo_ciclo / dias_ciclo) × 7.
+ * dias_ciclo = días de trabajo + días de descanso.
+ * horas_trabajo_ciclo = horas de la jornada diaria × días de trabajo
+ * (solo días efectivamente trabajados). Subciclos: se suman todos los
+ * días y horas del ciclo compuesto.
+ *
+ * Tope ordinario art. 22 (Ley 21.561): 42 h desde 26-abr-2026; 40 h
+ * desde 26-abr-2028. Art. 38 inc. 8° / DS 48 art. 7: se pueden autorizar
+ * sistemas con PHSC hasta 42 h aun cuando el ordinario sea 40; entonces
+ * PHSC 42 → 9 días de descanso adicional anuales (compensables en dinero
+ * por acuerdo); PHSC 41 → 4,5 días. Ese margen (inciso 2° del art. 7)
+ * rige el 26-abr-2028, salvo jornada de 40 h adelantada
+ * (art. quinto transitorio DS 48; ORD. N°601/26).
+ *
+ * Estimación educativa: la autorización la da la Dirección del Trabajo.
+ * No aprueba ni simula el trámite. No es el pacto 4×3 del art. 28 ni el
+ * promedio del art. 22 bis.
+ *
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=207436
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=1191554
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=1202792
+ * @see https://www.dt.gob.cl/legislacion/1624/w3-article-128281.html
+ * @see https://www.dt.gob.cl/legislacion/1624/w3-propertyvalue-193335.html
+ * @see https://www.dt.gob.cl/portal/1628/w3-article-93833.html
+ */
+export const JORNADA_EXCEPCIONAL_TOPE_AUTORIZABLE_H = 42;
+export const JORNADA_EXCEPCIONAL_PHSC_41_H = 41;
+export const JORNADA_EXCEPCIONAL_DIAS_EXTRA_42 = 9;
+export const JORNADA_EXCEPCIONAL_DIAS_EXTRA_41 = 4.5;
+export const JORNADA_EXCEPCIONAL_TOPE_ORDINARIO_2026_H = 42;
+export const JORNADA_EXCEPCIONAL_TOPE_ORDINARIO_2028_H = 40;
+export const JORNADA_EXCEPCIONAL_TOLERANCIA_H = 0.01;
+export const JORNADA_EXCEPCIONAL_HORIZONTE_SITIO = "sitio";
+export const JORNADA_EXCEPCIONAL_HORIZONTE_2026 = "2026";
+export const JORNADA_EXCEPCIONAL_HORIZONTE_2028 = "2028";
+/** 7 días × 12 h + 7 descanso: horas_ciclo = 84, PHSC = 42. */
+export const JORNADA_EXCEPCIONAL_GOLD_7X7_HORAS_DIA = 12;
+/** 7×7 con PHSC 41,00: horas_ciclo = 82 → 82/7 h/día. */
+export const JORNADA_EXCEPCIONAL_GOLD_PHSC41_HORAS_DIA = 82 / 7;
+export const JORNADA_EXCEPCIONAL_GOLD = Object.freeze({
+  sietePorSiete2026: Object.freeze({
+    diasTrabajo: 7,
+    diasDescanso: 7,
+    horasDiarias: 12,
+    horizonte: "2026",
+    horasCiclo: 84,
+    diasCiclo: 14,
+    phsc: 42,
+    ok: true,
+    regimen: "dentro_ordinario",
+    diasAdicionales: 0,
+    topeOrdinarioH: 42,
+  }),
+  sietePorSiete2028: Object.freeze({
+    diasTrabajo: 7,
+    diasDescanso: 7,
+    horasDiarias: 12,
+    horizonte: "2028",
+    horasCiclo: 84,
+    diasCiclo: 14,
+    phsc: 42,
+    ok: true,
+    regimen: "inciso_8",
+    diasAdicionales: 9,
+    topeOrdinarioH: 40,
+  }),
+  phsc41_2028: Object.freeze({
+    diasTrabajo: 7,
+    diasDescanso: 7,
+    horasDiarias: 82 / 7,
+    horizonte: "2028",
+    horasCiclo: 82,
+    diasCiclo: 14,
+    phsc: 41,
+    ok: true,
+    regimen: "inciso_8",
+    diasAdicionales: 4.5,
+    topeOrdinarioH: 40,
+  }),
+  cuatroPorDoce: Object.freeze({
+    diasTrabajo: 4,
+    diasDescanso: 3,
+    horasDiarias: 12,
+    horizonte: "2026",
+    horasCiclo: 48,
+    diasCiclo: 7,
+    phsc: 48,
+    ok: false,
+    regimen: "supera_tope",
+    motivo: "supera_tope",
+    diasAdicionales: 0,
+    topeOrdinarioH: 42,
+  }),
+  cincoPor84: Object.freeze({
+    diasTrabajo: 5,
+    diasDescanso: 2,
+    horasDiarias: 8.4,
+    horizonte: "2026",
+    horasCiclo: 42,
+    diasCiclo: 7,
+    phsc: 42,
+    ok: true,
+    regimen: "dentro_ordinario",
+    diasAdicionales: 0,
+    topeOrdinarioH: 42,
+  }),
+  ceroTrabajo: Object.freeze({
+    diasTrabajo: 0,
+    diasDescanso: 7,
+    horasDiarias: 12,
+    horizonte: "2026",
+    ok: false,
+    motivo: "datos",
+    phsc: 0,
+  }),
+  horasCero: Object.freeze({
+    diasTrabajo: 7,
+    diasDescanso: 7,
+    horasDiarias: 0,
+    horizonte: "2026",
+    ok: false,
+    motivo: "datos",
+    phsc: 0,
+  }),
+  descansoNegativo: Object.freeze({
+    diasTrabajo: 7,
+    diasDescanso: -1,
+    horasDiarias: 12,
+    horizonte: "2026",
+    ok: false,
+    motivo: "descanso",
+    phsc: 0,
+  }),
+  cicloInconsistente: Object.freeze({
+    diasTrabajo: 7,
+    diasDescanso: 7,
+    horasDiarias: 12,
+    diasCiclo: 10,
+    horizonte: "2026",
+    ok: false,
+    motivo: "ciclo",
+    phsc: 0,
+  }),
+});
+
+/**
  * Contrato a plazo fijo (art. 159 N°4 CT). Tope general 12 meses; 24 si
  * gerente o título profesional/técnico de institución de educación superior
  * del Estado o reconocida por éste. Una renovación; la segunda o la
