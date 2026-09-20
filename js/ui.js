@@ -215,6 +215,7 @@ function paintLoggedInNav(emp) {
         <a href="/sueldo-proporcional" data-nav>Sueldo proporcional</a>
         <a href="/sueldo-minimo" data-nav>Sueldo mínimo</a>
         <a href="/horas-extras" data-nav>Horas extras</a>
+        <a href="/compensacion-horas-extras" data-nav>Compensación horas extras</a>
         <a href="/jornada-40-horas" data-nav>Jornada 40 horas</a>
         <a href="/jornada-parcial" data-nav>Jornada parcial</a>
         <a href="/teletrabajo" data-nav>Teletrabajo</a>

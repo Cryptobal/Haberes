@@ -82,6 +82,13 @@ import {
   JORNADA_EXCEPCIONAL_TOPE_AUTORIZABLE_H,
   JORNADA_EXCEPCIONAL_TOPE_ORDINARIO_2026_H,
   JORNADA_EXCEPCIONAL_TOPE_ORDINARIO_2028_H,
+  COMPENSACION_HE_AVISO_HORAS,
+  COMPENSACION_HE_GOLD,
+  COMPENSACION_HE_JORNADA_DIARIA_42_5,
+  COMPENSACION_HE_JORNADA_DIARIA_DEFAULT,
+  COMPENSACION_HE_PLAZO_MESES,
+  COMPENSACION_HE_RECARGO,
+  COMPENSACION_HE_TOPE_DIAS,
   CONTRATO_PLAZO_FIJO_GOLD,
   PERMISO_SIN_GOCE_GOLD,
   CONTRATO_PLAZO_FIJO_TOLERANCIA_DIAS,
@@ -191,6 +198,7 @@ import { calcularTeletrabajo } from "../js/teletrabajo.js";
 import { calcularBandasHorarias } from "../js/bandas-horarias.js";
 import { calcularPacto4x3 } from "../js/pacto-4x3.js";
 import { calcularJornadaExcepcional } from "../js/jornada-excepcional.js";
+import { calcularCompensacionHorasExtras } from "../js/compensacion-horas-extras.js";
 import { calcularContratoPlazoFijo } from "../js/contrato-plazo-fijo.js";
 import { calcularPermisoSinGoce, diasCorridosDelMes } from "../js/permiso-sin-goce.js";
 
@@ -320,6 +328,23 @@ assert(
     JORNADA_EXCEPCIONAL_GOLD.cincoPor84.phsc === 42 &&
     JORNADA_EXCEPCIONAL_GOLD.ceroTrabajo.motivo === "datos" &&
     JORNADA_EXCEPCIONAL_GOLD.cicloInconsistente.motivo === "ciclo",
+);
+assert(
+  "Compensación HE gold 16×1,5=24 h → 3,00 días, tope 5 y 8 HE fraccionada",
+  COMPENSACION_HE_RECARGO === 1.5 &&
+    COMPENSACION_HE_TOPE_DIAS === 5 &&
+    COMPENSACION_HE_PLAZO_MESES === 6 &&
+    COMPENSACION_HE_AVISO_HORAS === 48 &&
+    COMPENSACION_HE_JORNADA_DIARIA_DEFAULT === 8 &&
+    COMPENSACION_HE_JORNADA_DIARIA_42_5 === 42 / 5 &&
+    COMPENSACION_HE_GOLD.clasico16.horasFeriado === 24 &&
+    COMPENSACION_HE_GOLD.clasico16.diasEquivalentes === 3 &&
+    COMPENSACION_HE_GOLD.clasico16.diasDentroTope === 3 &&
+    COMPENSACION_HE_GOLD.topeAnual.diasFueraTope === 1 &&
+    COMPENSACION_HE_GOLD.fraccion.diasEquivalentes === 1.5 &&
+    COMPENSACION_HE_GOLD.fraccion.diasCompletos === 1 &&
+    COMPENSACION_HE_GOLD.sueldo800.equivalenciaPago === 112_000 &&
+    COMPENSACION_HE_GOLD.cero.ok === false,
 );
 assert("Tope cesantía 135.2 UF", TOPE_CESANTIA_UF === 135.2);
 assert(
@@ -3672,6 +3697,93 @@ console.log("\nJornada excepcional art. 38 / DS 48 PHSC (gold 2026)");
   );
 }
 
+console.log("\nCompensación HE por feriado art. 32 inc. 4° / Ley 21.561 (gold 2026)");
+{
+  // Fuentes: Ley 21.561 BCN 1191554; CT 207436 art. 32 inc. 4°;
+  // ORD. 81/2, 199/5, 108, 387/11.
+  const g1 = calcularCompensacionHorasExtras(COMPENSACION_HE_GOLD.clasico16);
+  assert(
+    "gold 16 HE × 1,5 = 24 h / 8 h → 3,00 días, dentro del tope 5",
+    g1.ok === true &&
+      g1.horasFeriado === 24 &&
+      g1.horasFeriado === COMPENSACION_HE_GOLD.clasico16.horasFeriado &&
+      g1.diasEquivalentes === 3 &&
+      g1.diasEquivalentes === COMPENSACION_HE_GOLD.clasico16.diasEquivalentes &&
+      g1.diasCompletos === 3 &&
+      g1.horasRestantes === 0 &&
+      g1.diasDentroTope === 3 &&
+      g1.diasFueraTope === 0 &&
+      g1.recargo === 1.5 &&
+      g1.topeDias === 5,
+    JSON.stringify(g1),
+  );
+  const g2 = calcularCompensacionHorasExtras(COMPENSACION_HE_GOLD.topeAnual);
+  assert(
+    "gold 32 HE / 8 h → 6,00 días: 5 dentro del tope, 1 a pagar",
+    g2.ok === true &&
+      g2.horasFeriado === 48 &&
+      g2.diasEquivalentes === 6 &&
+      g2.diasCompletos === 6 &&
+      g2.diasDentroTope === 5 &&
+      g2.diasFueraTope === 1 &&
+      g2.diasFueraTope === COMPENSACION_HE_GOLD.topeAnual.diasFueraTope,
+    JSON.stringify(g2),
+  );
+  const g3 = calcularCompensacionHorasExtras(COMPENSACION_HE_GOLD.fraccion);
+  assert(
+    "gold 8 HE / 8 h → 1,50 días: 1 completo y 4 h restantes (no medio día)",
+    g3.ok === true &&
+      g3.horasFeriado === 12 &&
+      g3.diasEquivalentes === 1.5 &&
+      g3.diasCompletos === 1 &&
+      g3.horasRestantes === 4 &&
+      g3.diasDentroTope === 1 &&
+      g3.diasFueraTope === 0,
+    JSON.stringify(g3),
+  );
+  const g4 = calcularCompensacionHorasExtras(COMPENSACION_HE_GOLD.jornada84);
+  assert(
+    "gold 16 HE / 8,4 h (42/5) → 2 días completos y horas restantes",
+    g4.ok === true &&
+      g4.horasFeriado === 24 &&
+      g4.horasJornadaDiaria === 42 / 5 &&
+      g4.diasEquivalentes === 24 / (42 / 5) &&
+      g4.diasCompletos === 2 &&
+      Math.abs(g4.horasRestantes - (24 - 16.8)) < 1e-9 &&
+      g4.diasDentroTope === 2 &&
+      g4.diasFueraTope === 0,
+    JSON.stringify(g4),
+  );
+  const g5 = calcularCompensacionHorasExtras(COMPENSACION_HE_GOLD.sueldo800);
+  assert(
+    "gold 16 HE, $800.000, jornada 40 (8×5) → 1 HE $7.000, total $112.000",
+    g5.ok === true &&
+      g5.jornadaSemanal === 40 &&
+      g5.valorHoraExtra === 7_000 &&
+      g5.equivalenciaPago === 112_000 &&
+      g5.equivalenciaPago === COMPENSACION_HE_GOLD.sueldo800.equivalenciaPago,
+    JSON.stringify(g5),
+  );
+  const g6 = calcularCompensacionHorasExtras(COMPENSACION_HE_GOLD.cero);
+  assert(
+    "gold 0 HE → validación, sin inventar días",
+    g6.ok === false &&
+      g6.motivo === "horas" &&
+      g6.diasEquivalentes === 0 &&
+      g6.horasFeriado === 0,
+    JSON.stringify(g6),
+  );
+  const cheApp = readFileSync(join(root, "js/app-compensacion-horas-extras.js"), "utf8");
+  assert(
+    "app-compensacion-horas-extras usa calcularCompensacionHorasExtras",
+    /import\s*\{[^}]*calcularCompensacionHorasExtras[^}]*\}\s*from\s*["']\.\/compensacion-horas-extras\.js["']/.test(cheApp) &&
+      /calcularCompensacionHorasExtras\s*\(/.test(cheApp) &&
+      !/\balert\s*\(/.test(cheApp) &&
+      !/\bconfirm\s*\(/.test(cheApp) &&
+      !/\bprompt\s*\(/.test(cheApp),
+  );
+}
+
 console.log("\nContrato a plazo fijo art. 159 N°4 (gold 2026)");
 {
   // Fuentes: art. 159 N°4 CT (BCN 207436); DT ORD. 65/1 (w3-article-102862);
@@ -4626,6 +4738,7 @@ const required = [
   "bandas-horarias.html",
   "pacto-4x3.html",
   "jornada-excepcional.html",
+  "compensacion-horas-extras.html",
   "contrato-plazo-fijo.html",
   "permiso-sin-goce.html",
   "finiquito.html",
@@ -4678,6 +4791,7 @@ const required = [
   "js/app-bandas-horarias.js",
   "js/app-pacto-4x3.js",
   "js/app-jornada-excepcional.js",
+  "js/app-compensacion-horas-extras.js",
   "js/app-contrato-plazo-fijo.js",
   "js/app-permiso-sin-goce.js",
   "empresa.html",
@@ -4699,6 +4813,7 @@ const required = [
   "js/bandas-horarias.js",
   "js/pacto-4x3.js",
   "js/jornada-excepcional.js",
+  "js/compensacion-horas-extras.js",
   "js/contrato-plazo-fijo.js",
   "js/permiso-sin-goce.js",
   "js/causales.js",
@@ -4869,6 +4984,7 @@ const htmlFiles = [
   "bandas-horarias.html",
   "pacto-4x3.html",
   "jornada-excepcional.html",
+  "compensacion-horas-extras.html",
   "contrato-plazo-fijo.html",
   "permiso-sin-goce.html",
   "finiquito.html",
@@ -4996,6 +5112,7 @@ const appEntries = [
   "js/app-bandas-horarias.js",
   "js/app-pacto-4x3.js",
   "js/app-jornada-excepcional.js",
+  "js/app-compensacion-horas-extras.js",
   "js/app-contrato-plazo-fijo.js",
   "js/app-permiso-sin-goce.js",
   "js/app-finiquito.js",
@@ -5030,7 +5147,7 @@ assert("robots Allow /", /Allow:\s*\//.test(robots));
 assert("robots Disallow /admin", /Disallow:\s*\/admin/.test(robots));
 assert("robots Disallow /api", /Disallow:\s*\/api/.test(robots));
 assert("robots Disallow /docs", /Disallow:\s*\/docs/.test(robots));
-assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/trabajo-pesado/.test(robots) && !/Disallow:\s*\/nulidad-despido/.test(robots) && !/Disallow:\s*\/tutela-laboral/.test(robots) && !/Disallow:\s*\/despido-injustificado/.test(robots) && !/Disallow:\s*\/autodespido/.test(robots) && !/Disallow:\s*\/obra-faena/.test(robots) && !/Disallow:\s*\/prescripcion-laboral/.test(robots) && !/Disallow:\s*\/descanso-compensatorio/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/feriado-anual/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/licencia-medica/.test(robots) && !/Disallow:\s*\/boleta-honorarios/.test(robots) && !/Disallow:\s*\/retencion-judicial/.test(robots) && !/Disallow:\s*\/apv/.test(robots) && !/Disallow:\s*\/sala-cuna/.test(robots) && !/Disallow:\s*\/postnatal-parental/.test(robots) && !/Disallow:\s*\/permiso-prenatal/.test(robots) && !/Disallow:\s*\/fuero-maternal/.test(robots) && !/Disallow:\s*\/permiso-paternidad/.test(robots) && !/Disallow:\s*\/permiso-matrimonio/.test(robots) && !/Disallow:\s*\/permiso-fallecimiento/.test(robots) && !/Disallow:\s*\/interes-mora/.test(robots) && !/Disallow:\s*\/hora-lactancia/.test(robots) && !/Disallow:\s*\/jornada-40-horas/.test(robots) && !/Disallow:\s*\/jornada-parcial/.test(robots) && !/Disallow:\s*\/teletrabajo/.test(robots) && !/Disallow:\s*\/bandas-horarias/.test(robots) && !/Disallow:\s*\/pacto-4x3/.test(robots) && !/Disallow:\s*\/jornada-excepcional/.test(robots) && !/Disallow:\s*\/contrato-plazo-fijo/.test(robots) && !/Disallow:\s*\/permiso-sin-goce/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots) && !/Disallow:\s*\/inclusion-laboral/.test(robots));
+assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/trabajo-pesado/.test(robots) && !/Disallow:\s*\/nulidad-despido/.test(robots) && !/Disallow:\s*\/tutela-laboral/.test(robots) && !/Disallow:\s*\/despido-injustificado/.test(robots) && !/Disallow:\s*\/autodespido/.test(robots) && !/Disallow:\s*\/obra-faena/.test(robots) && !/Disallow:\s*\/prescripcion-laboral/.test(robots) && !/Disallow:\s*\/descanso-compensatorio/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/feriado-anual/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/licencia-medica/.test(robots) && !/Disallow:\s*\/boleta-honorarios/.test(robots) && !/Disallow:\s*\/retencion-judicial/.test(robots) && !/Disallow:\s*\/apv/.test(robots) && !/Disallow:\s*\/sala-cuna/.test(robots) && !/Disallow:\s*\/postnatal-parental/.test(robots) && !/Disallow:\s*\/permiso-prenatal/.test(robots) && !/Disallow:\s*\/fuero-maternal/.test(robots) && !/Disallow:\s*\/permiso-paternidad/.test(robots) && !/Disallow:\s*\/permiso-matrimonio/.test(robots) && !/Disallow:\s*\/permiso-fallecimiento/.test(robots) && !/Disallow:\s*\/interes-mora/.test(robots) && !/Disallow:\s*\/hora-lactancia/.test(robots) && !/Disallow:\s*\/jornada-40-horas/.test(robots) && !/Disallow:\s*\/jornada-parcial/.test(robots) && !/Disallow:\s*\/teletrabajo/.test(robots) && !/Disallow:\s*\/bandas-horarias/.test(robots) && !/Disallow:\s*\/pacto-4x3/.test(robots) && !/Disallow:\s*\/jornada-excepcional/.test(robots) && !/Disallow:\s*\/compensacion-horas-extras/.test(robots) && !/Disallow:\s*\/contrato-plazo-fijo/.test(robots) && !/Disallow:\s*\/permiso-sin-goce/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots) && !/Disallow:\s*\/inclusion-laboral/.test(robots));
 assert("robots Sitemap", /Sitemap:\s*https:\/\/www\.haberes\.cl\/sitemap\.xml/.test(robots));
 
 const { seoPaths, GUIDE_SLUGS, GUIDES, CAUSAL_PAGES, BASE_PATHS, lastmodForPath } = await import("../content/registry.js");
@@ -5097,6 +5214,7 @@ assert(
     BASE_PATHS.includes("/bandas-horarias") &&
     BASE_PATHS.includes("/pacto-4x3") &&
     BASE_PATHS.includes("/jornada-excepcional") &&
+    BASE_PATHS.includes("/compensacion-horas-extras") &&
     BASE_PATHS.includes("/contrato-plazo-fijo") &&
     BASE_PATHS.includes("/permiso-sin-goce"),
   `${locs.length} vs ${expectedFromRegistry.length}`,
@@ -5453,7 +5571,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 98,
+      seoPaths().length === 99,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -5465,7 +5583,7 @@ try {
   const docsSeo = await hitLocal("/docs/seo-map.md");
   assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
   assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
-  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/obra-faena/", "/prescripcion-laboral/", "/descanso-compensatorio/", "/inclusion-laboral/", "/jornada-parcial/", "/teletrabajo/", "/bandas-horarias/", "/pacto-4x3/", "/jornada-excepcional/", "/contrato-plazo-fijo/", "/permiso-sin-goce/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/obra-faena/", "/prescripcion-laboral/", "/descanso-compensatorio/", "/inclusion-laboral/", "/jornada-parcial/", "/teletrabajo/", "/bandas-horarias/", "/pacto-4x3/", "/jornada-excepcional/", "/compensacion-horas-extras/", "/contrato-plazo-fijo/", "/permiso-sin-goce/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
   }
@@ -5522,6 +5640,7 @@ try {
     "/bandas-horarias",
     "/pacto-4x3",
     "/jornada-excepcional",
+    "/compensacion-horas-extras",
     "/contrato-plazo-fijo",
     "/permiso-sin-goce",
     "/gratificacion",
@@ -9340,6 +9459,7 @@ assert(
     ["bandas-horarias.html", "/bandas-horarias"],
     ["pacto-4x3.html", "/pacto-4x3"],
     ["jornada-excepcional.html", "/jornada-excepcional"],
+    ["compensacion-horas-extras.html", "/compensacion-horas-extras"],
     ["contrato-plazo-fijo.html", "/contrato-plazo-fijo"],
     ["permiso-sin-goce.html", "/permiso-sin-goce"],
     ["finiquito.html", "/finiquito"],
@@ -11252,6 +11372,140 @@ assert(
         /href="\/jornada-excepcional"/.test(ttHtmlJe) &&
         /href="\/jornada-excepcional"/.test(dcHtmlJe) &&
         /href="\/jornada-excepcional"/.test(readFileSync(join(root, "empresa.html"), "utf8")),
+    );
+  }
+  {
+    const cheHtml = readFileSync(join(root, "compensacion-horas-extras.html"), "utf8");
+    const cheTitle = (cheHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const cheH1 = (cheHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const cheDesc = (cheHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "";
+    const heHtmlChe = readFileSync(join(root, "horas-extras.html"), "utf8");
+    const faHtmlChe = readFileSync(join(root, "feriado-anual.html"), "utf8");
+    const vpHtmlChe = readFileSync(join(root, "vacaciones-proporcionales.html"), "utf8");
+    const fpHtmlChe = readFileSync(join(root, "feriado-progresivo.html"), "utf8");
+    const dcHtmlChe = readFileSync(join(root, "descanso-compensatorio.html"), "utf8");
+    const goldC1 = calcularCompensacionHorasExtras(COMPENSACION_HE_GOLD.clasico16);
+    const goldC2 = calcularCompensacionHorasExtras(COMPENSACION_HE_GOLD.topeAnual);
+    const goldC3 = calcularCompensacionHorasExtras(COMPENSACION_HE_GOLD.fraccion);
+    assert(
+      "SEO compensación horas extras title único y corto",
+      /calcular compensaci[oó]n horas extras/i.test(cheTitle) &&
+        cheTitle.length <= 65 &&
+        !/sueldo l[ií]quido/i.test(cheTitle) &&
+        !/pacto 4×3/i.test(cheTitle) &&
+        cheTitle !== ((heHtmlChe.match(/<title>([^<]*)<\/title>/) || [])[1] || ""),
+      cheTitle,
+    );
+    assert(
+      "SEO compensación horas extras H1 único art. 32",
+      cheH1 === "Calcular compensación horas extras Chile 2026" &&
+        /art\. 32/.test(cheHtml) &&
+        /Ley 21\.561/.test(cheHtml) &&
+        /1,5/.test(cheHtml),
+      cheH1,
+    );
+    assert(
+      "SEO compensación horas extras description propia",
+      cheDesc.length >= 110 &&
+        cheDesc.length <= 160 &&
+        /art\. 32/.test(cheDesc) &&
+        /Ley 21\.561/.test(cheDesc) &&
+        /1,5/.test(cheDesc) &&
+        /5 d[ií]as/.test(cheDesc) &&
+        /pago en dinero/.test(cheDesc),
+      `${cheDesc.length}:${cheDesc}`,
+    );
+    assert(
+      "SEO compensación horas extras cita CT, Ley 21.561 y DT",
+      /bcn\.cl\/leychile\/navegar\?idNorma=207436/.test(cheHtml) &&
+        /bcn\.cl\/leychile\/navegar\?idNorma=1191554/.test(cheHtml) &&
+        /dt\.gob\.cl\/legislacion\/1624\/w3-article-125559/.test(cheHtml) &&
+        /dt\.gob\.cl\/legislacion\/1624\/w3-article-125738/.test(cheHtml) &&
+        /dt\.gob\.cl\/legislacion\/1624\/w3-article-127480/.test(cheHtml) &&
+        /dt\.gob\.cl\/legislacion\/1624\/w3-article-127877/.test(cheHtml),
+    );
+    assert(
+      "SEO compensación horas extras gold 16 HE → 3,00, 6,00 y 1,50 en copy",
+      goldC1.diasEquivalentes === 3 &&
+        goldC1.horasFeriado === 24 &&
+        goldC2.diasFueraTope === 1 &&
+        goldC3.diasEquivalentes === 1.5 &&
+        /3,00/.test(cheHtml) &&
+        /6,00/.test(cheHtml) &&
+        /1,50/.test(cheHtml) &&
+        /24 h/.test(cheHtml) &&
+        /pacto escrito/.test(cheHtml),
+    );
+    assert("SEO compensación horas extras FAQPage", /"@type": "FAQPage"/.test(cheHtml));
+    assert(
+      "SEO compensación horas extras no canibaliza hermanas vetadas",
+      /href="\/horas-extras"/.test(cheHtml) &&
+        /href="\/feriado-anual"/.test(cheHtml) &&
+        /href="\/feriado-progresivo"/.test(cheHtml) &&
+        /href="\/vacaciones-proporcionales"/.test(cheHtml) &&
+        /href="\/jornada-40-horas"/.test(cheHtml) &&
+        /href="\/pacto-4x3"/.test(cheHtml) &&
+        /href="\/bandas-horarias"/.test(cheHtml) &&
+        /href="\/jornada-excepcional"/.test(cheHtml) &&
+        /href="\/jornada-parcial"/.test(cheHtml) &&
+        /href="\/descanso-compensatorio"/.test(cheHtml) &&
+        /href="\/recargo-domingo-comercio"/.test(cheHtml) &&
+        /href="\/feriado-irrenunciable"/.test(cheHtml) &&
+        /href="\/sueldo"/.test(cheHtml) &&
+        /href="\/costo-empresa"/.test(cheHtml) &&
+        /href="\/empresa"/.test(cheHtml) &&
+        /href="\/permiso-sin-goce"/.test(cheHtml) &&
+        /estimaci[oó]n educativa/.test(cheHtml) &&
+        /no constituye asesor[ií]a legal/i.test(cheHtml) &&
+        !existsSync(join(root, "compensacion-he.html")) &&
+        !existsSync(join(root, "he-feriado.html")) &&
+        !existsSync(join(root, "compensacion-feriado.html")) &&
+        !existsSync(join(root, "art-32-feriado.html")) &&
+        !existsSync(join(root, "dias-adicionales-he.html")) &&
+        !existsSync(join(root, "compensacion-horas-extraordinarias.html")),
+    );
+    assert(
+      "home y nav enlazan /compensacion-horas-extras",
+      /href="\/compensacion-horas-extras"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/compensacion-horas-extras" data-nav>Compensaci[oó]n horas extras<\/a>/.test(
+          readFileSync(join(root, "index.html"), "utf8"),
+        ) &&
+        /href="\/compensacion-horas-extras" data-nav>Compensaci[oó]n horas extras<\/a>/.test(cheHtml) &&
+        /href="\/compensacion-horas-extras" data-nav>Compensaci[oó]n horas extras<\/a>/.test(
+          readFileSync(join(root, "js/ui.js"), "utf8"),
+        ),
+    );
+    assert(
+      "sitemap incluye /compensacion-horas-extras",
+      locs.includes("https://www.haberes.cl/compensacion-horas-extras") &&
+        lastmodForPath("/compensacion-horas-extras") === "2026-09-20",
+    );
+    assert(
+      "seo-map documenta /compensacion-horas-extras y no-canibalizar hermanas",
+      /\/compensacion-horas-extras/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no canibalizar `\/horas-extras`, `\/feriado-anual`/.test(
+          readFileSync(join(root, "docs/seo-map.md"), "utf8"),
+        ) &&
+        /no crear `\/compensacion-he`/i.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")),
+    );
+    assert(
+      "hub /guias enlaza /compensacion-horas-extras en el cluster de liquidación",
+      /href="\/compensacion-horas-extras"/.test(readFileSync(join(root, "guias.html"), "utf8")) &&
+        /<h2>Liquidaci[oó]n de sueldo<\/h2>[\s\S]*href="\/compensacion-horas-extras"/.test(
+          readFileSync(join(root, "guias.html"), "utf8"),
+        ) &&
+        !/<h2>Finiquito<\/h2>[\s\S]*href="\/compensacion-horas-extras"/.test(
+          readFileSync(join(root, "guias.html"), "utf8"),
+        ),
+    );
+    assert(
+      "hermanas enlazan /compensacion-horas-extras",
+      /href="\/compensacion-horas-extras"/.test(heHtmlChe) &&
+        /href="\/compensacion-horas-extras"/.test(faHtmlChe) &&
+        /href="\/compensacion-horas-extras"/.test(vpHtmlChe) &&
+        /href="\/compensacion-horas-extras"/.test(fpHtmlChe) &&
+        /href="\/compensacion-horas-extras"/.test(dcHtmlChe) &&
+        /href="\/compensacion-horas-extras"/.test(readFileSync(join(root, "empresa.html"), "utf8")),
     );
   }
   {
@@ -15945,6 +16199,7 @@ assert(
       "bandas-horarias.html",
       "pacto-4x3.html",
       "jornada-excepcional.html",
+      "compensacion-horas-extras.html",
       "contrato-plazo-fijo.html",
       "permiso-sin-goce.html",
       "finiquito.html",
