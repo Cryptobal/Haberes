@@ -563,6 +563,48 @@ export const CONTRATO_PLAZO_FIJO_GOLD = Object.freeze({
 });
 
 /**
+ * Término anticipado de contrato a plazo fijo (art. 159 N°4 CT).
+ *
+ * Si el empleador pone término antes del vencimiento pactado, sin una
+ * causal del art. 160, la práctica jurisprudencial consolidada estima
+ * las remuneraciones que se habrían percibido hasta esa fecha
+ * (remuneración remanente). No es IAS, aviso, recargo 168 ni finiquito.
+ *
+ * Fórmula (meses de calendario, la misma que `/contrato-plazo-fijo`):
+ *   meses_remanentes = Δaños×12 + Δmeses + (Δdías / último_día_mes_pactado)
+ *   remuneración_remanente = round(meses_remanentes × sueldo_mensual)
+ * No usa días/30: 1-abr-2026 → 1-jul-2026 son 91 días (2.426.667 con /30)
+ * y el gold exige 3,00 meses × $800.000 = $2.400.000.
+ *
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=207436
+ */
+export const TERMINO_ANTICIPADO_PLAZO_FIJO_GOLD = Object.freeze({
+  tresMeses800: Object.freeze({
+    sueldoMensual: 800_000,
+    fechaTerminoAnticipado: "2026-04-01",
+    fechaTerminoPactada: "2026-07-01",
+    mesesRemanentes: 3,
+    diasRemanentes: 91,
+    remuneracionRemanente: 2_400_000,
+  }),
+  mesesSolo: Object.freeze({
+    sueldoMensual: 800_000,
+    fechaTerminoAnticipado: "2026-04-01",
+    mesesRemanentes: 3,
+    fechaTerminoPactada: "2026-07-01",
+    remuneracionRemanente: 2_400_000,
+  }),
+  mismoDia: Object.freeze({
+    sueldoMensual: 800_000,
+    fechaTerminoAnticipado: "2026-04-01",
+    fechaTerminoPactada: "2026-04-01",
+    mesesRemanentes: 0,
+    diasRemanentes: 0,
+    remuneracionRemanente: 0,
+  }),
+});
+
+/**
  * Permiso sin goce de sueldo (pacto; no hay un derecho unilateral en el CT).
  * Fórmula educativa: descuento = round((sueldoMensual / diasBase) × diasPermiso).
  * Default de diasBase: días corridos del mes calendario; alternativa: días

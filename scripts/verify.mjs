@@ -90,6 +90,7 @@ import {
   COMPENSACION_HE_RECARGO,
   COMPENSACION_HE_TOPE_DIAS,
   CONTRATO_PLAZO_FIJO_GOLD,
+  TERMINO_ANTICIPADO_PLAZO_FIJO_GOLD,
   PERMISO_SIN_GOCE_GOLD,
   CONTRATO_PLAZO_FIJO_TOLERANCIA_DIAS,
   CONTRATO_PLAZO_FIJO_TOPE_GENERAL_MESES,
@@ -200,6 +201,7 @@ import { calcularPacto4x3 } from "../js/pacto-4x3.js";
 import { calcularJornadaExcepcional } from "../js/jornada-excepcional.js";
 import { calcularCompensacionHorasExtras } from "../js/compensacion-horas-extras.js";
 import { calcularContratoPlazoFijo } from "../js/contrato-plazo-fijo.js";
+import { calcularTerminoAnticipadoPlazoFijo } from "../js/termino-anticipado-plazo-fijo.js";
 import { calcularPermisoSinGoce, diasCorridosDelMes } from "../js/permiso-sin-goce.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -278,6 +280,17 @@ assert(
     PERMISO_SIN_GOCE_GOLD.laborables20.descuento === 90_000 &&
     PERMISO_SIN_GOCE_GOLD.ceroDias.descuento === 0 &&
     PERMISO_SIN_GOCE_GOLD.ceroDias.sueldoMes === 900_000,
+);
+assert(
+  "Término anticipado plazo fijo gold $800.000, 1-abr-2026→1-jul-2026 → $2.400.000",
+  TERMINO_ANTICIPADO_PLAZO_FIJO_GOLD.tresMeses800.sueldoMensual === 800_000 &&
+    TERMINO_ANTICIPADO_PLAZO_FIJO_GOLD.tresMeses800.fechaTerminoAnticipado === "2026-04-01" &&
+    TERMINO_ANTICIPADO_PLAZO_FIJO_GOLD.tresMeses800.fechaTerminoPactada === "2026-07-01" &&
+    TERMINO_ANTICIPADO_PLAZO_FIJO_GOLD.tresMeses800.mesesRemanentes === 3 &&
+    TERMINO_ANTICIPADO_PLAZO_FIJO_GOLD.tresMeses800.diasRemanentes === 91 &&
+    TERMINO_ANTICIPADO_PLAZO_FIJO_GOLD.tresMeses800.remuneracionRemanente === 2_400_000 &&
+    TERMINO_ANTICIPADO_PLAZO_FIJO_GOLD.mesesSolo.remuneracionRemanente === 2_400_000 &&
+    TERMINO_ANTICIPADO_PLAZO_FIJO_GOLD.mismoDia.remuneracionRemanente === 0,
 );
 assert(
   "Bandas horarias gold 09:00–18:00 ±60 y 08:30–17:30 −30",
@@ -3921,6 +3934,101 @@ console.log("\nContrato a plazo fijo art. 159 N°4 (gold 2026)");
   );
 }
 
+console.log("\nTérmino anticipado plazo fijo art. 159 N°4 remanente (gold 2026)");
+{
+  // Fórmula: meses_remanentes = calendarMonthsBetween(anticipado, pactada)
+  //   = Δaños×12 + Δmeses + (Δdías / último_día_mes_pactado)
+  //   remuneración_remanente = round(meses_remanentes × sueldo_mensual)
+  // Gold: 2026-04-01 → 2026-07-01 = 3,00 meses × $800.000 = $2.400.000
+  // (91 días; no se usa días/30, que daría $2.426.667).
+  const gold = TERMINO_ANTICIPADO_PLAZO_FIJO_GOLD.tresMeses800;
+  const g1 = calcularTerminoAnticipadoPlazoFijo(gold);
+  assert(
+    "gold $800.000, 1-abr-2026 → 1-jul-2026 → 3,00 meses y $2.400.000",
+    g1.ok === true &&
+      g1.sueldoMensual === 800_000 &&
+      g1.fechaTerminoAnticipado === "2026-04-01" &&
+      g1.fechaTerminoPactada === "2026-07-01" &&
+      g1.mesesRemanentes === 3 &&
+      g1.mesesRemanentes === gold.mesesRemanentes &&
+      g1.diasRemanentes === 91 &&
+      g1.diasRemanentes === gold.diasRemanentes &&
+      g1.remuneracionRemanente === 2_400_000 &&
+      g1.remuneracionRemanente === gold.remuneracionRemanente &&
+      g1.remuneracionRemanente === Math.round(3 * 800_000) &&
+      g1.fuentePlazo === "fechaTerminoPactada",
+    JSON.stringify(g1),
+  );
+  const gMeses = calcularTerminoAnticipadoPlazoFijo({
+    sueldoMensual: gold.sueldoMensual,
+    fechaTerminoAnticipado: gold.fechaTerminoAnticipado,
+    mesesRemanentes: 3,
+  });
+  assert(
+    "gold por meses remanentes (sin fecha pactada) → mismo $2.400.000",
+    gMeses.ok === true &&
+      gMeses.fuentePlazo === "mesesRemanentes" &&
+      gMeses.fechaTerminoPactada === "2026-07-01" &&
+      gMeses.mesesRemanentes === 3 &&
+      gMeses.remuneracionRemanente === 2_400_000 &&
+      gMeses.remuneracionRemanente ===
+        TERMINO_ANTICIPADO_PLAZO_FIJO_GOLD.mesesSolo.remuneracionRemanente,
+    JSON.stringify(gMeses),
+  );
+  const precedencia = calcularTerminoAnticipadoPlazoFijo({
+    sueldoMensual: 800_000,
+    fechaTerminoAnticipado: "2026-04-01",
+    fechaTerminoPactada: "2026-07-01",
+    mesesRemanentes: 1,
+  });
+  assert(
+    "fecha pactada tiene precedencia sobre meses remanentes",
+    precedencia.fuentePlazo === "fechaTerminoPactada" &&
+      precedencia.mesesRemanentes === 3 &&
+      precedencia.remuneracionRemanente === 2_400_000,
+    JSON.stringify(precedencia),
+  );
+  const mismo = calcularTerminoAnticipadoPlazoFijo(
+    TERMINO_ANTICIPADO_PLAZO_FIJO_GOLD.mismoDia,
+  );
+  assert(
+    "mismas fechas → 0 meses y $0 remanente",
+    mismo.ok === true &&
+      mismo.mesesRemanentes === 0 &&
+      mismo.diasRemanentes === 0 &&
+      mismo.remuneracionRemanente === 0,
+    JSON.stringify(mismo),
+  );
+  const invertido = calcularTerminoAnticipadoPlazoFijo({
+    sueldoMensual: 800_000,
+    fechaTerminoAnticipado: "2026-07-01",
+    fechaTerminoPactada: "2026-04-01",
+  });
+  assert(
+    "pactada anterior al anticipado → ok false",
+    invertido.ok === false && invertido.motivo === "fecha_termino",
+    JSON.stringify(invertido),
+  );
+  const sinSueldo = calcularTerminoAnticipadoPlazoFijo({
+    fechaTerminoAnticipado: "2026-04-01",
+    fechaTerminoPactada: "2026-07-01",
+  });
+  assert(
+    "sin sueldo → ok false",
+    sinSueldo.ok === false && sinSueldo.motivo === "sueldo",
+    JSON.stringify(sinSueldo),
+  );
+  const tapApp = readFileSync(join(root, "js/app-termino-anticipado-plazo-fijo.js"), "utf8");
+  assert(
+    "app-termino-anticipado-plazo-fijo usa calcularTerminoAnticipadoPlazoFijo",
+    /import\s*\{[^}]*calcularTerminoAnticipadoPlazoFijo[^}]*\}\s*from\s*["']\.\/termino-anticipado-plazo-fijo\.js["']/.test(tapApp) &&
+      /calcularTerminoAnticipadoPlazoFijo\s*\(/.test(tapApp) &&
+      !/\balert\s*\(/.test(tapApp) &&
+      !/\bconfirm\s*\(/.test(tapApp) &&
+      !/\bprompt\s*\(/.test(tapApp),
+  );
+}
+
 console.log("\nPermiso sin goce de sueldo (gold 2026)");
 {
   // Fuentes: CT BCN 207436; DT ORD. N°4593; consulta DT 60216 y 60602.
@@ -4740,6 +4848,7 @@ const required = [
   "jornada-excepcional.html",
   "compensacion-horas-extras.html",
   "contrato-plazo-fijo.html",
+  "termino-anticipado-plazo-fijo.html",
   "permiso-sin-goce.html",
   "finiquito.html",
   "js/app-horas-extras.js",
@@ -4793,6 +4902,7 @@ const required = [
   "js/app-jornada-excepcional.js",
   "js/app-compensacion-horas-extras.js",
   "js/app-contrato-plazo-fijo.js",
+  "js/app-termino-anticipado-plazo-fijo.js",
   "js/app-permiso-sin-goce.js",
   "empresa.html",
   "privacidad.html",
@@ -4815,6 +4925,7 @@ const required = [
   "js/jornada-excepcional.js",
   "js/compensacion-horas-extras.js",
   "js/contrato-plazo-fijo.js",
+  "js/termino-anticipado-plazo-fijo.js",
   "js/permiso-sin-goce.js",
   "js/causales.js",
   "js/finiquito.js",
@@ -4986,6 +5097,7 @@ const htmlFiles = [
   "jornada-excepcional.html",
   "compensacion-horas-extras.html",
   "contrato-plazo-fijo.html",
+  "termino-anticipado-plazo-fijo.html",
   "permiso-sin-goce.html",
   "finiquito.html",
   "empresa.html",
@@ -5114,6 +5226,7 @@ const appEntries = [
   "js/app-jornada-excepcional.js",
   "js/app-compensacion-horas-extras.js",
   "js/app-contrato-plazo-fijo.js",
+  "js/app-termino-anticipado-plazo-fijo.js",
   "js/app-permiso-sin-goce.js",
   "js/app-finiquito.js",
   "js/app-empresa.js",
@@ -5147,7 +5260,7 @@ assert("robots Allow /", /Allow:\s*\//.test(robots));
 assert("robots Disallow /admin", /Disallow:\s*\/admin/.test(robots));
 assert("robots Disallow /api", /Disallow:\s*\/api/.test(robots));
 assert("robots Disallow /docs", /Disallow:\s*\/docs/.test(robots));
-assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/trabajo-pesado/.test(robots) && !/Disallow:\s*\/nulidad-despido/.test(robots) && !/Disallow:\s*\/tutela-laboral/.test(robots) && !/Disallow:\s*\/despido-injustificado/.test(robots) && !/Disallow:\s*\/autodespido/.test(robots) && !/Disallow:\s*\/obra-faena/.test(robots) && !/Disallow:\s*\/prescripcion-laboral/.test(robots) && !/Disallow:\s*\/descanso-compensatorio/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/feriado-anual/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/licencia-medica/.test(robots) && !/Disallow:\s*\/boleta-honorarios/.test(robots) && !/Disallow:\s*\/retencion-judicial/.test(robots) && !/Disallow:\s*\/apv/.test(robots) && !/Disallow:\s*\/sala-cuna/.test(robots) && !/Disallow:\s*\/postnatal-parental/.test(robots) && !/Disallow:\s*\/permiso-prenatal/.test(robots) && !/Disallow:\s*\/fuero-maternal/.test(robots) && !/Disallow:\s*\/permiso-paternidad/.test(robots) && !/Disallow:\s*\/permiso-matrimonio/.test(robots) && !/Disallow:\s*\/permiso-fallecimiento/.test(robots) && !/Disallow:\s*\/interes-mora/.test(robots) && !/Disallow:\s*\/hora-lactancia/.test(robots) && !/Disallow:\s*\/jornada-40-horas/.test(robots) && !/Disallow:\s*\/jornada-parcial/.test(robots) && !/Disallow:\s*\/teletrabajo/.test(robots) && !/Disallow:\s*\/bandas-horarias/.test(robots) && !/Disallow:\s*\/pacto-4x3/.test(robots) && !/Disallow:\s*\/jornada-excepcional/.test(robots) && !/Disallow:\s*\/compensacion-horas-extras/.test(robots) && !/Disallow:\s*\/contrato-plazo-fijo/.test(robots) && !/Disallow:\s*\/permiso-sin-goce/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots) && !/Disallow:\s*\/inclusion-laboral/.test(robots));
+assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/trabajo-pesado/.test(robots) && !/Disallow:\s*\/nulidad-despido/.test(robots) && !/Disallow:\s*\/tutela-laboral/.test(robots) && !/Disallow:\s*\/despido-injustificado/.test(robots) && !/Disallow:\s*\/autodespido/.test(robots) && !/Disallow:\s*\/obra-faena/.test(robots) && !/Disallow:\s*\/prescripcion-laboral/.test(robots) && !/Disallow:\s*\/descanso-compensatorio/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/feriado-anual/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/licencia-medica/.test(robots) && !/Disallow:\s*\/boleta-honorarios/.test(robots) && !/Disallow:\s*\/retencion-judicial/.test(robots) && !/Disallow:\s*\/apv/.test(robots) && !/Disallow:\s*\/sala-cuna/.test(robots) && !/Disallow:\s*\/postnatal-parental/.test(robots) && !/Disallow:\s*\/permiso-prenatal/.test(robots) && !/Disallow:\s*\/fuero-maternal/.test(robots) && !/Disallow:\s*\/permiso-paternidad/.test(robots) && !/Disallow:\s*\/permiso-matrimonio/.test(robots) && !/Disallow:\s*\/permiso-fallecimiento/.test(robots) && !/Disallow:\s*\/interes-mora/.test(robots) && !/Disallow:\s*\/hora-lactancia/.test(robots) && !/Disallow:\s*\/jornada-40-horas/.test(robots) && !/Disallow:\s*\/jornada-parcial/.test(robots) && !/Disallow:\s*\/teletrabajo/.test(robots) && !/Disallow:\s*\/bandas-horarias/.test(robots) && !/Disallow:\s*\/pacto-4x3/.test(robots) && !/Disallow:\s*\/jornada-excepcional/.test(robots) && !/Disallow:\s*\/compensacion-horas-extras/.test(robots) && !/Disallow:\s*\/contrato-plazo-fijo/.test(robots) && !/Disallow:\s*\/termino-anticipado-plazo-fijo/.test(robots) && !/Disallow:\s*\/permiso-sin-goce/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots) && !/Disallow:\s*\/inclusion-laboral/.test(robots));
 assert("robots Sitemap", /Sitemap:\s*https:\/\/www\.haberes\.cl\/sitemap\.xml/.test(robots));
 
 const { seoPaths, GUIDE_SLUGS, GUIDES, CAUSAL_PAGES, BASE_PATHS, lastmodForPath } = await import("../content/registry.js");
@@ -5216,6 +5329,7 @@ assert(
     BASE_PATHS.includes("/jornada-excepcional") &&
     BASE_PATHS.includes("/compensacion-horas-extras") &&
     BASE_PATHS.includes("/contrato-plazo-fijo") &&
+    BASE_PATHS.includes("/termino-anticipado-plazo-fijo") &&
     BASE_PATHS.includes("/permiso-sin-goce"),
   `${locs.length} vs ${expectedFromRegistry.length}`,
 );
@@ -5571,7 +5685,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 99,
+      seoPaths().length === 100,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -5583,7 +5697,7 @@ try {
   const docsSeo = await hitLocal("/docs/seo-map.md");
   assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
   assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
-  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/obra-faena/", "/prescripcion-laboral/", "/descanso-compensatorio/", "/inclusion-laboral/", "/jornada-parcial/", "/teletrabajo/", "/bandas-horarias/", "/pacto-4x3/", "/jornada-excepcional/", "/compensacion-horas-extras/", "/contrato-plazo-fijo/", "/permiso-sin-goce/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/obra-faena/", "/prescripcion-laboral/", "/descanso-compensatorio/", "/inclusion-laboral/", "/jornada-parcial/", "/teletrabajo/", "/bandas-horarias/", "/pacto-4x3/", "/jornada-excepcional/", "/compensacion-horas-extras/", "/contrato-plazo-fijo/", "/termino-anticipado-plazo-fijo/", "/permiso-sin-goce/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
   }
@@ -5642,6 +5756,7 @@ try {
     "/jornada-excepcional",
     "/compensacion-horas-extras",
     "/contrato-plazo-fijo",
+    "/termino-anticipado-plazo-fijo",
     "/permiso-sin-goce",
     "/gratificacion",
     "/impuesto-unico",
@@ -9461,6 +9576,7 @@ assert(
     ["jornada-excepcional.html", "/jornada-excepcional"],
     ["compensacion-horas-extras.html", "/compensacion-horas-extras"],
     ["contrato-plazo-fijo.html", "/contrato-plazo-fijo"],
+    ["termino-anticipado-plazo-fijo.html", "/termino-anticipado-plazo-fijo"],
     ["permiso-sin-goce.html", "/permiso-sin-goce"],
     ["finiquito.html", "/finiquito"],
     ["empresa.html", "/empresa"],
@@ -10778,6 +10894,7 @@ assert(
         /href="\/autodespido"/.test(pfHtml) &&
         /href="\/sueldo"/.test(pfHtml) &&
         /href="\/empresa"/.test(pfHtml) &&
+        /href="\/termino-anticipado-plazo-fijo"/.test(pfHtml) &&
         /estimaci[oó]n educativa/.test(pfHtml) &&
         /no constituye asesor[ií]a legal/i.test(pfHtml) &&
         !existsSync(join(root, "plazo-fijo.html")) &&
@@ -10827,6 +10944,136 @@ assert(
         /href="\/contrato-plazo-fijo"/.test(readFileSync(join(root, "despido-injustificado.html"), "utf8")) &&
         /href="\/contrato-plazo-fijo"/.test(readFileSync(join(root, "autodespido.html"), "utf8")) &&
         /href="\/contrato-plazo-fijo"/.test(readFileSync(join(root, "empresa.html"), "utf8")),
+    );
+  }
+  {
+    const tapHtml = readFileSync(join(root, "termino-anticipado-plazo-fijo.html"), "utf8");
+    const tapTitle = (tapHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const tapH1 = (tapHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const tapDesc = (tapHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "";
+    const finiHtmlTap = readFileSync(join(root, "finiquito.html"), "utf8");
+    const causalHtmlTap = readFileSync(join(root, "finiquito/art-159-vencimiento-del-plazo.html"), "utf8");
+    const ofHtmlTap = readFileSync(join(root, "obra-faena.html"), "utf8");
+    const pfHtmlTap = readFileSync(join(root, "contrato-plazo-fijo.html"), "utf8");
+    const goldTap = calcularTerminoAnticipadoPlazoFijo(
+      TERMINO_ANTICIPADO_PLAZO_FIJO_GOLD.tresMeses800,
+    );
+    assert(
+      "SEO término anticipado plazo fijo title único y corto",
+      /calcular t[ée]rmino anticipado plazo fijo/i.test(tapTitle) &&
+        tapTitle.length <= 65 &&
+        !/calculadora de finiquito/i.test(tapTitle) &&
+        !/sueldo l[ií]quido/i.test(tapTitle) &&
+        !/paso a indefinido/i.test(tapTitle),
+      tapTitle,
+    );
+    assert(
+      "SEO término anticipado plazo fijo H1 único art. 159 N°4",
+      tapH1 === "Calcular término anticipado plazo fijo Chile 2026" &&
+        /159/.test(tapHtml) &&
+        /remanente/.test(tapHtml) &&
+        /plazo fijo/.test(tapHtml),
+      tapH1,
+    );
+    assert(
+      "SEO término anticipado plazo fijo description propia",
+      tapDesc.length >= 110 &&
+        tapDesc.length <= 160 &&
+        /remanente/.test(tapDesc) &&
+        /159/.test(tapDesc) &&
+        /finiquito/.test(tapDesc),
+      `${tapDesc.length}:${tapDesc}`,
+    );
+    assert(
+      "SEO término anticipado plazo fijo cita art. 159 N°4 y BCN",
+      /bcn\.cl\/leychile\/navegar\?idNorma=207436/.test(tapHtml) &&
+        /159/.test(tapHtml) &&
+        /160/.test(tapHtml),
+    );
+    assert(
+      "SEO término anticipado plazo fijo gold 2026 $800.000 → $2.400.000 en copy",
+      goldTap.ok === true &&
+        goldTap.mesesRemanentes === 3 &&
+        goldTap.diasRemanentes === 91 &&
+        goldTap.remuneracionRemanente === 2_400_000 &&
+        /800\.000/.test(tapHtml) &&
+        /2\.400\.000/.test(tapHtml) &&
+        /3,00/.test(tapHtml) &&
+        /1 de abril de 2026/.test(tapHtml) &&
+        /1 de julio de 2026/.test(tapHtml),
+    );
+    assert("SEO término anticipado plazo fijo FAQPage", /"@type": "FAQPage"/.test(tapHtml));
+    assert(
+      "SEO término anticipado plazo fijo no canibaliza hermanas vetadas",
+      /href="\/contrato-plazo-fijo"/.test(tapHtml) &&
+        /href="\/finiquito"/.test(tapHtml) &&
+        /href="\/finiquito\/art-159-vencimiento-del-plazo"/.test(tapHtml) &&
+        /href="\/obra-faena"/.test(tapHtml) &&
+        /href="\/indemnizacion-anos-servicio"/.test(tapHtml) &&
+        /href="\/indemnizacion-aviso-previo"/.test(tapHtml) &&
+        /href="\/despido-injustificado"/.test(tapHtml) &&
+        /href="\/autodespido"/.test(tapHtml) &&
+        /href="\/nulidad-despido"/.test(tapHtml) &&
+        /href="\/tutela-laboral"/.test(tapHtml) &&
+        /href="\/prescripcion-laboral"/.test(tapHtml) &&
+        /href="\/vacaciones-proporcionales"/.test(tapHtml) &&
+        /href="\/feriado-anual"/.test(tapHtml) &&
+        /href="\/sueldo"/.test(tapHtml) &&
+        /href="\/sueldo-proporcional"/.test(tapHtml) &&
+        /href="\/costo-empresa"/.test(tapHtml) &&
+        /href="\/empresa"/.test(tapHtml) &&
+        /href="\/permiso-sin-goce"/.test(tapHtml) &&
+        /estimaci[oó]n educativa/.test(tapHtml) &&
+        /no constituye asesor[ií]a legal/i.test(tapHtml) &&
+        !existsSync(join(root, "indemnizacion-plazo-fijo.html")) &&
+        !existsSync(join(root, "remanente-plazo-fijo.html")) &&
+        !existsSync(join(root, "termino-plazo-fijo.html")) &&
+        !existsSync(join(root, "salarios-remanentes.html")),
+    );
+    assert(
+      "home y nav enlazan /termino-anticipado-plazo-fijo",
+      /href="\/termino-anticipado-plazo-fijo"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/termino-anticipado-plazo-fijo" data-nav>T[ée]rmino anticipado plazo fijo<\/a>/.test(
+          readFileSync(join(root, "index.html"), "utf8"),
+        ) &&
+        /href="\/termino-anticipado-plazo-fijo" data-nav>T[ée]rmino anticipado plazo fijo<\/a>/.test(tapHtml) &&
+        /href="\/termino-anticipado-plazo-fijo" data-nav>T[ée]rmino anticipado plazo fijo<\/a>/.test(
+          readFileSync(join(root, "js/ui.js"), "utf8"),
+        ),
+    );
+    assert(
+      "sitemap incluye /termino-anticipado-plazo-fijo",
+      locs.includes("https://www.haberes.cl/termino-anticipado-plazo-fijo") &&
+        lastmodForPath("/termino-anticipado-plazo-fijo") === "2026-09-20",
+    );
+    assert(
+      "seo-map documenta /termino-anticipado-plazo-fijo y no-canibalizar hermanas",
+      /\/termino-anticipado-plazo-fijo/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no canibalizar `\/contrato-plazo-fijo`, `\/finiquito`/.test(
+          readFileSync(join(root, "docs/seo-map.md"), "utf8"),
+        ) &&
+        /no crear `\/indemnizacion-plazo-fijo`/i.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")),
+    );
+    assert(
+      "hub /guias enlaza /termino-anticipado-plazo-fijo en el cluster de finiquito",
+      /href="\/termino-anticipado-plazo-fijo"/.test(readFileSync(join(root, "guias.html"), "utf8")) &&
+        /<h2>Finiquito<\/h2>[\s\S]*href="\/termino-anticipado-plazo-fijo"/.test(
+          readFileSync(join(root, "guias.html"), "utf8"),
+        ),
+    );
+    assert(
+      "hermanas enlazan /termino-anticipado-plazo-fijo",
+      /href="\/termino-anticipado-plazo-fijo"/.test(finiHtmlTap) &&
+        /href="\/termino-anticipado-plazo-fijo"/.test(causalHtmlTap) &&
+        /href="\/termino-anticipado-plazo-fijo"/.test(ofHtmlTap) &&
+        /href="\/termino-anticipado-plazo-fijo"/.test(pfHtmlTap) &&
+        /href="\/termino-anticipado-plazo-fijo"/.test(
+          readFileSync(join(root, "indemnizacion-anos-servicio.html"), "utf8"),
+        ) &&
+        /href="\/termino-anticipado-plazo-fijo"/.test(
+          readFileSync(join(root, "despido-injustificado.html"), "utf8"),
+        ) &&
+        /href="\/termino-anticipado-plazo-fijo"/.test(readFileSync(join(root, "empresa.html"), "utf8")),
     );
   }
   {
@@ -16201,6 +16448,7 @@ assert(
       "jornada-excepcional.html",
       "compensacion-horas-extras.html",
       "contrato-plazo-fijo.html",
+      "termino-anticipado-plazo-fijo.html",
       "permiso-sin-goce.html",
       "finiquito.html",
       "empresa.html",
@@ -16379,7 +16627,7 @@ assert(
     return acc;
   }
   const pages = listHtml(root);
-  assert("101 páginas HTML", pages.length === 101, String(pages.length));
+  assert("102 páginas HTML", pages.length === 102, String(pages.length));
   for (const file of pages) {
     const html = readFileSync(file, "utf8");
     const rel = file.slice(root.length + 1);
