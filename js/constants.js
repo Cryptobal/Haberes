@@ -646,6 +646,93 @@ export const HORA_LACTANCIA_DIAS_DEFAULT = 22;
 
 export const JORNADA_DEFAULT = 42;
 export const HORAS_EXTRA_FACTOR = 1.5;
+/**
+ * Compensación de horas extraordinarias por días adicionales de feriado
+ * (art. 32 inc. 4° CT, Ley 21.561).
+ *
+ * Recargo de compensación: 1,5 horas de feriado por cada HE (el mismo
+ * recargo del pago al 50 %). Tope: 5 días hábiles al año. Uso: 6 meses
+ * desde el ciclo, aviso 48 h. Sin pacto escrito se pagan en dinero
+ * (`/horas-extras`). Un día completo exige horas equivalentes a la
+ * jornada de ese día (ORD. N°387/11); no se toman medios días
+ * (ORD. N°199/5).
+ *
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=1191554
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=207436
+ * @see https://www.dt.gob.cl/legislacion/1624/w3-article-125559.html
+ * @see https://www.dt.gob.cl/legislacion/1624/w3-article-125738.html
+ * @see https://www.dt.gob.cl/legislacion/1624/w3-article-127480.html
+ * @see https://www.dt.gob.cl/legislacion/1624/w3-article-127877.html
+ */
+export const COMPENSACION_HE_RECARGO = HORAS_EXTRA_FACTOR;
+export const COMPENSACION_HE_TOPE_DIAS = 5;
+export const COMPENSACION_HE_PLAZO_MESES = 6;
+export const COMPENSACION_HE_AVISO_HORAS = 48;
+export const COMPENSACION_HE_JORNADA_DIARIA_DEFAULT = 8;
+/** 42 h / 5 días (tope ordinario 2026). */
+export const COMPENSACION_HE_JORNADA_DIARIA_42_5 = 42 / 5;
+export const COMPENSACION_HE_TOLERANCIA = 1e-9;
+export const COMPENSACION_HE_GOLD = Object.freeze({
+  clasico16: Object.freeze({
+    horasExtra: 16,
+    horasJornadaDiaria: 8,
+    horasFeriado: 24,
+    diasEquivalentes: 3,
+    diasCompletos: 3,
+    horasRestantes: 0,
+    diasDentroTope: 3,
+    diasFueraTope: 0,
+    ok: true,
+  }),
+  topeAnual: Object.freeze({
+    horasExtra: 32,
+    horasJornadaDiaria: 8,
+    horasFeriado: 48,
+    diasEquivalentes: 6,
+    diasCompletos: 6,
+    horasRestantes: 0,
+    diasDentroTope: 5,
+    diasFueraTope: 1,
+    ok: true,
+  }),
+  fraccion: Object.freeze({
+    horasExtra: 8,
+    horasJornadaDiaria: 8,
+    horasFeriado: 12,
+    diasEquivalentes: 1.5,
+    diasCompletos: 1,
+    horasRestantes: 4,
+    diasDentroTope: 1,
+    diasFueraTope: 0,
+    ok: true,
+  }),
+  jornada84: Object.freeze({
+    horasExtra: 16,
+    horasJornadaDiaria: 42 / 5,
+    horasFeriado: 24,
+    diasEquivalentes: 24 / (42 / 5),
+    diasCompletos: 2,
+    horasRestantes: 24 - 2 * (42 / 5),
+    diasDentroTope: 2,
+    diasFueraTope: 0,
+    ok: true,
+  }),
+  sueldo800: Object.freeze({
+    horasExtra: 16,
+    horasJornadaDiaria: 8,
+    sueldoMensual: 800_000,
+    jornadaSemanal: 40,
+    valorHoraExtra: 7_000,
+    equivalenciaPago: 112_000,
+    ok: true,
+  }),
+  cero: Object.freeze({
+    horasExtra: 0,
+    horasJornadaDiaria: 8,
+    ok: false,
+    motivo: "horas",
+  }),
+});
 /** Mínimo legal art. 38 N°7: recargo sobre horas ordinarias en domingo (comercio/servicios al público). */
 export const RECARGO_DOMINGO_COMERCIO_MIN = 0.3;
 

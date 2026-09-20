@@ -12,7 +12,8 @@ Actualizar este archivo antes de crear URLs nuevas para evitar canibalización.
 | Calcular finiquito | calcular finiquito (18.100/28), calculadora finiquito (1.900/23), como calcular finiquito (4.400/23) | `/finiquito` | Reforzar title/H1/FAQ; no crear `/calculadora-finiquito` |
 | Calcular sueldo líquido | calcular sueldo líquido / liquido (5.400/38), sueldo líquido (4.400/35), calculadora de sueldo liquido (1.300/32) | `/sueldo` | H1 calculadora Chile 2026; no crear `/calculadora-sueldo` |
 | Calcular sueldo mínimo | sueldo mínimo / ingreso mínimo mensual / IMM 2026 | `/sueldo-minimo` | Title/H1 «calcular sueldo mínimo»; no canibalizar `/sueldo`, `/gratificacion`, `/colacion-movilizacion` ni `/costo-empresa`. Piso legal del IMM (Ley 21.830), jornada parcial y tope art. 50. No es el líquido. No crear `/imm`, `/ingreso-minimo` ni `/sueldo-minimo-2026` |
-| Calcular horas extras | calcular horas extras / cálculo horas extras (8.100/17) | `/horas-extras` | Title/H1 «calcular horas extras»; no canibalizar `/sueldo` ni `/guias/horas-extras` |
+| Calcular horas extras | calcular horas extras / cálculo horas extras (8.100/17) | `/horas-extras` | Title/H1 «calcular horas extras»; no canibalizar `/sueldo`, `/guias/horas-extras` ni `/compensacion-horas-extras`. El pago en dinero (recargo 50 %) vive aquí; la compensación por feriado adicional vive en `/compensacion-horas-extras` |
+| Calcular compensación horas extras | compensación horas extras / horas extras por feriado / art. 32 inc. 4 Ley 21.561 | `/compensacion-horas-extras` | Title/H1 «calcular compensación horas extras» Chile 2026; no canibalizar `/horas-extras`, `/feriado-anual`, `/feriado-progresivo`, `/vacaciones-proporcionales`, `/jornada-40-horas`, `/pacto-4x3`, `/bandas-horarias`, `/jornada-excepcional`, `/jornada-parcial`, `/descanso-compensatorio`, `/recargo-domingo-comercio`, `/feriado-irrenunciable`, `/sueldo`, `/costo-empresa`, `/empresa` ni `/permiso-sin-goce`. HE × 1,5 h de feriado, tope 5 días hábiles, uso 6 meses / aviso 48 h. No es el pago en dinero. No crear `/compensacion-he`, `/he-feriado`, `/compensacion-feriado`, `/art-32-feriado`, `/dias-adicionales-he` ni `/compensacion-horas-extraordinarias` |
 | Calcular jornada 40 horas | jornada 40 horas / ley 21.561 / tope 42 horas 2026 | `/jornada-40-horas` | Title/H1 «Calculadora jornada 40 horas Chile»; no canibalizar `/horas-extras`, `/sueldo`, `/sueldo-proporcional`, `/sueldo-minimo`, `/recargo-domingo-comercio`, `/descanso-compensatorio`, `/feriado-irrenunciable` ni `/finiquito-casa-particular`. Tope gradual art. 22 (Ley 21.561), distribución a falta de acuerdo (Ley 21.755 / ORD. N°253/21) y valor hora DT. No es el monto de extras. No crear `/40-horas`, `/ley-21561` ni `/reduccion-jornada` |
 | Calcular jornada parcial | jornada parcial / contrato parcial / tope 2/3 art. 40 bis | `/jornada-parcial` | Title/H1 «calcular jornada parcial» + tope 2/3 Chile 2026; no canibalizar `/jornada-40-horas`, `/sueldo`, `/sueldo-proporcional`, `/vacaciones-proporcionales`, `/horas-extras`, `/semana-corrida`, `/descuento-atrasos`, `/costo-empresa` ni `/empresa`. Tope 2/3 de la ordinaria (art. 40 bis), sueldo proporcional a horas y feriado en días (15 × horas/ordinaria, art. 67). No es líquido, extras, IAS ni cotizaciones. No crear `/part-time`, `/medio-tiempo`, `/jornada-media` ni `/contrato-parcial` |
 | Calcular teletrabajo | teletrabajo / derecho a desconexión / trabajo a distancia / Ley 21.220 | `/teletrabajo` | Title/H1 «calcular teletrabajo» + derecho a desconexión Chile 2026; no canibalizar `/jornada-40-horas`, `/jornada-parcial`, `/horas-extras`, `/descanso-compensatorio`, `/recargo-domingo-comercio`, `/descuento-atrasos`, `/sueldo`, `/costo-empresa` ni `/empresa`. 12 h continuas en 24 h (art. 152 quáter J); rem/30 solo referencia de días bajo modalidad. No es líquido, extras ni finiquito. No crear `/home-office`, `/trabajo-remoto`, `/derecho-desconexion` ni `/ley-21220` |
@@ -211,6 +212,17 @@ esta página no aprueba ni simula el trámite. No canibalizar `/jornada-40-horas
 `/descuento-atrasos`, `/semana-corrida`, `/sueldo`, `/costo-empresa`, `/empresa` ni
 `/permiso-sin-goce`. El pacto escrito 4 días / 3 descanso (sin autorización DT) sigue
 en `/pacto-4x3`. El tope gradual y el art. 22 bis siguen en `/jornada-40-horas`.
+
+No publicar `/compensacion-he`, `/he-feriado`, `/compensacion-feriado`, `/art-32-feriado`,
+`/dias-adicionales-he` ni `/compensacion-horas-extraordinarias`. La compensación de
+horas extras por días adicionales de feriado (art. 32 inc. 4° / Ley 21.561: 1,5 h de
+feriado por HE, tope 5 días hábiles, uso en 6 meses con aviso de 48 h) vive en
+`/compensacion-horas-extras`. No canibalizar `/horas-extras`, `/feriado-anual`,
+`/feriado-progresivo`, `/vacaciones-proporcionales`, `/jornada-40-horas`, `/pacto-4x3`,
+`/bandas-horarias`, `/jornada-excepcional`, `/jornada-parcial`, `/descanso-compensatorio`,
+`/recargo-domingo-comercio`, `/feriado-irrenunciable`, `/sueldo`, `/costo-empresa`,
+`/empresa` ni `/permiso-sin-goce`. El pago en dinero de las extras sigue en
+`/horas-extras`. El feriado legal de 15 días sigue en `/feriado-anual`.
 
 No publicar `/pago-feriado`, `/trabajo-feriado`, `/feriados` ni `/irrenunciable`.
 El pago educativo de un feriado irrenunciable (Ley 19.973 + recargo 50 % art. 32)

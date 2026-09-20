@@ -25,6 +25,7 @@ const DRAWER_LINKS = [
   ["/retencion-judicial", "Retención judicial"],
   ["/apv", "APV Régimen B"],
   ["/horas-extras", "Horas extras"],
+  ["/compensacion-horas-extras", "Compensación horas extras"],
   ["/jornada-40-horas", "Jornada 40 horas"],
   ["/jornada-parcial", "Jornada parcial"],
   ["/teletrabajo", "Teletrabajo"],
