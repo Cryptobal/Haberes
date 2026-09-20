@@ -67,6 +67,7 @@ const DRAWER_LINKS = [
   ["/autodespido", "Autodespido"],
   ["/obra-faena", "Obra o faena"],
   ["/contrato-plazo-fijo", "Contrato a plazo fijo"],
+  ["/termino-anticipado-plazo-fijo", "Término anticipado plazo fijo"],
   ["/prescripcion-laboral", "Prescripción laboral"],
   ["/finiquito-casa-particular", "Finiquito casa particular"],
   ["/finiquito", "Finiquito"],
