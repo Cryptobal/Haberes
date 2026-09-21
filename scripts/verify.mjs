@@ -5390,7 +5390,8 @@ assert(
     lastmodForPath("/guias/horas-extras") === "2026-08-31" &&
     lastmodForPath("/guias/me-reservo-el-derecho-en-el-finiquito") === "2026-09-07" &&
     lastmodForPath("/guias/vacaciones-proporcionales") === "2026-09-14" &&
-    lastmodForPath("/guias") === "2026-09-14" &&
+    lastmodForPath("/guias/liquidacion-de-sueldo-y-previred") === "2026-09-21" &&
+    lastmodForPath("/guias") === "2026-09-21" &&
     /<loc>https:\/\/www\.haberes\.cl\/guias\/liquidacion-de-sueldo<\/loc>\s*<lastmod>2026-08-18<\/lastmod>/.test(sitemap) &&
     /<loc>https:\/\/www\.haberes\.cl\/guias\/gratificacion-legal<\/loc>\s*<lastmod>2026-08-18<\/lastmod>/.test(sitemap) &&
     /<loc>https:\/\/www\.haberes\.cl\/guias\/indemnizacion-por-anos-de-servicio<\/loc>\s*<lastmod>2026-08-19<\/lastmod>/.test(sitemap) &&
@@ -5399,7 +5400,8 @@ assert(
     /<loc>https:\/\/www\.haberes\.cl\/guias\/horas-extras<\/loc>\s*<lastmod>2026-08-31<\/lastmod>/.test(sitemap) &&
     /<loc>https:\/\/www\.haberes\.cl\/guias\/me-reservo-el-derecho-en-el-finiquito<\/loc>\s*<lastmod>2026-09-07<\/lastmod>/.test(sitemap) &&
     /<loc>https:\/\/www\.haberes\.cl\/guias\/vacaciones-proporcionales<\/loc>\s*<lastmod>2026-09-14<\/lastmod>/.test(sitemap) &&
-    /<loc>https:\/\/www\.haberes\.cl\/guias<\/loc>\s*<lastmod>2026-09-14<\/lastmod>/.test(sitemap),
+    /<loc>https:\/\/www\.haberes\.cl\/guias\/liquidacion-de-sueldo-y-previred<\/loc>\s*<lastmod>2026-09-21<\/lastmod>/.test(sitemap) &&
+    /<loc>https:\/\/www\.haberes\.cl\/guias<\/loc>\s*<lastmod>2026-09-21<\/lastmod>/.test(sitemap),
 );
 assert("sin ruta /blog ni /noticias", !existsSync(join(root, "blog.html")) && !existsSync(join(root, "noticias.html")));
 assert("sitemap sin .html (cleanUrls)", !locs.some((u) => u.endsWith(".html")));
@@ -15443,6 +15445,7 @@ assert(
       ["guias/horas-extras.html", "/horas-extras", /artículo 32/, /dt\.gob\.cl/],
       ["guias/me-reservo-el-derecho-en-el-finiquito.html", "/finiquito", /artículo 177/, /dt\.gob\.cl/],
       ["guias/vacaciones-proporcionales.html", "/vacaciones-proporcionales", /artículo 73/, /dt\.gob\.cl/],
+      ["guias/liquidacion-de-sueldo-y-previred.html", "/sueldo", /54/, /dt\.gob\.cl/],
     ];
     function visibleWords(html) {
       const main = html.match(/<main\b[\s\S]*?<\/main>/i)?.[0] || html;
@@ -15466,11 +15469,14 @@ assert(
         file.includes("aguinaldo-fiestas-patrias") ||
         file.includes("horas-extras") ||
         file.includes("me-reservo-el-derecho-en-el-finiquito") ||
-        file.includes("vacaciones-proporcionales")
+        file.includes("vacaciones-proporcionales") ||
+        file.includes("liquidacion-de-sueldo-y-previred")
           ? 900
           : 800;
       const dateRe =
-        file.includes("vacaciones-proporcionales")
+        file.includes("liquidacion-de-sueldo-y-previred")
+          ? /<time datetime="2026-09-21">/
+          : file.includes("vacaciones-proporcionales")
           ? /<time datetime="2026-09-14">/
           : file.includes("me-reservo-el-derecho-en-el-finiquito")
           ? /<time datetime="2026-09-07">/
@@ -15754,6 +15760,94 @@ assert(
           readFileSync(join(root, "docs/seo-map.md"), "utf8"),
         ) &&
           /No crear `\/guias\/feriado-proporcional`/.test(
+            readFileSync(join(root, "docs/seo-map.md"), "utf8"),
+          ),
+      );
+    }
+    {
+      const html = readFileSync(join(root, "guias/liquidacion-de-sueldo-y-previred.html"), "utf8");
+      const sueldoHtml = readFileSync(join(root, "sueldo.html"), "utf8");
+      const finiHtml = readFileSync(join(root, "finiquito.html"), "utf8");
+      const liqHtml = readFileSync(join(root, "guias/liquidacion-de-sueldo.html"), "utf8");
+      const leerHtml = readFileSync(join(root, "guias/como-leer-una-liquidacion-de-sueldo.html"), "utf8");
+      const formatoHtml = readFileSync(join(root, "guias/formato-de-liquidacion-de-sueldo-chile.html"), "utf8");
+      const cpHtml = readFileSync(join(root, "cotizaciones-previsionales.html"), "utf8");
+      const title = (html.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+      const h1 = (html.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+      const sueldoTitle = (sueldoHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+      const sueldoH1 = (sueldoHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+      const finiTitle = (finiHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+      const finiH1 = (finiHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+      const liqH1 = (liqHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+      const leerH1 = (leerHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+      const formatoH1 = (formatoHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+      const cpH1 = (cpHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+      const demo = calcularSueldo(
+        { sueldoBase: 900_000, afp: "modelo", salud: "fonasa", contrato: "indefinido" },
+        { uf: FALLBACK_UF },
+      );
+      const afcEmpleador = Math.round(900_000 * CESANTIA_EMPLEADOR_INDEFINIDO);
+      assert(
+        "SEO guía liquidación y Previred title/H1 únicos y no canibalizan /sueldo ni /finiquito",
+        title &&
+          h1 &&
+          title !== sueldoTitle &&
+          h1 !== sueldoH1 &&
+          title !== finiTitle &&
+          h1 !== finiH1 &&
+          h1 !== liqH1 &&
+          h1 !== leerH1 &&
+          h1 !== formatoH1 &&
+          h1 !== cpH1 &&
+          /liquidaci[oó]n de sueldo/i.test(title) &&
+          /Previred/i.test(title) &&
+          /qué es cada una/i.test(title) &&
+          /liquidaci[oó]n de sueldo/i.test(h1) &&
+          /Previred/i.test(h1) &&
+          /contrastarlas/i.test(h1) &&
+          !/calculadora/i.test(title) &&
+          !/calculadora/i.test(h1) &&
+          !/^Calcular /i.test(h1) &&
+          !/sueldo l[ií]quido/i.test(h1) &&
+          !/calculadora de finiquito/i.test(h1) &&
+          /data-seo-calc="sueldo"/.test(html) &&
+          /\$900\.000/.test(html) &&
+          /\$95\.220/.test(html) &&
+          /\$63\.000/.test(html) &&
+          /\$5\.400/.test(html) &&
+          /\$163\.620/.test(html) &&
+          /\$736\.380/.test(html) &&
+          /\$21\.600/.test(html) &&
+          demo.afp.monto === 95_220 &&
+          demo.salud.monto === 63_000 &&
+          demo.cesantia.monto === 5_400 &&
+          demo.liquido === 736_380 &&
+          demo.totalDescuentos === 163_620 &&
+          afcEmpleador === 21_600 &&
+          /href="\/sueldo"/.test(html) &&
+          /href="\/cotizaciones-previsionales"/.test(html) &&
+          /href="\/seguro-cesantia"/.test(html) &&
+          /href="\/guias\/liquidacion-de-sueldo"/.test(html) &&
+          /href="\/guias\/impuesto-unico"/.test(html) &&
+          /href="\/guias\/como-leer-una-liquidacion-de-sueldo"/.test(html) &&
+          /href="\/guias"/.test(html) &&
+          /w3-article-60226/.test(html) &&
+          /207436/.test(html) &&
+          /previred\.com/.test(html) &&
+          /"url": "https:\/\/www\.haberes\.cl\/sueldo"/.test(html) &&
+          /"name": "Calculadora de sueldo l[ií]quido Haberes"/.test(html) &&
+          !existsSync(join(root, "guias/previred.html")) &&
+          !existsSync(join(root, "blog.html")) &&
+          sueldoH1 === "Calculadora de sueldo líquido Chile 2026" &&
+          finiH1 === "Calculadora de finiquito Chile 2026",
+        `${title} | ${h1} | ${sueldoH1} | ${liqH1}`,
+      );
+      assert(
+        "seo-map documenta guía liquidación y Previred sin slug paralelo",
+        /\/guias\/liquidacion-de-sueldo-y-previred/.test(
+          readFileSync(join(root, "docs/seo-map.md"), "utf8"),
+        ) &&
+          /No crear `\/guias\/previred`/.test(
             readFileSync(join(root, "docs/seo-map.md"), "utf8"),
           ),
       );
@@ -16489,9 +16583,11 @@ assert(
       "SEO hub tiene últimas con fecha",
       /<h2>Últimas actualizaciones<\/h2>/.test(hub) &&
         /<ol class="guide-latest">/.test(hub) &&
+        /datetime="2026-09-21"/.test(hub) &&
         /datetime="2026-09-14"/.test(hub) &&
         /datetime="2026-09-07"/.test(hub) &&
         /datetime="2026-08-31"/.test(hub) &&
+        /href="\/guias\/liquidacion-de-sueldo-y-previred"/.test(hub) &&
         /href="\/guias\/vacaciones-proporcionales"/.test(hub) &&
         /href="\/guias\/me-reservo-el-derecho-en-el-finiquito"/.test(hub) &&
         /href="\/guias\/horas-extras"/.test(hub) &&

@@ -82,6 +82,7 @@ Actualizar este archivo antes de crear URLs nuevas para evitar canibalización.
 | Carta de aviso | carta de aviso de término de contrato (10–480) | `/guias/carta-aviso-termino-contrato` | plantilla descargable |
 | Casa particular | finiquito asesora del hogar (140/15) | `/guias/finiquito-trabajadora-de-casa-particular` | explica; el cálculo vive en `/finiquito-casa-particular`; no reescribir la guía como segunda calculadora |
 | Reserva de derechos al firmar | me reservo el derecho / reserva de derechos finiquito — explainer | `/guias/me-reservo-el-derecho-en-el-finiquito` | guía espesa art. 177 (reserva, sumas no disputadas, poder liberatorio); el cálculo vive en `/finiquito`; no canibalizar title/H1 de esa calculadora ni de `/guias/finiquito` ni `/guias/plazo-de-pago-del-finiquito`. No crear `/guias/reserva-de-derechos` |
+| Liquidación vs Previred | liquidación de sueldo y Previred / contrastar liquidación cotizaciones — explainer | `/guias/liquidacion-de-sueldo-y-previred` | guía espesa: liquidación (art. 54, comprobante de haberes/descuentos/líquido) ≠ Previred (declaración y pago de cotizaciones); embed `/sueldo`; no canibalizar title/H1 de `/sueldo`, `/finiquito`, `/guias/liquidacion-de-sueldo`, `/guias/como-leer-una-liquidacion-de-sueldo`, `/guias/formato-de-liquidacion-de-sueldo-chile` ni `/cotizaciones-previsionales`. Haberes estima; no declara. No crear `/guias/previred` ni `/blog` |
 
 ## Guías de apoyo (ya publicadas — no canibalizar)
 
@@ -91,7 +92,6 @@ Actualizar este archivo antes de crear URLs nuevas para evitar canibalización.
 | `/guias/con-que-sueldo-se-calcula-el-finiquito` | Base de cálculo |
 | `/guias/como-leer-una-liquidacion-de-sueldo` | Soporte liquidación |
 | `/guias/formato-de-liquidacion-de-sueldo-chile` | Formato PDF |
-| `/guias/liquidacion-de-sueldo-y-previred` | Previred vs liquidación; enlace a `/cotizaciones-previsionales` (cálculo, no declaración) |
 
 ## 21 causales de finiquito (`/finiquito/{slug}`)
 

@@ -47,7 +47,7 @@ export const GUIDES = [
   { slug: "aguinaldo-fiestas-patrias", group: "liquidacion", calc: "/aguinaldo", updated: "2026-08-30" },
   { slug: "como-leer-una-liquidacion-de-sueldo", group: "liquidacion", calc: "/sueldo", updated: "2026-08-17" },
   { slug: "formato-de-liquidacion-de-sueldo-chile", group: "liquidacion", calc: "/sueldo", updated: "2026-08-17" },
-  { slug: "liquidacion-de-sueldo-y-previred", group: "liquidacion", calc: "/sueldo", updated: "2026-08-17" },
+  { slug: "liquidacion-de-sueldo-y-previred", group: "liquidacion", calc: "/sueldo", updated: "2026-09-21" },
   { slug: "finiquito", group: "finiquito", calc: "/finiquito", updated: "2026-08-18" },
   { slug: "indemnizacion-por-anos-de-servicio", group: "finiquito", calc: "/indemnizacion-anos-servicio", updated: "2026-08-19" },
   { slug: "vacaciones-proporcionales", group: "finiquito", calc: "/vacaciones-proporcionales", updated: "2026-09-14" },
@@ -60,7 +60,7 @@ export const GUIDES = [
 
 /** lastmod de rutas base que sí cambiaron después del lote SEO inicial. */
 export const PATH_LASTMOD = {
-  "/guias": "2026-09-14",
+  "/guias": "2026-09-21",
   "/finiquito-casa-particular": "2026-08-31",
   "/costo-empresa": "2026-08-30",
   "/seguro-cesantia": "2026-09-01",
