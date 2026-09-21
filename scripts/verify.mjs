@@ -93,6 +93,7 @@ import {
   TERMINO_ANTICIPADO_PLAZO_FIJO_GOLD,
   PERMISO_SIN_GOCE_GOLD,
   ZONA_EXTREMA_GOLD,
+  PROMEDIO_REMUNERACIONES_GOLD,
   GRADO_1A_EUS_ZONA_EXTREMA,
   INCREMENTO_ASIGNACION_ZONA_LEY_19354,
   CONTRATO_PLAZO_FIJO_TOLERANCIA_DIAS,
@@ -211,6 +212,7 @@ import {
   pctIncrementadoDesdeBase,
   zonaExtremaPorId,
 } from "../js/zona-extrema.js";
+import { calcularPromedioRemuneraciones } from "../js/promedio-remuneraciones.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 let failed = 0;
@@ -299,6 +301,14 @@ assert(
     TERMINO_ANTICIPADO_PLAZO_FIJO_GOLD.tresMeses800.remuneracionRemanente === 2_400_000 &&
     TERMINO_ANTICIPADO_PLAZO_FIJO_GOLD.mesesSolo.remuneracionRemanente === 2_400_000 &&
     TERMINO_ANTICIPADO_PLAZO_FIJO_GOLD.mismoDia.remuneracionRemanente === 0,
+);
+assert(
+  "Promedio remuneraciones gold 800+200 / 800+400 / 800+100 → $1.033.333",
+  PROMEDIO_REMUNERACIONES_GOLD.tresMeses.promedio === 1_033_333 &&
+    PROMEDIO_REMUNERACIONES_GOLD.tresMeses.suma === 3_100_000 &&
+    PROMEDIO_REMUNERACIONES_GOLD.tresMeses.n === 3 &&
+    PROMEDIO_REMUNERACIONES_GOLD.dosMeses.promedio === 1_100_000 &&
+    PROMEDIO_REMUNERACIONES_GOLD.dosMeses.n === 2,
 );
 assert(
   "Bandas horarias gold 09:00–18:00 ±60 y 08:30–17:30 −30",
@@ -4202,6 +4212,91 @@ console.log("\nRebaja IUSC zona extrema (gold 2026)");
   );
 }
 
+console.log("\nPromedio remuneraciones art. 172 (gold 2026)");
+{
+  const g = calcularPromedioRemuneraciones(PROMEDIO_REMUNERACIONES_GOLD.tresMeses);
+  const gold = PROMEDIO_REMUNERACIONES_GOLD.tresMeses;
+  assert(
+    "gold 800.000+200.000 / 800.000+400.000 / 800.000+100.000 → $1.033.333",
+    g.ok === true &&
+      g.n === 3 &&
+      g.suma === 3_100_000 &&
+      g.promedio === 1_033_333 &&
+      g.promedio === gold.promedio &&
+      g.meses[0].total === 1_000_000 &&
+      g.meses[1].total === 1_200_000 &&
+      g.meses[2].total === 900_000 &&
+      g.promedio === Math.round((1_000_000 + 1_200_000 + 900_000) / 3),
+    JSON.stringify(g),
+  );
+  const dos = calcularPromedioRemuneraciones(PROMEDIO_REMUNERACIONES_GOLD.dosMeses);
+  assert(
+    "solo 2 meses (M1+M2) → $1.100.000",
+    dos.ok === true &&
+      dos.n === 2 &&
+      dos.suma === 2_200_000 &&
+      dos.promedio === 1_100_000 &&
+      dos.promedio === Math.round((1_000_000 + 1_200_000) / 2) &&
+      dos.meses[2].valido === false,
+    JSON.stringify(dos),
+  );
+  const soloVar = calcularPromedioRemuneraciones({
+    incluirGratificacion: false,
+    meses: [{ fija: 0, variables: 200_000, gratificacion: 0 }],
+  });
+  assert(
+    "solo variables en un mes, fija 0 → cuenta el total",
+    soloVar.ok === true &&
+      soloVar.n === 1 &&
+      soloVar.meses[0].total === 200_000 &&
+      soloVar.promedio === 200_000,
+    JSON.stringify(soloVar),
+  );
+  const vacio = calcularPromedioRemuneraciones({
+    incluirGratificacion: false,
+    meses: [
+      { fija: 0, variables: 0, gratificacion: 50_000 },
+      { fija: 0, variables: 0, gratificacion: 0 },
+    ],
+  });
+  assert(
+    "n=0 → error de validación",
+    vacio.ok === false && vacio.motivo === "meses" && vacio.n === 0 && vacio.promedio === 0,
+    JSON.stringify(vacio),
+  );
+  const gratOff = calcularPromedioRemuneraciones({
+    incluirGratificacion: false,
+    meses: [{ fija: 800_000, variables: 0, gratificacion: 50_000 }],
+  });
+  assert(
+    "gratificación OFF no suma aunque el campo tenga número",
+    gratOff.ok === true &&
+      gratOff.n === 1 &&
+      gratOff.meses[0].total === 800_000 &&
+      gratOff.promedio === 800_000 &&
+      gratOff.incluirGratificacion === false,
+    JSON.stringify(gratOff),
+  );
+  const gratOn = calcularPromedioRemuneraciones({
+    incluirGratificacion: true,
+    meses: [{ fija: 800_000, variables: 0, gratificacion: 50_000 }],
+  });
+  assert(
+    "gratificación ON suma el campo del mes",
+    gratOn.ok === true && gratOn.meses[0].total === 850_000 && gratOn.promedio === 850_000,
+    JSON.stringify(gratOn),
+  );
+  const prApp = readFileSync(join(root, "js/app-promedio-remuneraciones.js"), "utf8");
+  assert(
+    "app-promedio-remuneraciones usa calcularPromedioRemuneraciones",
+    /import\s*\{[^}]*calcularPromedioRemuneraciones[^}]*\}\s*from\s*["']\.\/promedio-remuneraciones\.js["']/.test(prApp) &&
+      /calcularPromedioRemuneraciones\s*\(/.test(prApp) &&
+      !/\balert\s*\(/.test(prApp) &&
+      !/\bconfirm\s*\(/.test(prApp) &&
+      !/\bprompt\s*\(/.test(prApp),
+  );
+}
+
 {
   const millon = calcularAvisoPrevio(
     { causal: "161-necesidades", remuneracion: 1_000_000, avisoPrevio: false },
@@ -4931,6 +5026,7 @@ const required = [
   "termino-anticipado-plazo-fijo.html",
   "permiso-sin-goce.html",
   "zona-extrema.html",
+  "promedio-remuneraciones.html",
   "finiquito.html",
   "js/app-horas-extras.js",
   "js/app-vacaciones-proporcionales.js",
@@ -4986,6 +5082,7 @@ const required = [
   "js/app-termino-anticipado-plazo-fijo.js",
   "js/app-permiso-sin-goce.js",
   "js/app-zona-extrema.js",
+  "js/app-promedio-remuneraciones.js",
   "empresa.html",
   "privacidad.html",
   "terminos.html",
@@ -5010,6 +5107,7 @@ const required = [
   "js/termino-anticipado-plazo-fijo.js",
   "js/permiso-sin-goce.js",
   "js/zona-extrema.js",
+  "js/promedio-remuneraciones.js",
   "js/causales.js",
   "js/finiquito.js",
   "js/indicadores.js",
@@ -5183,6 +5281,7 @@ const htmlFiles = [
   "termino-anticipado-plazo-fijo.html",
   "permiso-sin-goce.html",
   "zona-extrema.html",
+  "promedio-remuneraciones.html",
   "finiquito.html",
   "empresa.html",
   "privacidad.html",
@@ -5313,6 +5412,7 @@ const appEntries = [
   "js/app-termino-anticipado-plazo-fijo.js",
   "js/app-permiso-sin-goce.js",
   "js/app-zona-extrema.js",
+  "js/app-promedio-remuneraciones.js",
   "js/app-finiquito.js",
   "js/app-empresa.js",
   "js/app-admin.js",
@@ -5345,7 +5445,7 @@ assert("robots Allow /", /Allow:\s*\//.test(robots));
 assert("robots Disallow /admin", /Disallow:\s*\/admin/.test(robots));
 assert("robots Disallow /api", /Disallow:\s*\/api/.test(robots));
 assert("robots Disallow /docs", /Disallow:\s*\/docs/.test(robots));
-assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/trabajo-pesado/.test(robots) && !/Disallow:\s*\/nulidad-despido/.test(robots) && !/Disallow:\s*\/tutela-laboral/.test(robots) && !/Disallow:\s*\/despido-injustificado/.test(robots) && !/Disallow:\s*\/autodespido/.test(robots) && !/Disallow:\s*\/obra-faena/.test(robots) && !/Disallow:\s*\/prescripcion-laboral/.test(robots) && !/Disallow:\s*\/descanso-compensatorio/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/feriado-anual/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/licencia-medica/.test(robots) && !/Disallow:\s*\/boleta-honorarios/.test(robots) && !/Disallow:\s*\/retencion-judicial/.test(robots) && !/Disallow:\s*\/apv/.test(robots) && !/Disallow:\s*\/sala-cuna/.test(robots) && !/Disallow:\s*\/postnatal-parental/.test(robots) && !/Disallow:\s*\/permiso-prenatal/.test(robots) && !/Disallow:\s*\/fuero-maternal/.test(robots) && !/Disallow:\s*\/permiso-paternidad/.test(robots) && !/Disallow:\s*\/permiso-matrimonio/.test(robots) && !/Disallow:\s*\/permiso-fallecimiento/.test(robots) && !/Disallow:\s*\/interes-mora/.test(robots) && !/Disallow:\s*\/hora-lactancia/.test(robots) && !/Disallow:\s*\/jornada-40-horas/.test(robots) && !/Disallow:\s*\/jornada-parcial/.test(robots) && !/Disallow:\s*\/teletrabajo/.test(robots) && !/Disallow:\s*\/bandas-horarias/.test(robots) && !/Disallow:\s*\/pacto-4x3/.test(robots) && !/Disallow:\s*\/jornada-excepcional/.test(robots) && !/Disallow:\s*\/compensacion-horas-extras/.test(robots) && !/Disallow:\s*\/contrato-plazo-fijo/.test(robots) && !/Disallow:\s*\/termino-anticipado-plazo-fijo/.test(robots) && !/Disallow:\s*\/permiso-sin-goce/.test(robots) && !/Disallow:\s*\/zona-extrema/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots) && !/Disallow:\s*\/inclusion-laboral/.test(robots));
+assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/trabajo-pesado/.test(robots) && !/Disallow:\s*\/nulidad-despido/.test(robots) && !/Disallow:\s*\/tutela-laboral/.test(robots) && !/Disallow:\s*\/despido-injustificado/.test(robots) && !/Disallow:\s*\/autodespido/.test(robots) && !/Disallow:\s*\/obra-faena/.test(robots) && !/Disallow:\s*\/prescripcion-laboral/.test(robots) && !/Disallow:\s*\/descanso-compensatorio/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/feriado-anual/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/licencia-medica/.test(robots) && !/Disallow:\s*\/boleta-honorarios/.test(robots) && !/Disallow:\s*\/retencion-judicial/.test(robots) && !/Disallow:\s*\/apv/.test(robots) && !/Disallow:\s*\/sala-cuna/.test(robots) && !/Disallow:\s*\/postnatal-parental/.test(robots) && !/Disallow:\s*\/permiso-prenatal/.test(robots) && !/Disallow:\s*\/fuero-maternal/.test(robots) && !/Disallow:\s*\/permiso-paternidad/.test(robots) && !/Disallow:\s*\/permiso-matrimonio/.test(robots) && !/Disallow:\s*\/permiso-fallecimiento/.test(robots) && !/Disallow:\s*\/interes-mora/.test(robots) && !/Disallow:\s*\/hora-lactancia/.test(robots) && !/Disallow:\s*\/jornada-40-horas/.test(robots) && !/Disallow:\s*\/jornada-parcial/.test(robots) && !/Disallow:\s*\/teletrabajo/.test(robots) && !/Disallow:\s*\/bandas-horarias/.test(robots) && !/Disallow:\s*\/pacto-4x3/.test(robots) && !/Disallow:\s*\/jornada-excepcional/.test(robots) && !/Disallow:\s*\/compensacion-horas-extras/.test(robots) && !/Disallow:\s*\/contrato-plazo-fijo/.test(robots) && !/Disallow:\s*\/termino-anticipado-plazo-fijo/.test(robots) && !/Disallow:\s*\/permiso-sin-goce/.test(robots) && !/Disallow:\s*\/zona-extrema/.test(robots) && !/Disallow:\s*\/promedio-remuneraciones/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots) && !/Disallow:\s*\/inclusion-laboral/.test(robots));
 assert("robots Sitemap", /Sitemap:\s*https:\/\/www\.haberes\.cl\/sitemap\.xml/.test(robots));
 
 const { seoPaths, GUIDE_SLUGS, GUIDES, CAUSAL_PAGES, BASE_PATHS, lastmodForPath } = await import("../content/registry.js");
@@ -5416,7 +5516,8 @@ assert(
     BASE_PATHS.includes("/contrato-plazo-fijo") &&
     BASE_PATHS.includes("/termino-anticipado-plazo-fijo") &&
     BASE_PATHS.includes("/permiso-sin-goce") &&
-    BASE_PATHS.includes("/zona-extrema"),
+    BASE_PATHS.includes("/zona-extrema") &&
+    BASE_PATHS.includes("/promedio-remuneraciones"),
   `${locs.length} vs ${expectedFromRegistry.length}`,
 );
 assert(
@@ -5773,7 +5874,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 101,
+      seoPaths().length === 102,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -5785,7 +5886,7 @@ try {
   const docsSeo = await hitLocal("/docs/seo-map.md");
   assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
   assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
-  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/obra-faena/", "/prescripcion-laboral/", "/descanso-compensatorio/", "/inclusion-laboral/", "/jornada-parcial/", "/teletrabajo/", "/bandas-horarias/", "/pacto-4x3/", "/jornada-excepcional/", "/compensacion-horas-extras/", "/contrato-plazo-fijo/", "/termino-anticipado-plazo-fijo/", "/permiso-sin-goce/", "/zona-extrema/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/obra-faena/", "/prescripcion-laboral/", "/descanso-compensatorio/", "/inclusion-laboral/", "/jornada-parcial/", "/teletrabajo/", "/bandas-horarias/", "/pacto-4x3/", "/jornada-excepcional/", "/compensacion-horas-extras/", "/contrato-plazo-fijo/", "/termino-anticipado-plazo-fijo/", "/permiso-sin-goce/", "/zona-extrema/", "/promedio-remuneraciones/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
   }
@@ -5847,6 +5948,7 @@ try {
     "/termino-anticipado-plazo-fijo",
     "/permiso-sin-goce",
     "/zona-extrema",
+    "/promedio-remuneraciones",
     "/gratificacion",
     "/impuesto-unico",
     "/cotizaciones-previsionales",
@@ -9668,6 +9770,7 @@ assert(
     ["termino-anticipado-plazo-fijo.html", "/termino-anticipado-plazo-fijo"],
     ["permiso-sin-goce.html", "/permiso-sin-goce"],
     ["zona-extrema.html", "/zona-extrema"],
+    ["promedio-remuneraciones.html", "/promedio-remuneraciones"],
     ["finiquito.html", "/finiquito"],
     ["empresa.html", "/empresa"],
     ["como.html", "/como"],
@@ -11415,6 +11518,139 @@ assert(
         /href="\/zona-extrema"/.test(readFileSync(join(root, "guias.html"), "utf8")),
     );
   }
+
+  {
+    const prHtml = readFileSync(join(root, "promedio-remuneraciones.html"), "utf8");
+    const prTitle = (prHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const prH1 = (prHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const prDesc = (prHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "";
+    const finiHtmlPr = readFileSync(join(root, "finiquito.html"), "utf8");
+    const iasHtmlPr = readFileSync(join(root, "indemnizacion-anos-servicio.html"), "utf8");
+    const avisoHtmlPr = readFileSync(join(root, "indemnizacion-aviso-previo.html"), "utf8");
+    const goldPr = calcularPromedioRemuneraciones(PROMEDIO_REMUNERACIONES_GOLD.tresMeses);
+    assert(
+      "SEO promedio remuneraciones title único y corto",
+      /calcular promedio de remuneraciones/i.test(prTitle) &&
+        prTitle.length <= 65 &&
+        !/sueldo l[ií]quido/i.test(prTitle) &&
+        !/calculadora de finiquito/i.test(prTitle) &&
+        !/^Haberes\b/.test(prTitle),
+      prTitle,
+    );
+    assert(
+      "SEO promedio remuneraciones H1 único art. 172",
+      prH1 === "Calcular promedio de remuneraciones Chile 2026" &&
+        /172/.test(prHtml) &&
+        /promedio/.test(prHtml) &&
+        /variables/.test(prHtml),
+      prH1,
+    );
+    assert(
+      "SEO promedio remuneraciones description propia",
+      prDesc.length >= 110 &&
+        prDesc.length <= 160 &&
+        /172/.test(prDesc) &&
+        /promedio/.test(prDesc) &&
+        /finiquito/.test(prDesc),
+      `${prDesc.length}:${prDesc}`,
+    );
+    assert(
+      "SEO promedio remuneraciones cita art. 172 y BCN",
+      /bcn\.cl\/leychile\/navegar\?idNorma=207436/.test(prHtml) &&
+        /172/.test(prHtml) &&
+        /163/.test(prHtml) &&
+        /162/.test(prHtml),
+    );
+    assert(
+      "SEO promedio remuneraciones gold 2026 $1.033.333 en copy",
+      goldPr.ok === true &&
+        goldPr.promedio === 1_033_333 &&
+        /800\.000/.test(prHtml) &&
+        /1\.000\.000/.test(prHtml) &&
+        /1\.200\.000/.test(prHtml) &&
+        /900\.000/.test(prHtml) &&
+        /1\.033\.333/.test(prHtml) &&
+        /1\.100\.000/.test(prHtml),
+    );
+    assert("SEO promedio remuneraciones FAQPage", /"@type": "FAQPage"/.test(prHtml));
+    assert(
+      "SEO promedio remuneraciones no canibaliza hermanas vetadas",
+      /href="\/finiquito"/.test(prHtml) &&
+        /href="\/indemnizacion-anos-servicio"/.test(prHtml) &&
+        /href="\/indemnizacion-aviso-previo"/.test(prHtml) &&
+        /href="\/sueldo"/.test(prHtml) &&
+        /href="\/sueldo-proporcional"/.test(prHtml) &&
+        /href="\/gratificacion"/.test(prHtml) &&
+        /href="\/semana-corrida"/.test(prHtml) &&
+        /href="\/aguinaldo"/.test(prHtml) &&
+        /href="\/horas-extras"/.test(prHtml) &&
+        /href="\/descuento-atrasos"/.test(prHtml) &&
+        /href="\/costo-empresa"/.test(prHtml) &&
+        /href="\/empresa"/.test(prHtml) &&
+        /href="\/cotizaciones-previsionales"/.test(prHtml) &&
+        /href="\/impuesto-unico"/.test(prHtml) &&
+        /href="\/zona-extrema"/.test(prHtml) &&
+        /href="\/obra-faena"/.test(prHtml) &&
+        /href="\/termino-anticipado-plazo-fijo"/.test(prHtml) &&
+        /href="\/contrato-plazo-fijo"/.test(prHtml) &&
+        /href="\/despido-injustificado"/.test(prHtml) &&
+        /href="\/autodespido"/.test(prHtml) &&
+        /href="\/nulidad-despido"/.test(prHtml) &&
+        /href="\/tutela-laboral"/.test(prHtml) &&
+        /href="\/interes-mora"/.test(prHtml) &&
+        /estimaci[oó]n educativa/.test(prHtml) &&
+        /no constituye asesor[ií]a legal/i.test(prHtml) &&
+        !existsSync(join(root, "comisiones.html")) &&
+        !existsSync(join(root, "comision-variable.html")) &&
+        !existsSync(join(root, "promedio-comisiones.html")) &&
+        !existsSync(join(root, "remuneraciones-variables.html")) &&
+        !existsSync(join(root, "ultima-remuneracion.html")) &&
+        !existsSync(join(root, "art-172.html")) &&
+        !existsSync(join(root, "base-indemnizacion.html")) &&
+        !existsSync(join(root, "promedio-3-meses.html")),
+    );
+    assert(
+      "home y nav enlazan /promedio-remuneraciones",
+      /href="\/promedio-remuneraciones"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/promedio-remuneraciones" data-nav>Promedio remuneraciones<\/a>/.test(
+          readFileSync(join(root, "index.html"), "utf8"),
+        ) &&
+        /href="\/promedio-remuneraciones" data-nav>Promedio remuneraciones<\/a>/.test(prHtml) &&
+        /href="\/promedio-remuneraciones" data-nav>Promedio remuneraciones<\/a>/.test(
+          readFileSync(join(root, "js/ui.js"), "utf8"),
+        ),
+    );
+    assert(
+      "sitemap incluye /promedio-remuneraciones",
+      locs.includes("https://www.haberes.cl/promedio-remuneraciones") &&
+        lastmodForPath("/promedio-remuneraciones") === "2026-09-21",
+    );
+    assert(
+      "seo-map documenta /promedio-remuneraciones y no-canibalizar hermanas",
+      /\/promedio-remuneraciones/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no canibalizar `\/finiquito`, `\/indemnizacion-anos-servicio`/.test(
+          readFileSync(join(root, "docs/seo-map.md"), "utf8"),
+        ) &&
+        /no crear `\/comisiones`/i.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")),
+    );
+    assert(
+      "hub /guias enlaza /promedio-remuneraciones en el cluster de finiquito",
+      /href="\/promedio-remuneraciones"/.test(readFileSync(join(root, "guias.html"), "utf8")) &&
+        /<h2>Finiquito<\/h2>[\s\S]*href="\/promedio-remuneraciones"/.test(
+          readFileSync(join(root, "guias.html"), "utf8"),
+        ),
+    );
+    assert(
+      "hermanas enlazan /promedio-remuneraciones",
+      /href="\/promedio-remuneraciones"/.test(finiHtmlPr) &&
+        /href="\/promedio-remuneraciones"/.test(iasHtmlPr) &&
+        /href="\/promedio-remuneraciones"/.test(avisoHtmlPr) &&
+        /href="\/promedio-remuneraciones"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/promedio-remuneraciones"/.test(readFileSync(join(root, "guias.html"), "utf8")) &&
+        /href="\/promedio-remuneraciones"/.test(readFileSync(join(root, "empresa.html"), "utf8")),
+    );
+  }
+
 
   {
     const bhHtml = readFileSync(join(root, "bandas-horarias.html"), "utf8");
@@ -16753,6 +16989,7 @@ assert(
       "termino-anticipado-plazo-fijo.html",
       "permiso-sin-goce.html",
       "zona-extrema.html",
+      "promedio-remuneraciones.html",
       "finiquito.html",
       "empresa.html",
       "precios.html",

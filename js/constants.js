@@ -942,6 +942,40 @@ export const ZONA_EXTREMA_GOLD = Object.freeze({
 });
 
 /**
+ * Promedio de remuneraciones variables (art. 172 CT).
+ * total_mes = fija + variables (+ gratificación si marcada).
+ * n = meses con total > 0; promedio = round(suma / n).
+ * Gold: 1_000_000 + 1_200_000 + 900_000 = 3_100_000 / 3
+ * → round(1_033_333.333…) = 1_033_333.
+ *
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=207436
+ */
+export const PROMEDIO_REMUNERACIONES_GOLD = Object.freeze({
+  tresMeses: Object.freeze({
+    incluirGratificacion: false,
+    meses: Object.freeze([
+      Object.freeze({ fija: 800_000, variables: 200_000, gratificacion: 0 }),
+      Object.freeze({ fija: 800_000, variables: 400_000, gratificacion: 0 }),
+      Object.freeze({ fija: 800_000, variables: 100_000, gratificacion: 0 }),
+    ]),
+    n: 3,
+    suma: 3_100_000,
+    promedio: 1_033_333,
+  }),
+  dosMeses: Object.freeze({
+    incluirGratificacion: false,
+    meses: Object.freeze([
+      Object.freeze({ fija: 800_000, variables: 200_000, gratificacion: 0 }),
+      Object.freeze({ fija: 800_000, variables: 400_000, gratificacion: 0 }),
+      Object.freeze({ fija: 0, variables: 0, gratificacion: 0 }),
+    ]),
+    n: 2,
+    suma: 2_200_000,
+    promedio: 1_100_000,
+  }),
+});
+
+/**
  * Retención / PPM de boletas de honorarios — Ley 21.133, calendario SII
  * por año comercial de emisión (no inventar tasas fuera de esta tabla).
  * Un solo porcentaje sobre el bruto; no desglosa AFP ni salud.

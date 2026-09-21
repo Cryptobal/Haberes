@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="es-CL">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script>
+  (function () {
+    try {
+      var t = localStorage.getItem("haberes:theme");
+      if (t !== "day" && t !== "night") t = "day";
+      document.documentElement.setAttribute("data-theme", t);
+    } catch (e) {}
+  })();
+  </script>
+<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-PCR596Z2');</script>
+<!-- End Google Tag Manager -->
+  <title>Calcular promedio de remuneraciones Chile 2026 — Haberes</title>
+  <meta name="description" content="Estime el promedio de 3 meses del art. 172 (sueldo + variables) para IAS, aviso o finiquito. No es tope 90 UF ni asesoría legal." />
+  <link rel="canonical" href="https://www.haberes.cl/promedio-remuneraciones" />
+  <meta property="og:type" content="website" />
+  <meta property="og:locale" content="es_CL" />
+  <meta property="og:site_name" content="Haberes" />
+  <meta property="og:title" content="Calcular promedio de remuneraciones Chile 2026 — Haberes" />
+  <meta property="og:description" content="Estime el promedio de 3 meses del art. 172 (sueldo + variables) para IAS, aviso o finiquito. No es tope 90 UF ni asesoría legal." />
+  <meta property="og:url" content="https://www.haberes.cl/promedio-remuneraciones" />
+  <meta property="og:image" content="https://www.haberes.cl/img/og-default.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Calcular promedio de remuneraciones Chile 2026 — Haberes" />
+  <meta name="twitter:description" content="Estime el promedio de 3 meses del art. 172 (sueldo + variables) para IAS, aviso o finiquito. No es tope 90 UF ni asesoría legal." />
+  <meta name="twitter:image" content="https://www.haberes.cl/img/og-default.png" />
+  <link rel="icon" href="favicon.ico" sizes="32x32" />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="css/app.css" />
+  <!-- GA4: para activarlo, asigne un ID G-… a window.HABERES_GA4 antes de este script. Vacío = sin peticiones. -->
+  <script src="js/analytics.js" defer></script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "Haberes",
+  "url": "https://www.haberes.cl/",
+  "logo": "https://www.haberes.cl/favicon.svg",
+  "areaServed": "CL",
+  "sameAs": []
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Calcular promedio de remuneraciones — Haberes",
+  "url": "https://www.haberes.cl/promedio-remuneraciones",
+  "applicationCategory": "FinanceApplication",
+  "operatingSystem": "Web",
+  "inLanguage": "es-CL",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "CLP"
+  }
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "¿Qué es la última remuneración del artículo 172?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "El artículo 172 del Código del Trabajo fija la base de las indemnizaciones: la última remuneración mensual. Si hay componentes variables (comisiones, tratos, bonos de producción u otras variables periódicas), se promedia lo ganado en los últimos tres meses calendario, o los meses efectivamente trabajados si son menos de tres. No es el sueldo líquido ni el tope de 90 UF."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "¿Cómo se calcula el promedio de los últimos tres meses?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Por cada mes: total = sueldo o base fija + variables del mes. n es la cantidad de meses con total mayor que 0 (1 a 3). El promedio es el redondeo a peso de la suma dividido por n. Ejemplo 2026: 800.000+200.000, 800.000+400.000 y 800.000+100.000 → 1.000.000 + 1.200.000 + 900.000 = 3.100.000 / 3 → 1.033.333. Con solo dos meses, 1.100.000."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "¿La gratificación entra en el promedio?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Es casuístico. El artículo 172 no da una regla única para la gratificación del artículo 50. Haberes la deja apagada por defecto: aunque el campo tenga un número, no suma si no marca la casilla. Márquela solo si en el caso concreto esa gratificación es periódica. El tope del artículo 50 sigue en /gratificacion."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "¿Esta página calcula el finiquito, la IAS o el tope de 90 UF?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. Esta página solo estima el monto único de última remuneración cuando hay variables. Péguelo en /finiquito, /indemnizacion-anos-servicio (art. 163) o /indemnizacion-aviso-previo (art. 162). El tope de 90 UF del artículo 172 vive en esas calculadoras. No es líquido, cotizaciones, horas extras, semana corrida ni liquidación Previred."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "¿Es un cálculo oficial de la Dirección del Trabajo o de Previred?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. Es una estimación educativa de Haberes. No constituye asesoría legal ni previsional. No sustituye la liquidación del empleador, el finiquito ratificado ni un pronunciamiento de la Dirección del Trabajo. Verifique con su contador o en los canales oficiales."
+      }
+    }
+  ]
+}
+  </script>
+</head>
+<body>
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PCR596Z2"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+  <header class="site-header">
+    <nav class="nav">
+      <a class="brand" href="/" data-nav>
+        <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><rect x="8" y="2" width="6" height="4" rx="2"/><rect x="18" y="2" width="6" height="4" rx="2"/><rect x="8" y="8" width="6" height="4" rx="2"/><rect x="18" y="8" width="6" height="4" rx="2"/><rect x="8" y="14" width="6" height="4" rx="2"/><rect x="18" y="14" width="6" height="4" rx="2"/><rect x="8" y="20" width="6" height="4" rx="2"/><rect x="18" y="20" width="6" height="4" rx="2"/><rect x="8" y="26" width="6" height="4" rx="2"/><rect x="18" y="26" width="6" height="4" rx="2"/><rect x="14" y="14" width="4" height="4" rx="2"/></svg></span> Haberes
+      </a>
+      <div class="nav-links">
+        <a href="/como" data-nav>Cómo</a>
+        <a href="/precios" data-nav>Precios</a>
+      </div>
+      <div class="nav-actions">
+        <button type="button" class="theme-toggle" data-theme-toggle aria-label="Cambiar a modo noche" aria-pressed="false">
+          <svg class="ic-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.64 5.64l1.41 1.41M16.95 16.95l1.41 1.41M18.36 5.64l-1.41 1.41M7.05 16.95l-1.41 1.41"/></svg>
+          <svg class="ic-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 14.35A8.4 8.4 0 1 1 9.65 3 6.6 6.6 0 0 0 21 14.35z"/></svg>
+        </button>
+        <a class="btn btn-ghost btn-sm nav-login" href="/empresa">Entrar</a>
+        <a class="btn btn-sm nav-cta" href="/empresa?registro=1">Empezar gratis</a>
+        <button type="button" class="nav-burger" data-nav-burger aria-expanded="false" aria-controls="navDrawer" aria-label="Abrir menú">
+          <i aria-hidden="true"></i>
+        </button>
+      </div>
+    </nav>
+  </header>
+  <div class="nav-drawer" id="navDrawer" data-nav-drawer hidden>
+      <div class="nav-drawer-scrim" data-nav-scrim></div>
+      <div class="nav-drawer-panel" role="dialog" aria-modal="true" aria-label="Menú de navegación">
+        <div class="nav-drawer-grab" aria-hidden="true"></div>
+        <a href="/como" data-nav>Cómo</a>
+        <a href="/precios" data-nav>Precios</a>
+        <a href="/sueldo" data-nav>Sueldo líquido</a>
+        <a href="/sueldo-proporcional" data-nav>Sueldo proporcional</a>
+        <a href="/sueldo-minimo" data-nav>Sueldo mínimo</a>
+        <a href="/descuento-atrasos" data-nav>Descuento atrasos</a>
+        <a href="/licencia-medica" data-nav>Licencia médica</a>
+        <a href="/retencion-judicial" data-nav>Retención judicial</a>
+        <a href="/apv" data-nav>APV Régimen B</a>
+        <a href="/horas-extras" data-nav>Horas extras</a>
+        <a href="/compensacion-horas-extras" data-nav>Compensación horas extras</a>
+        <a href="/jornada-40-horas" data-nav>Jornada 40 horas</a>
+        <a href="/jornada-parcial" data-nav>Jornada parcial</a>
+        <a href="/teletrabajo" data-nav>Teletrabajo</a>
+        <a href="/bandas-horarias" data-nav>Bandas horarias</a>
+        <a href="/pacto-4x3" data-nav>Pacto 4×3</a>
+        <a href="/jornada-excepcional" data-nav>Jornada excepcional</a>
+        <a href="/recargo-domingo-comercio" data-nav>Recargo domingo comercio</a>
+        <a href="/descanso-compensatorio" data-nav>Descanso compensatorio</a>
+        <a href="/feriado-irrenunciable" data-nav>Feriado irrenunciable</a>
+        <a href="/semana-corrida" data-nav>Semana corrida</a>
+        <a href="/gratificacion" data-nav>Gratificación</a>
+        <a href="/aguinaldo" data-nav>Aguinaldo</a>
+        <a href="/impuesto-unico" data-nav>Impuesto único</a>
+        <a href="/zona-extrema" data-nav>Zona extrema</a>
+        <a href="/boleta-honorarios" data-nav>Boleta honorarios</a>
+        <a href="/cotizaciones-previsionales" data-nav>Cotizaciones previsionales</a>
+        <a href="/costo-empresa" data-nav>Costo empresa</a>
+        <a href="/seguro-cesantia" data-nav>Seguro de cesantía</a>
+        <a href="/trabajo-pesado" data-nav>Trabajo pesado</a>
+        <a href="/asignacion-familiar" data-nav>Asignación familiar</a>
+        <a href="/sala-cuna" data-nav>Sala cuna</a>
+        <a href="/inclusion-laboral" data-nav>Inclusión laboral</a>
+        <a href="/permiso-prenatal" data-nav>Permiso prenatal</a>
+        <a href="/postnatal-parental" data-nav>Postnatal parental</a>
+        <a href="/fuero-maternal" data-nav>Fuero maternal</a>
+        <a href="/permiso-paternidad" data-nav>Permiso paternidad</a>
+        <a href="/permiso-matrimonio" data-nav>Permiso matrimonio</a>
+        <a href="/permiso-fallecimiento" data-nav>Permiso fallecimiento</a>
+        <a href="/permiso-sin-goce" data-nav>Permiso sin goce</a>
+        <a href="/interes-mora" data-nav>Interés por mora</a>
+        <a href="/hora-lactancia" data-nav>Hora de lactancia</a>
+        <a href="/colacion-movilizacion" data-nav>Colación y movilización</a>
+        <a href="/vacaciones-proporcionales" data-nav>Vacaciones proporcionales</a>
+        <a href="/feriado-anual" data-nav>Feriado anual</a>
+        <a href="/feriado-progresivo" data-nav>Feriado progresivo</a>
+        <a href="/indemnizacion-anos-servicio" data-nav>Indemnización años de servicio</a>
+        <a href="/indemnizacion-aviso-previo" data-nav>Indemnización aviso previo</a>
+        <a href="/promedio-remuneraciones" data-nav>Promedio remuneraciones</a>
+        <a href="/nulidad-despido" data-nav>Nulidad del despido</a>
+        <a href="/tutela-laboral" data-nav>Tutela laboral</a>
+        <a href="/despido-injustificado" data-nav>Despido injustificado</a>
+        <a href="/autodespido" data-nav>Autodespido</a>
+        <a href="/obra-faena" data-nav>Obra o faena</a>
+        <a href="/contrato-plazo-fijo" data-nav>Contrato a plazo fijo</a>
+        <a href="/termino-anticipado-plazo-fijo" data-nav>Término anticipado plazo fijo</a>
+        <a href="/prescripcion-laboral" data-nav>Prescripción laboral</a>
+        <a href="/finiquito-casa-particular" data-nav>Finiquito casa particular</a>
+        <a href="/finiquito" data-nav>Finiquito</a>
+        <div class="nav-drawer-foot">
+          <a class="btn" href="/empresa?registro=1">Empezar gratis</a>
+          <button type="button" class="btn btn-ghost" data-nav-close>Cerrar</button>
+        </div>
+      </div>
+    </div>
+
+  <main>
+    <div class="wrap">
+      <p class="kicker">Calculadora</p>
+      <h1>Calcular promedio de remuneraciones Chile 2026</h1>
+      <p class="lede">
+        Estime la
+        <strong>última remuneración</strong>
+        del
+        <a href="https://www.bcn.cl/leychile/navegar?idNorma=207436">artículo 172 del Código del Trabajo</a>
+        cuando hay
+        <strong>componentes variables</strong>
+        (comisiones, tratos, bonos de producción u otras variables periódicas):
+        promedio de lo ganado en los
+        <strong>últimos tres meses calendario</strong>,
+        o los meses efectivamente trabajados si son menos de tres.
+        Base orientativa para
+        <a href="/indemnizacion-anos-servicio">IAS</a>,
+        <a href="/indemnizacion-aviso-previo">aviso previo</a>
+        y
+        <a href="/finiquito">finiquito</a>.
+      </p>
+      <p class="notice">
+        Documento generado por Haberes. No es un cálculo de la Dirección del Trabajo ni de Previred.
+        No constituye asesoría legal ni previsional. Estimación educativa: los tribunales y el
+        caso concreto pueden diferir. No aplica el tope de 90 UF.
+      </p>
+
+      <div class="layout" style="margin-top: 24px">
+        <form id="formPromedioRemuneraciones" class="panel">
+          <p class="lbl">Mes 1 (más reciente)</p>
+          <div class="row">
+            <div class="field">
+              <label for="m1Fija">Sueldo o base fija (CLP)</label>
+              <input id="m1Fija" type="number" min="0" step="1" value="800000" />
+            </div>
+            <div class="field">
+              <label for="m1Variables">Variables del mes (CLP)</label>
+              <input id="m1Variables" type="number" min="0" step="1" value="200000" />
+            </div>
+          </div>
+          <p class="hint">
+            Comisiones, tratos, bonos de producción u otras variables periódicas de ese mes.
+            Un mes en 0 o vacío no cuenta.
+          </p>
+
+          <p class="lbl u-mt-4">Mes 2</p>
+          <div class="row">
+            <div class="field">
+              <label for="m2Fija">Sueldo o base fija (CLP)</label>
+              <input id="m2Fija" type="number" min="0" step="1" value="800000" />
+            </div>
+            <div class="field">
+              <label for="m2Variables">Variables del mes (CLP)</label>
+              <input id="m2Variables" type="number" min="0" step="1" value="400000" />
+            </div>
+          </div>
+
+          <p class="lbl u-mt-4">Mes 3</p>
+          <div class="row">
+            <div class="field">
+              <label for="m3Fija">Sueldo o base fija (CLP)</label>
+              <input id="m3Fija" type="number" min="0" step="1" value="800000" />
+            </div>
+            <div class="field">
+              <label for="m3Variables">Variables del mes (CLP)</label>
+              <input id="m3Variables" type="number" min="0" step="1" value="100000" />
+            </div>
+          </div>
+          <p class="hint">
+            Si trabajó menos de tres meses, deje en 0 los que no aplican: el promedio usa n = 1 o 2.
+          </p>
+
+          <label class="check">
+            <input id="incluirGratificacion" type="checkbox" />
+            Incluir gratificación del mes en el promedio
+          </label>
+          <p class="hint">
+            Apagado por defecto. El artículo 172 es casuístico con la gratificación del
+            <a href="/gratificacion">artículo 50</a>:
+            márquela solo si en el caso concreto es remuneración periódica.
+            Aunque el campo tenga un número, no suma si no marca esta casilla.
+          </p>
+          <div id="boxGratificacion" hidden>
+            <div class="field">
+              <label for="m1Gratificacion">Gratificación mes 1 (CLP)</label>
+              <input id="m1Gratificacion" type="number" min="0" step="1" value="0" />
+            </div>
+            <div class="field">
+              <label for="m2Gratificacion">Gratificación mes 2 (CLP)</label>
+              <input id="m2Gratificacion" type="number" min="0" step="1" value="0" />
+            </div>
+            <div class="field">
+              <label for="m3Gratificacion">Gratificación mes 3 (CLP)</label>
+              <input id="m3Gratificacion" type="number" min="0" step="1" value="0" />
+            </div>
+          </div>
+        </form>
+
+        <aside class="panel sticky">
+          <p class="metric-label">Promedio (última remuneración orientativa)</p>
+          <p class="metric" id="outPromedio">—</p>
+          <p class="notice" id="outAlerta" hidden></p>
+          <p class="hint" id="outNota"></p>
+          <div class="mini">
+            <div><span>Mes 1 (reciente)</span><strong id="outMes1">—</strong></div>
+            <div><span>Mes 2</span><strong id="outMes2">—</strong></div>
+            <div><span>Mes 3</span><strong id="outMes3">—</strong></div>
+            <div><span>Meses usados</span><strong id="outN">—</strong></div>
+            <div><span>Suma</span><strong id="outSuma">—</strong></div>
+          </div>
+          <p class="hint" id="outCopia"></p>
+          <p class="hint">
+            Copie este monto y úselo como remuneración mensual en
+            <a href="/finiquito">finiquito</a>,
+            <a href="/indemnizacion-anos-servicio">indemnización por años de servicio</a>
+            o
+            <a href="/indemnizacion-aviso-previo">aviso previo</a>.
+            El tope 90 UF se aplica allá, no aquí.
+          </p>
+          <div class="actions">
+            <button type="button" class="btn" id="btnCopiar">Copiar promedio</button>
+            <a class="btn btn-ghost" href="/finiquito">Usar en finiquito</a>
+          </div>
+          <div class="actions u-mt-3">
+            <a class="btn btn-ghost" href="/indemnizacion-anos-servicio">Usar en IAS</a>
+            <a class="btn btn-ghost" href="/indemnizacion-aviso-previo">Usar en aviso previo</a>
+          </div>
+        </aside>
+      </div>
+
+      <section class="prose u-mt-6" aria-labelledby="pr-explica">
+        <h2 id="pr-explica">Cómo se estima el promedio del artículo 172</h2>
+        <p>
+          El
+          <a href="https://www.bcn.cl/leychile/navegar?idNorma=207436">artículo 172 del Código del Trabajo</a>
+          define la
+          <strong>última remuneración mensual</strong>
+          como base de las indemnizaciones. Si la remuneración tiene
+          <strong>componentes variables</strong>,
+          se considera el promedio de lo ganado en los
+          <strong>últimos tres meses calendario</strong>
+          (o los meses efectivamente trabajados, si son menos).
+          Haberes estima ese monto. No es asesoría legal: el caso concreto
+          puede diferir, y
+          <strong>no aplica el tope de 90 UF</strong>
+          (eso vive en
+          <a href="/indemnizacion-anos-servicio">/indemnizacion-anos-servicio</a>
+          y
+          <a href="/finiquito">/finiquito</a>).
+        </p>
+        <ul>
+          <li>
+            <strong>Total del mes</strong>
+            = sueldo o base fija + variables (comisiones, tratos, bonos de producción
+            u otras periódicas). La gratificación del mes solo suma si la marca.
+          </li>
+          <li>
+            <strong>n</strong>
+            = meses con total mayor que 0 (uno a tres). Ceros y vacíos no cuentan.
+          </li>
+          <li>
+            <strong>Promedio</strong>
+            = redondeo (suma / n) a peso entero, la misma regla half-up del resto del sitio.
+          </li>
+        </ul>
+        <h3>Ejemplo orientativo (gold 2026)</h3>
+        <ul>
+          <li>Mes 1 (más reciente): fija <strong>$800.000</strong> + variables <strong>$200.000</strong> = <strong>$1.000.000</strong>.</li>
+          <li>Mes 2: fija <strong>$800.000</strong> + variables <strong>$400.000</strong> = <strong>$1.200.000</strong>.</li>
+          <li>Mes 3: fija <strong>$800.000</strong> + variables <strong>$100.000</strong> = <strong>$900.000</strong>.</li>
+          <li>
+            Promedio = redondeo((1.000.000 + 1.200.000 + 900.000) / 3) =
+            redondeo(1.033.333,333…) =
+            <strong>$1.033.333</strong>.
+          </li>
+          <li>Solo mes 1 y mes 2: redondeo((1.000.000 + 1.200.000) / 2) = <strong>$1.100.000</strong>.</li>
+        </ul>
+        <h3>Qué no es esta calculadora</h3>
+        <ul>
+          <li>No es el
+            <a href="/finiquito">finiquito</a>
+            ni la
+            <a href="/indemnizacion-anos-servicio">IAS de 30 días por año</a>
+            ni el
+            <a href="/indemnizacion-aviso-previo">aviso previo de 30 días</a>.</li>
+          <li>No modela el tope 90 UF del art. 172: recorte en IAS y finiquito.</li>
+          <li>No es el
+            <a href="/sueldo">sueldo líquido</a>,
+            el
+            <a href="/sueldo-proporcional">sueldo proporcional</a>,
+            las
+            <a href="/cotizaciones-previsionales">cotizaciones</a>
+            ni una liquidación Previred.</li>
+          <li>No es
+            <a href="/gratificacion">gratificación legal</a>,
+            <a href="/semana-corrida">semana corrida</a>,
+            <a href="/aguinaldo">aguinaldo</a>
+            ni
+            <a href="/horas-extras">horas extras</a>.</li>
+          <li>No inventa un % legal de comisión. No abre /comisiones.</li>
+          <li>No es
+            <a href="/descuento-atrasos">descuento por atrasos</a>,
+            <a href="/costo-empresa">costo empresa</a>,
+            <a href="/impuesto-unico">impuesto único</a>
+            ni
+            <a href="/zona-extrema">zona extrema</a>.</li>
+          <li>No es
+            <a href="/obra-faena">obra o faena</a>,
+            <a href="/contrato-plazo-fijo">contrato a plazo fijo</a>,
+            <a href="/termino-anticipado-plazo-fijo">término anticipado de plazo fijo</a>,
+            <a href="/despido-injustificado">despido injustificado</a>,
+            <a href="/autodespido">autodespido</a>,
+            <a href="/nulidad-despido">nulidad del despido</a>,
+            <a href="/tutela-laboral">tutela laboral</a>
+            ni
+            <a href="/interes-mora">interés por mora</a>.</li>
+        </ul>
+        <h3>Guías y calculadoras relacionadas</h3>
+        <ul>
+          <li><a href="/finiquito">Calculadora de finiquito</a></li>
+          <li><a href="/indemnizacion-anos-servicio">Calcular indemnización por años de servicio</a></li>
+          <li><a href="/indemnizacion-aviso-previo">Calcular indemnización por aviso previo</a></li>
+          <li><a href="/guias/con-que-sueldo-se-calcula-el-finiquito">Con qué sueldo se calcula el finiquito</a></li>
+          <li><a href="/guias/indemnizacion-por-anos-de-servicio">Indemnización por años de servicio (guía)</a></li>
+          <li><a href="/gratificacion">Calcular gratificación</a></li>
+          <li><a href="/sueldo">Calcular sueldo líquido</a></li>
+          <li><a href="/semana-corrida">Calcular semana corrida</a></li>
+          <li><a href="/horas-extras">Calcular horas extras</a></li>
+          <li><a href="/empresa">Cuenta de empresa</a></li>
+        </ul>
+        <h2 id="faq-promedio-remuneraciones">Preguntas frecuentes</h2>
+        <h3>¿Qué es la última remuneración del artículo 172?</h3>
+        <p>
+          El
+          <a href="https://www.bcn.cl/leychile/navegar?idNorma=207436">artículo 172 del Código del Trabajo</a>
+          fija la base de las indemnizaciones: la última remuneración mensual.
+          Si hay componentes variables (comisiones, tratos, bonos de producción u otras
+          variables periódicas), se promedia lo ganado en los últimos tres meses calendario,
+          o los meses efectivamente trabajados si son menos de tres.
+          No es el
+          <a href="/sueldo">sueldo líquido</a>
+          ni el tope de 90 UF.
+        </p>
+        <h3>¿Cómo se calcula el promedio de los últimos tres meses?</h3>
+        <p>
+          Por cada mes: total = sueldo o base fija + variables del mes.
+          n es la cantidad de meses con total mayor que 0 (1 a 3).
+          El promedio es el redondeo a peso de la suma dividido por n.
+          Ejemplo 2026:
+          <strong>$800.000+$200.000</strong>,
+          <strong>$800.000+$400.000</strong>
+          y
+          <strong>$800.000+$100.000</strong>
+          →
+          <strong>$1.000.000 + $1.200.000 + $900.000 = $3.100.000 / 3</strong>
+          →
+          <strong>$1.033.333</strong>.
+          Con solo dos meses,
+          <strong>$1.100.000</strong>.
+        </p>
+        <h3>¿La gratificación entra en el promedio?</h3>
+        <p>
+          Es casuístico. El artículo 172 no da una regla única para la gratificación del
+          artículo 50. Haberes la deja apagada por defecto: aunque el campo tenga un número,
+          no suma si no marca la casilla. Márquela solo si en el caso concreto esa
+          gratificación es periódica. El tope del artículo 50 sigue en
+          <a href="/gratificacion">/gratificacion</a>.
+        </p>
+        <h3>¿Esta página calcula el finiquito, la IAS o el tope de 90 UF?</h3>
+        <p>
+          No. Esta página solo estima el monto único de última remuneración cuando hay variables.
+          Péguelo en
+          <a href="/finiquito">/finiquito</a>,
+          <a href="/indemnizacion-anos-servicio">/indemnizacion-anos-servicio</a>
+          (art. 163) o
+          <a href="/indemnizacion-aviso-previo">/indemnizacion-aviso-previo</a>
+          (art. 162). El tope de 90 UF del artículo 172 vive en esas calculadoras.
+          No es líquido, cotizaciones, horas extras, semana corrida ni liquidación Previred.
+        </p>
+        <h3>¿Es un cálculo oficial de la Dirección del Trabajo o de Previred?</h3>
+        <p>
+          No. Es una estimación educativa de Haberes. No constituye asesoría legal
+          ni previsional. No sustituye la liquidación del empleador, el finiquito
+          ratificado ni un pronunciamiento de la Dirección del Trabajo. Verifique con
+          su contador o en los canales oficiales.
+        </p>
+        <p class="notice">
+          La ruta canónica es <code>/promedio-remuneraciones</code>.
+          No abre <code>/comisiones</code> ni <code>/comision-variable</code>
+          ni <code>/promedio-comisiones</code> ni <code>/remuneraciones-variables</code>
+          ni <code>/ultima-remuneracion</code> ni <code>/art-172</code>
+          ni <code>/base-indemnizacion</code> ni <code>/promedio-3-meses</code>.
+          No canibaliza
+          <a href="/finiquito">/finiquito</a>,
+          <a href="/indemnizacion-anos-servicio">/indemnizacion-anos-servicio</a>,
+          <a href="/indemnizacion-aviso-previo">/indemnizacion-aviso-previo</a>,
+          <a href="/sueldo">/sueldo</a>,
+          <a href="/gratificacion">/gratificacion</a>
+          ni
+          <a href="/empresa">/empresa</a>.
+        </p>
+      </section>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <div><strong>Haberes</strong> · promedio de remuneraciones (art. 172)</div>
+      <div class="footer-legal">
+        <a href="/como">Cómo funciona</a>
+        <span aria-hidden="true">·</span>
+        <a href="/precios">Precios</a>
+        <span aria-hidden="true">·</span>
+        <a href="/privacidad">Privacidad</a>
+        <span aria-hidden="true">·</span>
+        <a href="/terminos">Términos</a>
+      </div>
+      <div class="footer-credit">
+        Proyecto desarrollado por <a href="https://lx3.ai" rel="noopener noreferrer">lx3.ai</a>
+        · <a href="mailto:contacto@lx3.ai">contacto@lx3.ai</a>
+      </div>
+      <div data-indicadores>UF y UTM se cargan…</div>
+      <div>
+        Documento generado por Haberes. No es un cálculo de la Dirección del Trabajo ni de Previred.
+        No constituye asesoría legal ni previsional.
+      </div>
+    </div>
+  </footer>
+  <script type="module" src="js/app-promedio-remuneraciones.js"></script>
+</body>
+</html>
