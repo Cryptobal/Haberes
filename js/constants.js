@@ -896,6 +896,52 @@ export const IUSC_TRAMOS = [
 ];
 
 /**
+ * Sueldo grado 1-A de la Escala Única de Sueldos: tope mensual de la rebaja
+ * por presunción de asignación de zona (art. 13 D.L. N° 889 de 1975).
+ * Circular SII N° 32 de 2026 (septiembre 2026) = $745.136. El mismo monto
+ * rige en las circulares N° 18 (junio), N° 24 (julio) y N° 29 (agosto) de 2026,
+ * tras el reajuste 1,4 % de la Ley N° 21.806. Editable en la UI.
+ * @see https://www.sii.cl/normativa_legislacion/circulares/2026/circu32.pdf
+ * @see https://www.sii.cl/normativa_legislacion/circulares/2026/circu29.pdf
+ * @see https://www.sii.cl/normativa_legislacion/circulares/2026/circu18.pdf
+ */
+export const GRADO_1A_EUS_ZONA_EXTREMA = 745_136;
+
+/**
+ * Incremento de la Ley N° 19.354 sobre el % del art. 7° D.L. 249:
+ * el monto de la asignación se aumenta en 40 % ⇒ el % se multiplica × 1,4.
+ * Oficio SII N° 2666 de 2002: 85 % incrementado en 40 % = 119 %.
+ * @see https://www.sii.cl/pagina/jurisprudencia/adminis/2002/renta/ja316.htm
+ */
+export const INCREMENTO_ASIGNACION_ZONA_LEY_19354 = 1.4;
+
+/**
+ * Gold UI /zona-extrema: renta afecta $2.000.000, Iquique/Tarapacá,
+ * % incrementado 56 (40 × 1,4), grado 1-A $745.136 (SII sep-2026).
+ *
+ * rebaja_sin_tope = round(2_000_000 × 56 / 156) = 717_949
+ * tope = round(745_136 × 56 / 100) = 417_276
+ * rebaja_efectiva = min = 417_276
+ * renta_afecta_nueva = 2_000_000 − 417_276 = 1_582_724
+ *
+ * El IUSC antes/después reusa `calcularIusc` / `IUSC_TRAMOS` (agosto 2026).
+ * @see https://www.sii.cl/preguntas_frecuentes/declaracion_renta/001_140_1533.htm
+ */
+export const ZONA_EXTREMA_GOLD = Object.freeze({
+  iquique2000: Object.freeze({
+    rentaAfecta: 2_000_000,
+    pctIncrementado: 56,
+    pctBase: 40,
+    grado1A: GRADO_1A_EUS_ZONA_EXTREMA,
+    zonaId: "iquique",
+    rebajaSinTope: 717_949,
+    tope: 417_276,
+    rebajaEfectiva: 417_276,
+    rentaAfectaNueva: 1_582_724,
+  }),
+});
+
+/**
  * Retención / PPM de boletas de honorarios — Ley 21.133, calendario SII
  * por año comercial de emisión (no inventar tasas fuera de esta tabla).
  * Un solo porcentaje sobre el bruto; no desglosa AFP ni salud.

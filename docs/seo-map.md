@@ -22,7 +22,8 @@ Actualizar este archivo antes de crear URLs nuevas para evitar canibalización.
 | Calcular jornada excepcional | jornada excepcional / sistema excepcional jornada / PHSC / autorización DT art. 38 | `/jornada-excepcional` | Title/H1 «calcular jornada excepcional» Chile 2026; no canibalizar `/jornada-40-horas`, `/pacto-4x3`, `/bandas-horarias`, `/jornada-parcial`, `/teletrabajo`, `/horas-extras`, `/descanso-compensatorio`, `/recargo-domingo-comercio`, `/feriado-irrenunciable`, `/descuento-atrasos`, `/semana-corrida`, `/sueldo`, `/costo-empresa`, `/empresa` ni `/permiso-sin-goce`. PHSC art. 38 inc. 7°–9° / DS N°48: tope 42 h, días extra 0/4,5/9. Requiere resolución DT. No es el pacto 4×3 ni el art. 22 bis. No crear `/sistema-excepcional`, `/art-38`, `/jornada-dt`, `/autorizacion-dt-jornada`, `/4x4`, `/7x7` ni `/ciclo-excepcional` |
 | Calcular vacaciones proporcionales | vacaciones proporcionales (1.300/16), feriado proporcional (590/13), calcular feriado proporcional (320/14) | `/vacaciones-proporcionales` | Title/H1 «calcular vacaciones proporcionales»; no canibalizar `/finiquito` ni `/guias/vacaciones-proporcionales` |
 | Calcular gratificación | gratificación legal (4.400/17) — intención calcular | `/gratificacion` | Title/H1 «calcular gratificación»; no canibalizar `/sueldo` ni `/guias/gratificacion-legal` |
-| Calcular impuesto único | calcular impuesto unico (480/mes), tabla impuesto unico (2.900/mes) | `/impuesto-unico` | Title/H1 «calcular impuesto único»; no canibalizar `/sueldo` ni `/guias/impuesto-unico` |
+| Calcular impuesto único | calcular impuesto unico (480/mes), tabla impuesto unico (2.900/mes) | `/impuesto-unico` | Title/H1 «calcular impuesto único»; no canibalizar `/sueldo` ni `/guias/impuesto-unico`. La rebaja por zonas extremas del IUSC (art. 13 D.L. 889) vive en `/zona-extrema` |
+| Calcular zona extrema | zona extrema / rebaja zona extrema IUSC / D.L. 889 art. 13 / asignación de zona impuesto | `/zona-extrema` | Title/H1 «calcular zona extrema» Chile 2026; no canibalizar `/impuesto-unico`, `/sueldo`, `/cotizaciones-previsionales`, `/costo-empresa`, `/apv`, `/boleta-honorarios`, `/interes-mora`, `/asignacion-familiar`, `/colacion-movilizacion` ni `/empresa`. Rebaja de la base del IUSC (renta × pct/(pct+100), tope grado 1-A × pct/100, Ley 19.354 × 1,4). No es la tabla de tramos ni la bonificación a la mano de obra del empleador. No crear `/rebaja-zona-extrema`, `/dl-889`, `/franquicia-889`, `/credito-zona-extrema`, `/asignacion-zona`, `/gratificacion-zona` ni `/reajuste-ipc` |
 | Calcular retención boleta de honorarios | boleta de honorarios / retención honorarios / líquido boleta | `/boleta-honorarios` | Title/H1 «calcular retención boleta de honorarios»; no canibalizar `/sueldo`, `/impuesto-unico`, `/cotizaciones-previsionales` ni `/costo-empresa`. Independientes, retención Ley 21.133 (15,25 % en 2026). No es IUSC ni sueldo de dependiente. No crear `/retencion-honorarios`, `/boleta` ni `/honorarios` |
 | Calcular cotizaciones previsionales | cotizaciones previsionales / tope imponible AFP / comisión AFP | `/cotizaciones-previsionales` | Title/H1 «calcular cotizaciones previsionales»; no canibalizar `/sueldo` ni `/guias/liquidacion-de-sueldo-y-previred`. No crear `/tope-imponible`, `/cotizacion-afp`, `/descuentos-legales` ni `/calculadora-sueldo` |
 | Calcular costo empresa de un sueldo | costo empresa / costo de un trabajador / cuánto cuesta contratar | `/costo-empresa` | Title/H1 «calcular costo empresa de un sueldo»; no canibalizar `/sueldo` ni `/cotizaciones-previsionales`. Responde «cuánto me cuesta contratar», no el líquido. No crear `/costo-trabajador` ni `/aportes-patronales` |
@@ -490,6 +491,17 @@ No publicar hermanas de aguinaldo: `/bono-fiestas-patrias`, `/aguinaldo-navidad`
 `/aguinaldo-18`. El presupuesto (monto fijo o % del sueldo, planilla e impacto
 imponible) vive en `/aguinaldo`. La guía «¿es obligatorio?» sigue en
 `/guias/aguinaldo-fiestas-patrias`. No canibalizar `/gratificacion` ni `/sueldo`.
+
+No publicar `/rebaja-zona-extrema`, `/dl-889`, `/franquicia-889`,
+`/credito-zona-extrema`, `/asignacion-zona` ni `/gratificacion-zona`.
+La rebaja por presunción de asignación de zona del IUSC (art. 13 D.L. N° 889
+de 1975, Circular SII N° 10/1976, incremento 40 % Ley 19.354 sobre el % del
+D.L. 249) vive en `/zona-extrema`. No canibalizar `/impuesto-unico`, `/sueldo`,
+`/cotizaciones-previsionales`, `/costo-empresa`, `/apv`, `/boleta-honorarios`,
+`/interes-mora`, `/asignacion-familiar`, `/colacion-movilizacion` ni `/empresa`.
+No es la tabla IUSC (tramo / cantidad a rebajar) ni el líquido ni la
+bonificación a la contratación de mano de obra del empleador (Ley 19.853).
+No crear `/reajuste-ipc`: el reajuste IPC del art. 63 vive en `/interes-mora`.
 
 ## Cómo regenerar
 
