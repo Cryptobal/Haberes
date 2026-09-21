@@ -92,6 +92,9 @@ import {
   CONTRATO_PLAZO_FIJO_GOLD,
   TERMINO_ANTICIPADO_PLAZO_FIJO_GOLD,
   PERMISO_SIN_GOCE_GOLD,
+  ZONA_EXTREMA_GOLD,
+  GRADO_1A_EUS_ZONA_EXTREMA,
+  INCREMENTO_ASIGNACION_ZONA_LEY_19354,
   CONTRATO_PLAZO_FIJO_TOLERANCIA_DIAS,
   CONTRATO_PLAZO_FIJO_TOPE_GENERAL_MESES,
   CONTRATO_PLAZO_FIJO_TOPE_TITULO_MESES,
@@ -203,6 +206,11 @@ import { calcularCompensacionHorasExtras } from "../js/compensacion-horas-extras
 import { calcularContratoPlazoFijo } from "../js/contrato-plazo-fijo.js";
 import { calcularTerminoAnticipadoPlazoFijo } from "../js/termino-anticipado-plazo-fijo.js";
 import { calcularPermisoSinGoce, diasCorridosDelMes } from "../js/permiso-sin-goce.js";
+import {
+  calcularZonaExtrema,
+  pctIncrementadoDesdeBase,
+  zonaExtremaPorId,
+} from "../js/zona-extrema.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 let failed = 0;
@@ -4122,6 +4130,78 @@ console.log("\nPermiso sin goce de sueldo (gold 2026)");
   );
 }
 
+console.log("\nRebaja IUSC zona extrema (gold 2026)");
+{
+  // Fuentes: art. 13 D.L. 889; Circular SII 10/1976; Ley 19.354; D.L. 249 art. 7°;
+  // Circular SII N° 32/2026 (grado 1-A $745.136, septiembre 2026).
+  const g = calcularZonaExtrema(ZONA_EXTREMA_GOLD.iquique2000);
+  const gold = ZONA_EXTREMA_GOLD.iquique2000;
+  assert(
+    "gold Iquique $2.000.000 × 56 % / grado 1-A $745.136",
+    g.ok === true &&
+      g.rentaAfecta === 2_000_000 &&
+      g.pctIncrementado === 56 &&
+      g.grado1A === GRADO_1A_EUS_ZONA_EXTREMA &&
+      g.grado1A === 745_136 &&
+      g.rebajaSinTope === 717_949 &&
+      g.tope === 417_276 &&
+      g.rebajaEfectiva === 417_276 &&
+      g.rentaAfectaNueva === 1_582_724 &&
+      g.rebajaSinTope === gold.rebajaSinTope &&
+      g.tope === gold.tope &&
+      g.rebajaEfectiva === gold.rebajaEfectiva &&
+      g.rentaAfectaNueva === gold.rentaAfectaNueva &&
+      g.rebajaSinTope === Math.round((2_000_000 * 56) / 156) &&
+      g.tope === Math.round((745_136 * 56) / 100) &&
+      g.rebajaEfectiva === Math.min(g.rebajaSinTope, g.tope) &&
+      g.topeAplica === true &&
+      g.iuscAntes === calcularIusc(2_000_000) &&
+      g.iuscDespues === calcularIusc(1_582_724) &&
+      g.ahorroIusc === Math.max(0, g.iuscAntes - g.iuscDespues),
+    JSON.stringify(g),
+  );
+  assert(
+    "Iquique 40 % × 1,4 Ley 19.354 = 56 %",
+    pctIncrementadoDesdeBase(40) === 56 &&
+      pctIncrementadoDesdeBase(gold.pctBase) === gold.pctIncrementado &&
+      INCREMENTO_ASIGNACION_ZONA_LEY_19354 === 1.4 &&
+      zonaExtremaPorId("iquique")?.pctBase === 40,
+  );
+  const bajoTope = calcularZonaExtrema({
+    rentaAfecta: 500_000,
+    pctIncrementado: 56,
+    grado1A: 745_136,
+    zonaId: "iquique",
+  });
+  assert(
+    "renta $500.000 no choca el tope grado 1-A",
+    bajoTope.ok === true &&
+      bajoTope.rebajaSinTope === Math.round((500_000 * 56) / 156) &&
+      bajoTope.tope === 417_276 &&
+      bajoTope.rebajaEfectiva === bajoTope.rebajaSinTope &&
+      bajoTope.topeAplica === false &&
+      bajoTope.rentaAfectaNueva === 500_000 - bajoTope.rebajaEfectiva,
+    JSON.stringify(bajoTope),
+  );
+  const sinRenta = calcularZonaExtrema({ pctIncrementado: 56, grado1A: 745_136 });
+  assert(
+    "sin renta afecta → ok false",
+    sinRenta.ok === false && sinRenta.motivo === "renta",
+    JSON.stringify(sinRenta),
+  );
+  const zeApp = readFileSync(join(root, "js/app-zona-extrema.js"), "utf8");
+  assert(
+    "app-zona-extrema usa calcularZonaExtrema y calcularIusc vía el módulo",
+    /import\s*\{[^}]*calcularZonaExtrema[^}]*\}\s*from\s*["']\.\/zona-extrema\.js["']/.test(zeApp) &&
+      /calcularZonaExtrema\s*\(/.test(zeApp) &&
+      /calcularIusc/.test(readFileSync(join(root, "js/zona-extrema.js"), "utf8")) &&
+      /from\s*["']\.\/sueldo\.js["']/.test(readFileSync(join(root, "js/zona-extrema.js"), "utf8")) &&
+      !/\balert\s*\(/.test(zeApp) &&
+      !/\bconfirm\s*\(/.test(zeApp) &&
+      !/\bprompt\s*\(/.test(zeApp),
+  );
+}
+
 {
   const millon = calcularAvisoPrevio(
     { causal: "161-necesidades", remuneracion: 1_000_000, avisoPrevio: false },
@@ -4850,6 +4930,7 @@ const required = [
   "contrato-plazo-fijo.html",
   "termino-anticipado-plazo-fijo.html",
   "permiso-sin-goce.html",
+  "zona-extrema.html",
   "finiquito.html",
   "js/app-horas-extras.js",
   "js/app-vacaciones-proporcionales.js",
@@ -4904,6 +4985,7 @@ const required = [
   "js/app-contrato-plazo-fijo.js",
   "js/app-termino-anticipado-plazo-fijo.js",
   "js/app-permiso-sin-goce.js",
+  "js/app-zona-extrema.js",
   "empresa.html",
   "privacidad.html",
   "terminos.html",
@@ -4927,6 +5009,7 @@ const required = [
   "js/contrato-plazo-fijo.js",
   "js/termino-anticipado-plazo-fijo.js",
   "js/permiso-sin-goce.js",
+  "js/zona-extrema.js",
   "js/causales.js",
   "js/finiquito.js",
   "js/indicadores.js",
@@ -5099,6 +5182,7 @@ const htmlFiles = [
   "contrato-plazo-fijo.html",
   "termino-anticipado-plazo-fijo.html",
   "permiso-sin-goce.html",
+  "zona-extrema.html",
   "finiquito.html",
   "empresa.html",
   "privacidad.html",
@@ -5228,6 +5312,7 @@ const appEntries = [
   "js/app-contrato-plazo-fijo.js",
   "js/app-termino-anticipado-plazo-fijo.js",
   "js/app-permiso-sin-goce.js",
+  "js/app-zona-extrema.js",
   "js/app-finiquito.js",
   "js/app-empresa.js",
   "js/app-admin.js",
@@ -5260,7 +5345,7 @@ assert("robots Allow /", /Allow:\s*\//.test(robots));
 assert("robots Disallow /admin", /Disallow:\s*\/admin/.test(robots));
 assert("robots Disallow /api", /Disallow:\s*\/api/.test(robots));
 assert("robots Disallow /docs", /Disallow:\s*\/docs/.test(robots));
-assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/trabajo-pesado/.test(robots) && !/Disallow:\s*\/nulidad-despido/.test(robots) && !/Disallow:\s*\/tutela-laboral/.test(robots) && !/Disallow:\s*\/despido-injustificado/.test(robots) && !/Disallow:\s*\/autodespido/.test(robots) && !/Disallow:\s*\/obra-faena/.test(robots) && !/Disallow:\s*\/prescripcion-laboral/.test(robots) && !/Disallow:\s*\/descanso-compensatorio/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/feriado-anual/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/licencia-medica/.test(robots) && !/Disallow:\s*\/boleta-honorarios/.test(robots) && !/Disallow:\s*\/retencion-judicial/.test(robots) && !/Disallow:\s*\/apv/.test(robots) && !/Disallow:\s*\/sala-cuna/.test(robots) && !/Disallow:\s*\/postnatal-parental/.test(robots) && !/Disallow:\s*\/permiso-prenatal/.test(robots) && !/Disallow:\s*\/fuero-maternal/.test(robots) && !/Disallow:\s*\/permiso-paternidad/.test(robots) && !/Disallow:\s*\/permiso-matrimonio/.test(robots) && !/Disallow:\s*\/permiso-fallecimiento/.test(robots) && !/Disallow:\s*\/interes-mora/.test(robots) && !/Disallow:\s*\/hora-lactancia/.test(robots) && !/Disallow:\s*\/jornada-40-horas/.test(robots) && !/Disallow:\s*\/jornada-parcial/.test(robots) && !/Disallow:\s*\/teletrabajo/.test(robots) && !/Disallow:\s*\/bandas-horarias/.test(robots) && !/Disallow:\s*\/pacto-4x3/.test(robots) && !/Disallow:\s*\/jornada-excepcional/.test(robots) && !/Disallow:\s*\/compensacion-horas-extras/.test(robots) && !/Disallow:\s*\/contrato-plazo-fijo/.test(robots) && !/Disallow:\s*\/termino-anticipado-plazo-fijo/.test(robots) && !/Disallow:\s*\/permiso-sin-goce/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots) && !/Disallow:\s*\/inclusion-laboral/.test(robots));
+assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/trabajo-pesado/.test(robots) && !/Disallow:\s*\/nulidad-despido/.test(robots) && !/Disallow:\s*\/tutela-laboral/.test(robots) && !/Disallow:\s*\/despido-injustificado/.test(robots) && !/Disallow:\s*\/autodespido/.test(robots) && !/Disallow:\s*\/obra-faena/.test(robots) && !/Disallow:\s*\/prescripcion-laboral/.test(robots) && !/Disallow:\s*\/descanso-compensatorio/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/feriado-anual/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/licencia-medica/.test(robots) && !/Disallow:\s*\/boleta-honorarios/.test(robots) && !/Disallow:\s*\/retencion-judicial/.test(robots) && !/Disallow:\s*\/apv/.test(robots) && !/Disallow:\s*\/sala-cuna/.test(robots) && !/Disallow:\s*\/postnatal-parental/.test(robots) && !/Disallow:\s*\/permiso-prenatal/.test(robots) && !/Disallow:\s*\/fuero-maternal/.test(robots) && !/Disallow:\s*\/permiso-paternidad/.test(robots) && !/Disallow:\s*\/permiso-matrimonio/.test(robots) && !/Disallow:\s*\/permiso-fallecimiento/.test(robots) && !/Disallow:\s*\/interes-mora/.test(robots) && !/Disallow:\s*\/hora-lactancia/.test(robots) && !/Disallow:\s*\/jornada-40-horas/.test(robots) && !/Disallow:\s*\/jornada-parcial/.test(robots) && !/Disallow:\s*\/teletrabajo/.test(robots) && !/Disallow:\s*\/bandas-horarias/.test(robots) && !/Disallow:\s*\/pacto-4x3/.test(robots) && !/Disallow:\s*\/jornada-excepcional/.test(robots) && !/Disallow:\s*\/compensacion-horas-extras/.test(robots) && !/Disallow:\s*\/contrato-plazo-fijo/.test(robots) && !/Disallow:\s*\/termino-anticipado-plazo-fijo/.test(robots) && !/Disallow:\s*\/permiso-sin-goce/.test(robots) && !/Disallow:\s*\/zona-extrema/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots) && !/Disallow:\s*\/inclusion-laboral/.test(robots));
 assert("robots Sitemap", /Sitemap:\s*https:\/\/www\.haberes\.cl\/sitemap\.xml/.test(robots));
 
 const { seoPaths, GUIDE_SLUGS, GUIDES, CAUSAL_PAGES, BASE_PATHS, lastmodForPath } = await import("../content/registry.js");
@@ -5330,7 +5415,8 @@ assert(
     BASE_PATHS.includes("/compensacion-horas-extras") &&
     BASE_PATHS.includes("/contrato-plazo-fijo") &&
     BASE_PATHS.includes("/termino-anticipado-plazo-fijo") &&
-    BASE_PATHS.includes("/permiso-sin-goce"),
+    BASE_PATHS.includes("/permiso-sin-goce") &&
+    BASE_PATHS.includes("/zona-extrema"),
   `${locs.length} vs ${expectedFromRegistry.length}`,
 );
 assert(
@@ -5685,7 +5771,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 100,
+      seoPaths().length === 101,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -5697,7 +5783,7 @@ try {
   const docsSeo = await hitLocal("/docs/seo-map.md");
   assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
   assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
-  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/obra-faena/", "/prescripcion-laboral/", "/descanso-compensatorio/", "/inclusion-laboral/", "/jornada-parcial/", "/teletrabajo/", "/bandas-horarias/", "/pacto-4x3/", "/jornada-excepcional/", "/compensacion-horas-extras/", "/contrato-plazo-fijo/", "/termino-anticipado-plazo-fijo/", "/permiso-sin-goce/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/obra-faena/", "/prescripcion-laboral/", "/descanso-compensatorio/", "/inclusion-laboral/", "/jornada-parcial/", "/teletrabajo/", "/bandas-horarias/", "/pacto-4x3/", "/jornada-excepcional/", "/compensacion-horas-extras/", "/contrato-plazo-fijo/", "/termino-anticipado-plazo-fijo/", "/permiso-sin-goce/", "/zona-extrema/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
   }
@@ -5758,6 +5844,7 @@ try {
     "/contrato-plazo-fijo",
     "/termino-anticipado-plazo-fijo",
     "/permiso-sin-goce",
+    "/zona-extrema",
     "/gratificacion",
     "/impuesto-unico",
     "/cotizaciones-previsionales",
@@ -9578,6 +9665,7 @@ assert(
     ["contrato-plazo-fijo.html", "/contrato-plazo-fijo"],
     ["termino-anticipado-plazo-fijo.html", "/termino-anticipado-plazo-fijo"],
     ["permiso-sin-goce.html", "/permiso-sin-goce"],
+    ["zona-extrema.html", "/zona-extrema"],
     ["finiquito.html", "/finiquito"],
     ["empresa.html", "/empresa"],
     ["como.html", "/como"],
@@ -11203,6 +11291,126 @@ assert(
         /href="\/permiso-sin-goce"/.test(readFileSync(join(root, "permiso-paternidad.html"), "utf8")) &&
         /href="\/permiso-sin-goce"/.test(readFileSync(join(root, "finiquito.html"), "utf8")) &&
         /href="\/permiso-sin-goce"/.test(readFileSync(join(root, "empresa.html"), "utf8")),
+    );
+  }
+
+  {
+    const zeHtml = readFileSync(join(root, "zona-extrema.html"), "utf8");
+    const zeTitle = (zeHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const zeH1 = (zeHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const zeDesc = (zeHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "";
+    const iuHtmlZe = readFileSync(join(root, "impuesto-unico.html"), "utf8");
+    const sueldoHtmlZe = readFileSync(join(root, "sueldo.html"), "utf8");
+    const goldZe = calcularZonaExtrema(ZONA_EXTREMA_GOLD.iquique2000);
+    assert(
+      "SEO zona extrema title único y corto",
+      /calcular zona extrema/i.test(zeTitle) &&
+        zeTitle.length <= 65 &&
+        !/impuesto único/i.test(zeTitle) &&
+        !/sueldo l[ií]quido/i.test(zeTitle) &&
+        !/^Haberes\b/.test(zeTitle),
+      zeTitle,
+    );
+    assert(
+      "SEO zona extrema H1 único art. 13 D.L. 889",
+      zeH1 === "Calcular zona extrema Chile 2026" &&
+        /889/.test(zeHtml) &&
+        /19\.354/.test(zeHtml) &&
+        /grado 1-A/.test(zeHtml),
+      zeH1,
+    );
+    assert(
+      "SEO zona extrema description propia",
+      zeDesc.length >= 110 &&
+        zeDesc.length <= 160 &&
+        /889/.test(zeDesc) &&
+        /zona extrema/i.test(zeDesc) &&
+        /impuesto único/.test(zeDesc),
+      `${zeDesc.length}:${zeDesc}`,
+    );
+    assert(
+      "SEO zona extrema cita D.L. 889, D.L. 249, Ley 19.354 y SII",
+      /suseso\.gob\.cl\/612\/w3-propertyvalue-187853/.test(zeHtml) &&
+        /bcn\.cl\/leychile\/navegar\?idNorma=5904/.test(zeHtml) &&
+        /sii\.cl\/preguntas_frecuentes\/declaracion_renta\/001_140_1533/.test(zeHtml) &&
+        /19\.354/.test(zeHtml) &&
+        /Circular SII N° 10/.test(zeHtml),
+    );
+    assert(
+      "SEO zona extrema gold 2026 Iquique $2.000.000 / 56 % / $745.136",
+      goldZe.ok === true &&
+        goldZe.rebajaSinTope === 717_949 &&
+        goldZe.tope === 417_276 &&
+        goldZe.rebajaEfectiva === 417_276 &&
+        goldZe.rentaAfectaNueva === 1_582_724 &&
+        /2\.000\.000/.test(zeHtml) &&
+        /717\.949/.test(zeHtml) &&
+        /417\.276/.test(zeHtml) &&
+        /1\.582\.724/.test(zeHtml) &&
+        /745\.136/.test(zeHtml) &&
+        /Iquique/.test(zeHtml) &&
+        />56</.test(zeHtml),
+    );
+    assert("SEO zona extrema FAQPage", /"@type": "FAQPage"/.test(zeHtml));
+    assert(
+      "SEO zona extrema no canibaliza hermanas vetadas",
+      /href="\/impuesto-unico"/.test(zeHtml) &&
+        /href="\/sueldo"/.test(zeHtml) &&
+        /href="\/cotizaciones-previsionales"/.test(zeHtml) &&
+        /href="\/costo-empresa"/.test(zeHtml) &&
+        /href="\/apv"/.test(zeHtml) &&
+        /href="\/boleta-honorarios"/.test(zeHtml) &&
+        /href="\/interes-mora"/.test(zeHtml) &&
+        /href="\/asignacion-familiar"/.test(zeHtml) &&
+        /href="\/colacion-movilizacion"/.test(zeHtml) &&
+        /href="\/empresa"/.test(zeHtml) &&
+        !existsSync(join(root, "rebaja-zona-extrema.html")) &&
+        !existsSync(join(root, "dl-889.html")) &&
+        !existsSync(join(root, "franquicia-889.html")) &&
+        !existsSync(join(root, "credito-zona-extrema.html")) &&
+        !existsSync(join(root, "asignacion-zona.html")) &&
+        !existsSync(join(root, "gratificacion-zona.html")) &&
+        !existsSync(join(root, "reajuste-ipc.html")),
+    );
+    assert(
+      "home y nav enlazan /zona-extrema",
+      /href="\/zona-extrema"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/zona-extrema" data-nav>Zona extrema<\/a>/.test(
+          readFileSync(join(root, "index.html"), "utf8"),
+        ) &&
+        /href="\/zona-extrema" data-nav>Zona extrema<\/a>/.test(zeHtml) &&
+        /href="\/zona-extrema" data-nav>Zona extrema<\/a>/.test(iuHtmlZe) &&
+        /href="\/zona-extrema" data-nav>Zona extrema<\/a>/.test(sueldoHtmlZe),
+    );
+    assert(
+      "sitemap incluye /zona-extrema",
+      locs.includes("https://www.haberes.cl/zona-extrema") &&
+        lastmodForPath("/zona-extrema") === "2026-09-21",
+    );
+    assert(
+      "seo-map documenta /zona-extrema y no-canibalizar hermanas",
+      /\/zona-extrema/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no canibalizar `\/impuesto-unico`, `\/sueldo`/.test(
+          readFileSync(join(root, "docs/seo-map.md"), "utf8"),
+        ) &&
+        /no crear `\/rebaja-zona-extrema`/i.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")),
+    );
+    assert(
+      "hub /guias enlaza /zona-extrema en el cluster de liquidación",
+      /href="\/zona-extrema"/.test(readFileSync(join(root, "guias.html"), "utf8")) &&
+        /<h2>Liquidaci[oó]n de sueldo<\/h2>[\s\S]*href="\/zona-extrema"/.test(
+          readFileSync(join(root, "guias.html"), "utf8"),
+        ) &&
+        !/<h2>Finiquito<\/h2>[\s\S]*href="\/zona-extrema"/.test(
+          readFileSync(join(root, "guias.html"), "utf8"),
+        ),
+    );
+    assert(
+      "hermanas enlazan /zona-extrema",
+      /href="\/zona-extrema"/.test(iuHtmlZe) &&
+        /href="\/zona-extrema"/.test(sueldoHtmlZe) &&
+        /href="\/zona-extrema"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/zona-extrema"/.test(readFileSync(join(root, "guias.html"), "utf8")),
     );
   }
 
@@ -16450,6 +16658,7 @@ assert(
       "contrato-plazo-fijo.html",
       "termino-anticipado-plazo-fijo.html",
       "permiso-sin-goce.html",
+      "zona-extrema.html",
       "finiquito.html",
       "empresa.html",
       "precios.html",
@@ -16627,7 +16836,7 @@ assert(
     return acc;
   }
   const pages = listHtml(root);
-  assert("102 páginas HTML", pages.length === 102, String(pages.length));
+  assert("103 páginas HTML", pages.length === 103, String(pages.length));
   for (const file of pages) {
     const html = readFileSync(file, "utf8");
     const rel = file.slice(root.length + 1);
