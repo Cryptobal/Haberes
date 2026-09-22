@@ -25,7 +25,8 @@ Actualizar este archivo antes de crear URLs nuevas para evitar canibalización.
 | Calcular impuesto único | calcular impuesto unico (480/mes), tabla impuesto unico (2.900/mes) | `/impuesto-unico` | Title/H1 «calcular impuesto único»; no canibalizar `/sueldo` ni `/guias/impuesto-unico`. La rebaja por zonas extremas del IUSC (art. 13 D.L. 889) vive en `/zona-extrema` |
 | Calcular zona extrema | zona extrema / rebaja zona extrema IUSC / D.L. 889 art. 13 / asignación de zona impuesto | `/zona-extrema` | Title/H1 «calcular zona extrema» Chile 2026; no canibalizar `/impuesto-unico`, `/sueldo`, `/cotizaciones-previsionales`, `/costo-empresa`, `/apv`, `/boleta-honorarios`, `/interes-mora`, `/asignacion-familiar`, `/colacion-movilizacion` ni `/empresa`. Rebaja de la base del IUSC (renta × pct/(pct+100), tope grado 1-A × pct/100, Ley 19.354 × 1,4). No es la tabla de tramos ni la bonificación a la mano de obra del empleador. No crear `/rebaja-zona-extrema`, `/dl-889`, `/franquicia-889`, `/credito-zona-extrema`, `/asignacion-zona`, `/gratificacion-zona` ni `/reajuste-ipc` |
 | Calcular retención boleta de honorarios | boleta de honorarios / retención honorarios / líquido boleta | `/boleta-honorarios` | Title/H1 «calcular retención boleta de honorarios»; no canibalizar `/sueldo`, `/impuesto-unico`, `/cotizaciones-previsionales` ni `/costo-empresa`. Independientes, retención Ley 21.133 (15,25 % en 2026). No es IUSC ni sueldo de dependiente. No crear `/retencion-honorarios`, `/boleta` ni `/honorarios` |
-| Calcular cotizaciones previsionales | cotizaciones previsionales / tope imponible AFP / comisión AFP | `/cotizaciones-previsionales` | Title/H1 «calcular cotizaciones previsionales»; no canibalizar `/sueldo` ni `/guias/liquidacion-de-sueldo-y-previred`. No crear `/tope-imponible`, `/cotizacion-afp`, `/descuentos-legales` ni `/calculadora-sueldo` |
+| Calcular cotizaciones previsionales | cotizaciones previsionales / comisión AFP / descuentos AFP salud cesantía | `/cotizaciones-previsionales` | Title/H1 «calcular cotizaciones previsionales»; no canibalizar `/sueldo`, `/guias/liquidacion-de-sueldo-y-previred` ni `/tope-imponible` (el tope en sí vive allá; aquí se aplica dentro del cálculo). No crear `/cotizacion-afp`, `/descuentos-legales` ni `/calculadora-sueldo` |
+| Calcular tope imponible | tope imponible / tope imponible AFP / tope imponible UF / renta máxima imponible / tope imponible en pesos | `/tope-imponible` | Title/H1 «calcular tope imponible» Chile 2026; no canibalizar `/cotizaciones-previsionales`, `/sueldo`, `/impuesto-unico`, `/costo-empresa`, `/seguro-cesantia`, `/apv`, `/trabajo-pesado` ni `/empresa`. Solo el tope (90 UF AFP/salud, 135,2 UF cesantía — mismas constantes TOPE_AFP_SALUD_UF / TOPE_CESANTIA_UF) en UF y pesos del mes, renta afecta vs exceso sobre el tope. No calcula cotizaciones ni líquido. No crear `/tope`, `/topes`, `/tope-afp`, `/tope-salud`, `/tope-uf`, `/tope-previsional`, `/renta-imponible`, `/base-imponible`, `/uf-tope`, `/calcular-tope`, `/cotizaciones` ni `/sueldo-imponible` |
 | Calcular costo empresa de un sueldo | costo empresa / costo de un trabajador / cuánto cuesta contratar | `/costo-empresa` | Title/H1 «calcular costo empresa de un sueldo»; no canibalizar `/sueldo` ni `/cotizaciones-previsionales`. Responde «cuánto me cuesta contratar», no el líquido. No crear `/costo-trabajador` ni `/aportes-patronales` |
 | Calcular seguro de cesantía | seguro de cesantía / cotización AFC / Ley 19.728 | `/seguro-cesantia` | Title/H1 «calcular seguro de cesantía»; no canibalizar `/cotizaciones-previsionales`, `/costo-empresa` ni `/sueldo`. Cotización mensual AFC (trabajador + empleador, CIC/FCS). No es prestación post-despido ni AFP/salud. No crear `/afc` ni `/cesantia` |
 | Calcular trabajo pesado | trabajo pesado / cotización adicional CEN / Ley 19.404 / art. 17 bis | `/trabajo-pesado` | Title/H1 «Calculadora trabajo pesado Chile»; no canibalizar `/cotizaciones-previsionales`, `/costo-empresa`, `/seguro-cesantia`, `/sueldo`, `/apv` ni `/licencia-medica`. Cotización adicional AFP (2 %+2 % o 1 %+1 %) y rebaja de edad. La CEN califica el puesto. No crear `/trabajo-pesado-cotizacion`, `/cen`, `/ley-19404` ni `/jubilacion-anticipada-pesado` |
@@ -137,10 +138,21 @@ No publicar `/ia`, `/etica`, `/gobernanza` ni páginas de «exactitud» o sesgo.
 Haberes no se presenta como IA en el sitio. El memo de operación está en
 `docs/INTERNO-USO-DE-IA.md` (fuera del deploy).
 
-No publicar hermanas de cotizaciones: `/tope-imponible`, `/cotizacion-afp`,
-`/descuentos-legales`, `/calculadora-sueldo`. La intención «calcular sueldo líquido»
-sigue en `/sueldo`. El costo de contratar (aportes del empleador) vive en
-`/costo-empresa`. No publicar `/costo-trabajador` ni `/aportes-patronales`.
+No publicar hermanas de cotizaciones: `/cotizacion-afp`, `/descuentos-legales`,
+`/calculadora-sueldo`. La intención «calcular sueldo líquido» sigue en `/sueldo`.
+El costo de contratar (aportes del empleador) vive en `/costo-empresa`.
+No publicar `/costo-trabajador` ni `/aportes-patronales`.
+
+No publicar `/tope`, `/topes`, `/tope-afp`, `/tope-salud`, `/tope-uf`,
+`/tope-previsional`, `/renta-imponible`, `/base-imponible`, `/uf-tope`,
+`/calcular-tope`, `/cotizaciones` ni `/sueldo-imponible`. El tope imponible en sí
+(90 UF AFP/salud y 135,2 UF cesantía, en UF y pesos del mes, renta afecta vs
+exceso sobre el tope) vive en `/tope-imponible`, con las mismas constantes que
+`/sueldo`, `/cotizaciones-previsionales` y `/costo-empresa`. No canibalizar
+`/cotizaciones-previsionales` (que aplica el tope dentro del cálculo de AFP,
+salud y cesantía), `/sueldo`, `/impuesto-unico`, `/costo-empresa`,
+`/seguro-cesantia`, `/apv` ni `/trabajo-pesado`. No calcula cotizaciones ni
+líquido ni inventa un tope distinto para salud.
 
 No publicar `/afc` ni `/cesantia`. La cotización mensual al Seguro de Cesantía
 (Ley 19.728 / AFC: trabajador y empleador, cuenta individual y fondo solidario)

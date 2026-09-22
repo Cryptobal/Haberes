@@ -41,6 +41,7 @@ const DRAWER_LINKS = [
   ["/impuesto-unico", "Impuesto único"],
   ["/boleta-honorarios", "Boleta honorarios"],
   ["/cotizaciones-previsionales", "Cotizaciones previsionales"],
+  ["/tope-imponible", "Tope imponible"],
   ["/costo-empresa", "Costo empresa"],
   ["/seguro-cesantia", "Seguro de cesantía"],
   ["/trabajo-pesado", "Trabajo pesado"],

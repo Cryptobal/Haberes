@@ -95,6 +95,7 @@ import {
   ZONA_EXTREMA_GOLD,
   PROMEDIO_REMUNERACIONES_GOLD,
   ANTIGUEDAD_LABORAL_GOLD,
+  TOPE_IMPONIBLE_GOLD,
   GRADO_1A_EUS_ZONA_EXTREMA,
   INCREMENTO_ASIGNACION_ZONA_LEY_19354,
   CONTRATO_PLAZO_FIJO_TOLERANCIA_DIAS,
@@ -221,6 +222,7 @@ import {
   sumarMesesIso,
   textoAntiguedad,
 } from "../js/antiguedad-laboral.js";
+import { calcularTopeImponible, ufValida } from "../js/tope-imponible.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 let failed = 0;
@@ -327,6 +329,18 @@ assert(
     ANTIGUEDAD_LABORAL_GOLD.seisAniosSeisMeses.mesesFeriado === 78 &&
     ANTIGUEDAD_LABORAL_GOLD.visperaAniversario.anosIAS === 5 &&
     ANTIGUEDAD_LABORAL_GOLD.mismoDia.anosIAS === 0,
+);
+assert(
+  "Tope imponible gold UF 39.000: 90 UF = $3.510.000, 135,2 UF = $5.272.800; $4.000.000 → exceso $490.000",
+  TOPE_IMPONIBLE_GOLD.uf === 39_000 &&
+    TOPE_IMPONIBLE_GOLD.topeAfpSaludPesos === 3_510_000 &&
+    TOPE_IMPONIBLE_GOLD.topeAfpSaludPesos === TOPE_AFP_SALUD_UF * TOPE_IMPONIBLE_GOLD.uf &&
+    TOPE_IMPONIBLE_GOLD.topeCesantiaPesos === 5_272_800 &&
+    TOPE_IMPONIBLE_GOLD.topeCesantiaPesos === Math.round(TOPE_CESANTIA_UF * TOPE_IMPONIBLE_GOLD.uf) &&
+    TOPE_IMPONIBLE_GOLD.bajoTope.excesoAfpSalud === 0 &&
+    TOPE_IMPONIBLE_GOLD.bajoTope.margenAfpSalud === 10_000 &&
+    TOPE_IMPONIBLE_GOLD.sobreTopeAfp.excesoAfpSalud === 490_000 &&
+    TOPE_IMPONIBLE_GOLD.sobreAmbosTopes.excesoCesantia === 727_200,
 );
 assert(
   "Bandas horarias gold 09:00–18:00 ±60 y 08:30–17:30 −30",
@@ -4485,6 +4499,168 @@ console.log("\nAntigüedad laboral fecha a fecha (gold 2026)");
   );
 }
 
+console.log("\nTope imponible en UF y pesos (gold 2026, UF fija $39.000)");
+{
+  const G = TOPE_IMPONIBLE_GOLD;
+  const bajo = calcularTopeImponible({ rentaImponible: G.bajoTope.rentaImponible, uf: G.uf });
+  assert(
+    "gold renta $3.500.000 / UF $39.000 → tope AFP/salud 90 UF = $3.510.000; afecta $3.500.000; exceso 0; margen $10.000",
+    bajo.ok === true &&
+      bajo.uf === 39_000 &&
+      bajo.rentaImponible === 3_500_000 &&
+      bajo.afpSalud.topeUf === 90 &&
+      bajo.afpSalud.topeUf === TOPE_AFP_SALUD_UF &&
+      bajo.afpSalud.topePesos === 3_510_000 &&
+      bajo.afpSalud.topePesos === G.topeAfpSaludPesos &&
+      bajo.afpSalud.basePesos === G.bajoTope.baseAfpSalud &&
+      bajo.afpSalud.exceso === 0 &&
+      bajo.afpSalud.margen === 10_000 &&
+      bajo.afpSalud.supera === false &&
+      bajo.cesantia.topeUf === 135.2 &&
+      bajo.cesantia.topeUf === TOPE_CESANTIA_UF &&
+      bajo.cesantia.topePesos === 5_272_800 &&
+      bajo.cesantia.topePesos === G.topeCesantiaPesos &&
+      bajo.cesantia.basePesos === 3_500_000 &&
+      bajo.cesantia.exceso === 0 &&
+      bajo.cesantia.supera === false &&
+      Math.abs(bajo.rentaUf - 3_500_000 / 39_000) < 1e-9 &&
+      bajo.afpSalud.porcentajeAfecto === 1,
+    JSON.stringify(bajo),
+  );
+  const sobreAfp = calcularTopeImponible({ rentaImponible: G.sobreTopeAfp.rentaImponible, uf: G.uf });
+  assert(
+    "renta $4.000.000 → afecta AFP/salud $3.510.000, exceso $490.000; cesantía completa (exceso 0)",
+    sobreAfp.ok === true &&
+      sobreAfp.afpSalud.basePesos === 3_510_000 &&
+      sobreAfp.afpSalud.basePesos === G.sobreTopeAfp.baseAfpSalud &&
+      sobreAfp.afpSalud.exceso === 490_000 &&
+      sobreAfp.afpSalud.exceso === G.sobreTopeAfp.excesoAfpSalud &&
+      sobreAfp.afpSalud.margen === 0 &&
+      sobreAfp.afpSalud.supera === true &&
+      sobreAfp.cesantia.basePesos === 4_000_000 &&
+      sobreAfp.cesantia.exceso === 0 &&
+      sobreAfp.cesantia.supera === false &&
+      Math.abs(sobreAfp.afpSalud.porcentajeAfecto - 0.8775) < 1e-9,
+    JSON.stringify(sobreAfp),
+  );
+  const ambos = calcularTopeImponible({ rentaImponible: G.sobreAmbosTopes.rentaImponible, uf: G.uf });
+  assert(
+    "renta $6.000.000 → exceso AFP/salud $2.490.000; cesantía afecta $5.272.800, exceso $727.200",
+    ambos.ok === true &&
+      ambos.afpSalud.basePesos === 3_510_000 &&
+      ambos.afpSalud.exceso === 2_490_000 &&
+      ambos.afpSalud.exceso === G.sobreAmbosTopes.excesoAfpSalud &&
+      ambos.cesantia.basePesos === 5_272_800 &&
+      ambos.cesantia.basePesos === G.sobreAmbosTopes.baseCesantia &&
+      ambos.cesantia.exceso === 727_200 &&
+      ambos.cesantia.exceso === G.sobreAmbosTopes.excesoCesantia &&
+      ambos.cesantia.supera === true,
+    JSON.stringify(ambos),
+  );
+  const soloTopes = calcularTopeImponible({ rentaImponible: 0, uf: G.uf });
+  assert(
+    "renta 0 → solo topes (afecta 0, exceso 0, margen = tope, porcentajeAfecto 1)",
+    soloTopes.ok === true &&
+      soloTopes.rentaImponible === 0 &&
+      soloTopes.rentaUf === 0 &&
+      soloTopes.afpSalud.topePesos === 3_510_000 &&
+      soloTopes.afpSalud.basePesos === 0 &&
+      soloTopes.afpSalud.exceso === 0 &&
+      soloTopes.afpSalud.margen === 3_510_000 &&
+      soloTopes.afpSalud.porcentajeAfecto === 1 &&
+      soloTopes.cesantia.margen === 5_272_800,
+    JSON.stringify(soloTopes),
+  );
+  const porDefecto = calcularTopeImponible({ rentaImponible: 3_500_000 });
+  const sueldoRef = calcularSueldo({ sueldoBase: 3_500_000, afp: "modelo", salud: "fonasa", contrato: "indefinido" }, { uf: FALLBACK_UF });
+  assert(
+    "sin UF → FALLBACK_UF; tope y base bit a bit iguales a calcularSueldo (topeAfpSalud/topeCesantia/baseAfpSalud/baseCesantia)",
+    porDefecto.ok === true &&
+      porDefecto.uf === FALLBACK_UF &&
+      porDefecto.afpSalud.tope === sueldoRef.topeAfpSalud &&
+      porDefecto.cesantia.tope === sueldoRef.topeCesantia &&
+      porDefecto.afpSalud.base === sueldoRef.baseAfpSalud &&
+      porDefecto.cesantia.base === sueldoRef.baseCesantia &&
+      porDefecto.afpSalud.topePesos === Math.round(TOPE_AFP_SALUD_UF * FALLBACK_UF) &&
+      porDefecto.afpSalud.topePesos === 3_676_861 &&
+      porDefecto.cesantia.topePesos === 5_523_462,
+    JSON.stringify({ porDefecto, topeAfpSalud: sueldoRef.topeAfpSalud, baseAfpSalud: sueldoRef.baseAfpSalud }),
+  );
+  const sobreRef = calcularSueldo({ sueldoBase: 6_000_000, afp: "modelo", salud: "fonasa", contrato: "indefinido" }, { uf: 39_000 });
+  assert(
+    "renta $6.000.000 / UF 39.000: base AFP/salud y cesantía coinciden con calcularSueldo",
+    ambos.afpSalud.base === sobreRef.baseAfpSalud &&
+      ambos.cesantia.base === sobreRef.baseCesantia &&
+      ambos.afpSalud.tope === sobreRef.topeAfpSalud &&
+      ambos.cesantia.tope === sobreRef.topeCesantia &&
+      sobreRef.baseAfpSalud === 3_510_000 &&
+      sobreRef.baseCesantia === 5_272_800,
+    JSON.stringify({ baseAfpSalud: sobreRef.baseAfpSalud, baseCesantia: sobreRef.baseCesantia }),
+  );
+  const ufBaja = calcularTopeImponible({ rentaImponible: 1_000_000, uf: 1000 });
+  const ufNaN = calcularTopeImponible({ rentaImponible: 1_000_000, uf: NaN });
+  const rentaNeg = calcularTopeImponible({ rentaImponible: -5, uf: 39_000 });
+  assert(
+    "UF fuera de rango o NaN → motivo uf; renta negativa → motivo renta (sin NaN en salidas)",
+    ufBaja.ok === false &&
+      ufBaja.motivo === "uf" &&
+      ufNaN.ok === false &&
+      ufNaN.motivo === "uf" &&
+      rentaNeg.ok === false &&
+      rentaNeg.motivo === "renta" &&
+      rentaNeg.afpSalud.topePesos === 0 &&
+      rentaNeg.afpSalud.topeUf === 90 &&
+      rentaNeg.cesantia.topeUf === 135.2 &&
+      Number.isFinite(ufBaja.afpSalud.exceso) &&
+      ufValida(39_000) === true &&
+      ufValida(19_999) === false &&
+      ufValida(80_001) === false &&
+      ufValida("x") === false,
+    JSON.stringify({ ufBaja, rentaNeg }),
+  );
+  const borde = calcularTopeImponible({ rentaImponible: 3_510_000, uf: 39_000 });
+  const bordeMas = calcularTopeImponible({ rentaImponible: 3_510_001, uf: 39_000 });
+  assert(
+    "renta exactamente en el tope → no supera, exceso 0; un peso más → supera con exceso $1",
+    borde.ok === true &&
+      borde.afpSalud.supera === false &&
+      borde.afpSalud.exceso === 0 &&
+      borde.afpSalud.margen === 0 &&
+      borde.afpSalud.basePesos === 3_510_000 &&
+      bordeMas.afpSalud.supera === true &&
+      bordeMas.afpSalud.exceso === 1 &&
+      bordeMas.afpSalud.basePesos === 3_510_000,
+    JSON.stringify({ borde, bordeMas }),
+  );
+  const decimal = calcularTopeImponible({ rentaImponible: 3_500_000.4, uf: 39_000 });
+  assert(
+    "renta con decimales se redondea al peso (roundPeso) antes de comparar",
+    decimal.ok === true && decimal.rentaImponible === 3_500_000 && decimal.afpSalud.margen === 10_000,
+    JSON.stringify(decimal),
+  );
+  const tiApp = readFileSync(join(root, "js/app-tope-imponible.js"), "utf8");
+  assert(
+    "app-tope-imponible usa calcularTopeImponible, mountIndicadores (mindicador con caché) y no usa alert/confirm/prompt",
+    /import\s*\{[^}]*calcularTopeImponible[^}]*\}\s*from\s*["']\.\/tope-imponible\.js["']/.test(tiApp) &&
+      /calcularTopeImponible\s*\(/.test(tiApp) &&
+      /mountIndicadores\s*\(/.test(tiApp) &&
+      /mindicador\.cl/.test(tiApp) &&
+      !/\balert\s*\(/.test(tiApp) &&
+      !/\bconfirm\s*\(/.test(tiApp) &&
+      !/\bprompt\s*\(/.test(tiApp),
+  );
+  const tiLib = readFileSync(join(root, "js/tope-imponible.js"), "utf8");
+  assert(
+    "tope-imponible.js reutiliza TOPE_AFP_SALUD_UF / TOPE_CESANTIA_UF / roundPeso (no inventa topes)",
+    /TOPE_AFP_SALUD_UF/.test(tiLib) &&
+      /TOPE_CESANTIA_UF/.test(tiLib) &&
+      /from\s*["']\.\/constants\.js["']/.test(tiLib) &&
+      /roundPeso/.test(tiLib) &&
+      /from\s*["']\.\/sueldo\.js["']/.test(tiLib) &&
+      !/\b(87\.8|87,8|131\.9|131,9)\b/.test(tiLib),
+  );
+}
+
 {
   const millon = calcularAvisoPrevio(
     { causal: "161-necesidades", remuneracion: 1_000_000, avisoPrevio: false },
@@ -5216,6 +5392,7 @@ const required = [
   "zona-extrema.html",
   "promedio-remuneraciones.html",
   "antiguedad-laboral.html",
+  "tope-imponible.html",
   "finiquito.html",
   "js/app-horas-extras.js",
   "js/app-vacaciones-proporcionales.js",
@@ -5273,6 +5450,7 @@ const required = [
   "js/app-zona-extrema.js",
   "js/app-promedio-remuneraciones.js",
   "js/app-antiguedad-laboral.js",
+  "js/app-tope-imponible.js",
   "empresa.html",
   "privacidad.html",
   "terminos.html",
@@ -5299,6 +5477,7 @@ const required = [
   "js/zona-extrema.js",
   "js/promedio-remuneraciones.js",
   "js/antiguedad-laboral.js",
+  "js/tope-imponible.js",
   "js/causales.js",
   "js/finiquito.js",
   "js/indicadores.js",
@@ -5474,6 +5653,7 @@ const htmlFiles = [
   "zona-extrema.html",
   "promedio-remuneraciones.html",
   "antiguedad-laboral.html",
+  "tope-imponible.html",
   "finiquito.html",
   "empresa.html",
   "privacidad.html",
@@ -5606,6 +5786,7 @@ const appEntries = [
   "js/app-zona-extrema.js",
   "js/app-promedio-remuneraciones.js",
   "js/app-antiguedad-laboral.js",
+  "js/app-tope-imponible.js",
   "js/app-finiquito.js",
   "js/app-empresa.js",
   "js/app-admin.js",
@@ -5638,7 +5819,7 @@ assert("robots Allow /", /Allow:\s*\//.test(robots));
 assert("robots Disallow /admin", /Disallow:\s*\/admin/.test(robots));
 assert("robots Disallow /api", /Disallow:\s*\/api/.test(robots));
 assert("robots Disallow /docs", /Disallow:\s*\/docs/.test(robots));
-assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/trabajo-pesado/.test(robots) && !/Disallow:\s*\/nulidad-despido/.test(robots) && !/Disallow:\s*\/tutela-laboral/.test(robots) && !/Disallow:\s*\/despido-injustificado/.test(robots) && !/Disallow:\s*\/autodespido/.test(robots) && !/Disallow:\s*\/obra-faena/.test(robots) && !/Disallow:\s*\/prescripcion-laboral/.test(robots) && !/Disallow:\s*\/descanso-compensatorio/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/feriado-anual/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/licencia-medica/.test(robots) && !/Disallow:\s*\/boleta-honorarios/.test(robots) && !/Disallow:\s*\/retencion-judicial/.test(robots) && !/Disallow:\s*\/apv/.test(robots) && !/Disallow:\s*\/sala-cuna/.test(robots) && !/Disallow:\s*\/postnatal-parental/.test(robots) && !/Disallow:\s*\/permiso-prenatal/.test(robots) && !/Disallow:\s*\/fuero-maternal/.test(robots) && !/Disallow:\s*\/permiso-paternidad/.test(robots) && !/Disallow:\s*\/permiso-matrimonio/.test(robots) && !/Disallow:\s*\/permiso-fallecimiento/.test(robots) && !/Disallow:\s*\/interes-mora/.test(robots) && !/Disallow:\s*\/hora-lactancia/.test(robots) && !/Disallow:\s*\/jornada-40-horas/.test(robots) && !/Disallow:\s*\/jornada-parcial/.test(robots) && !/Disallow:\s*\/teletrabajo/.test(robots) && !/Disallow:\s*\/bandas-horarias/.test(robots) && !/Disallow:\s*\/pacto-4x3/.test(robots) && !/Disallow:\s*\/jornada-excepcional/.test(robots) && !/Disallow:\s*\/compensacion-horas-extras/.test(robots) && !/Disallow:\s*\/contrato-plazo-fijo/.test(robots) && !/Disallow:\s*\/termino-anticipado-plazo-fijo/.test(robots) && !/Disallow:\s*\/permiso-sin-goce/.test(robots) && !/Disallow:\s*\/zona-extrema/.test(robots) && !/Disallow:\s*\/promedio-remuneraciones/.test(robots) && !/Disallow:\s*\/antiguedad-laboral/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots) && !/Disallow:\s*\/inclusion-laboral/.test(robots));
+assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/trabajo-pesado/.test(robots) && !/Disallow:\s*\/nulidad-despido/.test(robots) && !/Disallow:\s*\/tutela-laboral/.test(robots) && !/Disallow:\s*\/despido-injustificado/.test(robots) && !/Disallow:\s*\/autodespido/.test(robots) && !/Disallow:\s*\/obra-faena/.test(robots) && !/Disallow:\s*\/prescripcion-laboral/.test(robots) && !/Disallow:\s*\/descanso-compensatorio/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/feriado-anual/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/licencia-medica/.test(robots) && !/Disallow:\s*\/boleta-honorarios/.test(robots) && !/Disallow:\s*\/retencion-judicial/.test(robots) && !/Disallow:\s*\/apv/.test(robots) && !/Disallow:\s*\/sala-cuna/.test(robots) && !/Disallow:\s*\/postnatal-parental/.test(robots) && !/Disallow:\s*\/permiso-prenatal/.test(robots) && !/Disallow:\s*\/fuero-maternal/.test(robots) && !/Disallow:\s*\/permiso-paternidad/.test(robots) && !/Disallow:\s*\/permiso-matrimonio/.test(robots) && !/Disallow:\s*\/permiso-fallecimiento/.test(robots) && !/Disallow:\s*\/interes-mora/.test(robots) && !/Disallow:\s*\/hora-lactancia/.test(robots) && !/Disallow:\s*\/jornada-40-horas/.test(robots) && !/Disallow:\s*\/jornada-parcial/.test(robots) && !/Disallow:\s*\/teletrabajo/.test(robots) && !/Disallow:\s*\/bandas-horarias/.test(robots) && !/Disallow:\s*\/pacto-4x3/.test(robots) && !/Disallow:\s*\/jornada-excepcional/.test(robots) && !/Disallow:\s*\/compensacion-horas-extras/.test(robots) && !/Disallow:\s*\/contrato-plazo-fijo/.test(robots) && !/Disallow:\s*\/termino-anticipado-plazo-fijo/.test(robots) && !/Disallow:\s*\/permiso-sin-goce/.test(robots) && !/Disallow:\s*\/zona-extrema/.test(robots) && !/Disallow:\s*\/promedio-remuneraciones/.test(robots) && !/Disallow:\s*\/antiguedad-laboral/.test(robots) && !/Disallow:\s*\/tope-imponible/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots) && !/Disallow:\s*\/inclusion-laboral/.test(robots));
 assert("robots Sitemap", /Sitemap:\s*https:\/\/www\.haberes\.cl\/sitemap\.xml/.test(robots));
 
 const { seoPaths, GUIDE_SLUGS, GUIDES, CAUSAL_PAGES, BASE_PATHS, lastmodForPath } = await import("../content/registry.js");
@@ -5711,7 +5892,8 @@ assert(
     BASE_PATHS.includes("/permiso-sin-goce") &&
     BASE_PATHS.includes("/zona-extrema") &&
     BASE_PATHS.includes("/promedio-remuneraciones") &&
-    BASE_PATHS.includes("/antiguedad-laboral"),
+    BASE_PATHS.includes("/antiguedad-laboral") &&
+    BASE_PATHS.includes("/tope-imponible"),
   `${locs.length} vs ${expectedFromRegistry.length}`,
 );
 assert(
@@ -6068,7 +6250,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 103,
+      seoPaths().length === 104,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -6080,7 +6262,7 @@ try {
   const docsSeo = await hitLocal("/docs/seo-map.md");
   assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
   assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
-  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/obra-faena/", "/prescripcion-laboral/", "/descanso-compensatorio/", "/inclusion-laboral/", "/jornada-parcial/", "/teletrabajo/", "/bandas-horarias/", "/pacto-4x3/", "/jornada-excepcional/", "/compensacion-horas-extras/", "/contrato-plazo-fijo/", "/termino-anticipado-plazo-fijo/", "/permiso-sin-goce/", "/zona-extrema/", "/promedio-remuneraciones/", "/antiguedad-laboral/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/obra-faena/", "/prescripcion-laboral/", "/descanso-compensatorio/", "/inclusion-laboral/", "/jornada-parcial/", "/teletrabajo/", "/bandas-horarias/", "/pacto-4x3/", "/jornada-excepcional/", "/compensacion-horas-extras/", "/contrato-plazo-fijo/", "/termino-anticipado-plazo-fijo/", "/permiso-sin-goce/", "/zona-extrema/", "/promedio-remuneraciones/", "/antiguedad-laboral/", "/tope-imponible/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
   }
@@ -6144,6 +6326,7 @@ try {
     "/zona-extrema",
     "/promedio-remuneraciones",
     "/antiguedad-laboral",
+    "/tope-imponible",
     "/gratificacion",
     "/impuesto-unico",
     "/cotizaciones-previsionales",
@@ -9967,6 +10150,7 @@ assert(
     ["zona-extrema.html", "/zona-extrema"],
     ["promedio-remuneraciones.html", "/promedio-remuneraciones"],
     ["antiguedad-laboral.html", "/antiguedad-laboral"],
+    ["tope-imponible.html", "/tope-imponible"],
     ["finiquito.html", "/finiquito"],
     ["empresa.html", "/empresa"],
     ["como.html", "/como"],
@@ -11976,6 +12160,150 @@ assert(
         /href="\/antiguedad-laboral"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
         /href="\/antiguedad-laboral"/.test(readFileSync(join(root, "guias.html"), "utf8")) &&
         /href="\/antiguedad-laboral"/.test(readFileSync(join(root, "empresa.html"), "utf8")),
+    );
+  }
+
+  {
+    const tiHtml = readFileSync(join(root, "tope-imponible.html"), "utf8");
+    const tiTitle = (tiHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const tiH1 = (tiHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const tiDesc = (tiHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "";
+    const cpHtmlTi = readFileSync(join(root, "cotizaciones-previsionales.html"), "utf8");
+    const sueldoHtmlTi = readFileSync(join(root, "sueldo.html"), "utf8");
+    const costoHtmlTi = readFileSync(join(root, "costo-empresa.html"), "utf8");
+    const afcHtmlTi = readFileSync(join(root, "seguro-cesantia.html"), "utf8");
+    const iuscHtmlTi = readFileSync(join(root, "impuesto-unico.html"), "utf8");
+    const goldTi = calcularTopeImponible({ rentaImponible: TOPE_IMPONIBLE_GOLD.sobreTopeAfp.rentaImponible, uf: TOPE_IMPONIBLE_GOLD.uf });
+    assert(
+      "SEO tope imponible title único y corto",
+      /calcular tope imponible/i.test(tiTitle) &&
+        tiTitle.length <= 65 &&
+        !/cotizaciones previsionales/i.test(tiTitle) &&
+        !/sueldo l[ií]quido/i.test(tiTitle) &&
+        !/^Haberes\b/.test(tiTitle),
+      tiTitle,
+    );
+    assert(
+      "SEO tope imponible H1 único con UF y pesos del mes",
+      tiH1 === "Calcular tope imponible Chile 2026" &&
+        /90 UF/.test(tiHtml) &&
+        /135,2 UF/.test(tiHtml) &&
+        /pesos del mes/.test(tiHtml) &&
+        /sobre el tope/.test(tiHtml),
+      tiH1,
+    );
+    assert(
+      "SEO tope imponible description propia",
+      tiDesc.length >= 110 &&
+        tiDesc.length <= 160 &&
+        /tope imponible/i.test(tiDesc) &&
+        /90 UF/.test(tiDesc) &&
+        /135,2 UF/.test(tiDesc),
+      `${tiDesc.length}:${tiDesc}`,
+    );
+    assert(
+      "SEO tope imponible cita D.L. 3.500 art. 16, Ley 19.728 art. 6 y Superintendencia de Pensiones",
+      /bcn\.cl\/leychile\/navegar\?idNorma=7147/.test(tiHtml) &&
+        /bcn\.cl\/leychile\/navegar\?idNorma=189967/.test(tiHtml) &&
+        /spensiones\.cl/.test(tiHtml) &&
+        /art(?:\.|ículo) 16/.test(tiHtml) &&
+        /art(?:\.|ículo) 6/.test(tiHtml) &&
+        /mindicador\.cl/.test(tiHtml),
+    );
+    assert(
+      "SEO tope imponible gold UF 39.000 en copy y defaults UI",
+      goldTi.ok === true &&
+        goldTi.afpSalud.topePesos === 3_510_000 &&
+        goldTi.afpSalud.exceso === 490_000 &&
+        goldTi.cesantia.topePesos === 5_272_800 &&
+        /id="rentaImponible" type="number" min="0" step="1" value="3500000"/.test(tiHtml) &&
+        /id="ufMes" type="number" min="20000" max="80000" step="0\.01" placeholder="UF del día"/.test(tiHtml) &&
+        /id="btnUfDia"/.test(tiHtml) &&
+        /\$3\.510\.000/.test(tiHtml) &&
+        /\$5\.272\.800/.test(tiHtml) &&
+        /\$490\.000/.test(tiHtml) &&
+        /\$2\.490\.000/.test(tiHtml) &&
+        /\$727\.200/.test(tiHtml) &&
+        /\$10\.000/.test(tiHtml) &&
+        /UF \$39\.000/.test(tiHtml) &&
+        /id="tablaTopes"/.test(tiHtml) &&
+        !/\b(87,8|131,9)\b/.test(tiHtml),
+    );
+    assert("SEO tope imponible FAQPage", /"@type": "FAQPage"/.test(tiHtml));
+    assert(
+      "SEO tope imponible no canibaliza hermanas vetadas ni crea alias",
+      /href="\/cotizaciones-previsionales"/.test(tiHtml) &&
+        /href="\/sueldo"/.test(tiHtml) &&
+        /href="\/impuesto-unico"/.test(tiHtml) &&
+        /href="\/costo-empresa"/.test(tiHtml) &&
+        /href="\/seguro-cesantia"/.test(tiHtml) &&
+        /href="\/apv"/.test(tiHtml) &&
+        /href="\/trabajo-pesado"/.test(tiHtml) &&
+        /href="\/empresa"/.test(tiHtml) &&
+        /no constituye asesor[ií]a legal/i.test(tiHtml) &&
+        /ni la cifra oficial de la Superintendencia de Pensiones/i.test(tiHtml) &&
+        /SUSESO/.test(tiHtml) &&
+        /SII/.test(tiHtml) &&
+        !/\balert\s*\(/.test(tiHtml) &&
+        !/\bconfirm\s*\(/.test(tiHtml) &&
+        !/\bprompt\s*\(/.test(tiHtml) &&
+        !existsSync(join(root, "tope.html")) &&
+        !existsSync(join(root, "topes.html")) &&
+        !existsSync(join(root, "tope-afp.html")) &&
+        !existsSync(join(root, "tope-salud.html")) &&
+        !existsSync(join(root, "tope-uf.html")) &&
+        !existsSync(join(root, "tope-previsional.html")) &&
+        !existsSync(join(root, "renta-imponible.html")) &&
+        !existsSync(join(root, "base-imponible.html")) &&
+        !existsSync(join(root, "uf-tope.html")) &&
+        !existsSync(join(root, "calcular-tope.html")) &&
+        !existsSync(join(root, "cotizaciones.html")) &&
+        !existsSync(join(root, "sueldo-imponible.html")),
+    );
+    assert(
+      "home y nav enlazan /tope-imponible",
+      /href="\/tope-imponible"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/tope-imponible" data-nav>Tope imponible<\/a>/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/tope-imponible" data-nav>Tope imponible<\/a>/.test(tiHtml) &&
+        /href="\/tope-imponible" data-nav>Tope imponible<\/a>/.test(readFileSync(join(root, "js/ui.js"), "utf8")) &&
+        /\["\/tope-imponible", "Tope imponible"\]/.test(readFileSync(join(root, "scripts/patch-nav.mjs"), "utf8")),
+    );
+    assert(
+      "sitemap incluye /tope-imponible",
+      locs.includes("https://www.haberes.cl/tope-imponible") && lastmodForPath("/tope-imponible") === "2026-09-22",
+    );
+    assert(
+      "seo-map documenta /tope-imponible, no-canibalizar cotizaciones y ya no lo veta",
+      /`\/tope-imponible`/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no canibalizar `\/cotizaciones-previsionales`, `\/sueldo`, `\/impuesto-unico`, `\/costo-empresa`/.test(
+          readFileSync(join(root, "docs/seo-map.md"), "utf8"),
+        ) &&
+        /no crear `\/tope`, `\/topes`, `\/tope-afp`/i.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        !/No crear `\/tope-imponible`/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        !/hermanas de cotizaciones: `\/tope-imponible`/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")),
+    );
+    assert(
+      "hub /guias enlaza /tope-imponible en el cluster de liquidación (HTML y generador)",
+      /<h2>Liquidación de sueldo<\/h2>[\s\S]*href="\/tope-imponible">calcular tope imponible<\/a>[\s\S]*<h2>Finiquito<\/h2>/.test(
+        readFileSync(join(root, "guias.html"), "utf8"),
+      ) &&
+        /href="\/tope-imponible">calcular tope imponible<\/a>/.test(readFileSync(join(root, "scripts/gen-content-seo.mjs"), "utf8")),
+    );
+    assert(
+      "hermanas enlazan /tope-imponible (cotizaciones, sueldo, costo empresa, seguro cesantía, impuesto único)",
+      /href="\/tope-imponible"/.test(cpHtmlTi) &&
+        /href="\/tope-imponible"/.test(sueldoHtmlTi) &&
+        /href="\/tope-imponible"/.test(costoHtmlTi) &&
+        /href="\/tope-imponible"/.test(afcHtmlTi) &&
+        /href="\/tope-imponible"/.test(iuscHtmlTi) &&
+        /href="\/tope-imponible"/.test(readFileSync(join(root, "empresa.html"), "utf8")),
+    );
+    assert(
+      "/cotizaciones-previsionales conserva su cuerpo (solo enlace cruzado mínimo a /tope-imponible)",
+      (cpHtmlTi.match(/href="\/tope-imponible"/g) || []).length === 2 &&
+        /<h1>Calcular cotizaciones previsionales Chile 2026<\/h1>/.test(cpHtmlTi) &&
+        /id="tablaAfp"/.test(cpHtmlTi),
+      String((cpHtmlTi.match(/href="\/tope-imponible"/g) || []).length),
     );
   }
 
@@ -15423,8 +15751,7 @@ assert(
     );
     assert(
       "no se crean URLs hermanas de cotizaciones",
-      !existsSync(join(root, "tope-imponible.html")) &&
-        !existsSync(join(root, "cotizacion-afp.html")) &&
+      !existsSync(join(root, "cotizacion-afp.html")) &&
         !existsSync(join(root, "descuentos-legales.html")) &&
         !existsSync(join(root, "calculadora-sueldo.html")),
     );
@@ -17497,7 +17824,7 @@ assert(
     return acc;
   }
   const pages = listHtml(root);
-  assert("105 páginas HTML", pages.length === 105, String(pages.length));
+  assert("106 páginas HTML", pages.length === 106, String(pages.length));
   for (const file of pages) {
     const html = readFileSync(file, "utf8");
     const rel = file.slice(root.length + 1);

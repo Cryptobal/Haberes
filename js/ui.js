@@ -232,6 +232,7 @@ function paintLoggedInNav(emp) {
         <a href="/impuesto-unico" data-nav>Impuesto único</a>
         <a href="/boleta-honorarios" data-nav>Boleta honorarios</a>
         <a href="/cotizaciones-previsionales" data-nav>Cotizaciones previsionales</a>
+        <a href="/tope-imponible" data-nav>Tope imponible</a>
         <a href="/costo-empresa" data-nav>Costo empresa</a>
         <a href="/inclusion-laboral" data-nav>Inclusión laboral</a>
         <a href="/seguro-cesantia" data-nav>Seguro de cesantía</a>
