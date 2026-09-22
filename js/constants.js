@@ -942,6 +942,47 @@ export const ZONA_EXTREMA_GOLD = Object.freeze({
 });
 
 /**
+ * Tope imponible previsional (UF fija $39.000 como fixture).
+ * tope = topeUf × uf (exacto, como calcularSueldo); topePesos = round(tope).
+ * AFP/salud 90 UF (TOPE_AFP_SALUD_UF) → $3.510.000; cesantía 135,2 UF
+ * (TOPE_CESANTIA_UF) → $5.272.800.
+ * Gold: renta $3.500.000 → afecta $3.500.000, exceso 0, margen $10.000;
+ * renta $4.000.000 → afecta AFP/salud $3.510.000, exceso $490.000, cesantía
+ * afecta completa; renta $6.000.000 → exceso AFP/salud $2.490.000, exceso
+ * cesantía $727.200.
+ *
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=7147 art. 16
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=189967 art. 6
+ */
+export const TOPE_IMPONIBLE_GOLD = Object.freeze({
+  uf: 39_000,
+  topeAfpSaludPesos: 3_510_000,
+  topeCesantiaPesos: 5_272_800,
+  bajoTope: Object.freeze({
+    rentaImponible: 3_500_000,
+    baseAfpSalud: 3_500_000,
+    excesoAfpSalud: 0,
+    margenAfpSalud: 10_000,
+    baseCesantia: 3_500_000,
+    excesoCesantia: 0,
+  }),
+  sobreTopeAfp: Object.freeze({
+    rentaImponible: 4_000_000,
+    baseAfpSalud: 3_510_000,
+    excesoAfpSalud: 490_000,
+    baseCesantia: 4_000_000,
+    excesoCesantia: 0,
+  }),
+  sobreAmbosTopes: Object.freeze({
+    rentaImponible: 6_000_000,
+    baseAfpSalud: 3_510_000,
+    excesoAfpSalud: 2_490_000,
+    baseCesantia: 5_272_800,
+    excesoCesantia: 727_200,
+  }),
+});
+
+/**
  * Antigüedad laboral (conteo civil años → meses → días).
  * anosIAS = años cumplidos (art. 163: sin redondear fracciones).
  * mesesFeriado = anosCompletos × 12 + mesesRemanentes (días sueltos no suman).
