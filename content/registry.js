@@ -113,6 +113,7 @@ export const PATH_LASTMOD = {
   "/sueldo-proporcional": "2026-08-29",
   "/indemnizacion-aviso-previo": "2026-08-29",
   "/promedio-remuneraciones": "2026-09-21",
+  "/antiguedad-laboral": "2026-09-22",
   "/nulidad-despido": "2026-09-12",
   "/tutela-laboral": "2026-09-13",
   "/despido-injustificado": "2026-09-13",
@@ -134,6 +135,7 @@ export const GUIDE_SLUGS = GUIDES.map((g) => g.slug);
 export const BASE_PATHS = [
   "/",
   "/aguinaldo",
+  "/antiguedad-laboral",
   "/apv",
   "/asignacion-familiar",
   "/autodespido",

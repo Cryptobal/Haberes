@@ -94,6 +94,7 @@ import {
   PERMISO_SIN_GOCE_GOLD,
   ZONA_EXTREMA_GOLD,
   PROMEDIO_REMUNERACIONES_GOLD,
+  ANTIGUEDAD_LABORAL_GOLD,
   GRADO_1A_EUS_ZONA_EXTREMA,
   INCREMENTO_ASIGNACION_ZONA_LEY_19354,
   CONTRATO_PLAZO_FIJO_TOLERANCIA_DIAS,
@@ -213,6 +214,13 @@ import {
   zonaExtremaPorId,
 } from "../js/zona-extrema.js";
 import { calcularPromedioRemuneraciones } from "../js/promedio-remuneraciones.js";
+import {
+  calcularAntiguedadLaboral,
+  diasEntreIso,
+  esFraccionSuperiorSeisMeses,
+  sumarMesesIso,
+  textoAntiguedad,
+} from "../js/antiguedad-laboral.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 let failed = 0;
@@ -309,6 +317,16 @@ assert(
     PROMEDIO_REMUNERACIONES_GOLD.tresMeses.n === 3 &&
     PROMEDIO_REMUNERACIONES_GOLD.dosMeses.promedio === 1_100_000 &&
     PROMEDIO_REMUNERACIONES_GOLD.dosMeses.n === 2,
+);
+assert(
+  "Antigüedad laboral gold 2020-01-15→2026-07-15 = 6a 6m 0d / IAS 6 / feriado 78",
+  ANTIGUEDAD_LABORAL_GOLD.seisAniosSeisMeses.anosCompletos === 6 &&
+    ANTIGUEDAD_LABORAL_GOLD.seisAniosSeisMeses.mesesRemanentes === 6 &&
+    ANTIGUEDAD_LABORAL_GOLD.seisAniosSeisMeses.diasRemanentes === 0 &&
+    ANTIGUEDAD_LABORAL_GOLD.seisAniosSeisMeses.anosIAS === 6 &&
+    ANTIGUEDAD_LABORAL_GOLD.seisAniosSeisMeses.mesesFeriado === 78 &&
+    ANTIGUEDAD_LABORAL_GOLD.visperaAniversario.anosIAS === 5 &&
+    ANTIGUEDAD_LABORAL_GOLD.mismoDia.anosIAS === 0,
 );
 assert(
   "Bandas horarias gold 09:00–18:00 ±60 y 08:30–17:30 −30",
@@ -4297,6 +4315,176 @@ console.log("\nPromedio remuneraciones art. 172 (gold 2026)");
   );
 }
 
+console.log("\nAntigüedad laboral fecha a fecha (gold 2026)");
+{
+  const gold = ANTIGUEDAD_LABORAL_GOLD.seisAniosSeisMeses;
+  const g = calcularAntiguedadLaboral({ fechaInicio: gold.fechaInicio, fechaTermino: gold.fechaTermino });
+  assert(
+    "gold 2020-01-15 → 2026-07-15 = 6 años, 6 meses, 0 días; anosIAS 6; mesesFeriado 78",
+    g.ok === true &&
+      g.anosCompletos === 6 &&
+      g.mesesRemanentes === 6 &&
+      g.diasRemanentes === 0 &&
+      g.anosIAS === 6 &&
+      g.anosIAS === gold.anosIAS &&
+      g.mesesFeriado === 78 &&
+      g.mesesFeriado === gold.mesesFeriado &&
+      g.mesesFeriado === g.anosCompletos * 12 + g.mesesRemanentes &&
+      g.anosConFraccion === 6 &&
+      g.fraccionSuperiorSeisMeses === false &&
+      g.ultimoAniversario === "2026-01-15" &&
+      g.ancla === "2026-07-15" &&
+      g.diasCalendario === 2373 &&
+      textoAntiguedad(g) === "6 años, 6 meses, 0 días",
+    JSON.stringify(g),
+  );
+  const v = ANTIGUEDAD_LABORAL_GOLD.visperaAniversario;
+  const vis = calcularAntiguedadLaboral({ fechaInicio: v.fechaInicio, fechaTermino: v.fechaTermino });
+  assert(
+    "2020-01-15 → 2026-01-14 = 5 años, 11 meses, 30 días; anosIAS 5 (no redondea a 6); mesesFeriado 71",
+    vis.ok === true &&
+      vis.anosCompletos === 5 &&
+      vis.mesesRemanentes === 11 &&
+      vis.diasRemanentes === 30 &&
+      vis.anosIAS === 5 &&
+      vis.anosIAS === v.anosIAS &&
+      vis.mesesFeriado === 71 &&
+      vis.anosConFraccion === 6 &&
+      vis.fraccionSuperiorSeisMeses === true &&
+      vis.ultimoAniversario === "2025-01-15" &&
+      vis.ancla === "2025-12-15" &&
+      textoAntiguedad(vis) === "5 años, 11 meses, 30 días",
+    JSON.stringify(vis),
+  );
+  const z = ANTIGUEDAD_LABORAL_GOLD.mismoDia;
+  const cero = calcularAntiguedadLaboral({ fechaInicio: z.fechaInicio, fechaTermino: z.fechaTermino });
+  assert(
+    "2024-03-01 → 2024-03-01 = 0 años, 0 meses, 0 días; anosIAS 0; mesesFeriado 0",
+    cero.ok === true &&
+      cero.anosCompletos === 0 &&
+      cero.mesesRemanentes === 0 &&
+      cero.diasRemanentes === 0 &&
+      cero.anosIAS === 0 &&
+      cero.anosConFraccion === 0 &&
+      cero.mesesFeriado === 0 &&
+      cero.diasCalendario === 0 &&
+      textoAntiguedad(cero) === "0 años, 0 meses, 0 días",
+    JSON.stringify(cero),
+  );
+  const orden = calcularAntiguedadLaboral({ fechaInicio: "2024-03-01", fechaTermino: "2024-02-01" });
+  assert(
+    "término < inicio → validación (sin NaN ni negativos)",
+    orden.ok === false &&
+      orden.motivo === "orden" &&
+      orden.anosCompletos === 0 &&
+      orden.mesesRemanentes === 0 &&
+      orden.diasRemanentes === 0 &&
+      orden.anosIAS === 0 &&
+      orden.mesesFeriado === 0 &&
+      Number.isFinite(orden.diasCalendario) &&
+      orden.diasCalendario === 0 &&
+      textoAntiguedad(orden) === "—",
+    JSON.stringify(orden),
+  );
+  const sinInicio = calcularAntiguedadLaboral({ fechaInicio: "", fechaTermino: "2024-02-01" });
+  const malInicio = calcularAntiguedadLaboral({ fechaInicio: "2024-13-01", fechaTermino: "2024-02-01" });
+  const malTermino = calcularAntiguedadLaboral({ fechaInicio: "2024-01-01", fechaTermino: "2024-02-30" });
+  assert(
+    "fechas inválidas → motivo inicio / termino",
+    sinInicio.ok === false &&
+      sinInicio.motivo === "inicio" &&
+      malInicio.ok === false &&
+      malInicio.motivo === "inicio" &&
+      malTermino.ok === false &&
+      malTermino.motivo === "termino",
+  );
+  const hoy = calcularAntiguedadLaboral({ fechaInicio: "2020-01-15", fechaHoy: "2026-09-22" });
+  assert(
+    "término vacío = hoy (inyectado 2026-09-22) → 6a 8m 7d, terminoEsHoy",
+    hoy.ok === true &&
+      hoy.fechaTermino === "2026-09-22" &&
+      hoy.terminoEsHoy === true &&
+      hoy.anosCompletos === 6 &&
+      hoy.mesesRemanentes === 8 &&
+      hoy.diasRemanentes === 7 &&
+      hoy.anosIAS === 6 &&
+      hoy.mesesFeriado === 80,
+    JSON.stringify(hoy),
+  );
+  const hoyReal = calcularAntiguedadLaboral({ fechaInicio: "2020-01-15" });
+  assert(
+    "término vacío sin fechaHoy → usa hoy en America/Santiago (ISO válido, ok)",
+    hoyReal.ok === true && /^\d{4}-\d{2}-\d{2}$/.test(hoyReal.fechaTermino) && hoyReal.terminoEsHoy === true,
+    JSON.stringify(hoyReal),
+  );
+  const visperaAniv = calcularAntiguedadLaboral({ fechaInicio: "2020-01-15", fechaTermino: "2026-07-14" });
+  assert(
+    "un día antes de los 6a 6m → 6a 5m 29d; días sueltos no suman mes (mesesFeriado 77)",
+    visperaAniv.ok === true &&
+      visperaAniv.anosCompletos === 6 &&
+      visperaAniv.mesesRemanentes === 5 &&
+      visperaAniv.diasRemanentes === 29 &&
+      visperaAniv.mesesFeriado === 77 &&
+      visperaAniv.anosConFraccion === 6,
+    JSON.stringify(visperaAniv),
+  );
+  const bisiesto = calcularAntiguedadLaboral({ fechaInicio: "2024-02-29", fechaTermino: "2025-02-28" });
+  const finMes = calcularAntiguedadLaboral({ fechaInicio: "2024-01-31", fechaTermino: "2024-02-29" });
+  assert(
+    "29-feb cumple año el 28-feb; 31-ene + 1 mes = 29-feb (recorte a fin de mes)",
+    bisiesto.ok === true &&
+      bisiesto.anosCompletos === 1 &&
+      bisiesto.mesesRemanentes === 0 &&
+      bisiesto.diasRemanentes === 0 &&
+      finMes.ok === true &&
+      finMes.anosCompletos === 0 &&
+      finMes.mesesRemanentes === 1 &&
+      finMes.diasRemanentes === 0 &&
+      sumarMesesIso("2024-01-31", 1) === "2024-02-29" &&
+      sumarMesesIso("2023-01-31", 1) === "2023-02-28" &&
+      sumarMesesIso("2024-02-29", 12) === "2025-02-28" &&
+      sumarMesesIso("2024-11-15", 2) === "2025-01-15" &&
+      sumarMesesIso("no-fecha", 1) === "" &&
+      diasEntreIso("2020-01-15", "2026-07-15") === 2373 &&
+      diasEntreIso("2024-03-01", "2024-02-01") === -29,
+    JSON.stringify({ bisiesto, finMes }),
+  );
+  assert(
+    "regla art. 163: fracción estrictamente > 6 meses (6m 0d no; 6m 1d sí; 7m sí)",
+    esFraccionSuperiorSeisMeses(6, 0) === false &&
+      esFraccionSuperiorSeisMeses(6, 1) === true &&
+      esFraccionSuperiorSeisMeses(7, 0) === true &&
+      esFraccionSuperiorSeisMeses(5, 30) === false &&
+      esFraccionSuperiorSeisMeses(11, 30) === true &&
+      esFraccionSuperiorSeisMeses(0, 0) === false,
+  );
+  const iasCoherente = aniosServicio("2020-01-15", "2026-01-14", { tope: null });
+  assert(
+    "coherencia con /indemnizacion-anos-servicio: aniosServicio(2020-01-15→2026-01-14) = anosConFraccion = 6",
+    iasCoherente === 6 && iasCoherente === vis.anosConFraccion && aniosServicio("2020-01-15", "2026-07-15", { tope: null }) === g.anosConFraccion,
+    String(iasCoherente),
+  );
+  const alApp = readFileSync(join(root, "js/app-antiguedad-laboral.js"), "utf8");
+  assert(
+    "app-antiguedad-laboral usa calcularAntiguedadLaboral y hoyChileIso",
+    /import\s*\{[^}]*calcularAntiguedadLaboral[^}]*\}\s*from\s*["']\.\/antiguedad-laboral\.js["']/.test(alApp) &&
+      /calcularAntiguedadLaboral\s*\(/.test(alApp) &&
+      /hoyChileIso/.test(alApp) &&
+      !/\balert\s*\(/.test(alApp) &&
+      !/\bconfirm\s*\(/.test(alApp) &&
+      !/\bprompt\s*\(/.test(alApp),
+  );
+  const alLib = readFileSync(join(root, "js/antiguedad-laboral.js"), "utf8");
+  assert(
+    "antiguedad-laboral.js reutiliza parseIsoFecha/ymdIso (feriados.js) y hoyChileIso (America/Santiago)",
+    /from\s*["']\.\/feriados\.js["']/.test(alLib) &&
+      /parseIsoFecha/.test(alLib) &&
+      /ymdIso/.test(alLib) &&
+      /hoyChileIso/.test(alLib) &&
+      /America\/Santiago/.test(readFileSync(join(root, "js/contrato-plazo-fijo.js"), "utf8")),
+  );
+}
+
 {
   const millon = calcularAvisoPrevio(
     { causal: "161-necesidades", remuneracion: 1_000_000, avisoPrevio: false },
@@ -5027,6 +5215,7 @@ const required = [
   "permiso-sin-goce.html",
   "zona-extrema.html",
   "promedio-remuneraciones.html",
+  "antiguedad-laboral.html",
   "finiquito.html",
   "js/app-horas-extras.js",
   "js/app-vacaciones-proporcionales.js",
@@ -5083,6 +5272,7 @@ const required = [
   "js/app-permiso-sin-goce.js",
   "js/app-zona-extrema.js",
   "js/app-promedio-remuneraciones.js",
+  "js/app-antiguedad-laboral.js",
   "empresa.html",
   "privacidad.html",
   "terminos.html",
@@ -5108,6 +5298,7 @@ const required = [
   "js/permiso-sin-goce.js",
   "js/zona-extrema.js",
   "js/promedio-remuneraciones.js",
+  "js/antiguedad-laboral.js",
   "js/causales.js",
   "js/finiquito.js",
   "js/indicadores.js",
@@ -5282,6 +5473,7 @@ const htmlFiles = [
   "permiso-sin-goce.html",
   "zona-extrema.html",
   "promedio-remuneraciones.html",
+  "antiguedad-laboral.html",
   "finiquito.html",
   "empresa.html",
   "privacidad.html",
@@ -5413,6 +5605,7 @@ const appEntries = [
   "js/app-permiso-sin-goce.js",
   "js/app-zona-extrema.js",
   "js/app-promedio-remuneraciones.js",
+  "js/app-antiguedad-laboral.js",
   "js/app-finiquito.js",
   "js/app-empresa.js",
   "js/app-admin.js",
@@ -5445,7 +5638,7 @@ assert("robots Allow /", /Allow:\s*\//.test(robots));
 assert("robots Disallow /admin", /Disallow:\s*\/admin/.test(robots));
 assert("robots Disallow /api", /Disallow:\s*\/api/.test(robots));
 assert("robots Disallow /docs", /Disallow:\s*\/docs/.test(robots));
-assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/trabajo-pesado/.test(robots) && !/Disallow:\s*\/nulidad-despido/.test(robots) && !/Disallow:\s*\/tutela-laboral/.test(robots) && !/Disallow:\s*\/despido-injustificado/.test(robots) && !/Disallow:\s*\/autodespido/.test(robots) && !/Disallow:\s*\/obra-faena/.test(robots) && !/Disallow:\s*\/prescripcion-laboral/.test(robots) && !/Disallow:\s*\/descanso-compensatorio/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/feriado-anual/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/licencia-medica/.test(robots) && !/Disallow:\s*\/boleta-honorarios/.test(robots) && !/Disallow:\s*\/retencion-judicial/.test(robots) && !/Disallow:\s*\/apv/.test(robots) && !/Disallow:\s*\/sala-cuna/.test(robots) && !/Disallow:\s*\/postnatal-parental/.test(robots) && !/Disallow:\s*\/permiso-prenatal/.test(robots) && !/Disallow:\s*\/fuero-maternal/.test(robots) && !/Disallow:\s*\/permiso-paternidad/.test(robots) && !/Disallow:\s*\/permiso-matrimonio/.test(robots) && !/Disallow:\s*\/permiso-fallecimiento/.test(robots) && !/Disallow:\s*\/interes-mora/.test(robots) && !/Disallow:\s*\/hora-lactancia/.test(robots) && !/Disallow:\s*\/jornada-40-horas/.test(robots) && !/Disallow:\s*\/jornada-parcial/.test(robots) && !/Disallow:\s*\/teletrabajo/.test(robots) && !/Disallow:\s*\/bandas-horarias/.test(robots) && !/Disallow:\s*\/pacto-4x3/.test(robots) && !/Disallow:\s*\/jornada-excepcional/.test(robots) && !/Disallow:\s*\/compensacion-horas-extras/.test(robots) && !/Disallow:\s*\/contrato-plazo-fijo/.test(robots) && !/Disallow:\s*\/termino-anticipado-plazo-fijo/.test(robots) && !/Disallow:\s*\/permiso-sin-goce/.test(robots) && !/Disallow:\s*\/zona-extrema/.test(robots) && !/Disallow:\s*\/promedio-remuneraciones/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots) && !/Disallow:\s*\/inclusion-laboral/.test(robots));
+assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/trabajo-pesado/.test(robots) && !/Disallow:\s*\/nulidad-despido/.test(robots) && !/Disallow:\s*\/tutela-laboral/.test(robots) && !/Disallow:\s*\/despido-injustificado/.test(robots) && !/Disallow:\s*\/autodespido/.test(robots) && !/Disallow:\s*\/obra-faena/.test(robots) && !/Disallow:\s*\/prescripcion-laboral/.test(robots) && !/Disallow:\s*\/descanso-compensatorio/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/feriado-anual/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/licencia-medica/.test(robots) && !/Disallow:\s*\/boleta-honorarios/.test(robots) && !/Disallow:\s*\/retencion-judicial/.test(robots) && !/Disallow:\s*\/apv/.test(robots) && !/Disallow:\s*\/sala-cuna/.test(robots) && !/Disallow:\s*\/postnatal-parental/.test(robots) && !/Disallow:\s*\/permiso-prenatal/.test(robots) && !/Disallow:\s*\/fuero-maternal/.test(robots) && !/Disallow:\s*\/permiso-paternidad/.test(robots) && !/Disallow:\s*\/permiso-matrimonio/.test(robots) && !/Disallow:\s*\/permiso-fallecimiento/.test(robots) && !/Disallow:\s*\/interes-mora/.test(robots) && !/Disallow:\s*\/hora-lactancia/.test(robots) && !/Disallow:\s*\/jornada-40-horas/.test(robots) && !/Disallow:\s*\/jornada-parcial/.test(robots) && !/Disallow:\s*\/teletrabajo/.test(robots) && !/Disallow:\s*\/bandas-horarias/.test(robots) && !/Disallow:\s*\/pacto-4x3/.test(robots) && !/Disallow:\s*\/jornada-excepcional/.test(robots) && !/Disallow:\s*\/compensacion-horas-extras/.test(robots) && !/Disallow:\s*\/contrato-plazo-fijo/.test(robots) && !/Disallow:\s*\/termino-anticipado-plazo-fijo/.test(robots) && !/Disallow:\s*\/permiso-sin-goce/.test(robots) && !/Disallow:\s*\/zona-extrema/.test(robots) && !/Disallow:\s*\/promedio-remuneraciones/.test(robots) && !/Disallow:\s*\/antiguedad-laboral/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots) && !/Disallow:\s*\/inclusion-laboral/.test(robots));
 assert("robots Sitemap", /Sitemap:\s*https:\/\/www\.haberes\.cl\/sitemap\.xml/.test(robots));
 
 const { seoPaths, GUIDE_SLUGS, GUIDES, CAUSAL_PAGES, BASE_PATHS, lastmodForPath } = await import("../content/registry.js");
@@ -5517,7 +5710,8 @@ assert(
     BASE_PATHS.includes("/termino-anticipado-plazo-fijo") &&
     BASE_PATHS.includes("/permiso-sin-goce") &&
     BASE_PATHS.includes("/zona-extrema") &&
-    BASE_PATHS.includes("/promedio-remuneraciones"),
+    BASE_PATHS.includes("/promedio-remuneraciones") &&
+    BASE_PATHS.includes("/antiguedad-laboral"),
   `${locs.length} vs ${expectedFromRegistry.length}`,
 );
 assert(
@@ -5874,7 +6068,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 102,
+      seoPaths().length === 103,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -5886,7 +6080,7 @@ try {
   const docsSeo = await hitLocal("/docs/seo-map.md");
   assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
   assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
-  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/obra-faena/", "/prescripcion-laboral/", "/descanso-compensatorio/", "/inclusion-laboral/", "/jornada-parcial/", "/teletrabajo/", "/bandas-horarias/", "/pacto-4x3/", "/jornada-excepcional/", "/compensacion-horas-extras/", "/contrato-plazo-fijo/", "/termino-anticipado-plazo-fijo/", "/permiso-sin-goce/", "/zona-extrema/", "/promedio-remuneraciones/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/obra-faena/", "/prescripcion-laboral/", "/descanso-compensatorio/", "/inclusion-laboral/", "/jornada-parcial/", "/teletrabajo/", "/bandas-horarias/", "/pacto-4x3/", "/jornada-excepcional/", "/compensacion-horas-extras/", "/contrato-plazo-fijo/", "/termino-anticipado-plazo-fijo/", "/permiso-sin-goce/", "/zona-extrema/", "/promedio-remuneraciones/", "/antiguedad-laboral/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
   }
@@ -5949,6 +6143,7 @@ try {
     "/permiso-sin-goce",
     "/zona-extrema",
     "/promedio-remuneraciones",
+    "/antiguedad-laboral",
     "/gratificacion",
     "/impuesto-unico",
     "/cotizaciones-previsionales",
@@ -9771,6 +9966,7 @@ assert(
     ["permiso-sin-goce.html", "/permiso-sin-goce"],
     ["zona-extrema.html", "/zona-extrema"],
     ["promedio-remuneraciones.html", "/promedio-remuneraciones"],
+    ["antiguedad-laboral.html", "/antiguedad-laboral"],
     ["finiquito.html", "/finiquito"],
     ["empresa.html", "/empresa"],
     ["como.html", "/como"],
@@ -11648,6 +11844,138 @@ assert(
         /href="\/promedio-remuneraciones"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
         /href="\/promedio-remuneraciones"/.test(readFileSync(join(root, "guias.html"), "utf8")) &&
         /href="\/promedio-remuneraciones"/.test(readFileSync(join(root, "empresa.html"), "utf8")),
+    );
+  }
+
+  {
+    const alHtml = readFileSync(join(root, "antiguedad-laboral.html"), "utf8");
+    const alTitle = (alHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const alH1 = (alHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const alDesc = (alHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "";
+    const finiHtmlAl = readFileSync(join(root, "finiquito.html"), "utf8");
+    const iasHtmlAl = readFileSync(join(root, "indemnizacion-anos-servicio.html"), "utf8");
+    const vacHtmlAl = readFileSync(join(root, "vacaciones-proporcionales.html"), "utf8");
+    const feriadoHtmlAl = readFileSync(join(root, "feriado-anual.html"), "utf8");
+    const goldAl = calcularAntiguedadLaboral(ANTIGUEDAD_LABORAL_GOLD.seisAniosSeisMeses);
+    assert(
+      "SEO antigüedad laboral title único y corto",
+      /calcular antigüedad laboral/i.test(alTitle) &&
+        alTitle.length <= 65 &&
+        !/indemnizaci[oó]n/i.test(alTitle) &&
+        !/finiquito/i.test(alTitle) &&
+        !/^Haberes\b/.test(alTitle),
+      alTitle,
+    );
+    assert(
+      "SEO antigüedad laboral H1 único fecha a fecha",
+      alH1 === "Calcular antigüedad laboral Chile 2026" &&
+        /163/.test(alHtml) &&
+        /años, meses y días/.test(alHtml) &&
+        /fecha a fecha/.test(alHtml),
+      alH1,
+    );
+    assert(
+      "SEO antigüedad laboral description propia",
+      alDesc.length >= 110 &&
+        alDesc.length <= 160 &&
+        /antigüedad/.test(alDesc) &&
+        /163/.test(alDesc) &&
+        /feriado/.test(alDesc),
+      `${alDesc.length}:${alDesc}`,
+    );
+    assert(
+      "SEO antigüedad laboral cita art. 163, 67/68 y BCN",
+      /bcn\.cl\/leychile\/navegar\?idNorma=207436/.test(alHtml) &&
+        /163/.test(alHtml) &&
+        /67/.test(alHtml) &&
+        /68/.test(alHtml),
+    );
+    assert(
+      "SEO antigüedad laboral gold 2026 en copy y defaults UI",
+      goldAl.ok === true &&
+        goldAl.anosIAS === 6 &&
+        goldAl.mesesFeriado === 78 &&
+        /id="fechaInicio" type="date" value="2020-01-15"/.test(alHtml) &&
+        /id="fechaTermino" type="date" value="2026-07-15"/.test(alHtml) &&
+        /6 años, 6 meses, 0 días/.test(alHtml) &&
+        /5 años, 11 meses, 30 días/.test(alHtml) &&
+        /0 años, 0 meses, 0 días/.test(alHtml) &&
+        /<strong>78<\/strong>/.test(alHtml) &&
+        /<strong>71<\/strong>/.test(alHtml) &&
+        /seis meses exactos no suman/i.test(alHtml),
+    );
+    assert("SEO antigüedad laboral FAQPage", /"@type": "FAQPage"/.test(alHtml));
+    assert(
+      "SEO antigüedad laboral no canibaliza hermanas vetadas",
+      /href="\/indemnizacion-anos-servicio"/.test(alHtml) &&
+        /href="\/indemnizacion-aviso-previo"/.test(alHtml) &&
+        /href="\/finiquito"/.test(alHtml) &&
+        /href="\/vacaciones-proporcionales"/.test(alHtml) &&
+        /href="\/feriado-anual"/.test(alHtml) &&
+        /href="\/feriado-progresivo"/.test(alHtml) &&
+        /href="\/obra-faena"/.test(alHtml) &&
+        /href="\/contrato-plazo-fijo"/.test(alHtml) &&
+        /href="\/termino-anticipado-plazo-fijo"/.test(alHtml) &&
+        /href="\/despido-injustificado"/.test(alHtml) &&
+        /href="\/autodespido"/.test(alHtml) &&
+        /href="\/nulidad-despido"/.test(alHtml) &&
+        /href="\/tutela-laboral"/.test(alHtml) &&
+        /href="\/prescripcion-laboral"/.test(alHtml) &&
+        /href="\/interes-mora"/.test(alHtml) &&
+        /href="\/promedio-remuneraciones"/.test(alHtml) &&
+        /href="\/sueldo"/.test(alHtml) &&
+        /href="\/empresa"/.test(alHtml) &&
+        /estimaci[oó]n educativa/i.test(alHtml) &&
+        /no constituye asesor[ií]a legal/i.test(alHtml) &&
+        !existsSync(join(root, "antiguedad.html")) &&
+        !existsSync(join(root, "anos-servicio.html")) &&
+        !existsSync(join(root, "anos-de-servicio.html")) &&
+        !existsSync(join(root, "calcular-antiguedad.html")) &&
+        !existsSync(join(root, "tiempo-servicios.html")) &&
+        !existsSync(join(root, "aniversario-laboral.html")) &&
+        !existsSync(join(root, "antiguedad-ias.html")) &&
+        !existsSync(join(root, "anos-ias.html")),
+    );
+    assert(
+      "home y nav enlazan /antiguedad-laboral",
+      /href="\/antiguedad-laboral"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/antiguedad-laboral" data-nav>Antigüedad laboral<\/a>/.test(
+          readFileSync(join(root, "index.html"), "utf8"),
+        ) &&
+        /href="\/antiguedad-laboral" data-nav>Antigüedad laboral<\/a>/.test(alHtml) &&
+        /href="\/antiguedad-laboral" data-nav>Antigüedad laboral<\/a>/.test(
+          readFileSync(join(root, "js/ui.js"), "utf8"),
+        ),
+    );
+    assert(
+      "sitemap incluye /antiguedad-laboral",
+      locs.includes("https://www.haberes.cl/antiguedad-laboral") &&
+        lastmodForPath("/antiguedad-laboral") === "2026-09-22",
+    );
+    assert(
+      "seo-map documenta /antiguedad-laboral y no-canibalizar hermanas",
+      /\/antiguedad-laboral/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no canibalizar `\/indemnizacion-anos-servicio`, `\/indemnizacion-aviso-previo`, `\/finiquito`, `\/vacaciones-proporcionales`/.test(
+          readFileSync(join(root, "docs/seo-map.md"), "utf8"),
+        ) &&
+        /no crear `\/antiguedad`/i.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")),
+    );
+    assert(
+      "hub /guias enlaza /antiguedad-laboral en el cluster de finiquito",
+      /href="\/antiguedad-laboral"/.test(readFileSync(join(root, "guias.html"), "utf8")) &&
+        /<h2>Finiquito<\/h2>[\s\S]*href="\/antiguedad-laboral"/.test(
+          readFileSync(join(root, "guias.html"), "utf8"),
+        ),
+    );
+    assert(
+      "hermanas enlazan /antiguedad-laboral (IAS, finiquito, vacaciones, feriado anual)",
+      /href="\/antiguedad-laboral"/.test(finiHtmlAl) &&
+        /href="\/antiguedad-laboral"/.test(iasHtmlAl) &&
+        /href="\/antiguedad-laboral"/.test(vacHtmlAl) &&
+        /href="\/antiguedad-laboral"/.test(feriadoHtmlAl) &&
+        /href="\/antiguedad-laboral"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/antiguedad-laboral"/.test(readFileSync(join(root, "guias.html"), "utf8")) &&
+        /href="\/antiguedad-laboral"/.test(readFileSync(join(root, "empresa.html"), "utf8")),
     );
   }
 
@@ -17169,7 +17497,7 @@ assert(
     return acc;
   }
   const pages = listHtml(root);
-  assert("104 páginas HTML", pages.length === 104, String(pages.length));
+  assert("105 páginas HTML", pages.length === 105, String(pages.length));
   for (const file of pages) {
     const html = readFileSync(file, "utf8");
     const rel = file.slice(root.length + 1);

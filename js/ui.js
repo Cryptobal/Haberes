@@ -244,6 +244,7 @@ function paintLoggedInNav(emp) {
         <a href="/indemnizacion-anos-servicio" data-nav>Indemnización años de servicio</a>
         <a href="/indemnizacion-aviso-previo" data-nav>Indemnización aviso previo</a>
         <a href="/promedio-remuneraciones" data-nav>Promedio remuneraciones</a>
+        <a href="/antiguedad-laboral" data-nav>Antigüedad laboral</a>
         <a href="/nulidad-despido" data-nav>Nulidad del despido</a>
         <a href="/tutela-laboral" data-nav>Tutela laboral</a>
         <a href="/despido-injustificado" data-nav>Despido injustificado</a>

@@ -62,6 +62,7 @@ const DRAWER_LINKS = [
   ["/indemnizacion-anos-servicio", "Indemnización años de servicio"],
   ["/indemnizacion-aviso-previo", "Indemnización aviso previo"],
   ["/promedio-remuneraciones", "Promedio remuneraciones"],
+  ["/antiguedad-laboral", "Antigüedad laboral"],
   ["/nulidad-despido", "Nulidad del despido"],
   ["/tutela-laboral", "Tutela laboral"],
   ["/despido-injustificado", "Despido injustificado"],
