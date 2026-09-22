@@ -942,6 +942,50 @@ export const ZONA_EXTREMA_GOLD = Object.freeze({
 });
 
 /**
+ * Antigüedad laboral (conteo civil años → meses → días).
+ * anosIAS = años cumplidos (art. 163: sin redondear fracciones).
+ * mesesFeriado = anosCompletos × 12 + mesesRemanentes (días sueltos no suman).
+ * Gold: 2020-01-15 → 2026-07-15 = 6a 6m 0d; anosIAS 6; mesesFeriado 78.
+ * 2020-01-15 → 2026-01-14 = 5a 11m 30d; anosIAS 5 (no sube a 6);
+ * anosConFraccion 6 solo informa la regla «fracción > 6 meses» del 163.
+ * Misma fecha = 0a 0m 0d.
+ *
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=207436
+ */
+export const ANTIGUEDAD_LABORAL_GOLD = Object.freeze({
+  seisAniosSeisMeses: Object.freeze({
+    fechaInicio: "2020-01-15",
+    fechaTermino: "2026-07-15",
+    anosCompletos: 6,
+    mesesRemanentes: 6,
+    diasRemanentes: 0,
+    anosIAS: 6,
+    anosConFraccion: 6,
+    mesesFeriado: 78,
+  }),
+  visperaAniversario: Object.freeze({
+    fechaInicio: "2020-01-15",
+    fechaTermino: "2026-01-14",
+    anosCompletos: 5,
+    mesesRemanentes: 11,
+    diasRemanentes: 30,
+    anosIAS: 5,
+    anosConFraccion: 6,
+    mesesFeriado: 71,
+  }),
+  mismoDia: Object.freeze({
+    fechaInicio: "2024-03-01",
+    fechaTermino: "2024-03-01",
+    anosCompletos: 0,
+    mesesRemanentes: 0,
+    diasRemanentes: 0,
+    anosIAS: 0,
+    anosConFraccion: 0,
+    mesesFeriado: 0,
+  }),
+});
+
+/**
  * Promedio de remuneraciones variables (art. 172 CT).
  * total_mes = fija + variables (+ gratificación si marcada).
  * n = meses con total > 0; promedio = round(suma / n).
