@@ -40,6 +40,7 @@ en `js/picker.js` (hoja inferior con velo en móvil, panel anclado en escritorio
 - `/` inicio
 - `/sueldo` calculadora simple y completa
 - `/horas-extras` valor de la hora extra (art. 32) y total del mes
+- `/pacto-horas-extras` pacto escrito de horas extras (arts. 31 y 32), recargo 50 % y tope de 2 h al día
 - `/gratificacion` gratificación legal art. 50 (25 % con tope mensual)
 - `/impuesto-unico` impuesto único de segunda categoría (IUSC) sobre la renta líquida imponible
 - `/cotizaciones-previsionales` AFP, salud Fonasa 7 % y cesantía del trabajador, con topes en UF

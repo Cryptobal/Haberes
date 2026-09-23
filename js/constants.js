@@ -881,6 +881,49 @@ export const COMPENSACION_HE_GOLD = Object.freeze({
     motivo: "horas",
   }),
 });
+
+/**
+ * Pacto de horas extraordinarias (arts. 31 y 32 CT).
+ * Tope diario orientativo: 2 h, salvo excepciones legales.
+ * El pago usa la misma fórmula DT que `/horas-extras`.
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=207436
+ * @see https://www.dt.gob.cl/portal/1628/w3-article-95182.html
+ */
+export const PACTO_HE_TOPE_DIARIO = 2;
+export const PACTO_HE_PLAZO_MESES = 3;
+export const PACTO_HE_GOLD = Object.freeze({
+  conPacto: Object.freeze({
+    remuneracion: 840_000,
+    jornadaSemanal: 42,
+    horasExtras: 10,
+    hayPacto: true,
+    horaOrdinariaRedondeada: 4_667,
+    horaExtraRedondeada: 7_000,
+    totalRedondeado: 70_000,
+    faltaPactoEscrito: false,
+    excedeTopeDiario: false,
+  }),
+  sinPacto: Object.freeze({
+    remuneracion: 840_000,
+    jornadaSemanal: 42,
+    horasExtras: 10,
+    hayPacto: false,
+    horaOrdinariaRedondeada: 4_667,
+    horaExtraRedondeada: 7_000,
+    totalRedondeado: 70_000,
+    faltaPactoEscrito: true,
+    excedeTopeDiario: false,
+  }),
+  topeDiario: Object.freeze({
+    remuneracion: 840_000,
+    jornadaSemanal: 42,
+    horasExtras: 3,
+    hayPacto: true,
+    horasDiaMasLargo: 3,
+    faltaPactoEscrito: false,
+    excedeTopeDiario: true,
+  }),
+});
 /** Mínimo legal art. 38 N°7: recargo sobre horas ordinarias en domingo (comercio/servicios al público). */
 export const RECARGO_DOMINGO_COMERCIO_MIN = 0.3;
 
