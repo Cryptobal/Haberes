@@ -82,6 +82,9 @@ import {
   JORNADA_EXCEPCIONAL_TOPE_AUTORIZABLE_H,
   JORNADA_EXCEPCIONAL_TOPE_ORDINARIO_2026_H,
   JORNADA_EXCEPCIONAL_TOPE_ORDINARIO_2028_H,
+  JORNADA_BISEMANAL_GOLD,
+  JORNADA_BISEMANAL_MAX_DIAS_TRABAJO,
+  JORNADA_BISEMANAL_MIN_DIAS_DESCANSO,
   COMPENSACION_HE_AVISO_HORAS,
   COMPENSACION_HE_GOLD,
   COMPENSACION_HE_JORNADA_DIARIA_42_5,
@@ -205,6 +208,7 @@ import { calcularTeletrabajo } from "../js/teletrabajo.js";
 import { calcularBandasHorarias } from "../js/bandas-horarias.js";
 import { calcularPacto4x3 } from "../js/pacto-4x3.js";
 import { calcularJornadaExcepcional } from "../js/jornada-excepcional.js";
+import { calcularJornadaBisemanal } from "../js/jornada-bisemanal.js";
 import { calcularCompensacionHorasExtras } from "../js/compensacion-horas-extras.js";
 import { calcularContratoPlazoFijo } from "../js/contrato-plazo-fijo.js";
 import { calcularTerminoAnticipadoPlazoFijo } from "../js/termino-anticipado-plazo-fijo.js";
@@ -391,6 +395,23 @@ assert(
     JORNADA_EXCEPCIONAL_GOLD.cincoPor84.phsc === 42 &&
     JORNADA_EXCEPCIONAL_GOLD.ceroTrabajo.motivo === "datos" &&
     JORNADA_EXCEPCIONAL_GOLD.cicloInconsistente.motivo === "ciclo",
+);
+assert(
+  "Jornada bisemanal gold art. 39: máx. 12 días, mín. 3 descanso, 10×4/80 h → 40,00",
+  JORNADA_BISEMANAL_MAX_DIAS_TRABAJO === 12 &&
+    JORNADA_BISEMANAL_MIN_DIAS_DESCANSO === 3 &&
+    JORNADA_BISEMANAL_GOLD.diezPorCuatro2028.diasCiclo === 14 &&
+    JORNADA_BISEMANAL_GOLD.diezPorCuatro2028.promedioSemanal === 40 &&
+    JORNADA_BISEMANAL_GOLD.diezPorCuatro2028.cumpleArt39 === true &&
+    JORNADA_BISEMANAL_GOLD.docePorTres2028.diasCiclo === 15 &&
+    JORNADA_BISEMANAL_GOLD.docePorTres2028.promedioSemanal === 39.2 &&
+    JORNADA_BISEMANAL_GOLD.superaTope2028.promedioSemanal === 42 &&
+    JORNADA_BISEMANAL_GOLD.superaTope2028.regimen === "supera_tope" &&
+    JORNADA_BISEMANAL_GOLD.descansoDos.cumpleArt39 === false &&
+    JORNADA_BISEMANAL_GOLD.descansoDos.regimen === "invalido_art39" &&
+    JORNADA_BISEMANAL_GOLD.treceDias.cumpleArt39 === false &&
+    JORNADA_BISEMANAL_GOLD.ceroTrabajo.motivo === "datos" &&
+    JORNADA_BISEMANAL_GOLD.descansoNegativo.motivo === "descanso",
 );
 assert(
   "Compensación HE gold 16×1,5=24 h → 3,00 días, tope 5 y 8 HE fraccionada",
@@ -3760,6 +3781,139 @@ console.log("\nJornada excepcional art. 38 / DS 48 PHSC (gold 2026)");
   );
 }
 
+console.log("\nJornada bisemanal art. 39 CT (gold 2026/2028)");
+{
+  // Fuentes: CT 207436 art. 39 (hasta dos semanas ininterrumpidas; descansos
+  // compensatorios aumentados en uno); Ley 21.561 BCN 1191554 (tope 42/40 h).
+  const g1 = calcularJornadaBisemanal(JORNADA_BISEMANAL_GOLD.diezPorCuatro2028);
+  assert(
+    "gold 10 trabajo + 4 descanso, 80 h, horizonte 2028 → ciclo 14, promedio 40,00 exacto, cumple art. 39, dentro ordinario",
+    g1.ok === true &&
+      g1.diasCiclo === 14 &&
+      g1.diasCiclo === JORNADA_BISEMANAL_GOLD.diezPorCuatro2028.diasCiclo &&
+      g1.promedioSemanal === 40 &&
+      g1.promedioSemanal === JORNADA_BISEMANAL_GOLD.diezPorCuatro2028.promedioSemanal &&
+      g1.promedioSemanalRedondeado === 40 &&
+      g1.topeOrdinarioH === 40 &&
+      g1.cumpleArt39 === true &&
+      g1.cumpleDiasTrabajo === true &&
+      g1.cumpleDescanso === true &&
+      g1.dentroTopeOrdinario === true &&
+      g1.regimen === "dentro_ordinario" &&
+      g1.horasDiariasPromedio === 8,
+    JSON.stringify(g1),
+  );
+  const g2 = calcularJornadaBisemanal(JORNADA_BISEMANAL_GOLD.docePorTres2028);
+  assert(
+    "gold borde art. 39: 12 + 3, 84 h → ciclo 15, promedio 39,20, cumple",
+    g2.ok === true &&
+      g2.diasCiclo === 15 &&
+      g2.promedioSemanal === 39.2 &&
+      g2.promedioSemanal === JORNADA_BISEMANAL_GOLD.docePorTres2028.promedioSemanal &&
+      g2.promedioSemanalRedondeado === 39.2 &&
+      g2.cumpleArt39 === true &&
+      g2.regimen === "dentro_ordinario" &&
+      g2.topeOrdinarioH === 40,
+    JSON.stringify(g2),
+  );
+  const g2b = calcularJornadaBisemanal(JORNADA_BISEMANAL_GOLD.superaTope2028);
+  const g2c = calcularJornadaBisemanal({ ...JORNADA_BISEMANAL_GOLD.superaTope2028, horizonte: "2026" });
+  assert(
+    "gold 12 + 3, 90 h → promedio 42,00: supera tope 40 (2028) pero cabe en 42 (2026); art. 39 sí",
+    g2b.ok === false &&
+      g2b.motivo === "supera_tope" &&
+      g2b.regimen === "supera_tope" &&
+      g2b.promedioSemanal === 42 &&
+      g2b.cumpleArt39 === true &&
+      g2b.dentroTopeOrdinario === false &&
+      g2b.topeOrdinarioH === 40 &&
+      g2c.ok === true &&
+      g2c.regimen === "dentro_ordinario" &&
+      g2c.topeOrdinarioH === 42,
+    JSON.stringify({ g2b, g2c }),
+  );
+  const g3 = calcularJornadaBisemanal(JORNADA_BISEMANAL_GOLD.descansoDos);
+  assert(
+    "gold descanso 2 < 3 → cumpleArt39 false, invalido_art39, promedio igual visible (46,67)",
+    g3.ok === false &&
+      g3.cumpleArt39 === false &&
+      g3.cumpleDiasTrabajo === true &&
+      g3.cumpleDescanso === false &&
+      g3.regimen === "invalido_art39" &&
+      g3.motivo === "art39_descanso" &&
+      g3.diasCiclo === 12 &&
+      g3.promedioSemanalRedondeado === 46.67,
+    JSON.stringify(g3),
+  );
+  const g4 = calcularJornadaBisemanal(JORNADA_BISEMANAL_GOLD.treceDias);
+  assert(
+    "gold 13 días > 12 → cumpleArt39 false, invalido_art39, promedio 35,00",
+    g4.ok === false &&
+      g4.cumpleArt39 === false &&
+      g4.cumpleDiasTrabajo === false &&
+      g4.cumpleDescanso === true &&
+      g4.regimen === "invalido_art39" &&
+      g4.motivo === "art39_dias" &&
+      g4.diasCiclo === 16 &&
+      g4.promedioSemanal === 35,
+    JSON.stringify(g4),
+  );
+  const g5a = calcularJornadaBisemanal(JORNADA_BISEMANAL_GOLD.ceroTrabajo);
+  const g5b = calcularJornadaBisemanal(JORNADA_BISEMANAL_GOLD.horasCero);
+  const g5c = calcularJornadaBisemanal(JORNADA_BISEMANAL_GOLD.descansoNegativo);
+  const g5d = calcularJornadaBisemanal({ diasTrabajo: "x", diasDescanso: NaN, horasCiclo: -5 });
+  const g5e = calcularJornadaBisemanal({ diasTrabajo: 10.5, diasDescanso: 4, horasCiclo: 80 });
+  const sinNaN = (r) => Object.values(r).every((v) => typeof v !== "number" || Number.isFinite(v));
+  assert(
+    "gold ceros / negativos / no finitos / fracciones → salida segura en 0 sin NaN",
+    g5a.ok === false &&
+      g5a.motivo === "datos" &&
+      g5a.promedioSemanal === 0 &&
+      g5a.regimen === "error" &&
+      g5b.ok === false &&
+      g5b.motivo === "datos" &&
+      g5b.promedioSemanal === 0 &&
+      g5c.ok === false &&
+      g5c.motivo === "descanso" &&
+      g5c.promedioSemanal === 0 &&
+      g5d.ok === false &&
+      g5d.motivo === "datos" &&
+      g5d.promedioSemanal === 0 &&
+      g5d.diasCiclo === 0 &&
+      g5e.ok === false &&
+      g5e.motivo === "dias" &&
+      [g5a, g5b, g5c, g5d, g5e].every(sinNaN),
+    JSON.stringify({ g5a, g5b, g5c, g5d, g5e }),
+  );
+  const gSitio = calcularJornadaBisemanal({ diasTrabajo: 10, diasDescanso: 4, horasCiclo: 84 });
+  assert(
+    "horizonte sitio reutiliza topeJornadaOrdinaria (42 h en 2026) y 84 h en 14 días → 42,00 dentro",
+    gSitio.horizonte === "sitio" &&
+      gSitio.topeOrdinarioH === topeJornadaOrdinaria() &&
+      gSitio.promedioSemanal === 42 &&
+      (topeJornadaOrdinaria() === 42 ? gSitio.regimen === "dentro_ordinario" : gSitio.regimen === "supera_tope"),
+    JSON.stringify(gSitio),
+  );
+  const jbApp = readFileSync(join(root, "js/app-jornada-bisemanal.js"), "utf8");
+  assert(
+    "app-jornada-bisemanal usa calcularJornadaBisemanal",
+    /import\s*\{[^}]*calcularJornadaBisemanal[^}]*\}\s*from\s*["']\.\/jornada-bisemanal\.js["']/.test(jbApp) &&
+      /calcularJornadaBisemanal\s*\(/.test(jbApp) &&
+      !/\balert\s*\(/.test(jbApp) &&
+      !/\bconfirm\s*\(/.test(jbApp) &&
+      !/\bprompt\s*\(/.test(jbApp),
+  );
+  const jbLib = readFileSync(join(root, "js/jornada-bisemanal.js"), "utf8");
+  assert(
+    "jornada-bisemanal.js reutiliza topeOrdinarioHorizonte y constantes art. 39 (no inventa topes)",
+    /import\s*\{[^}]*topeOrdinarioHorizonte[^}]*\}\s*from\s*["']\.\/jornada-excepcional\.js["']/.test(jbLib) &&
+      /JORNADA_BISEMANAL_MAX_DIAS_TRABAJO/.test(jbLib) &&
+      /JORNADA_BISEMANAL_MIN_DIAS_DESCANSO/.test(jbLib) &&
+      !/\b12\b/.test(jbLib.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "")) &&
+      /\* 7\) \/ diasCiclo/.test(jbLib),
+  );
+}
+
 console.log("\nCompensación HE por feriado art. 32 inc. 4° / Ley 21.561 (gold 2026)");
 {
   // Fuentes: Ley 21.561 BCN 1191554; CT 207436 art. 32 inc. 4°;
@@ -5385,6 +5539,7 @@ const required = [
   "bandas-horarias.html",
   "pacto-4x3.html",
   "jornada-excepcional.html",
+  "jornada-bisemanal.html",
   "compensacion-horas-extras.html",
   "contrato-plazo-fijo.html",
   "termino-anticipado-plazo-fijo.html",
@@ -5443,6 +5598,7 @@ const required = [
   "js/app-bandas-horarias.js",
   "js/app-pacto-4x3.js",
   "js/app-jornada-excepcional.js",
+  "js/app-jornada-bisemanal.js",
   "js/app-compensacion-horas-extras.js",
   "js/app-contrato-plazo-fijo.js",
   "js/app-termino-anticipado-plazo-fijo.js",
@@ -5470,6 +5626,7 @@ const required = [
   "js/bandas-horarias.js",
   "js/pacto-4x3.js",
   "js/jornada-excepcional.js",
+  "js/jornada-bisemanal.js",
   "js/compensacion-horas-extras.js",
   "js/contrato-plazo-fijo.js",
   "js/termino-anticipado-plazo-fijo.js",
@@ -5646,6 +5803,7 @@ const htmlFiles = [
   "bandas-horarias.html",
   "pacto-4x3.html",
   "jornada-excepcional.html",
+  "jornada-bisemanal.html",
   "compensacion-horas-extras.html",
   "contrato-plazo-fijo.html",
   "termino-anticipado-plazo-fijo.html",
@@ -5779,6 +5937,7 @@ const appEntries = [
   "js/app-bandas-horarias.js",
   "js/app-pacto-4x3.js",
   "js/app-jornada-excepcional.js",
+  "js/app-jornada-bisemanal.js",
   "js/app-compensacion-horas-extras.js",
   "js/app-contrato-plazo-fijo.js",
   "js/app-termino-anticipado-plazo-fijo.js",
@@ -5819,7 +5978,7 @@ assert("robots Allow /", /Allow:\s*\//.test(robots));
 assert("robots Disallow /admin", /Disallow:\s*\/admin/.test(robots));
 assert("robots Disallow /api", /Disallow:\s*\/api/.test(robots));
 assert("robots Disallow /docs", /Disallow:\s*\/docs/.test(robots));
-assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/trabajo-pesado/.test(robots) && !/Disallow:\s*\/nulidad-despido/.test(robots) && !/Disallow:\s*\/tutela-laboral/.test(robots) && !/Disallow:\s*\/despido-injustificado/.test(robots) && !/Disallow:\s*\/autodespido/.test(robots) && !/Disallow:\s*\/obra-faena/.test(robots) && !/Disallow:\s*\/prescripcion-laboral/.test(robots) && !/Disallow:\s*\/descanso-compensatorio/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/feriado-anual/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/licencia-medica/.test(robots) && !/Disallow:\s*\/boleta-honorarios/.test(robots) && !/Disallow:\s*\/retencion-judicial/.test(robots) && !/Disallow:\s*\/apv/.test(robots) && !/Disallow:\s*\/sala-cuna/.test(robots) && !/Disallow:\s*\/postnatal-parental/.test(robots) && !/Disallow:\s*\/permiso-prenatal/.test(robots) && !/Disallow:\s*\/fuero-maternal/.test(robots) && !/Disallow:\s*\/permiso-paternidad/.test(robots) && !/Disallow:\s*\/permiso-matrimonio/.test(robots) && !/Disallow:\s*\/permiso-fallecimiento/.test(robots) && !/Disallow:\s*\/interes-mora/.test(robots) && !/Disallow:\s*\/hora-lactancia/.test(robots) && !/Disallow:\s*\/jornada-40-horas/.test(robots) && !/Disallow:\s*\/jornada-parcial/.test(robots) && !/Disallow:\s*\/teletrabajo/.test(robots) && !/Disallow:\s*\/bandas-horarias/.test(robots) && !/Disallow:\s*\/pacto-4x3/.test(robots) && !/Disallow:\s*\/jornada-excepcional/.test(robots) && !/Disallow:\s*\/compensacion-horas-extras/.test(robots) && !/Disallow:\s*\/contrato-plazo-fijo/.test(robots) && !/Disallow:\s*\/termino-anticipado-plazo-fijo/.test(robots) && !/Disallow:\s*\/permiso-sin-goce/.test(robots) && !/Disallow:\s*\/zona-extrema/.test(robots) && !/Disallow:\s*\/promedio-remuneraciones/.test(robots) && !/Disallow:\s*\/antiguedad-laboral/.test(robots) && !/Disallow:\s*\/tope-imponible/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots) && !/Disallow:\s*\/inclusion-laboral/.test(robots));
+assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/trabajo-pesado/.test(robots) && !/Disallow:\s*\/nulidad-despido/.test(robots) && !/Disallow:\s*\/tutela-laboral/.test(robots) && !/Disallow:\s*\/despido-injustificado/.test(robots) && !/Disallow:\s*\/autodespido/.test(robots) && !/Disallow:\s*\/obra-faena/.test(robots) && !/Disallow:\s*\/prescripcion-laboral/.test(robots) && !/Disallow:\s*\/descanso-compensatorio/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/feriado-anual/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/licencia-medica/.test(robots) && !/Disallow:\s*\/boleta-honorarios/.test(robots) && !/Disallow:\s*\/retencion-judicial/.test(robots) && !/Disallow:\s*\/apv/.test(robots) && !/Disallow:\s*\/sala-cuna/.test(robots) && !/Disallow:\s*\/postnatal-parental/.test(robots) && !/Disallow:\s*\/permiso-prenatal/.test(robots) && !/Disallow:\s*\/fuero-maternal/.test(robots) && !/Disallow:\s*\/permiso-paternidad/.test(robots) && !/Disallow:\s*\/permiso-matrimonio/.test(robots) && !/Disallow:\s*\/permiso-fallecimiento/.test(robots) && !/Disallow:\s*\/interes-mora/.test(robots) && !/Disallow:\s*\/hora-lactancia/.test(robots) && !/Disallow:\s*\/jornada-40-horas/.test(robots) && !/Disallow:\s*\/jornada-parcial/.test(robots) && !/Disallow:\s*\/teletrabajo/.test(robots) && !/Disallow:\s*\/bandas-horarias/.test(robots) && !/Disallow:\s*\/pacto-4x3/.test(robots) && !/Disallow:\s*\/jornada-excepcional/.test(robots) && !/Disallow:\s*\/jornada-bisemanal/.test(robots) && !/Disallow:\s*\/compensacion-horas-extras/.test(robots) && !/Disallow:\s*\/contrato-plazo-fijo/.test(robots) && !/Disallow:\s*\/termino-anticipado-plazo-fijo/.test(robots) && !/Disallow:\s*\/permiso-sin-goce/.test(robots) && !/Disallow:\s*\/zona-extrema/.test(robots) && !/Disallow:\s*\/promedio-remuneraciones/.test(robots) && !/Disallow:\s*\/antiguedad-laboral/.test(robots) && !/Disallow:\s*\/tope-imponible/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots) && !/Disallow:\s*\/inclusion-laboral/.test(robots));
 assert("robots Sitemap", /Sitemap:\s*https:\/\/www\.haberes\.cl\/sitemap\.xml/.test(robots));
 
 const { seoPaths, GUIDE_SLUGS, GUIDES, CAUSAL_PAGES, BASE_PATHS, lastmodForPath } = await import("../content/registry.js");
@@ -5886,6 +6045,7 @@ assert(
     BASE_PATHS.includes("/bandas-horarias") &&
     BASE_PATHS.includes("/pacto-4x3") &&
     BASE_PATHS.includes("/jornada-excepcional") &&
+    BASE_PATHS.includes("/jornada-bisemanal") &&
     BASE_PATHS.includes("/compensacion-horas-extras") &&
     BASE_PATHS.includes("/contrato-plazo-fijo") &&
     BASE_PATHS.includes("/termino-anticipado-plazo-fijo") &&
@@ -6250,7 +6410,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 104,
+      seoPaths().length === 105,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -6262,7 +6422,7 @@ try {
   const docsSeo = await hitLocal("/docs/seo-map.md");
   assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
   assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
-  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/obra-faena/", "/prescripcion-laboral/", "/descanso-compensatorio/", "/inclusion-laboral/", "/jornada-parcial/", "/teletrabajo/", "/bandas-horarias/", "/pacto-4x3/", "/jornada-excepcional/", "/compensacion-horas-extras/", "/contrato-plazo-fijo/", "/termino-anticipado-plazo-fijo/", "/permiso-sin-goce/", "/zona-extrema/", "/promedio-remuneraciones/", "/antiguedad-laboral/", "/tope-imponible/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/obra-faena/", "/prescripcion-laboral/", "/descanso-compensatorio/", "/inclusion-laboral/", "/jornada-parcial/", "/teletrabajo/", "/bandas-horarias/", "/pacto-4x3/", "/jornada-excepcional/", "/jornada-bisemanal/", "/compensacion-horas-extras/", "/contrato-plazo-fijo/", "/termino-anticipado-plazo-fijo/", "/permiso-sin-goce/", "/zona-extrema/", "/promedio-remuneraciones/", "/antiguedad-laboral/", "/tope-imponible/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
   }
@@ -6319,6 +6479,7 @@ try {
     "/bandas-horarias",
     "/pacto-4x3",
     "/jornada-excepcional",
+    "/jornada-bisemanal",
     "/compensacion-horas-extras",
     "/contrato-plazo-fijo",
     "/termino-anticipado-plazo-fijo",
@@ -10143,6 +10304,7 @@ assert(
     ["bandas-horarias.html", "/bandas-horarias"],
     ["pacto-4x3.html", "/pacto-4x3"],
     ["jornada-excepcional.html", "/jornada-excepcional"],
+    ["jornada-bisemanal.html", "/jornada-bisemanal"],
     ["compensacion-horas-extras.html", "/compensacion-horas-extras"],
     ["contrato-plazo-fijo.html", "/contrato-plazo-fijo"],
     ["termino-anticipado-plazo-fijo.html", "/termino-anticipado-plazo-fijo"],
@@ -12721,6 +12883,147 @@ assert(
         /href="\/jornada-excepcional"/.test(ttHtmlJe) &&
         /href="\/jornada-excepcional"/.test(dcHtmlJe) &&
         /href="\/jornada-excepcional"/.test(readFileSync(join(root, "empresa.html"), "utf8")),
+    );
+  }
+  {
+    const jbHtml = readFileSync(join(root, "jornada-bisemanal.html"), "utf8");
+    const jbTitle = (jbHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const jbH1 = (jbHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const jbDesc = (jbHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "";
+    const jeHtmlJb = readFileSync(join(root, "jornada-excepcional.html"), "utf8");
+    const p43HtmlJb = readFileSync(join(root, "pacto-4x3.html"), "utf8");
+    const j40HtmlJb = readFileSync(join(root, "jornada-40-horas.html"), "utf8");
+    const bhHtmlJb = readFileSync(join(root, "bandas-horarias.html"), "utf8");
+    const goldB1 = calcularJornadaBisemanal(JORNADA_BISEMANAL_GOLD.diezPorCuatro2028);
+    const goldB2 = calcularJornadaBisemanal(JORNADA_BISEMANAL_GOLD.docePorTres2028);
+    const goldB3 = calcularJornadaBisemanal(JORNADA_BISEMANAL_GOLD.descansoDos);
+    const goldB4 = calcularJornadaBisemanal(JORNADA_BISEMANAL_GOLD.treceDias);
+    assert(
+      "SEO jornada bisemanal title único y corto",
+      /calcular jornada bisemanal/i.test(jbTitle) &&
+        jbTitle.length <= 65 &&
+        !/excepcional/i.test(jbTitle) &&
+        !/pacto 4×3/i.test(jbTitle) &&
+        !/40 horas/i.test(jbTitle),
+      jbTitle,
+    );
+    assert(
+      "SEO jornada bisemanal H1 único art. 39",
+      jbH1 === "Calcular jornada bisemanal Chile 2026" &&
+        /art[ií]culo 39|art\. 39/.test(jbHtml) &&
+        /12 d[ií]as continuos/.test(jbHtml) &&
+        /3 d[ií]as de descanso consecutivos/.test(jbHtml) &&
+        /promedio semanal/i.test(jbHtml),
+      jbH1,
+    );
+    assert(
+      "SEO jornada bisemanal description propia",
+      jbDesc.length >= 110 &&
+        jbDesc.length <= 160 &&
+        /bisemanal/.test(jbDesc) &&
+        /art\. 39/.test(jbDesc) &&
+        /12 d[ií]as/.test(jbDesc) &&
+        /3 de descanso/.test(jbDesc),
+      `${jbDesc.length}:${jbDesc}`,
+    );
+    assert(
+      "SEO jornada bisemanal cita CT y Ley 21.561",
+      /bcn\.cl\/leychile\/navegar\?idNorma=207436/.test(jbHtml) &&
+        /bcn\.cl\/leychile\/navegar\?idNorma=1191554/.test(jbHtml),
+    );
+    assert(
+      "SEO jornada bisemanal gold 40,00 / 39,20 / 42,00 / 46,67 / 35,00 en copy",
+      goldB1.promedioSemanal === 40 &&
+        goldB2.promedioSemanal === 39.2 &&
+        goldB3.promedioSemanalRedondeado === 46.67 &&
+        goldB4.promedioSemanal === 35 &&
+        /40,00/.test(jbHtml) &&
+        /39,20/.test(jbHtml) &&
+        /42,00/.test(jbHtml) &&
+        /46,67/.test(jbHtml) &&
+        /35,00/.test(jbHtml) &&
+        /(80 × 7\) \/ 14|80 × 7\) ?\/ ?14)/.test(jbHtml),
+    );
+    assert("SEO jornada bisemanal FAQPage", /"@type": "FAQPage"/.test(jbHtml));
+    assert(
+      "SEO jornada bisemanal distingue art. 39 vs art. 38 y no canibaliza hermanas vetadas",
+      /art\. 38/.test(jbHtml) &&
+        /DS N°48/.test(jbHtml) &&
+        /no es el sistema excepcional|no es el\s+<a href="\/jornada-excepcional">sistema excepcional/i.test(jbHtml) &&
+        /href="\/jornada-excepcional"/.test(jbHtml) &&
+        /href="\/pacto-4x3"/.test(jbHtml) &&
+        /href="\/bandas-horarias"/.test(jbHtml) &&
+        /href="\/jornada-40-horas"/.test(jbHtml) &&
+        /href="\/jornada-parcial"/.test(jbHtml) &&
+        /href="\/horas-extras"/.test(jbHtml) &&
+        /href="\/compensacion-horas-extras"/.test(jbHtml) &&
+        /href="\/descanso-compensatorio"/.test(jbHtml) &&
+        /href="\/recargo-domingo-comercio"/.test(jbHtml) &&
+        /href="\/feriado-irrenunciable"/.test(jbHtml) &&
+        /href="\/obra-faena"/.test(jbHtml) &&
+        /href="\/trabajo-pesado"/.test(jbHtml) &&
+        /href="\/teletrabajo"/.test(jbHtml) &&
+        /href="\/sueldo"/.test(jbHtml) &&
+        /href="\/costo-empresa"/.test(jbHtml) &&
+        /href="\/empresa"/.test(jbHtml) &&
+        /estimaci[oó]n educativa/i.test(jbHtml) &&
+        /no constituye asesor[ií]a legal/i.test(jbHtml) &&
+        !existsSync(join(root, "bisemanal.html")) &&
+        !existsSync(join(root, "jornada-bi-semanal.html")) &&
+        !existsSync(join(root, "art-39.html")) &&
+        !existsSync(join(root, "ciclo-bisemanal.html")) &&
+        !existsSync(join(root, "turno-bisemanal.html")) &&
+        !existsSync(join(root, "12x3.html")) &&
+        !existsSync(join(root, "10x4-bisemanal.html")),
+    );
+    assert(
+      "home y nav enlazan /jornada-bisemanal",
+      /href="\/jornada-bisemanal"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/jornada-bisemanal" data-nav>Jornada bisemanal<\/a>/.test(
+          readFileSync(join(root, "index.html"), "utf8"),
+        ) &&
+        /href="\/jornada-bisemanal" data-nav>Jornada bisemanal<\/a>/.test(jbHtml) &&
+        /href="\/jornada-bisemanal" data-nav>Jornada bisemanal<\/a>/.test(
+          readFileSync(join(root, "js/ui.js"), "utf8"),
+        ) &&
+        /\["\/jornada-bisemanal", "Jornada bisemanal"\]/.test(readFileSync(join(root, "scripts/patch-nav.mjs"), "utf8")),
+    );
+    assert(
+      "sitemap incluye /jornada-bisemanal",
+      locs.includes("https://www.haberes.cl/jornada-bisemanal") &&
+        lastmodForPath("/jornada-bisemanal") === "2026-09-23",
+    );
+    assert(
+      "seo-map documenta /jornada-bisemanal y no-canibalizar hermanas",
+      /`\/jornada-bisemanal`/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no canibalizar `\/jornada-excepcional`, `\/pacto-4x3`, `\/bandas-horarias`/.test(
+          readFileSync(join(root, "docs/seo-map.md"), "utf8"),
+        ) &&
+        /no crear `\/bisemanal`/i.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")),
+    );
+    assert(
+      "hub /guias enlaza /jornada-bisemanal en el cluster de liquidación (HTML y generador)",
+      /<h2>Liquidaci[oó]n de sueldo<\/h2>[\s\S]*href="\/jornada-bisemanal">calcular jornada bisemanal<\/a>[\s\S]*<h2>Finiquito<\/h2>/.test(
+        readFileSync(join(root, "guias.html"), "utf8"),
+      ) &&
+        /href="\/jornada-bisemanal">calcular jornada bisemanal<\/a>/.test(
+          readFileSync(join(root, "scripts/gen-content-seo.mjs"), "utf8"),
+        ),
+    );
+    assert(
+      "hermanas enlazan /jornada-bisemanal (excepcional, 4×3, 40 h, bandas, empresa)",
+      /href="\/jornada-bisemanal"/.test(jeHtmlJb) &&
+        /href="\/jornada-bisemanal"/.test(p43HtmlJb) &&
+        /href="\/jornada-bisemanal"/.test(j40HtmlJb) &&
+        /href="\/jornada-bisemanal"/.test(bhHtmlJb) &&
+        /href="\/jornada-bisemanal"/.test(readFileSync(join(root, "empresa.html"), "utf8")),
+    );
+    assert(
+      "hermanas conservan su cuerpo (solo enlace cruzado mínimo a /jornada-bisemanal)",
+      (jeHtmlJb.match(/href="\/jornada-bisemanal"/g) || []).length <= 3 &&
+        (p43HtmlJb.match(/href="\/jornada-bisemanal"/g) || []).length <= 2 &&
+        (j40HtmlJb.match(/href="\/jornada-bisemanal"/g) || []).length <= 2 &&
+        (bhHtmlJb.match(/href="\/jornada-bisemanal"/g) || []).length <= 2,
     );
   }
   {
@@ -17639,6 +17942,7 @@ assert(
       "bandas-horarias.html",
       "pacto-4x3.html",
       "jornada-excepcional.html",
+      "jornada-bisemanal.html",
       "compensacion-horas-extras.html",
       "contrato-plazo-fijo.html",
       "termino-anticipado-plazo-fijo.html",
@@ -17824,7 +18128,7 @@ assert(
     return acc;
   }
   const pages = listHtml(root);
-  assert("106 páginas HTML", pages.length === 106, String(pages.length));
+  assert("107 páginas HTML", pages.length === 107, String(pages.length));
   for (const file of pages) {
     const html = readFileSync(file, "utf8");
     const rel = file.slice(root.length + 1);

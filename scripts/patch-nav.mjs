@@ -32,6 +32,7 @@ const DRAWER_LINKS = [
   ["/bandas-horarias", "Bandas horarias"],
   ["/pacto-4x3", "Pacto 4×3"],
   ["/jornada-excepcional", "Jornada excepcional"],
+  ["/jornada-bisemanal", "Jornada bisemanal"],
   ["/recargo-domingo-comercio", "Recargo domingo comercio"],
   ["/descanso-compensatorio", "Descanso compensatorio"],
   ["/feriado-irrenunciable", "Feriado irrenunciable"],

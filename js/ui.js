@@ -222,6 +222,7 @@ function paintLoggedInNav(emp) {
         <a href="/bandas-horarias" data-nav>Bandas horarias</a>
         <a href="/pacto-4x3" data-nav>Pacto 4×3</a>
         <a href="/jornada-excepcional" data-nav>Jornada excepcional</a>
+        <a href="/jornada-bisemanal" data-nav>Jornada bisemanal</a>
         <a href="/permiso-sin-goce" data-nav>Permiso sin goce</a>
         <a href="/recargo-domingo-comercio" data-nav>Recargo domingo comercio</a>
         <a href="/descanso-compensatorio" data-nav>Descanso compensatorio</a>
