@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="es-CL">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script>
+  (function () {
+    try {
+      var t = localStorage.getItem("haberes:theme");
+      if (t !== "day" && t !== "night") t = "day";
+      document.documentElement.setAttribute("data-theme", t);
+    } catch (e) {}
+  })();
+  </script>
+<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-PCR596Z2');</script>
+<!-- End Google Tag Manager -->
+  <title>Calcular jornada bisemanal Chile 2026 — Haberes</title>
+  <meta name="description" content="Estime si un ciclo de jornada bisemanal (art. 39 Código del Trabajo) respeta los 12 días continuos y 3 de descanso, y su promedio semanal frente a 42/40 h." />
+  <link rel="canonical" href="https://www.haberes.cl/jornada-bisemanal" />
+  <meta property="og:type" content="website" />
+  <meta property="og:locale" content="es_CL" />
+  <meta property="og:site_name" content="Haberes" />
+  <meta property="og:title" content="Calcular jornada bisemanal Chile 2026 — Haberes" />
+  <meta property="og:description" content="Estime si un ciclo de jornada bisemanal (art. 39 Código del Trabajo) respeta los 12 días continuos y 3 de descanso, y su promedio semanal frente a 42/40 h." />
+  <meta property="og:url" content="https://www.haberes.cl/jornada-bisemanal" />
+  <meta property="og:image" content="https://www.haberes.cl/img/og-default.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Calcular jornada bisemanal Chile 2026 — Haberes" />
+  <meta name="twitter:description" content="Estime si un ciclo de jornada bisemanal (art. 39 Código del Trabajo) respeta los 12 días continuos y 3 de descanso, y su promedio semanal frente a 42/40 h." />
+  <meta name="twitter:image" content="https://www.haberes.cl/img/og-default.png" />
+  <link rel="icon" href="favicon.ico" sizes="32x32" />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="css/app.css" />
+  <!-- GA4: para activarlo, asigne un ID G-… a window.HABERES_GA4 antes de este script. Vacío = sin peticiones. -->
+  <script src="js/analytics.js" defer></script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "Haberes",
+  "url": "https://www.haberes.cl/",
+  "logo": "https://www.haberes.cl/favicon.svg",
+  "areaServed": "CL",
+  "sameAs": []
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Calcular jornada bisemanal — Haberes",
+  "url": "https://www.haberes.cl/jornada-bisemanal",
+  "applicationCategory": "FinanceApplication",
+  "operatingSystem": "Web",
+  "inLanguage": "es-CL",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "CLP"
+  }
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "¿Qué es la jornada bisemanal del artículo 39?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Es la jornada que las partes pueden pactar cuando los servicios se prestan en lugares apartados de centros urbanos: hasta dos semanas ininterrumpidas de trabajo (máximo 12 días continuos), al término de las cuales corresponden los descansos compensatorios de los domingos y festivos del período aumentados en uno (mínimo 3 días consecutivos). Nace de un pacto entre las partes; no requiere resolución de la Dirección del Trabajo."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "¿Cómo se calcula el promedio semanal de un ciclo bisemanal?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Promedio semanal = (horas ordinarias del ciclo × 7) / días del ciclo, con días del ciclo = días de trabajo + días de descanso. Un 10×4 con 80 h da (80 × 7) / 14 = 40,00 h. Un 12×3 con 84 h da (84 × 7) / 15 = 39,20 h. Se compara con el tope ordinario del art. 22: 42 h en 2026 y 40 h desde 2028 (Ley 21.561)."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "¿Es lo mismo que la jornada excepcional del artículo 38?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. La bisemanal del art. 39 es un pacto entre las partes con tope de 12 días continuos y 3 de descanso. El sistema excepcional del art. 38 incisos 7° a 9° y el DS N°48 lo autoriza la Dirección del Trabajo, mide el PHSC y permite hasta 42 h con días adicionales; se estima en /jornada-excepcional. Tampoco es el pacto 4×3 del art. 28 (/pacto-4x3)."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "¿Cuántos días de descanso corresponden en una jornada bisemanal?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "El art. 39 ordena otorgar, al término del período, los descansos compensatorios de los domingos y festivos incluidos en él, aumentados en uno. Con dos domingos eso da un mínimo orientativo de 3 días consecutivos; si el ciclo incluye festivos, se suman. Esta calculadora usa 3 como piso educativo y no modela festivos."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "¿Haberes reemplaza a la Dirección del Trabajo?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. Es una estimación educativa del promedio semanal y de los topes del art. 39. No constituye asesoría legal ni previsional ni sustituye un pronunciamiento de la Dirección del Trabajo o de Previred. Verifique con su contador o en los canales oficiales."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "¿Puedo abrir /bisemanal, /art-39 o /12x3 para este cálculo?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. La ruta canónica es /jornada-bisemanal. No se publican /bisemanal, /jornada-bi-semanal, /art-39, /ciclo-bisemanal, /turno-bisemanal, /12x3 ni /10x4-bisemanal. Un 12×3 o un 10×4 se estima aquí como ciclo de trabajo y descanso."
+      }
+    }
+  ]
+}
+  </script>
+</head>
+<body>
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PCR596Z2"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+  <header class="site-header">
+    <nav class="nav">
+      <a class="brand" href="/" data-nav>
+        <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><rect x="8" y="2" width="6" height="4" rx="2"/><rect x="18" y="2" width="6" height="4" rx="2"/><rect x="8" y="8" width="6" height="4" rx="2"/><rect x="18" y="8" width="6" height="4" rx="2"/><rect x="8" y="14" width="6" height="4" rx="2"/><rect x="18" y="14" width="6" height="4" rx="2"/><rect x="8" y="20" width="6" height="4" rx="2"/><rect x="18" y="20" width="6" height="4" rx="2"/><rect x="8" y="26" width="6" height="4" rx="2"/><rect x="18" y="26" width="6" height="4" rx="2"/><rect x="14" y="14" width="4" height="4" rx="2"/></svg></span> Haberes
+      </a>
+      <div class="nav-links">
+        <a href="/como" data-nav>Cómo</a>
+        <a href="/precios" data-nav>Precios</a>
+      </div>
+      <div class="nav-actions">
+        <button type="button" class="theme-toggle" data-theme-toggle aria-label="Cambiar a modo noche" aria-pressed="false">
+          <svg class="ic-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.64 5.64l1.41 1.41M16.95 16.95l1.41 1.41M18.36 5.64l-1.41 1.41M7.05 16.95l-1.41 1.41"/></svg>
+          <svg class="ic-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 14.35A8.4 8.4 0 1 1 9.65 3 6.6 6.6 0 0 0 21 14.35z"/></svg>
+        </button>
+        <a class="btn btn-ghost btn-sm nav-login" href="/empresa">Entrar</a>
+        <a class="btn btn-sm nav-cta" href="/empresa?registro=1">Empezar gratis</a>
+        <button type="button" class="nav-burger" data-nav-burger aria-expanded="false" aria-controls="navDrawer" aria-label="Abrir menú">
+          <i aria-hidden="true"></i>
+        </button>
+      </div>
+    </nav>
+  </header>
+  <div class="nav-drawer" id="navDrawer" data-nav-drawer hidden>
+      <div class="nav-drawer-scrim" data-nav-scrim></div>
+      <div class="nav-drawer-panel" role="dialog" aria-modal="true" aria-label="Menú de navegación">
+        <div class="nav-drawer-grab" aria-hidden="true"></div>
+        <a href="/como" data-nav>Cómo</a>
+        <a href="/precios" data-nav>Precios</a>
+        <a href="/sueldo" data-nav>Sueldo líquido</a>
+        <a href="/sueldo-proporcional" data-nav>Sueldo proporcional</a>
+        <a href="/sueldo-minimo" data-nav>Sueldo mínimo</a>
+        <a href="/descuento-atrasos" data-nav>Descuento atrasos</a>
+        <a href="/licencia-medica" data-nav>Licencia médica</a>
+        <a href="/retencion-judicial" data-nav>Retención judicial</a>
+        <a href="/apv" data-nav>APV Régimen B</a>
+        <a href="/horas-extras" data-nav>Horas extras</a>
+        <a href="/compensacion-horas-extras" data-nav>Compensación horas extras</a>
+        <a href="/jornada-40-horas" data-nav>Jornada 40 horas</a>
+        <a href="/jornada-parcial" data-nav>Jornada parcial</a>
+        <a href="/teletrabajo" data-nav>Teletrabajo</a>
+        <a href="/bandas-horarias" data-nav>Bandas horarias</a>
+        <a href="/pacto-4x3" data-nav>Pacto 4×3</a>
+        <a href="/jornada-excepcional" data-nav>Jornada excepcional</a>
+        <a href="/jornada-bisemanal" data-nav>Jornada bisemanal</a>
+        <a href="/recargo-domingo-comercio" data-nav>Recargo domingo comercio</a>
+        <a href="/descanso-compensatorio" data-nav>Descanso compensatorio</a>
+        <a href="/feriado-irrenunciable" data-nav>Feriado irrenunciable</a>
+        <a href="/semana-corrida" data-nav>Semana corrida</a>
+        <a href="/gratificacion" data-nav>Gratificación</a>
+        <a href="/aguinaldo" data-nav>Aguinaldo</a>
+        <a href="/impuesto-unico" data-nav>Impuesto único</a>
+        <a href="/zona-extrema" data-nav>Zona extrema</a>
+        <a href="/boleta-honorarios" data-nav>Boleta honorarios</a>
+        <a href="/cotizaciones-previsionales" data-nav>Cotizaciones previsionales</a>
+        <a href="/tope-imponible" data-nav>Tope imponible</a>
+        <a href="/costo-empresa" data-nav>Costo empresa</a>
+        <a href="/seguro-cesantia" data-nav>Seguro de cesantía</a>
+        <a href="/trabajo-pesado" data-nav>Trabajo pesado</a>
+        <a href="/asignacion-familiar" data-nav>Asignación familiar</a>
+        <a href="/sala-cuna" data-nav>Sala cuna</a>
+        <a href="/inclusion-laboral" data-nav>Inclusión laboral</a>
+        <a href="/permiso-prenatal" data-nav>Permiso prenatal</a>
+        <a href="/postnatal-parental" data-nav>Postnatal parental</a>
+        <a href="/fuero-maternal" data-nav>Fuero maternal</a>
+        <a href="/permiso-paternidad" data-nav>Permiso paternidad</a>
+        <a href="/permiso-matrimonio" data-nav>Permiso matrimonio</a>
+        <a href="/permiso-fallecimiento" data-nav>Permiso fallecimiento</a>
+        <a href="/permiso-sin-goce" data-nav>Permiso sin goce</a>
+        <a href="/interes-mora" data-nav>Interés por mora</a>
+        <a href="/hora-lactancia" data-nav>Hora de lactancia</a>
+        <a href="/colacion-movilizacion" data-nav>Colación y movilización</a>
+        <a href="/vacaciones-proporcionales" data-nav>Vacaciones proporcionales</a>
+        <a href="/feriado-anual" data-nav>Feriado anual</a>
+        <a href="/feriado-progresivo" data-nav>Feriado progresivo</a>
+        <a href="/indemnizacion-anos-servicio" data-nav>Indemnización años de servicio</a>
+        <a href="/indemnizacion-aviso-previo" data-nav>Indemnización aviso previo</a>
+        <a href="/promedio-remuneraciones" data-nav>Promedio remuneraciones</a>
+        <a href="/antiguedad-laboral" data-nav>Antigüedad laboral</a>
+        <a href="/nulidad-despido" data-nav>Nulidad del despido</a>
+        <a href="/tutela-laboral" data-nav>Tutela laboral</a>
+        <a href="/despido-injustificado" data-nav>Despido injustificado</a>
+        <a href="/autodespido" data-nav>Autodespido</a>
+        <a href="/obra-faena" data-nav>Obra o faena</a>
+        <a href="/contrato-plazo-fijo" data-nav>Contrato a plazo fijo</a>
+        <a href="/termino-anticipado-plazo-fijo" data-nav>Término anticipado plazo fijo</a>
+        <a href="/prescripcion-laboral" data-nav>Prescripción laboral</a>
+        <a href="/finiquito-casa-particular" data-nav>Finiquito casa particular</a>
+        <a href="/finiquito" data-nav>Finiquito</a>
+        <div class="nav-drawer-foot">
+          <a class="btn" href="/empresa?registro=1">Empezar gratis</a>
+          <button type="button" class="btn btn-ghost" data-nav-close>Cerrar</button>
+        </div>
+      </div>
+    </div>
+
+
+  <main>
+    <div class="wrap">
+      <p class="kicker">Calculadora</p>
+      <h1>Calcular jornada bisemanal Chile 2026</h1>
+      <p class="lede">
+        Estime si un ciclo de
+        <strong>jornada bisemanal</strong>
+        (<a href="https://www.bcn.cl/leychile/navegar?idNorma=207436">artículo 39 del Código del Trabajo</a>)
+        respeta el máximo de
+        <strong>12 días continuos de trabajo</strong>
+        y el mínimo de
+        <strong>3 días de descanso consecutivos</strong>,
+        y cómo queda el
+        <strong>promedio semanal de horas</strong>
+        frente al tope ordinario del art. 22
+        (42 h en 2026, 40 h en 2028,
+        <a href="https://www.bcn.cl/leychile/navegar?idNorma=1191554">Ley 21.561</a>).
+        No es el
+        <a href="/jornada-excepcional">sistema excepcional</a>
+        del art. 38 que autoriza la Dirección del Trabajo, ni el
+        <a href="/pacto-4x3">pacto 4×3</a>
+        del art. 28, ni el tope gradual de
+        <a href="/jornada-40-horas">jornada 40 horas</a>.
+      </p>
+      <p class="notice">
+        Documento generado por Haberes. No es un cálculo de la Dirección del Trabajo ni de Previred.
+        No constituye asesoría legal ni previsional. Estimación educativa: la bisemanal del art. 39
+        <strong>se pacta entre las partes</strong>
+        para servicios en lugares apartados de centros urbanos; esta calculadora
+        <strong>no redacta ni valida ese pacto</strong>.
+      </p>
+
+      <div class="layout" style="margin-top: 24px">
+        <form id="formJornadaBisemanal" class="panel">
+          <p class="hint">Horizonte legal del tope ordinario</p>
+          <div class="seg" role="radiogroup" aria-label="Horizonte legal">
+            <label><input type="radio" name="horizonte" value="sitio" checked /> <span>Fecha del sitio</span></label>
+            <label><input type="radio" name="horizonte" value="2026" /> <span>2026 (42 h)</span></label>
+            <label><input type="radio" name="horizonte" value="2028" /> <span>2028 (40 h)</span></label>
+          </div>
+          <p class="hint">
+            En 2026 el tope ordinario es
+            <strong>42 h</strong>
+            (desde el 26-abr-2026); en 2028 baja a
+            <strong>40 h</strong>.
+            El tope gradual vive en
+            <a href="/jornada-40-horas">jornada 40 horas</a>.
+          </p>
+          <div class="field">
+            <label for="diasTrabajo">Días continuos de trabajo del ciclo (máx. 12)</label>
+            <input id="diasTrabajo" type="number" min="0" max="31" step="1" value="10" inputmode="numeric" />
+          </div>
+          <div class="field">
+            <label for="diasDescanso">Días de descanso consecutivos al término (mín. 3)</label>
+            <input id="diasDescanso" type="number" min="0" max="31" step="1" value="4" inputmode="numeric" />
+          </div>
+          <div class="field">
+            <label for="horasCiclo">Horas ordinarias totales del ciclo</label>
+            <input id="horasCiclo" type="number" min="0" max="400" step="0.5" value="80" inputmode="decimal" />
+          </div>
+          <p class="hint">
+            Sume solo las horas ordinarias de los días trabajados (sin extras). Un 10×4 con
+            <strong>8 h</strong>
+            diarias da
+            <strong>80 h</strong>
+            y promedio
+            <strong>40,00</strong>.
+          </p>
+        </form>
+
+        <aside class="panel sticky">
+          <p class="metric-label">Promedio semanal del ciclo</p>
+          <p class="metric" id="outPromedio">—</p>
+          <p class="notice" id="outAlerta" hidden></p>
+          <p class="hint" id="outNota"></p>
+          <div class="mini">
+            <div><span>Régimen</span><strong id="outRegimen">—</strong></div>
+            <div><span>¿Cumple el art. 39?</span><strong id="outArt39">—</strong></div>
+            <div><span>Días de trabajo ≤ 12</span><strong id="outDiasTrabajo">—</strong></div>
+            <div><span>Descanso ≥ 3 días</span><strong id="outDescanso">—</strong></div>
+            <div><span>Tope ordinario (art. 22)</span><strong id="outTope">—</strong></div>
+            <div><span>¿Dentro del tope ordinario?</span><strong id="outOrdinario">—</strong></div>
+            <div><span>Días del ciclo</span><strong id="outDiasCiclo">—</strong></div>
+            <div><span>Horas por día trabajado</span><strong id="outHorasDia">—</strong></div>
+          </div>
+          <p class="hint">
+            El sistema excepcional con resolución DT (PHSC, art. 38 / DS 48) se estima en
+            <a href="/jornada-excepcional">calcular jornada excepcional</a>.
+            El pacto escrito 4 días / 3 descanso, en
+            <a href="/pacto-4x3">calcular pacto 4×3</a>.
+          </p>
+          <div class="actions">
+            <a class="btn" href="/jornada-excepcional">Ver jornada excepcional</a>
+            <a class="btn btn-ghost" href="/empresa">Cuenta de empresa</a>
+          </div>
+        </aside>
+      </div>
+
+      <section class="prose u-mt-6" aria-labelledby="jb-explica">
+        <h2 id="jb-explica">Cómo se estima la jornada bisemanal</h2>
+        <p>
+          El
+          <a href="https://www.bcn.cl/leychile/navegar?idNorma=207436">artículo 39</a>
+          permite, cuando los servicios se prestan en lugares apartados de centros urbanos,
+          pactar jornadas ordinarias de hasta
+          <strong>dos semanas ininterrumpidas</strong>.
+          Al término deben otorgarse los descansos compensatorios de los domingos y festivos
+          del período,
+          <strong>aumentados en uno</strong>.
+          En la lectura práctica eso significa:
+        </p>
+        <ul>
+          <li>
+            <strong>Máximo 12 días continuos</strong>
+            de trabajo (dos semanas menos sus dos domingos).
+          </li>
+          <li>
+            <strong>Mínimo 3 días de descanso consecutivos</strong>
+            (dos domingos compensados más uno). Si el ciclo incluye festivos, se suman;
+            esta calculadora usa 3 como piso educativo y no modela festivos.
+          </li>
+        </ul>
+        <p>
+          <strong>Promedio semanal = (horas ordinarias del ciclo × 7) / días del ciclo</strong>
+        </p>
+        <ul>
+          <li>
+            <strong>Días del ciclo</strong>
+            = días de trabajo + días de descanso.
+          </li>
+          <li>
+            <strong>Horas del ciclo</strong>
+            = suma de las horas ordinarias de los días trabajados (sin horas extras).
+          </li>
+          <li>
+            El promedio se compara con el tope ordinario del
+            <strong>artículo 22</strong>:
+            42 h desde el 26-abr-2026 y 40 h desde el 26-abr-2028
+            (<a href="https://www.bcn.cl/leychile/navegar?idNorma=1191554">Ley 21.561</a>).
+          </li>
+        </ul>
+        <h3>Semáforo del art. 39</h3>
+        <ul>
+          <li><strong>Cumple y dentro del ordinario</strong>: ≤ 12 días, ≥ 3 de descanso y promedio ≤ tope.</li>
+          <li><strong>Cumple pero supera el tope</strong>: los días están bien, pero las horas del ciclo exceden la jornada ordinaria.</li>
+          <li><strong>No cumple el art. 39</strong>: más de 12 días continuos o menos de 3 de descanso. El promedio se muestra igual, solo con fines pedagógicos.</li>
+        </ul>
+        <h3>Ejemplos orientativos (gold)</h3>
+        <ul>
+          <li>
+            <strong>10</strong>
+            días de trabajo +
+            <strong>4</strong>
+            de descanso (ciclo 14) con
+            <strong>80 h</strong>
+            → promedio
+            <strong>40,00</strong>.
+            Horizonte 2028 (tope 40): cumple el art. 39 y queda dentro del ordinario.
+          </li>
+          <li>
+            <strong>12</strong>
+            días +
+            <strong>3</strong>
+            de descanso (ciclo 15) con
+            <strong>84 h</strong>
+            → promedio
+            <strong>39,20</strong>.
+            Es el borde exacto del art. 39; horizonte 2028: dentro del ordinario.
+          </li>
+          <li>
+            12 días + 3 de descanso con
+            <strong>90 h</strong>
+            → promedio
+            <strong>42,00</strong>.
+            Cumple los días, pero en 2028 supera el tope de 40 h (en 2026 sí cabe en 42 h).
+          </li>
+          <li>
+            10 días +
+            <strong>2</strong>
+            de descanso con 80 h → promedio
+            <strong>46,67</strong>;
+            no cumple el art. 39: el descanso es menor que 3.
+          </li>
+          <li>
+            <strong>13</strong>
+            días + 3 de descanso con 80 h → promedio
+            <strong>35,00</strong>;
+            no cumple el art. 39: supera los 12 días continuos.
+          </li>
+        </ul>
+        <h3>Qué no es esta calculadora</h3>
+        <ul>
+          <li>No es el
+            <a href="/jornada-excepcional">sistema excepcional de distribución de jornada y descansos</a>
+            del art. 38 incisos 7°–9° / DS N°48 (PHSC, resolución DT, días adicionales 0 / 4,5 / 9).</li>
+          <li>No es el pacto escrito 4 días de trabajo / 3 de descanso del art. 28
+            (<a href="/pacto-4x3">/pacto-4x3</a>).</li>
+          <li>No es el tope gradual 44/42/40&nbsp;h ni el promedio del
+            <strong>artículo 22 bis</strong>
+            de
+            <a href="/jornada-40-horas">/jornada-40-horas</a>.</li>
+          <li>No son las
+            <a href="/bandas-horarias">bandas horarias</a>
+            de cuidado familiar ni el tope de 2/3 de
+            <a href="/jornada-parcial">jornada parcial</a>
+            (art. 40 bis).</li>
+          <li>No es el recargo 50&nbsp;% de
+            <a href="/horas-extras">horas extras</a>,
+            su
+            <a href="/compensacion-horas-extras">compensación por feriado</a>,
+            los días de
+            <a href="/descanso-compensatorio">descanso compensatorio</a>
+            por domingo o festivo trabajado, el
+            <a href="/recargo-domingo-comercio">recargo domingo comercio</a>
+            ni el
+            <a href="/feriado-irrenunciable">feriado irrenunciable</a>.</li>
+          <li>No es la indemnización de
+            <a href="/obra-faena">obra o faena</a>,
+            la cotización de
+            <a href="/trabajo-pesado">trabajo pesado</a>,
+            el
+            <a href="/teletrabajo">teletrabajo</a>,
+            el
+            <a href="/sueldo">sueldo líquido</a>,
+            el
+            <a href="/costo-empresa">costo empresa</a>
+            ni la
+            <a href="/empresa">cuenta de empresa</a>.</li>
+        </ul>
+        <h3>Guías y calculadoras relacionadas</h3>
+        <ul>
+          <li><a href="/jornada-excepcional">Calcular jornada excepcional (PHSC art. 38 / DS 48)</a></li>
+          <li><a href="/jornada-40-horas">Calcular jornada 40 horas (Ley 21.561)</a></li>
+          <li><a href="/pacto-4x3">Calcular pacto 4×3 (4 días de trabajo y 3 de descanso)</a></li>
+          <li><a href="/bandas-horarias">Calcular bandas horarias de cuidado familiar (Ley 21.561)</a></li>
+          <li><a href="/descanso-compensatorio">Calcular descanso compensatorio (art. 38)</a></li>
+          <li><a href="/horas-extras">Calcular horas extras</a></li>
+          <li><a href="/sueldo">Calculadora de sueldo líquido</a></li>
+          <li><a href="/costo-empresa">Calcular costo empresa de un sueldo</a></li>
+          <li><a href="/empresa">Cuenta de empresa</a></li>
+        </ul>
+        <h2 id="faq-jornada-bisemanal">Preguntas frecuentes</h2>
+        <h3>¿Qué es la jornada bisemanal del artículo 39?</h3>
+        <p>
+          Es la jornada que las partes pueden pactar cuando los servicios se prestan en
+          lugares apartados de centros urbanos: hasta dos semanas ininterrumpidas de trabajo
+          (máximo
+          <strong>12 días continuos</strong>),
+          al término de las cuales corresponden los descansos compensatorios de los domingos
+          y festivos del período aumentados en uno (mínimo
+          <strong>3 días consecutivos</strong>).
+          Nace de un pacto entre las partes; no requiere resolución de la Dirección del Trabajo.
+        </p>
+        <h3>¿Cómo se calcula el promedio semanal de un ciclo bisemanal?</h3>
+        <p>
+          Promedio semanal = (horas ordinarias del ciclo × 7) / días del ciclo, con días del
+          ciclo = días de trabajo + días de descanso. Un 10×4 con 80 h da (80 × 7) / 14 =
+          <strong>40,00 h</strong>.
+          Un 12×3 con 84 h da (84 × 7) / 15 =
+          <strong>39,20 h</strong>.
+          Se compara con el tope ordinario del art. 22: 42 h en 2026 y 40 h desde 2028
+          (Ley 21.561).
+        </p>
+        <h3>¿Es lo mismo que la jornada excepcional del artículo 38?</h3>
+        <p>
+          No. La bisemanal del art. 39 es un pacto entre las partes con tope de 12 días
+          continuos y 3 de descanso. El sistema excepcional del art. 38 incisos 7° a 9° y el
+          DS N°48 lo autoriza la Dirección del Trabajo, mide el PHSC y permite hasta 42 h con
+          días adicionales; se estima en
+          <a href="/jornada-excepcional">/jornada-excepcional</a>.
+          Tampoco es el pacto 4×3 del art. 28 (
+          <a href="/pacto-4x3">/pacto-4x3</a>
+          ).
+        </p>
+        <h3>¿Cuántos días de descanso corresponden en una jornada bisemanal?</h3>
+        <p>
+          El art. 39 ordena otorgar, al término del período, los descansos compensatorios de
+          los domingos y festivos incluidos en él, aumentados en uno. Con dos domingos eso da
+          un mínimo orientativo de
+          <strong>3 días consecutivos</strong>;
+          si el ciclo incluye festivos, se suman. Esta calculadora usa 3 como piso educativo
+          y no modela festivos.
+        </p>
+        <h3>¿Haberes reemplaza a la Dirección del Trabajo?</h3>
+        <p>
+          No. Es una estimación educativa del promedio semanal y de los topes del art. 39.
+          No constituye asesoría legal ni previsional ni sustituye un pronunciamiento de la
+          Dirección del Trabajo o de Previred. Verifique con su contador o en los canales
+          oficiales.
+        </p>
+        <h3>¿Puedo abrir /bisemanal, /art-39 o /12x3 para este cálculo?</h3>
+        <p>
+          No. La ruta canónica es
+          <code>/jornada-bisemanal</code>.
+          No se publican
+          <code>/bisemanal</code>,
+          <code>/jornada-bi-semanal</code>,
+          <code>/art-39</code>,
+          <code>/ciclo-bisemanal</code>,
+          <code>/turno-bisemanal</code>,
+          <code>/12x3</code>
+          ni
+          <code>/10x4-bisemanal</code>.
+          Un 12×3 o un 10×4 se estima aquí como ciclo de trabajo y descanso.
+        </p>
+        <p class="notice">
+          La ruta canónica es <code>/jornada-bisemanal</code>.
+          No abre <code>/bisemanal</code> ni <code>/jornada-bi-semanal</code>
+          ni <code>/art-39</code> ni <code>/ciclo-bisemanal</code>
+          ni <code>/turno-bisemanal</code> ni <code>/12x3</code> ni <code>/10x4-bisemanal</code>.
+          No canibaliza
+          <a href="/jornada-excepcional">/jornada-excepcional</a>,
+          <a href="/pacto-4x3">/pacto-4x3</a>,
+          <a href="/bandas-horarias">/bandas-horarias</a>,
+          <a href="/jornada-40-horas">/jornada-40-horas</a>,
+          <a href="/jornada-parcial">/jornada-parcial</a>,
+          <a href="/horas-extras">/horas-extras</a>,
+          <a href="/compensacion-horas-extras">/compensacion-horas-extras</a>,
+          <a href="/descanso-compensatorio">/descanso-compensatorio</a>,
+          <a href="/recargo-domingo-comercio">/recargo-domingo-comercio</a>,
+          <a href="/feriado-irrenunciable">/feriado-irrenunciable</a>,
+          <a href="/obra-faena">/obra-faena</a>,
+          <a href="/trabajo-pesado">/trabajo-pesado</a>,
+          <a href="/teletrabajo">/teletrabajo</a>,
+          <a href="/sueldo">/sueldo</a>
+          ni
+          <a href="/costo-empresa">/costo-empresa</a>.
+        </p>
+      </section>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <div><strong>Haberes</strong> · jornada bisemanal</div>
+      <div class="footer-legal">
+        <a href="/como">Cómo funciona</a>
+        <span aria-hidden="true">·</span>
+        <a href="/precios">Precios</a>
+        <span aria-hidden="true">·</span>
+        <a href="/privacidad">Privacidad</a>
+        <span aria-hidden="true">·</span>
+        <a href="/terminos">Términos</a>
+      </div>
+      <div class="footer-credit">
+        Proyecto desarrollado por <a href="https://lx3.ai" rel="noopener noreferrer">lx3.ai</a>
+        · <a href="mailto:contacto@lx3.ai">contacto@lx3.ai</a>
+      </div>
+      <div data-indicadores>UF y UTM se cargan…</div>
+      <div>
+        Documento generado por Haberes. No es un cálculo de la Dirección del Trabajo ni de Previred.
+        No constituye asesoría legal ni previsional.
+      </div>
+    </div>
+  </footer>
+  <script type="module" src="js/app-jornada-bisemanal.js"></script>
+</body>
+</html>

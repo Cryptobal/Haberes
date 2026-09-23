@@ -478,6 +478,112 @@ export const JORNADA_EXCEPCIONAL_GOLD = Object.freeze({
 });
 
 /**
+ * Jornada bisemanal (art. 39 CT). Las partes pueden pactar hasta doce
+ * días continuos de trabajo; al término, mínimo tres días de descanso
+ * consecutivos. El promedio semanal del ciclo se estima como
+ * (horas_ciclo × 7) / dias_ciclo y se compara con el tope ordinario del
+ * art. 22 según horizonte (42 h en 2026; 40 h en 2028; Ley 21.561).
+ *
+ * Estimación educativa: no es el sistema excepcional del art. 38 / DS 48
+ * (`/jornada-excepcional`), ni el pacto 4×3 del art. 28, ni asesoría legal.
+ *
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=207436
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=1191554
+ */
+export const JORNADA_BISEMANAL_MAX_DIAS_TRABAJO = 12;
+export const JORNADA_BISEMANAL_MIN_DIAS_DESCANSO = 3;
+export const JORNADA_BISEMANAL_TOLERANCIA_H = 0.01;
+export const JORNADA_BISEMANAL_GOLD = Object.freeze({
+  diezPorCuatro2028: Object.freeze({
+    diasTrabajo: 10,
+    diasDescanso: 4,
+    horasCiclo: 80,
+    horizonte: "2028",
+    diasCiclo: 14,
+    promedioSemanal: 40,
+    topeOrdinarioH: 40,
+    cumpleArt39: true,
+    ok: true,
+    regimen: "dentro_ordinario",
+  }),
+  docePorTres2028: Object.freeze({
+    diasTrabajo: 12,
+    diasDescanso: 3,
+    horasCiclo: 84,
+    horizonte: "2028",
+    diasCiclo: 15,
+    promedioSemanal: 39.2,
+    topeOrdinarioH: 40,
+    cumpleArt39: true,
+    ok: true,
+    regimen: "dentro_ordinario",
+  }),
+  superaTope2028: Object.freeze({
+    diasTrabajo: 12,
+    diasDescanso: 3,
+    horasCiclo: 90,
+    horizonte: "2028",
+    diasCiclo: 15,
+    promedioSemanal: 42,
+    topeOrdinarioH: 40,
+    cumpleArt39: true,
+    ok: false,
+    regimen: "supera_tope",
+    motivo: "supera_tope",
+  }),
+  descansoDos: Object.freeze({
+    diasTrabajo: 10,
+    diasDescanso: 2,
+    horasCiclo: 80,
+    horizonte: "2028",
+    diasCiclo: 12,
+    cumpleArt39: false,
+    ok: false,
+    regimen: "invalido_art39",
+    motivo: "art39_descanso",
+  }),
+  treceDias: Object.freeze({
+    diasTrabajo: 13,
+    diasDescanso: 3,
+    horasCiclo: 80,
+    horizonte: "2028",
+    diasCiclo: 16,
+    promedioSemanal: 35,
+    cumpleArt39: false,
+    ok: false,
+    regimen: "invalido_art39",
+    motivo: "art39_dias",
+  }),
+  ceroTrabajo: Object.freeze({
+    diasTrabajo: 0,
+    diasDescanso: 3,
+    horasCiclo: 80,
+    horizonte: "2028",
+    ok: false,
+    motivo: "datos",
+    promedioSemanal: 0,
+  }),
+  horasCero: Object.freeze({
+    diasTrabajo: 10,
+    diasDescanso: 4,
+    horasCiclo: 0,
+    horizonte: "2028",
+    ok: false,
+    motivo: "datos",
+    promedioSemanal: 0,
+  }),
+  descansoNegativo: Object.freeze({
+    diasTrabajo: 10,
+    diasDescanso: -1,
+    horasCiclo: 80,
+    horizonte: "2028",
+    ok: false,
+    motivo: "descanso",
+    promedioSemanal: 0,
+  }),
+});
+
+/**
  * Contrato a plazo fijo (art. 159 N°4 CT). Tope general 12 meses; 24 si
  * gerente o título profesional/técnico de institución de educación superior
  * del Estado o reconocida por éste. Una renovación; la segunda o la
