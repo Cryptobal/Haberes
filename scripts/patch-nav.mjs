@@ -59,6 +59,7 @@ const DRAWER_LINKS = [
   ["/interes-mora", "Interés por mora"],
   ["/hora-lactancia", "Hora de lactancia"],
   ["/colacion-movilizacion", "Colación y movilización"],
+  ["/viatico", "Viático"],
   ["/vacaciones-proporcionales", "Vacaciones proporcionales"],
   ["/feriado-anual", "Feriado anual"],
   ["/feriado-progresivo", "Feriado progresivo"],
