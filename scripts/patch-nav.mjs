@@ -60,6 +60,7 @@ const DRAWER_LINKS = [
   ["/hora-lactancia", "Hora de lactancia"],
   ["/colacion-movilizacion", "Colación y movilización"],
   ["/viatico", "Viático"],
+  ["/sueldo-empresarial", "Sueldo empresarial"],
   ["/vacaciones-proporcionales", "Vacaciones proporcionales"],
   ["/feriado-anual", "Feriado anual"],
   ["/feriado-progresivo", "Feriado progresivo"],

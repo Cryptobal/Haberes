@@ -189,6 +189,7 @@ import {
   valorHoraOrdinaria,
 } from "../js/sueldo.js";
 import { calcularViatico } from "../js/viatico.js";
+import { calcularSueldoEmpresarial } from "../js/sueldo-empresarial.js";
 import { clp, dvRut, validarRut } from "../js/format.js";
 import {
   LRE_AFP,
@@ -855,6 +856,79 @@ assert(
       ceroDias.extraLiquido === 0 &&
       ceroMonto.total === 0 &&
       ceroMonto.extraLiquido === 0,
+  );
+}
+{
+  const seApp = readFileSync(join(root, "js/app-sueldo-empresarial.js"), "utf8");
+  const seMod = readFileSync(join(root, "js/sueldo-empresarial.js"), "utf8");
+  assert(
+    "app-sueldo-empresarial usa calcularSueldoEmpresarial",
+    /import\s*\{[^}]*calcularSueldoEmpresarial[^}]*\}\s*from\s*["']\.\/sueldo-empresarial\.js["']/.test(seApp) &&
+      /calcularSueldoEmpresarial\s*\(/.test(seApp),
+  );
+  assert(
+    "sueldo empresarial reutiliza calcularSueldo y calcularCostoEmpresa",
+    /import\s*\{[^}]*calcularSueldo[^}]*\}\s*from\s*["']\.\/sueldo\.js["']/.test(seMod) &&
+      /import\s*\{[^}]*calcularCostoEmpresa[^}]*\}\s*from\s*["']\.\/sueldo\.js["']/.test(seMod) &&
+      /calcularSueldo\s*\(/.test(seMod) &&
+      /calcularCostoEmpresa\s*\(/.test(seMod),
+  );
+  const goldInput = {
+    bruto: 1_500_000,
+    afp: "modelo",
+    salud: "fonasa",
+    contrato: "indefinido",
+    cotiza: true,
+  };
+  const gold = calcularSueldoEmpresarial(goldInput);
+  const goldSueldo = calcularSueldo({
+    sueldoBase: 1_500_000,
+    afp: "modelo",
+    salud: "fonasa",
+    contrato: "indefinido",
+  });
+  const goldCosto = calcularCostoEmpresa({
+    modo: "bruto",
+    monto: 1_500_000,
+    afp: "modelo",
+    salud: "fonasa",
+    contrato: "indefinido",
+  });
+  assert(
+    "sueldo empresarial 1500000 cotiza sí: líquido 1216898 y costo 1602450",
+    gold.liquido === goldSueldo.liquido &&
+      gold.liquido === 1_216_898 &&
+      gold.costoEmpresa === goldCosto.costoEmpresa &&
+      gold.costoEmpresa === 1_602_450 &&
+      gold.totalDescuentos === 283_102 &&
+      gold.afpMonto === 158_700 &&
+      gold.saludMonto === 105_000 &&
+      gold.cesantiaMonto === 9_000 &&
+      gold.iusc === 10_402 &&
+      gold.aportesEmpleador === 102_450,
+    `${gold.liquido} ${gold.costoEmpresa}`,
+  );
+  const sinCot = calcularSueldoEmpresarial({ ...goldInput, cotiza: false });
+  assert(
+    "sueldo empresarial 1500000 cotiza no: líquido 1478690, IUSC 21310, costo 1500000",
+    sinCot.cotizaciones === 0 &&
+      sinCot.afpMonto === 0 &&
+      sinCot.saludMonto === 0 &&
+      sinCot.cesantiaMonto === 0 &&
+      sinCot.iusc === 21_310 &&
+      sinCot.liquido === 1_478_690 &&
+      sinCot.aportesEmpleador === 0 &&
+      sinCot.costoEmpresa === 1_500_000,
+    `${sinCot.liquido} ${sinCot.iusc} ${sinCot.costoEmpresa}`,
+  );
+  const cero = calcularSueldoEmpresarial({ bruto: 0 });
+  assert(
+    "sueldo empresarial monto 0 deja totales en 0",
+    cero.montoCero === true &&
+      cero.liquido === 0 &&
+      cero.costoEmpresa === 0 &&
+      cero.totalDescuentos === 0 &&
+      cero.iusc === 0,
   );
 }
 assert(
@@ -5648,6 +5722,7 @@ const required = [
   "asignacion-familiar.html",
   "colacion-movilizacion.html",
   "viatico.html",
+  "sueldo-empresarial.html",
   "sueldo-minimo.html",
   "descuento-atrasos.html",
   "licencia-medica.html",
@@ -5709,6 +5784,7 @@ const required = [
   "js/app-asignacion-familiar.js",
   "js/app-colacion-movilizacion.js",
   "js/app-viatico.js",
+  "js/app-sueldo-empresarial.js",
   "js/app-sueldo-minimo.js",
   "js/app-descuento-atrasos.js",
   "js/app-licencia-medica.js",
@@ -5765,6 +5841,7 @@ const required = [
   "js/constants.js",
   "js/sueldo.js",
   "js/viatico.js",
+  "js/sueldo-empresarial.js",
   "js/feriados.js",
   "js/interes-mora.js",
   "js/prescripcion-laboral.js",
@@ -5918,6 +5995,7 @@ const htmlFiles = [
   "asignacion-familiar.html",
   "colacion-movilizacion.html",
   "viatico.html",
+  "sueldo-empresarial.html",
   "sueldo-minimo.html",
   "descuento-atrasos.html",
   "licencia-medica.html",
@@ -6054,6 +6132,7 @@ const appEntries = [
   "js/app-asignacion-familiar.js",
   "js/app-colacion-movilizacion.js",
   "js/app-viatico.js",
+  "js/app-sueldo-empresarial.js",
   "js/app-sueldo-minimo.js",
   "js/app-descuento-atrasos.js",
   "js/app-licencia-medica.js",
@@ -6165,6 +6244,7 @@ assert(
     BASE_PATHS.includes("/asignacion-familiar") &&
     BASE_PATHS.includes("/colacion-movilizacion") &&
     BASE_PATHS.includes("/viatico") &&
+    BASE_PATHS.includes("/sueldo-empresarial") &&
     BASE_PATHS.includes("/feriado-progresivo") &&
     BASE_PATHS.includes("/indemnizacion-anos-servicio") &&
     BASE_PATHS.includes("/aguinaldo") &&
@@ -6566,7 +6646,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 107,
+      seoPaths().length === 108,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -6654,6 +6734,7 @@ try {
     "/asignacion-familiar",
     "/colacion-movilizacion",
     "/viatico",
+    "/sueldo-empresarial",
     "/guias/liquidacion-de-sueldo",
     "/guias/finiquito",
     "/guias/impuesto-unico",
@@ -10427,6 +10508,7 @@ assert(
     ["asignacion-familiar.html", "/asignacion-familiar"],
     ["colacion-movilizacion.html", "/colacion-movilizacion"],
     ["viatico.html", "/viatico"],
+    ["sueldo-empresarial.html", "/sueldo-empresarial"],
     ["sueldo-minimo.html", "/sueldo-minimo"],
     ["descuento-atrasos.html", "/descuento-atrasos"],
     ["licencia-medica.html", "/licencia-medica"],
@@ -16970,6 +17052,130 @@ assert(
     );
   }
   {
+    const seHtml = readFileSync(join(root, "sueldo-empresarial.html"), "utf8");
+    const seTitle = (seHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const seH1 = (seHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const seDesc = (seHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "";
+    const sueldoHtmlSe = readFileSync(join(root, "sueldo.html"), "utf8");
+    const costoHtmlSe = readFileSync(join(root, "costo-empresa.html"), "utf8");
+    const honorHtmlSe = readFileSync(join(root, "boleta-honorarios.html"), "utf8");
+    const gold = calcularSueldoEmpresarial({
+      bruto: 1_500_000,
+      afp: "modelo",
+      salud: "fonasa",
+      contrato: "indefinido",
+      cotiza: true,
+    });
+    const sinCot = calcularSueldoEmpresarial({
+      bruto: 1_500_000,
+      afp: "modelo",
+      salud: "fonasa",
+      contrato: "indefinido",
+      cotiza: false,
+    });
+    assert(
+      "SEO title sueldo empresarial apunta a calcular sueldo empresarial",
+      /calcular sueldo empresarial/i.test(seTitle) &&
+        seTitle !== ((sueldoHtmlSe.match(/<title>([^<]*)<\/title>/) || [])[1] || "") &&
+        seTitle !== ((costoHtmlSe.match(/<title>([^<]*)<\/title>/) || [])[1] || "") &&
+        seTitle !== ((honorHtmlSe.match(/<title>([^<]*)<\/title>/) || [])[1] || "") &&
+        seTitle.length <= 65,
+      seTitle,
+    );
+    assert(
+      "SEO H1 sueldo empresarial Chile 2026",
+      seH1 === "Calcular sueldo empresarial Chile 2026",
+      seH1,
+    );
+    assert(
+      "SEO sueldo empresarial meta distinta de /sueldo",
+      seDesc &&
+        seDesc !== ((sueldoHtmlSe.match(/meta name="description" content="([^"]*)"/) || [])[1] || ""),
+    );
+    assert(
+      "SEO sueldo empresarial cita LIR art. 31 N°6, Oficios 2069 y 147 y BCN",
+      /art[ií]culo 31 N°6/.test(seHtml) &&
+        /Oficio SII N°2069/.test(seHtml) &&
+        /16 de octubre de 2025/.test(seHtml) &&
+        /Oficio N°147/.test(seHtml) &&
+        /21 de enero de 2026/.test(seHtml) &&
+        /c[oó]digo 2161/.test(seHtml) &&
+        /1887/.test(seHtml) &&
+        /bcn\.cl\/leychile\/navegar\?idNorma=6368/.test(seHtml) &&
+        /"@type": "FAQPage"/.test(seHtml),
+    );
+    assert(
+      "SEO sueldo empresarial gold 1216898 / 1602450 y sin cotizar 1478690 / 1500000",
+      gold.liquido === 1_216_898 &&
+        gold.costoEmpresa === 1_602_450 &&
+        sinCot.liquido === 1_478_690 &&
+        sinCot.iusc === 21_310 &&
+        sinCot.costoEmpresa === 1_500_000 &&
+        /\$1\.216\.898/.test(seHtml) &&
+        /\$1\.602\.450/.test(seHtml) &&
+        /\$1\.478\.690/.test(seHtml) &&
+        /\$21\.310/.test(seHtml) &&
+        /Ingrese el monto bruto mensual del sueldo empresarial para estimar\./.test(
+          readFileSync(join(root, "js/app-sueldo-empresarial.js"), "utf8"),
+        ),
+    );
+    assert(
+      "SEO sueldo empresarial no es tope SII",
+      /no es un tope del SII/i.test(seHtml) &&
+        /no inventa un tope en UF/i.test(seHtml) &&
+        /estimaci[oó]n educativa/.test(seHtml) &&
+        /no constituye asesor[ií]a legal/i.test(seHtml),
+    );
+    assert(
+      "SEO sueldo empresarial no inventa hermanas",
+      /no abre URLs hermanas/i.test(seHtml) &&
+        !existsSync(join(root, "sueldo-patronal.html")) &&
+        !existsSync(join(root, "retiro-empresarial.html")) &&
+        !existsSync(join(root, "sueldo-del-socio.html")) &&
+        !existsSync(join(root, "remuneracion-empresarial.html")) &&
+        !existsSync(join(root, "gasto-sueldo-empresarial.html")) &&
+        !existsSync(join(root, "sueldo-empresarial-sii.html")) &&
+        !existsSync(join(root, "tope-sueldo-empresarial.html")),
+    );
+    assert(
+      "home y nav enlazan /sueldo-empresarial",
+      /href="\/sueldo-empresarial"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/sueldo-empresarial" data-nav>Sueldo empresarial<\/a>/.test(
+          readFileSync(join(root, "index.html"), "utf8"),
+        ) &&
+        /href="\/sueldo-empresarial" data-nav>Sueldo empresarial<\/a>/.test(seHtml) &&
+        /href="\/sueldo-empresarial" data-nav>Sueldo empresarial<\/a>/.test(
+          readFileSync(join(root, "js/ui.js"), "utf8"),
+        ) &&
+        /\["\/sueldo-empresarial", "Sueldo empresarial"\]/.test(
+          readFileSync(join(root, "scripts/patch-nav.mjs"), "utf8"),
+        ),
+    );
+    assert(
+      "sitemap incluye /sueldo-empresarial",
+      locs.includes("https://www.haberes.cl/sueldo-empresarial") &&
+        lastmodForPath("/sueldo-empresarial") === "2026-09-24",
+    );
+    assert(
+      "seo-map documenta /sueldo-empresarial y no-canibalizar /sueldo",
+      /\/sueldo-empresarial/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no canibalizar `\/sueldo`, `\/empresa`, `\/costo-empresa`/.test(
+          readFileSync(join(root, "docs/seo-map.md"), "utf8"),
+        ) &&
+        /no crear `\/sueldo-patronal`/i.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")),
+    );
+    assert(
+      "hub /guias enlaza /sueldo-empresarial en el cluster de liquidación",
+      /href="\/sueldo-empresarial"/.test(readFileSync(join(root, "guias.html"), "utf8")) &&
+        /<h2>Liquidaci[oó]n de sueldo<\/h2>[\s\S]*href="\/sueldo-empresarial"/.test(
+          readFileSync(join(root, "guias.html"), "utf8"),
+        ) &&
+        !/<h2>Finiquito<\/h2>[\s\S]*href="\/sueldo-empresarial"/.test(
+          readFileSync(join(root, "guias.html"), "utf8"),
+        ),
+    );
+  }
+  {
     const smHtml = readFileSync(join(root, "sueldo-minimo.html"), "utf8");
     const smTitle = (smHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
     const smH1 = (smHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
@@ -18556,7 +18762,7 @@ assert(
     return acc;
   }
   const pages = listHtml(root);
-  assert("109 páginas HTML", pages.length === 109, String(pages.length));
+  assert("110 páginas HTML", pages.length === 110, String(pages.length));
   for (const file of pages) {
     const html = readFileSync(file, "utf8");
     const rel = file.slice(root.length + 1);
