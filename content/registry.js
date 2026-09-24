@@ -79,6 +79,7 @@ export const PATH_LASTMOD = {
   "/asignacion-familiar": "2026-08-27",
   "/boleta-honorarios": "2026-09-05",
   "/colacion-movilizacion": "2026-09-01",
+  "/viatico": "2026-09-24",
   "/sueldo-minimo": "2026-09-02",
   "/descuento-atrasos": "2026-09-03",
   "/licencia-medica": "2026-09-04",
@@ -204,6 +205,7 @@ export const BASE_PATHS = [
   "/sueldo-proporcional",
   "/terminos",
   "/vacaciones-proporcionales",
+  "/viatico",
 ];
 
 export function seoPaths() {

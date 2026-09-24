@@ -188,6 +188,7 @@ import {
   valorHoraExtra,
   valorHoraOrdinaria,
 } from "../js/sueldo.js";
+import { calcularViatico } from "../js/viatico.js";
 import { clp, dvRut, validarRut } from "../js/format.js";
 import {
   LRE_AFP,
@@ -799,6 +800,61 @@ assert(
       mixto.extraImponible === 40_000 &&
       mixto.extraLiquido === 82_728,
     `${mixto.noImponible} ${mixto.extraImponible} ${mixto.extraLiquido}`,
+  );
+}
+{
+  const viaApp = readFileSync(join(root, "js/app-viatico.js"), "utf8");
+  const viaMod = readFileSync(join(root, "js/viatico.js"), "utf8");
+  assert(
+    "app-viatico usa calcularViatico",
+    /import\s*\{[^}]*calcularViatico[^}]*\}\s*from\s*["']\.\/viatico\.js["']/.test(viaApp) &&
+      /calcularViatico\s*\(/.test(viaApp),
+  );
+  assert(
+    "viatico reutiliza calcularSueldo",
+    /import\s*\{[^}]*calcularSueldo[^}]*\}\s*from\s*["']\.\/sueldo\.js["']/.test(viaMod) &&
+      /calcularSueldo\s*\(/.test(viaMod),
+  );
+  const noImp = calcularViatico({
+    montoDiario: 45_000,
+    dias: 5,
+    sueldoBase: 800_000,
+  });
+  assert(
+    "viático 45000 × 5 no imponible total 225000 extra líquido 225000",
+    noImp.total === 225_000 &&
+      noImp.noImponible === 225_000 &&
+      noImp.extraImponible === 0 &&
+      noImp.extraLiquido === 225_000 &&
+      noImp.extraDescuentos === 0,
+    `${noImp.total} ${noImp.noImponible} ${noImp.extraLiquido}`,
+  );
+  const imp = calcularViatico({
+    montoDiario: 45_000,
+    dias: 5,
+    sueldoBase: 800_000,
+    imponible: true,
+  });
+  assert(
+    "viático imponible extra líquido 184095",
+    imp.total === 225_000 &&
+      imp.extraImponible === 225_000 &&
+      imp.noImponible === 0 &&
+      imp.extraLiquido === 184_095 &&
+      imp.extraLiquido < 225_000 &&
+      imp.extraDescuentos === 40_905,
+    `${imp.extraImponible} ${imp.extraLiquido}`,
+  );
+  const ceroDias = calcularViatico({ montoDiario: 45_000, dias: 0, sueldoBase: 800_000 });
+  const ceroMonto = calcularViatico({ montoDiario: 0, dias: 5, sueldoBase: 800_000 });
+  assert(
+    "viático 0 días o monto 0 deja totales en 0",
+    ceroDias.total === 0 &&
+      ceroDias.noImponible === 0 &&
+      ceroDias.extraImponible === 0 &&
+      ceroDias.extraLiquido === 0 &&
+      ceroMonto.total === 0 &&
+      ceroMonto.extraLiquido === 0,
   );
 }
 assert(
@@ -5591,6 +5647,7 @@ const required = [
   "semana-corrida.html",
   "asignacion-familiar.html",
   "colacion-movilizacion.html",
+  "viatico.html",
   "sueldo-minimo.html",
   "descuento-atrasos.html",
   "licencia-medica.html",
@@ -5651,6 +5708,7 @@ const required = [
   "js/app-semana-corrida.js",
   "js/app-asignacion-familiar.js",
   "js/app-colacion-movilizacion.js",
+  "js/app-viatico.js",
   "js/app-sueldo-minimo.js",
   "js/app-descuento-atrasos.js",
   "js/app-licencia-medica.js",
@@ -5706,6 +5764,7 @@ const required = [
   "css/app.css",
   "js/constants.js",
   "js/sueldo.js",
+  "js/viatico.js",
   "js/feriados.js",
   "js/interes-mora.js",
   "js/prescripcion-laboral.js",
@@ -5858,6 +5917,7 @@ const htmlFiles = [
   "semana-corrida.html",
   "asignacion-familiar.html",
   "colacion-movilizacion.html",
+  "viatico.html",
   "sueldo-minimo.html",
   "descuento-atrasos.html",
   "licencia-medica.html",
@@ -5993,6 +6053,7 @@ const appEntries = [
   "js/app-semana-corrida.js",
   "js/app-asignacion-familiar.js",
   "js/app-colacion-movilizacion.js",
+  "js/app-viatico.js",
   "js/app-sueldo-minimo.js",
   "js/app-descuento-atrasos.js",
   "js/app-licencia-medica.js",
@@ -6103,6 +6164,7 @@ assert(
     BASE_PATHS.includes("/semana-corrida") &&
     BASE_PATHS.includes("/asignacion-familiar") &&
     BASE_PATHS.includes("/colacion-movilizacion") &&
+    BASE_PATHS.includes("/viatico") &&
     BASE_PATHS.includes("/feriado-progresivo") &&
     BASE_PATHS.includes("/indemnizacion-anos-servicio") &&
     BASE_PATHS.includes("/aguinaldo") &&
@@ -6504,7 +6566,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 106,
+      seoPaths().length === 107,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -6516,7 +6578,7 @@ try {
   const docsSeo = await hitLocal("/docs/seo-map.md");
   assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
   assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
-  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/obra-faena/", "/prescripcion-laboral/", "/descanso-compensatorio/", "/inclusion-laboral/", "/jornada-parcial/", "/teletrabajo/", "/bandas-horarias/", "/pacto-4x3/", "/jornada-excepcional/", "/jornada-bisemanal/", "/compensacion-horas-extras/", "/pacto-horas-extras/", "/contrato-plazo-fijo/", "/termino-anticipado-plazo-fijo/", "/permiso-sin-goce/", "/zona-extrema/", "/promedio-remuneraciones/", "/antiguedad-laboral/", "/tope-imponible/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/obra-faena/", "/prescripcion-laboral/", "/descanso-compensatorio/", "/inclusion-laboral/", "/jornada-parcial/", "/teletrabajo/", "/bandas-horarias/", "/pacto-4x3/", "/jornada-excepcional/", "/jornada-bisemanal/", "/compensacion-horas-extras/", "/pacto-horas-extras/", "/contrato-plazo-fijo/", "/termino-anticipado-plazo-fijo/", "/permiso-sin-goce/", "/zona-extrema/", "/promedio-remuneraciones/", "/antiguedad-laboral/", "/tope-imponible/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/viatico/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
   }
@@ -6591,6 +6653,7 @@ try {
     "/trabajo-pesado",
     "/asignacion-familiar",
     "/colacion-movilizacion",
+    "/viatico",
     "/guias/liquidacion-de-sueldo",
     "/guias/finiquito",
     "/guias/impuesto-unico",
@@ -10363,6 +10426,7 @@ assert(
     ["semana-corrida.html", "/semana-corrida"],
     ["asignacion-familiar.html", "/asignacion-familiar"],
     ["colacion-movilizacion.html", "/colacion-movilizacion"],
+    ["viatico.html", "/viatico"],
     ["sueldo-minimo.html", "/sueldo-minimo"],
     ["descuento-atrasos.html", "/descuento-atrasos"],
     ["licencia-medica.html", "/licencia-medica"],
@@ -16785,6 +16849,127 @@ assert(
     );
   }
   {
+    const viaHtml = readFileSync(join(root, "viatico.html"), "utf8");
+    const viaTitle = (viaHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const viaH1 = (viaHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const viaDesc = (viaHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "";
+    const cmHtmlVia = readFileSync(join(root, "colacion-movilizacion.html"), "utf8");
+    const sueldoHtmlVia = readFileSync(join(root, "sueldo.html"), "utf8");
+    const noImp = calcularViatico({ montoDiario: 45_000, dias: 5, sueldoBase: 800_000 });
+    const imp = calcularViatico({
+      montoDiario: 45_000,
+      dias: 5,
+      sueldoBase: 800_000,
+      imponible: true,
+    });
+    assert(
+      "SEO title viático apunta a calcular viático",
+      /calcular vi[aá]tico/i.test(viaTitle) &&
+        !/colaci[oó]n y movilizaci[oó]n/i.test(viaTitle) &&
+        !/sueldo l[ií]quido/i.test(viaTitle) &&
+        viaTitle !== ((cmHtmlVia.match(/<title>([^<]*)<\/title>/) || [])[1] || "") &&
+        viaTitle !== ((sueldoHtmlVia.match(/<title>([^<]*)<\/title>/) || [])[1] || "") &&
+        viaTitle.length <= 65,
+      viaTitle,
+    );
+    assert(
+      "SEO H1 viático Chile 2026",
+      viaH1 === "Calcular viático Chile 2026" && !/sueldo l[ií]quido/i.test(viaH1),
+      viaH1,
+    );
+    assert(
+      "SEO viático meta distinta de /colacion-movilizacion",
+      viaDesc &&
+        viaDesc !== ((cmHtmlVia.match(/meta name="description" content="([^"]*)"/) || [])[1] || ""),
+    );
+    assert(
+      "SEO viático cita CT art. 41, DT y SII",
+      /art[ií]culo 41/i.test(viaHtml) &&
+        /C[oó]digo del Trabajo/.test(viaHtml) &&
+        /bcn\.cl\/leychile\/navegar\?idNorma=207436/.test(viaHtml) &&
+        /dt\.gob\.cl\/portal\/1628\/w3-article-60238/.test(viaHtml) &&
+        /dt\.gob\.cl\/legislacion\/1624\/w3-article-112157/.test(viaHtml) &&
+        /art[ií]culo 17/.test(viaHtml) &&
+        /bcn\.cl\/leychile\/navegar\?idNorma=6368/.test(viaHtml) &&
+        /"@type": "FAQPage"/.test(viaHtml),
+    );
+    assert(
+      "SEO viático ejemplo 45000 × 5 = 225000 y extra líquido 184095",
+      noImp.total === 225_000 &&
+        noImp.noImponible === 225_000 &&
+        noImp.extraImponible === 0 &&
+        noImp.extraLiquido === 225_000 &&
+        imp.extraImponible === 225_000 &&
+        imp.extraLiquido === 184_095 &&
+        imp.extraLiquido < 225_000 &&
+        /\$45\.000/.test(viaHtml) &&
+        /\$225\.000/.test(viaHtml) &&
+        /\$184\.095/.test(viaHtml) &&
+        /\$40\.905/.test(viaHtml) &&
+        /Ingrese monto diario y d[ií]as de comisi[oó]n para estimar\./.test(
+          readFileSync(join(root, "js/app-viatico.js"), "utf8"),
+        ),
+    );
+    assert(
+      "SEO viático no es tabla pública ni colación",
+      /no hay tabla legal de vi[aá]ticos para el sector privado/i.test(viaHtml) &&
+        /otro r[eé]gimen/i.test(viaHtml) &&
+        /lugar habitual/i.test(viaHtml) &&
+        /no inventa un tope/i.test(viaHtml) &&
+        /estimaci[oó]n educativa/.test(viaHtml) &&
+        /no constituye asesor[ií]a legal/i.test(viaHtml),
+    );
+    assert(
+      "SEO viático no inventa hermanas",
+      /no abre URLs hermanas/i.test(viaHtml) &&
+        !existsSync(join(root, "viaticos.html")) &&
+        !existsSync(join(root, "viatico-chile.html")) &&
+        !existsSync(join(root, "asignacion-viatico.html")) &&
+        !existsSync(join(root, "gastos-de-viaje.html")) &&
+        !existsSync(join(root, "tabla-viaticos.html")) &&
+        !existsSync(join(root, "viatico-sii.html")) &&
+        !existsSync(join(root, "viatico-funcionario.html")) &&
+        !existsSync(join(root, "viatico-municipal.html")) &&
+        !existsSync(join(root, "per-diem.html")),
+    );
+    assert(
+      "viático enlaza colación y sueldo; colación enlaza viático",
+      /href="\/colacion-movilizacion"/.test(viaHtml) &&
+        /href="\/sueldo"/.test(viaHtml) &&
+        /href="\/viatico"/.test(cmHtmlVia),
+    );
+    assert(
+      "home y nav enlazan /viatico",
+      /href="\/viatico"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/viatico" data-nav>Vi[aá]tico<\/a>/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/viatico" data-nav>Vi[aá]tico<\/a>/.test(viaHtml) &&
+        /href="\/viatico" data-nav>Vi[aá]tico<\/a>/.test(readFileSync(join(root, "js/ui.js"), "utf8")) &&
+        /\["\/viatico", "Vi[aá]tico"\]/.test(readFileSync(join(root, "scripts/patch-nav.mjs"), "utf8")),
+    );
+    assert(
+      "sitemap incluye /viatico",
+      locs.includes("https://www.haberes.cl/viatico") && lastmodForPath("/viatico") === "2026-09-24",
+    );
+    assert(
+      "seo-map documenta /viatico y no-canibalizar /colacion-movilizacion",
+      /\/viatico/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no canibalizar `\/colacion-movilizacion`, `\/sueldo`/.test(
+          readFileSync(join(root, "docs/seo-map.md"), "utf8"),
+        ) &&
+        /no crear `\/viaticos`/i.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")),
+    );
+    assert(
+      "hub /guias enlaza /viatico en el cluster de liquidación",
+      /href="\/viatico"/.test(readFileSync(join(root, "guias.html"), "utf8")) &&
+        /<h2>Liquidaci[oó]n de sueldo<\/h2>[\s\S]*href="\/viatico"/.test(
+          readFileSync(join(root, "guias.html"), "utf8"),
+        ) &&
+        !/<h2>Finiquito<\/h2>[\s\S]*href="\/viatico"/.test(
+          readFileSync(join(root, "guias.html"), "utf8"),
+        ),
+    );
+  }
+  {
     const smHtml = readFileSync(join(root, "sueldo-minimo.html"), "utf8");
     const smTitle = (smHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
     const smH1 = (smHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
@@ -18371,7 +18556,7 @@ assert(
     return acc;
   }
   const pages = listHtml(root);
-  assert("108 páginas HTML", pages.length === 108, String(pages.length));
+  assert("109 páginas HTML", pages.length === 109, String(pages.length));
   for (const file of pages) {
     const html = readFileSync(file, "utf8");
     const rel = file.slice(root.length + 1);
