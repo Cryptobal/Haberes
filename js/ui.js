@@ -242,6 +242,7 @@ function paintLoggedInNav(emp) {
         <a href="/asignacion-familiar" data-nav>Asignación familiar</a>
         <a href="/colacion-movilizacion" data-nav>Colación y movilización</a>
         <a href="/viatico" data-nav>Viático</a>
+        <a href="/sueldo-empresarial" data-nav>Sueldo empresarial</a>
         <a href="/vacaciones-proporcionales" data-nav>Vacaciones proporcionales</a>
         <a href="/feriado-anual" data-nav>Feriado anual</a>
         <a href="/feriado-progresivo" data-nav>Feriado progresivo</a>
