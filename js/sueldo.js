@@ -1014,7 +1014,9 @@ export function calcularSueldo(input = {}, indicadores = {}) {
   const saludMonto =
     saludTipo !== "fonasa" ? Math.max(saludLegal, roundPeso(isaprePactado)) : saludLegal;
 
-  const cesantiaTasa = contrato === "indefinido" || contrato === "indefinido " ? CESANTIA_INDEFINIDO : 0;
+  const contratoIndefinido = contrato === "indefinido" || contrato === "indefinido ";
+  const cotizaCesantiaTrab = input.cotizaCesantia === false ? false : contratoIndefinido;
+  const cesantiaTasa = cotizaCesantiaTrab ? CESANTIA_INDEFINIDO : 0;
   const cesantiaMonto = roundPeso(baseCesantia * cesantiaTasa);
 
   const baseTributable = Math.max(0, imponible - afpMonto - saludMonto - cesantiaMonto);
