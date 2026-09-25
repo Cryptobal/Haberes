@@ -190,6 +190,7 @@ import {
 } from "../js/sueldo.js";
 import { calcularViatico } from "../js/viatico.js";
 import { calcularSueldoEmpresarial } from "../js/sueldo-empresarial.js";
+import { calcularFranquiciaSence, UTM_SEP_2026, VALORES_HORA_SENCE_2026 } from "../js/franquicia-sence.js";
 import { calcularSueldoLiquidoABruto } from "../js/sueldo-liquido-a-bruto.js";
 import { clp, dvRut, validarRut } from "../js/format.js";
 import {
@@ -930,6 +931,96 @@ assert(
       cero.costoEmpresa === 0 &&
       cero.totalDescuentos === 0 &&
       cero.iusc === 0,
+  );
+}
+{
+  const utm = UTM_SEP_2026;
+  assert("UTM ancla septiembre 2026", utm === 71721);
+  const base = { utm };
+  const u25 = calcularFranquiciaSence(base);
+  assert(
+    "franquicia SENCE umbrales UTM 71721",
+    u25.utm === 71721 &&
+      u25.umbral25Utm === 1_793_025 &&
+      u25.umbral35Utm === 2_510_235 &&
+      u25.umbral50Utm === 3_586_050,
+    `${u25.umbral25Utm} ${u25.umbral35Utm} ${u25.umbral50Utm}`,
+  );
+  const ceroPlanilla = calcularFranquiciaSence({ ...base, planillaAnualImponible: 0 });
+  assert(
+    "franquicia SENCE planilla 0 → tope 0 y no elegible",
+    ceroPlanilla.topeAnual1pct === 0 && ceroPlanilla.elegible === false,
+  );
+  const justo35 = calcularFranquiciaSence({ ...base, planillaAnualImponible: 2_510_235 });
+  assert(
+    "franquicia SENCE planilla exactamente 35 UTM no es elegible y tope 25102",
+    justo35.elegible === false && justo35.topeAnual1pct === 25_102,
+    `${justo35.elegible} ${justo35.topeAnual1pct}`,
+  );
+  const grande = calcularFranquiciaSence({ ...base, planillaAnualImponible: 120_000_000 });
+  assert(
+    "franquicia SENCE planilla 120000000 → tope 1200000 y elegible",
+    grande.topeAnual1pct === 1_200_000 && grande.elegible === true,
+  );
+  const t100 = calcularFranquiciaSence({ ...base, remuneracionBrutaParticipante: 900_000 });
+  const t50 = calcularFranquiciaSence({ ...base, remuneracionBrutaParticipante: 2_000_000 });
+  const t15 = calcularFranquiciaSence({ ...base, remuneracionBrutaParticipante: 4_000_000 });
+  assert(
+    "franquicia SENCE tramos 100 / 50 / 15",
+    t100.tramoPct === 1 && t50.tramoPct === 0.5 && t15.tramoPct === 0.15,
+    `${t100.tramoPct} ${t50.tramoPct} ${t15.tramoPct}`,
+  );
+  const curso = calcularFranquiciaSence({
+    ...base,
+    planillaAnualImponible: 120_000_000,
+    remuneracionBrutaParticipante: 900_000,
+    horasCurso: 40,
+    valorHoraSence: 7000,
+    cbc: false,
+  });
+  const cursoCbc = calcularFranquiciaSence({ ...curso, cbc: true, utm, planillaAnualImponible: 120_000_000, remuneracionBrutaParticipante: 900_000, horasCurso: 40, valorHoraSence: 7000 });
+  assert(
+    "franquicia SENCE 40×7000×100% = 280000 y con CBC 336000",
+    curso.brutoFranquicia === 280_000 &&
+      curso.montoFranquiciableCurso === 280_000 &&
+      curso.valorHoraAplicado === 7000 &&
+      cursoCbc.valorHoraAplicado === 8400 &&
+      cursoCbc.brutoFranquicia === 336_000,
+    `${curso.brutoFranquicia} ${cursoCbc.valorHoraAplicado} ${cursoCbc.brutoFranquicia}`,
+  );
+  const topado = calcularFranquiciaSence({
+    ...base,
+    planillaAnualImponible: 20_000_000,
+    remuneracionBrutaParticipante: 900_000,
+    horasCurso: 40,
+    valorHoraSence: 7000,
+    costoCurso: 500_000,
+  });
+  assert(
+    "franquicia SENCE tope 200000 deja franquiciable 200000 y copago 300000",
+    topado.topeAnual1pct === 200_000 &&
+      topado.elegible === true &&
+      topado.brutoFranquicia === 280_000 &&
+      topado.montoFranquiciableCurso === 200_000 &&
+      topado.copagoEmpresa === 300_000,
+    `${topado.topeAnual1pct} ${topado.montoFranquiciableCurso} ${topado.copagoEmpresa}`,
+  );
+  assert(
+    "valores hora 2026 sin autoaprendizaje 1840",
+    VALORES_HORA_SENCE_2026.some((r) => r.id === "presencial-tramo-1" && r.valor === 7000) &&
+      VALORES_HORA_SENCE_2026.some((r) => r.id === "presencial-tramo-2" && r.valor === 9000) &&
+      VALORES_HORA_SENCE_2026.some((r) => r.id === "presencial-tramo-3" && r.valor === 12000) &&
+      VALORES_HORA_SENCE_2026.some((r) => r.id === "elearning-sincrono-tramo-1" && r.valor === 5600) &&
+      VALORES_HORA_SENCE_2026.some((r) => r.id === "elearning-sincrono-tramo-2" && r.valor === 6600) &&
+      VALORES_HORA_SENCE_2026.some((r) => r.valor === 5500) &&
+      !VALORES_HORA_SENCE_2026.some((r) => r.valor === 1840),
+  );
+  const fsApp = readFileSync(join(root, "js/app-franquicia-sence.js"), "utf8");
+  assert(
+    "app-franquicia-sence usa calcularFranquiciaSence",
+    /import\s*\{[^}]*calcularFranquiciaSence[^}]*\}\s*from\s*["']\.\/franquicia-sence\.js["']/.test(fsApp) &&
+      /calcularFranquiciaSence\s*\(/.test(fsApp) &&
+      /mountIndicadores\(/.test(fsApp),
   );
 }
 assert(
@@ -5751,6 +5842,7 @@ const required = [
   "colacion-movilizacion.html",
   "viatico.html",
   "sueldo-empresarial.html",
+  "franquicia-sence.html",
   "sueldo-minimo.html",
   "descuento-atrasos.html",
   "licencia-medica.html",
@@ -5813,6 +5905,7 @@ const required = [
   "js/app-colacion-movilizacion.js",
   "js/app-viatico.js",
   "js/app-sueldo-empresarial.js",
+  "js/app-franquicia-sence.js",
   "js/app-sueldo-minimo.js",
   "js/app-descuento-atrasos.js",
   "js/app-licencia-medica.js",
@@ -5871,6 +5964,7 @@ const required = [
   "js/sueldo-liquido-a-bruto.js",
   "js/viatico.js",
   "js/sueldo-empresarial.js",
+  "js/franquicia-sence.js",
   "js/feriados.js",
   "js/interes-mora.js",
   "js/prescripcion-laboral.js",
@@ -6026,6 +6120,7 @@ const htmlFiles = [
   "colacion-movilizacion.html",
   "viatico.html",
   "sueldo-empresarial.html",
+  "franquicia-sence.html",
   "sueldo-minimo.html",
   "descuento-atrasos.html",
   "licencia-medica.html",
@@ -6164,6 +6259,7 @@ const appEntries = [
   "js/app-colacion-movilizacion.js",
   "js/app-viatico.js",
   "js/app-sueldo-empresarial.js",
+  "js/app-franquicia-sence.js",
   "js/app-sueldo-minimo.js",
   "js/app-descuento-atrasos.js",
   "js/app-licencia-medica.js",
@@ -6277,6 +6373,7 @@ assert(
     BASE_PATHS.includes("/colacion-movilizacion") &&
     BASE_PATHS.includes("/viatico") &&
     BASE_PATHS.includes("/sueldo-empresarial") &&
+    BASE_PATHS.includes("/franquicia-sence") &&
     BASE_PATHS.includes("/feriado-progresivo") &&
     BASE_PATHS.includes("/indemnizacion-anos-servicio") &&
     BASE_PATHS.includes("/aguinaldo") &&
@@ -6678,7 +6775,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 109,
+      seoPaths().length === 110,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -6767,6 +6864,7 @@ try {
     "/colacion-movilizacion",
     "/viatico",
     "/sueldo-empresarial",
+    "/franquicia-sence",
     "/sueldo-liquido-a-bruto",
     "/guias/liquidacion-de-sueldo",
     "/guias/finiquito",
@@ -10542,6 +10640,7 @@ assert(
     ["colacion-movilizacion.html", "/colacion-movilizacion"],
     ["viatico.html", "/viatico"],
     ["sueldo-empresarial.html", "/sueldo-empresarial"],
+    ["franquicia-sence.html", "/franquicia-sence"],
     ["sueldo-minimo.html", "/sueldo-minimo"],
     ["descuento-atrasos.html", "/descuento-atrasos"],
     ["licencia-medica.html", "/licencia-medica"],
@@ -17312,6 +17411,132 @@ assert(
     );
   }
   {
+    const fsHtml = readFileSync(join(root, "franquicia-sence.html"), "utf8");
+    const fsTitle = (fsHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const fsH1 = (fsHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const fsDesc = (fsHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "";
+    const costoHtmlFs = readFileSync(join(root, "costo-empresa.html"), "utf8");
+    const seHtmlFs = readFileSync(join(root, "sueldo-empresarial.html"), "utf8");
+    const curso = calcularFranquiciaSence({
+      utm: 71721,
+      planillaAnualImponible: 120_000_000,
+      remuneracionBrutaParticipante: 900_000,
+      horasCurso: 40,
+      valorHoraSence: 7000,
+    });
+    assert(
+      "SEO title franquicia SENCE apunta a calcular franquicia SENCE",
+      /calcular franquicia SENCE/i.test(fsTitle) &&
+        fsTitle !== ((costoHtmlFs.match(/<title>([^<]*)<\/title>/) || [])[1] || "") &&
+        fsTitle !== ((seHtmlFs.match(/<title>([^<]*)<\/title>/) || [])[1] || "") &&
+        fsTitle.length <= 65,
+      fsTitle,
+    );
+    assert(
+      "SEO H1 franquicia SENCE Chile 2026",
+      fsH1 === "Calcular franquicia SENCE Chile 2026",
+      fsH1,
+    );
+    assert(
+      "SEO franquicia SENCE meta distinta de /costo-empresa",
+      fsDesc &&
+        fsDesc !== ((costoHtmlFs.match(/meta name="description" content="([^"]*)"/) || [])[1] || ""),
+    );
+    assert(
+      "SEO franquicia SENCE cita Ley 19.518 art. 36, Res. 3496 y 632",
+      /art[ií]culo 36/.test(fsHtml) &&
+        /Ley 19\.518/.test(fsHtml) &&
+        /35 UTM/.test(fsHtml) &&
+        /Resoluci[oó]n Exenta SENCE N°3496/.test(fsHtml) &&
+        /30 de diciembre de 2025/.test(fsHtml) &&
+        /N°632/.test(fsHtml) &&
+        /3 de marzo de 2026/.test(fsHtml) &&
+        /1\.840/.test(fsHtml) &&
+        /Impulsa Personas/.test(fsHtml) &&
+        /bcn\.cl\/leychile\/navegar\?idNorma=30766/.test(fsHtml) &&
+        /"@type": "FAQPage"/.test(fsHtml),
+    );
+    assert(
+      "SEO franquicia SENCE gold UTM 71721, 280000 y copago 300000",
+      curso.umbral25Utm === 1_793_025 &&
+        curso.brutoFranquicia === 280_000 &&
+        /\$71\.721/.test(fsHtml) &&
+        /\$1\.793\.025/.test(fsHtml) &&
+        /\$2\.510\.235/.test(fsHtml) &&
+        /\$3\.586\.050/.test(fsHtml) &&
+        /\$25\.102/.test(fsHtml) &&
+        /\$1\.200\.000/.test(fsHtml) &&
+        /\$280\.000/.test(fsHtml) &&
+        /\$336\.000/.test(fsHtml) &&
+        /\$8\.400/.test(fsHtml) &&
+        /\$200\.000/.test(fsHtml) &&
+        /\$300\.000/.test(fsHtml) &&
+        /\$7\.000/.test(fsHtml) &&
+        /Ingrese la planilla anual de remuneraciones imponibles para estimar el tope y la elegibilidad\./.test(
+          readFileSync(join(root, "js/app-franquicia-sence.js"), "utf8"),
+        ),
+    );
+    assert(
+      "SEO franquicia SENCE no es cálculo del SENCE",
+      /no es un c[aá]lculo del SENCE/i.test(fsHtml) &&
+        /Direcci[oó]n del Trabajo/.test(fsHtml) &&
+        /SII/.test(fsHtml) &&
+        /estimaci[oó]n educativa/.test(fsHtml) &&
+        /no constituye asesor[ií]a legal/i.test(fsHtml) &&
+        /no simula un OTIC/i.test(fsHtml),
+    );
+    assert(
+      "SEO franquicia SENCE no inventa hermanas",
+      /no abre URLs hermanas/i.test(fsHtml) &&
+        !existsSync(join(root, "franquicia-tributaria.html")) &&
+        !existsSync(join(root, "impulsa-personas.html")) &&
+        !existsSync(join(root, "sence.html")) &&
+        !existsSync(join(root, "1-porciento-sence.html")) &&
+        !existsSync(join(root, "capacitacion-sence.html")) &&
+        !existsSync(join(root, "franquicia-capacitacion.html")) &&
+        !existsSync(join(root, "aporte-sence.html")) &&
+        !existsSync(join(root, "otic.html")) &&
+        !existsSync(join(root, "valor-hora-sence.html")),
+    );
+    assert(
+      "home y nav enlazan /franquicia-sence",
+      /href="\/franquicia-sence"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/franquicia-sence" data-nav>Franquicia SENCE<\/a>/.test(
+          readFileSync(join(root, "index.html"), "utf8"),
+        ) &&
+        /href="\/franquicia-sence" data-nav>Franquicia SENCE<\/a>/.test(fsHtml) &&
+        /href="\/franquicia-sence" data-nav>Franquicia SENCE<\/a>/.test(
+          readFileSync(join(root, "js/ui.js"), "utf8"),
+        ) &&
+        /\["\/franquicia-sence", "Franquicia SENCE"\]/.test(
+          readFileSync(join(root, "scripts/patch-nav.mjs"), "utf8"),
+        ),
+    );
+    assert(
+      "sitemap incluye /franquicia-sence",
+      locs.includes("https://www.haberes.cl/franquicia-sence") &&
+        lastmodForPath("/franquicia-sence") === "2026-09-25",
+    );
+    assert(
+      "seo-map documenta /franquicia-sence y no-canibalizar /costo-empresa",
+      /\/franquicia-sence/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no canibalizar `\/costo-empresa`, `\/sueldo-empresarial`/.test(
+          readFileSync(join(root, "docs/seo-map.md"), "utf8"),
+        ) &&
+        /no crear `\/franquicia-tributaria`/i.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")),
+    );
+    assert(
+      "hub /guias enlaza /franquicia-sence en el cluster de liquidación",
+      /href="\/franquicia-sence"/.test(readFileSync(join(root, "guias.html"), "utf8")) &&
+        /<h2>Liquidaci[oó]n de sueldo<\/h2>[\s\S]*href="\/franquicia-sence"/.test(
+          readFileSync(join(root, "guias.html"), "utf8"),
+        ) &&
+        !/<h2>Finiquito<\/h2>[\s\S]*href="\/franquicia-sence"/.test(
+          readFileSync(join(root, "guias.html"), "utf8"),
+        ),
+    );
+  }
+  {
     const smHtml = readFileSync(join(root, "sueldo-minimo.html"), "utf8");
     const smTitle = (smHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
     const smH1 = (smHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
@@ -18898,7 +19123,7 @@ assert(
     return acc;
   }
   const pages = listHtml(root);
-  assert("111 páginas HTML", pages.length === 111, String(pages.length));
+  assert("112 páginas HTML", pages.length === 112, String(pages.length));
   for (const file of pages) {
     const html = readFileSync(file, "utf8");
     const rel = file.slice(root.length + 1);
