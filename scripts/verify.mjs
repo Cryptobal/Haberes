@@ -190,6 +190,7 @@ import {
 } from "../js/sueldo.js";
 import { calcularViatico } from "../js/viatico.js";
 import { calcularSueldoEmpresarial } from "../js/sueldo-empresarial.js";
+import { calcularSueldoLiquidoABruto } from "../js/sueldo-liquido-a-bruto.js";
 import { clp, dvRut, validarRut } from "../js/format.js";
 import {
   LRE_AFP,
@@ -2719,6 +2720,32 @@ assert(
     "brutoDesdeLiquido 654560 → 800000",
     brutoDesdeLiquido(liq.liquido, { afp: "modelo", salud: "fonasa", contrato: "indefinido" }, ind) === 800_000 &&
       liq.liquido === 654_560,
+  );
+  const perfilInverso = { afp: "modelo", salud: "fonasa", contrato: "indefinido", cotizaCesantia: true };
+  const brutoGold = calcularSueldo({ ...perfilInverso, sueldoBase: 1_500_000 }, ind);
+  const inversoGold = calcularSueldoLiquidoABruto(
+    { ...perfilInverso, liquidoObjetivo: brutoGold.liquido },
+    ind,
+  );
+  const inversoCero = calcularSueldoLiquidoABruto({ ...perfilInverso, liquidoObjetivo: 0 }, ind);
+  const inversoImposible = calcularSueldoLiquidoABruto(
+    { ...perfilInverso, liquidoObjetivo: 100_000, colacion: 500_000 },
+    ind,
+  );
+  assert(
+    "líquido a bruto: 1500000 ↔ líquido del motor 1216898 (±$1) y cero",
+    brutoGold.liquido === 1_216_898 &&
+      inversoGold.ok &&
+      inversoGold.bruto === 1_500_000 &&
+      Math.abs(inversoGold.liquido - brutoGold.liquido) <= 1 &&
+      inversoGold.costoEmpresa === 1_602_450 &&
+      inversoCero.ok &&
+      inversoCero.bruto === 0 &&
+      inversoCero.liquido === 0 &&
+      inversoImposible.ok === false &&
+      inversoImposible.bruto == null &&
+      Number.isFinite(inversoImposible.liquido),
+    `${brutoGold.liquido} ${inversoGold.bruto} ${inversoGold.liquido}`,
   );
   const fromLiq = calcularCostoEmpresa(
     { modo: "liquido", monto: 654_560, contrato: "indefinido" },
@@ -5708,6 +5735,7 @@ console.log("\nSitio estático");
 const required = [
   "index.html",
   "sueldo.html",
+  "sueldo-liquido-a-bruto.html",
   "horas-extras.html",
   "vacaciones-proporcionales.html",
   "gratificacion.html",
@@ -5840,6 +5868,7 @@ const required = [
   "css/app.css",
   "js/constants.js",
   "js/sueldo.js",
+  "js/sueldo-liquido-a-bruto.js",
   "js/viatico.js",
   "js/sueldo-empresarial.js",
   "js/feriados.js",
@@ -5981,6 +6010,7 @@ assert("sitemap.xml no está en la raíz", !existsSync(join(root, "sitemap.xml")
 const htmlFiles = [
   "index.html",
   "sueldo.html",
+  "sueldo-liquido-a-bruto.html",
   "horas-extras.html",
   "vacaciones-proporcionales.html",
   "gratificacion.html",
@@ -6118,6 +6148,7 @@ console.log("\nNavegación móvil");
 const appEntries = [
   "js/app-home.js",
   "js/app-sueldo.js",
+  "js/app-sueldo-liquido-a-bruto.js",
   "js/app-horas-extras.js",
   "js/app-vacaciones-proporcionales.js",
   "js/app-gratificacion.js",
@@ -6228,6 +6259,7 @@ assert(
     GUIDE_SLUGS.length >= 16 &&
     CAUSAL_PAGES.length === 21 &&
     BASE_PATHS.includes("/sueldo") &&
+    BASE_PATHS.includes("/sueldo-liquido-a-bruto") &&
     BASE_PATHS.includes("/finiquito") &&
     BASE_PATHS.includes("/horas-extras") &&
     BASE_PATHS.includes("/vacaciones-proporcionales") &&
@@ -6646,7 +6678,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 108,
+      seoPaths().length === 109,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -6658,7 +6690,7 @@ try {
   const docsSeo = await hitLocal("/docs/seo-map.md");
   assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
   assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
-  for (const p of ["/sueldo/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/obra-faena/", "/prescripcion-laboral/", "/descanso-compensatorio/", "/inclusion-laboral/", "/jornada-parcial/", "/teletrabajo/", "/bandas-horarias/", "/pacto-4x3/", "/jornada-excepcional/", "/jornada-bisemanal/", "/compensacion-horas-extras/", "/pacto-horas-extras/", "/contrato-plazo-fijo/", "/termino-anticipado-plazo-fijo/", "/permiso-sin-goce/", "/zona-extrema/", "/promedio-remuneraciones/", "/antiguedad-laboral/", "/tope-imponible/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/viatico/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+  for (const p of ["/sueldo/", "/sueldo-liquido-a-bruto/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/obra-faena/", "/prescripcion-laboral/", "/descanso-compensatorio/", "/inclusion-laboral/", "/jornada-parcial/", "/teletrabajo/", "/bandas-horarias/", "/pacto-4x3/", "/jornada-excepcional/", "/jornada-bisemanal/", "/compensacion-horas-extras/", "/pacto-horas-extras/", "/contrato-plazo-fijo/", "/termino-anticipado-plazo-fijo/", "/permiso-sin-goce/", "/zona-extrema/", "/promedio-remuneraciones/", "/antiguedad-laboral/", "/tope-imponible/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/viatico/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
   }
@@ -6735,6 +6767,7 @@ try {
     "/colacion-movilizacion",
     "/viatico",
     "/sueldo-empresarial",
+    "/sueldo-liquido-a-bruto",
     "/guias/liquidacion-de-sueldo",
     "/guias/finiquito",
     "/guias/impuesto-unico",
@@ -17165,6 +17198,109 @@ assert(
         /no crear `\/sueldo-patronal`/i.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")),
     );
     assert(
+      "hub /guias enlaza /sueldo-liquido-a-bruto en el cluster de liquidación",
+      /href="\/sueldo-liquido-a-bruto"/.test(readFileSync(join(root, "guias.html"), "utf8")) &&
+        /<h2>Liquidaci[oó]n de sueldo<\/h2>[\s\S]*href="\/sueldo-liquido-a-bruto"/.test(
+          readFileSync(join(root, "guias.html"), "utf8"),
+        ) &&
+        !/<h2>Finiquito<\/h2>[\s\S]*href="\/sueldo-liquido-a-bruto"/.test(
+          readFileSync(join(root, "guias.html"), "utf8"),
+        ),
+    );
+  }
+  {
+    const invHtml = readFileSync(join(root, "sueldo-liquido-a-bruto.html"), "utf8");
+    const invTitle = (invHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const invH1 = (invHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const invDesc = (invHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "";
+    const sueldoHtmlInv = readFileSync(join(root, "sueldo.html"), "utf8");
+    const sueldoTitleInv = (sueldoHtmlInv.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const aliases = [
+      "bruto-desde-liquido.html",
+      "de-liquido-a-bruto.html",
+      "liquido-a-bruto.html",
+      "calcular-bruto.html",
+      "sueldo-bruto-desde-liquido.html",
+      "renta-liquida-a-bruta.html",
+      "neto-a-bruto.html",
+      "sueldo-neto-a-bruto.html",
+    ];
+    assert(
+      "SEO title sueldo líquido a bruto distinto de /sueldo",
+      /sueldo l[ií]quido a bruto/i.test(invTitle) &&
+        invTitle !== sueldoTitleInv &&
+        !/calculadora de sueldo l[ií]quido/i.test(invTitle) &&
+        invTitle.length <= 65,
+      invTitle,
+    );
+    assert(
+      "SEO H1 sueldo líquido a bruto Chile 2026",
+      invH1 === "Sueldo líquido a bruto Chile 2026",
+      invH1,
+    );
+    assert(
+      "SEO meta líquido a bruto distinta de /sueldo",
+      invDesc &&
+        invDesc !== ((sueldoHtmlInv.match(/meta name="description" content="([^"]*)"/) || [])[1] || ""),
+    );
+    assert(
+      "SEO líquido a bruto: motor, gold 1216898 y disclaimer",
+      /mismo/.test(invHtml) &&
+        /\$1\.216\.898/.test(invHtml) &&
+        /\$1\.500\.000/.test(invHtml) &&
+        /\$1\.602\.450/.test(invHtml) &&
+        /Direcci[oó]n del Trabajo/.test(invHtml) &&
+        /Previred/.test(invHtml) &&
+        /SII/.test(invHtml) &&
+        /no constituye asesor[ií]a legal/i.test(invHtml) &&
+        /¿Tienes el líquido y necesitas el bruto\?/.test(sueldoHtmlInv) &&
+        /href="\/sueldo-liquido-a-bruto"/.test(sueldoHtmlInv) &&
+        /href="\/sueldo"/.test(invHtml),
+    );
+    assert(
+      "app líquido a bruto usa calcularSueldoLiquidoABruto",
+      /import\s*\{[^}]*calcularSueldoLiquidoABruto[^}]*\}\s*from\s*["']\.\/sueldo-liquido-a-bruto\.js["']/.test(
+        readFileSync(join(root, "js/app-sueldo-liquido-a-bruto.js"), "utf8"),
+      ) &&
+        /calcularSueldo\(/.test(readFileSync(join(root, "js/sueldo-liquido-a-bruto.js"), "utf8")) &&
+        !/alert\s*\(|confirm\s*\(|prompt\s*\(/.test(
+          readFileSync(join(root, "js/app-sueldo-liquido-a-bruto.js"), "utf8"),
+        ),
+    );
+    assert(
+      "SEO líquido a bruto no inventa aliases",
+      aliases.every((f) => !existsSync(join(root, f))) &&
+        /no abre/i.test(invHtml) &&
+        !/<select\b/i.test(invHtml),
+    );
+    assert(
+      "home y nav enlazan /sueldo-liquido-a-bruto",
+      /href="\/sueldo-liquido-a-bruto"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/sueldo-liquido-a-bruto" data-nav>L[ií]quido a bruto<\/a>/.test(
+          readFileSync(join(root, "index.html"), "utf8"),
+        ) &&
+        /href="\/sueldo-liquido-a-bruto" data-nav>L[ií]quido a bruto<\/a>/.test(invHtml) &&
+        /href="\/sueldo-liquido-a-bruto" data-nav>L[ií]quido a bruto<\/a>/.test(
+          readFileSync(join(root, "js/ui.js"), "utf8"),
+        ) &&
+        /\["\/sueldo-liquido-a-bruto", "L[ií]quido a bruto"\]/.test(
+          readFileSync(join(root, "scripts/patch-nav.mjs"), "utf8"),
+        ),
+    );
+    assert(
+      "sitemap incluye /sueldo-liquido-a-bruto",
+      locs.includes("https://www.haberes.cl/sueldo-liquido-a-bruto") &&
+        lastmodForPath("/sueldo-liquido-a-bruto") === "2026-09-25",
+    );
+    assert(
+      "seo-map documenta /sueldo-liquido-a-bruto y no-canibalizar /sueldo",
+      /\/sueldo-liquido-a-bruto/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no canibalizar `\/sueldo`, `\/sueldo-proporcional`/.test(
+          readFileSync(join(root, "docs/seo-map.md"), "utf8"),
+        ) &&
+        /no crear `\/bruto-desde-liquido`/i.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")),
+    );
+    assert(
       "hub /guias enlaza /sueldo-empresarial en el cluster de liquidación",
       /href="\/sueldo-empresarial"/.test(readFileSync(join(root, "guias.html"), "utf8")) &&
         /<h2>Liquidaci[oó]n de sueldo<\/h2>[\s\S]*href="\/sueldo-empresarial"/.test(
@@ -18762,7 +18898,7 @@ assert(
     return acc;
   }
   const pages = listHtml(root);
-  assert("110 páginas HTML", pages.length === 110, String(pages.length));
+  assert("111 páginas HTML", pages.length === 111, String(pages.length));
   for (const file of pages) {
     const html = readFileSync(file, "utf8");
     const rel = file.slice(root.length + 1);

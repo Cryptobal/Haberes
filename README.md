@@ -39,6 +39,7 @@ en `js/picker.js` (hoja inferior con velo en móvil, panel anclado en escritorio
 
 - `/` inicio
 - `/sueldo` calculadora simple y completa
+- `/sueldo-liquido-a-bruto` del líquido objetivo al bruto (inversión del mismo motor)
 - `/horas-extras` valor de la hora extra (art. 32) y total del mes
 - `/pacto-horas-extras` pacto escrito de horas extras (arts. 31 y 32), recargo 50 % y tope de 2 h al día
 - `/gratificacion` gratificación legal art. 50 (25 % con tope mensual)

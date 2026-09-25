@@ -18,6 +18,7 @@ const DRAWER_LINKS = [
   ["/como", "Cómo"],
   ["/precios", "Precios"],
   ["/sueldo", "Sueldo líquido"],
+  ["/sueldo-liquido-a-bruto", "Líquido a bruto"],
   ["/sueldo-proporcional", "Sueldo proporcional"],
   ["/sueldo-minimo", "Sueldo mínimo"],
   ["/descuento-atrasos", "Descuento atrasos"],
