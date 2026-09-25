@@ -62,6 +62,7 @@ const DRAWER_LINKS = [
   ["/colacion-movilizacion", "Colación y movilización"],
   ["/viatico", "Viático"],
   ["/sueldo-empresarial", "Sueldo empresarial"],
+  ["/franquicia-sence", "Franquicia SENCE"],
   ["/vacaciones-proporcionales", "Vacaciones proporcionales"],
   ["/feriado-anual", "Feriado anual"],
   ["/feriado-progresivo", "Feriado progresivo"],
