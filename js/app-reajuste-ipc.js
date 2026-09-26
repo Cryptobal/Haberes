@@ -73,7 +73,7 @@ async function cargarSerie() {
   if (fuente) {
     fuente.textContent =
       serieEstado === "ok"
-        ? `Serie IPC de mindicador.cl (${serie.length} variaciones mensuales, unidad porcentaje). No es una tabla fija de Haberes.`
+        ? `Serie IPC de mindicador.cl (${serie.length} variaciones mensuales). El rango es inclusive: porcentaje efectivo = (producto de (1 + v/100) − 1) × 100. No es una tabla fija de Haberes.`
         : "mindicador.cl no entregó la serie IPC. Use el porcentaje manual.";
   }
   recalc();
@@ -130,7 +130,7 @@ function recalc() {
       sueldoActual,
       variacionesMensuales: rango.variaciones,
     });
-    const extra = `IPC acumulado de ${rango.desde} a ${rango.hasta} (${rango.variaciones.length} ${rango.variaciones.length === 1 ? "mes" : "meses"}, composición de variaciones mensuales): ${fmtPct(calc.porcentajeEfectivo)}.`;
+    const extra = `IPC de ${rango.desde} a ${rango.hasta}, inclusive (${rango.variaciones.length} ${rango.variaciones.length === 1 ? "mes" : "meses"}): porcentaje efectivo ${fmtPct(calc.porcentajeEfectivo)} = (producto de (1 + v/100) − 1) × 100.`;
     pintar(calc, notaResultado(calc, extra));
     return;
   }

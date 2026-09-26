@@ -83,7 +83,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
       "name": "¿Cómo se acumula la variación del IPC de varios meses?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "No se suman los porcentajes. Se componen los factores: el producto de (1 + variación mensual / 100), menos 1. Dos meses de 1,0 % y 0,5 % dan 1,505 %, no 1,5 %. El sueldo reajustado se redondea al peso."
+        "text": "No se suman los porcentajes. El rango es inclusive. El porcentaje efectivo es (producto de (1 + variación mensual / 100) − 1) × 100. Dos meses de 1,0 % y 0,5 % dan 1,505 %, no 1,5 %. Luego el sueldo reajustado es el redondeo al peso de sueldo × (1 + porcentaje efectivo / 100)."
       }
     },
     {
@@ -254,8 +254,9 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
               </div>
             </div>
             <p class="hint" id="ipcFuente">
-              Se leen las variaciones mensuales del IPC en mindicador.cl (unidad porcentaje)
-              y se componen: producto de (1 + v/100) − 1. No es una tabla fija de Haberes.
+              Mes desde y mes hasta, inclusive. El porcentaje efectivo es
+              (producto de (1 + v/100) − 1) × 100, con v la variación mensual de cada mes.
+              No es una tabla fija de Haberes.
             </p>
           </div>
         </form>
@@ -288,9 +289,9 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           El IPC es el Índice de Precios al Consumidor que publica el INE: una
           <strong>variación porcentual mensual</strong>. Esta calculadora aplica esa
           variación (o la que usted escriba) a un monto en pesos:
-          <strong>reajustado = redondeo al peso de sueldo × (1 + porcentaje / 100)</strong>.
-          Si elige varios meses, no suma los porcentajes: compone los factores
-          mensuales, ∏(1 + v<sub>i</sub>/100) − 1.
+          <strong>reajustado = redondeo al peso de sueldo × (1 + porcentaje efectivo / 100)</strong>.
+          Si elige varios meses, el rango es inclusive y no se suman los porcentajes:
+          el porcentaje efectivo es (∏(1 + v<sub>i</sub>/100) − 1) × 100.
         </p>
         <p>
           La serie, cuando elige un rango, sale de
@@ -363,7 +364,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         </p>
         <h3>¿Cómo se acumula la variación del IPC de varios meses?</h3>
         <p>
-          No se suman los porcentajes. Se componen los factores: el producto de (1 + variación mensual / 100), menos 1. Dos meses de 1,0 % y 0,5 % dan 1,505 %, no 1,5 %. El sueldo reajustado se redondea al peso.
+          No se suman los porcentajes. El rango es inclusive. El porcentaje efectivo es (producto de (1 + variación mensual / 100) − 1) × 100. Dos meses de 1,0 % y 0,5 % dan 1,505 %, no 1,5 %. Luego el sueldo reajustado es el redondeo al peso de sueldo × (1 + porcentaje efectivo / 100).
         </p>
         <h3>¿Esto reemplaza el interés por mora del artículo 63?</h3>
         <p>
