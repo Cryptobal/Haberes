@@ -25,6 +25,7 @@ const DRAWER_LINKS = [
   ["/licencia-medica", "Licencia médica"],
   ["/retencion-judicial", "Retención judicial"],
   ["/apv", "APV Régimen B"],
+  ["/valor-hora", "Valor hora"],
   ["/horas-extras", "Horas extras"],
   ["/compensacion-horas-extras", "Compensación horas extras"],
   ["/pacto-horas-extras", "Pacto horas extras"],
