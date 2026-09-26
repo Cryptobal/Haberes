@@ -245,6 +245,7 @@ function paintLoggedInNav(emp) {
         <a href="/viatico" data-nav>Viático</a>
         <a href="/sueldo-empresarial" data-nav>Sueldo empresarial</a>
         <a href="/franquicia-sence" data-nav>Franquicia SENCE</a>
+        <a href="/reajuste-ipc" data-nav>Reajuste IPC</a>
         <a href="/vacaciones-proporcionales" data-nav>Vacaciones proporcionales</a>
         <a href="/feriado-anual" data-nav>Feriado anual</a>
         <a href="/feriado-progresivo" data-nav>Feriado progresivo</a>

@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="es-CL">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script>
+  (function () {
+    try {
+      var t = localStorage.getItem("haberes:theme");
+      if (t !== "day" && t !== "night") t = "day";
+      document.documentElement.setAttribute("data-theme", t);
+    } catch (e) {}
+  })();
+  </script>
+<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-PCR596Z2');</script>
+<!-- End Google Tag Manager -->
+  <title>Calcular reajuste de sueldo por IPC 2026 — Haberes</title>
+  <meta name="description" content="Estime el sueldo reajustado al aplicar una variación del IPC, manual o por meses. En el sector privado chileno no es automático por ley." />
+  <link rel="canonical" href="https://www.haberes.cl/reajuste-ipc" />
+  <meta property="og:type" content="website" />
+  <meta property="og:locale" content="es_CL" />
+  <meta property="og:site_name" content="Haberes" />
+  <meta property="og:title" content="Calcular reajuste de sueldo por IPC 2026 — Haberes" />
+  <meta property="og:description" content="Estime el sueldo reajustado al aplicar una variación del IPC, manual o por meses. En el sector privado chileno no es automático por ley." />
+  <meta property="og:url" content="https://www.haberes.cl/reajuste-ipc" />
+  <meta property="og:image" content="https://www.haberes.cl/img/og-default.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Calcular reajuste de sueldo por IPC 2026 — Haberes" />
+  <meta name="twitter:description" content="Estime el sueldo reajustado al aplicar una variación del IPC, manual o por meses. En el sector privado chileno no es automático por ley." />
+  <meta name="twitter:image" content="https://www.haberes.cl/img/og-default.png" />
+  <link rel="icon" href="favicon.ico" sizes="32x32" />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="css/app.css" />
+  <!-- GA4: para activarlo, asigne un ID G-… a window.HABERES_GA4 antes de este script. Vacío = sin peticiones. -->
+  <script src="js/analytics.js" defer></script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "Haberes",
+  "url": "https://www.haberes.cl/",
+  "logo": "https://www.haberes.cl/favicon.svg",
+  "areaServed": "CL",
+  "sameAs": []
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Calcular reajuste de sueldo por IPC — Haberes",
+  "url": "https://www.haberes.cl/reajuste-ipc",
+  "applicationCategory": "FinanceApplication",
+  "operatingSystem": "Web",
+  "inLanguage": "es-CL",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "CLP"
+  }
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "¿El reajuste por IPC del sueldo es obligatorio?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "En el sector privado chileno, no es automático por ley. Depende de lo que diga el contrato, el convenio colectivo o un pacto. Esta página solo aplica el porcentaje que usted indica, o el que resulta de componer las variaciones mensuales del IPC. No obliga al empleador a reajustar."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "¿Cómo se acumula la variación del IPC de varios meses?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No se suman los porcentajes. Se componen los factores: el producto de (1 + variación mensual / 100), menos 1. Dos meses de 1,0 % y 0,5 % dan 1,505 %, no 1,5 %. El sueldo reajustado se redondea al peso."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "¿Esto reemplaza el interés por mora del artículo 63?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. El artículo 63 (reajuste e interés cuando el empleador paga tarde) se estima en calcular interés por mora. Aquí se reajusta una remuneración vigente por una variación del IPC. Tampoco es la rebaja de impuesto por zona extrema ni un reajuste del sector público o del Estatuto Administrativo."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "¿Es un cálculo del INE, del SII o de la Dirección del Trabajo?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. El IPC es el Índice de Precios al Consumidor que publica el INE, y la serie mensual se lee de mindicador.cl cuando elige un rango de meses. Haberes no es el INE, el SII ni la Dirección del Trabajo, y esto no es asesoría laboral ni previsional."
+      }
+    }
+  ]
+}
+  </script>
+</head>
+<body>
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PCR596Z2"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+  <header class="site-header">
+    <nav class="nav">
+      <a class="brand" href="/" data-nav>
+        <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><rect x="8" y="2" width="6" height="4" rx="2"/><rect x="18" y="2" width="6" height="4" rx="2"/><rect x="8" y="8" width="6" height="4" rx="2"/><rect x="18" y="8" width="6" height="4" rx="2"/><rect x="8" y="14" width="6" height="4" rx="2"/><rect x="18" y="14" width="6" height="4" rx="2"/><rect x="8" y="20" width="6" height="4" rx="2"/><rect x="18" y="20" width="6" height="4" rx="2"/><rect x="8" y="26" width="6" height="4" rx="2"/><rect x="18" y="26" width="6" height="4" rx="2"/><rect x="14" y="14" width="4" height="4" rx="2"/></svg></span> Haberes
+      </a>
+      <div class="nav-links">
+        <a href="/como" data-nav>Cómo</a>
+        <a href="/precios" data-nav>Precios</a>
+      </div>
+      <div class="nav-actions">
+        <button type="button" class="theme-toggle" data-theme-toggle aria-label="Cambiar a modo noche" aria-pressed="false">
+          <svg class="ic-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.64 5.64l1.41 1.41M16.95 16.95l1.41 1.41M18.36 5.64l-1.41 1.41M7.05 16.95l-1.41 1.41"/></svg>
+          <svg class="ic-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 14.35A8.4 8.4 0 1 1 9.65 3 6.6 6.6 0 0 0 21 14.35z"/></svg>
+        </button>
+        <a class="btn btn-ghost btn-sm nav-login" href="/empresa">Entrar</a>
+        <a class="btn btn-sm nav-cta" href="/empresa?registro=1">Empezar gratis</a>
+        <button type="button" class="nav-burger" data-nav-burger aria-expanded="false" aria-controls="navDrawer" aria-label="Abrir menú">
+          <i aria-hidden="true"></i>
+        </button>
+      </div>
+    </nav>
+  </header>
+  <div class="nav-drawer" id="navDrawer" data-nav-drawer hidden>
+      <div class="nav-drawer-scrim" data-nav-scrim></div>
+      <div class="nav-drawer-panel" role="dialog" aria-modal="true" aria-label="Menú de navegación">
+        <div class="nav-drawer-grab" aria-hidden="true"></div>
+        <a href="/como" data-nav>Cómo</a>
+        <a href="/precios" data-nav>Precios</a>
+        <a href="/sueldo" data-nav>Sueldo líquido</a>
+        <a href="/sueldo-proporcional" data-nav>Sueldo proporcional</a>
+        <a href="/sueldo-minimo" data-nav>Sueldo mínimo</a>
+        <a href="/horas-extras" data-nav>Horas extras</a>
+        <a href="/compensacion-horas-extras" data-nav>Compensación horas extras</a>
+        <a href="/pacto-horas-extras" data-nav>Pacto horas extras</a>
+        <a href="/jornada-40-horas" data-nav>Jornada 40 horas</a>
+        <a href="/jornada-parcial" data-nav>Jornada parcial</a>
+        <a href="/teletrabajo" data-nav>Teletrabajo</a>
+        <a href="/bandas-horarias" data-nav>Bandas horarias</a>
+        <a href="/pacto-4x3" data-nav>Pacto 4×3</a>
+        <a href="/jornada-excepcional" data-nav>Jornada excepcional</a>
+        <a href="/jornada-bisemanal" data-nav>Jornada bisemanal</a>
+        <a href="/permiso-prenatal" data-nav>Permiso prenatal</a>
+        <a href="/fuero-maternal" data-nav>Fuero maternal</a>
+        <a href="/permiso-paternidad" data-nav>Permiso paternidad</a>
+        <a href="/permiso-matrimonio" data-nav>Permiso matrimonio</a>
+        <a href="/permiso-fallecimiento" data-nav>Permiso fallecimiento</a>
+        <a href="/permiso-sin-goce" data-nav>Permiso sin goce</a>
+        <a href="/interes-mora" data-nav>Interés por mora</a>
+        <a href="/recargo-domingo-comercio" data-nav>Recargo domingo comercio</a>
+        <a href="/descanso-compensatorio" data-nav>Descanso compensatorio</a>
+        <a href="/feriado-irrenunciable" data-nav>Feriado irrenunciable</a>
+        <a href="/semana-corrida" data-nav>Semana corrida</a>
+        <a href="/gratificacion" data-nav>Gratificación</a>
+        <a href="/aguinaldo" data-nav>Aguinaldo</a>
+        <a href="/impuesto-unico" data-nav>Impuesto único</a>
+        <a href="/zona-extrema" data-nav>Zona extrema</a>
+        <a href="/boleta-honorarios" data-nav>Boleta honorarios</a>
+        <a href="/cotizaciones-previsionales" data-nav>Cotizaciones previsionales</a>
+        <a href="/tope-imponible" data-nav>Tope imponible</a>
+        <a href="/costo-empresa" data-nav>Costo empresa</a>
+        <a href="/inclusion-laboral" data-nav>Inclusión laboral</a>
+        <a href="/seguro-cesantia" data-nav>Seguro de cesantía</a>
+        <a href="/trabajo-pesado" data-nav>Trabajo pesado</a>
+        <a href="/asignacion-familiar" data-nav>Asignación familiar</a>
+        <a href="/hora-lactancia" data-nav>Hora de lactancia</a>
+        <a href="/colacion-movilizacion" data-nav>Colación y movilización</a>
+        <a href="/viatico" data-nav>Viático</a>
+        <a href="/sueldo-empresarial" data-nav>Sueldo empresarial</a>
+        <a href="/franquicia-sence" data-nav>Franquicia SENCE</a>
+        <a href="/reajuste-ipc" data-nav>Reajuste IPC</a>
+        <a href="/vacaciones-proporcionales" data-nav>Vacaciones proporcionales</a>
+        <a href="/feriado-anual" data-nav>Feriado anual</a>
+        <a href="/feriado-progresivo" data-nav>Feriado progresivo</a>
+        <a href="/indemnizacion-anos-servicio" data-nav>Indemnización años de servicio</a>
+        <a href="/indemnizacion-aviso-previo" data-nav>Indemnización aviso previo</a>
+        <a href="/promedio-remuneraciones" data-nav>Promedio remuneraciones</a>
+        <a href="/antiguedad-laboral" data-nav>Antigüedad laboral</a>
+        <a href="/nulidad-despido" data-nav>Nulidad del despido</a>
+        <a href="/tutela-laboral" data-nav>Tutela laboral</a>
+        <a href="/despido-injustificado" data-nav>Despido injustificado</a>
+        <a href="/autodespido" data-nav>Autodespido</a>
+        <a href="/obra-faena" data-nav>Obra o faena</a>
+        <a href="/contrato-plazo-fijo" data-nav>Contrato a plazo fijo</a>
+        <a href="/termino-anticipado-plazo-fijo" data-nav>Término anticipado plazo fijo</a>
+        <a href="/prescripcion-laboral" data-nav>Prescripción laboral</a>
+        <a href="/finiquito-casa-particular" data-nav>Finiquito casa particular</a>
+        <a href="/finiquito" data-nav>Finiquito</a>
+        <div class="nav-drawer-foot">
+          <a class="btn" href="/empresa?registro=1">Empezar gratis</a>
+          <button type="button" class="btn btn-ghost" data-nav-close>Cerrar</button>
+        </div>
+      </div>
+    </div>
+
+  <main>
+    <div class="wrap">
+      <p class="kicker">Calculadora</p>
+      <h1>Calcular reajuste de sueldo por IPC Chile 2026</h1>
+      <p class="lede">
+        Estime el sueldo, u otra remuneración en pesos, reajustado al aplicar una
+        variación porcentual del IPC (Índice de Precios al Consumidor del INE).
+        No es el <a href="/sueldo">sueldo líquido</a>, ni el
+        <a href="/sueldo-empresarial">sueldo empresarial</a>, ni el
+        <a href="/costo-empresa">costo empresa</a>.
+      </p>
+      <p class="notice">
+        Documento generado por Haberes. No es un cálculo del INE, del SII, de la Dirección del Trabajo ni de Previred.
+        En el sector privado chileno el reajuste por IPC no es automático por ley: depende del contrato, convenio o pacto.
+        No constituye asesoría legal, laboral ni previsional. Es una estimación educativa.
+      </p>
+
+      <div class="layout" style="margin-top: 24px">
+        <form id="formReajusteIpc" class="panel">
+          <div class="field">
+            <label for="sueldoActual">Sueldo o remuneración actual</label>
+            <input id="sueldoActual" type="number" inputmode="numeric" min="0" step="1" value="1000000" required />
+          </div>
+          <div class="seg" role="radiogroup" aria-label="Variación del IPC">
+            <label><input type="radio" name="modo" value="manual" checked /> <span>Porcentaje manual</span></label>
+            <label><input type="radio" name="modo" value="rango" /> <span>Rango de meses</span></label>
+          </div>
+          <div id="wrapManual">
+            <div class="field">
+              <label for="porcentajeManual">Porcentaje de reajuste</label>
+              <input id="porcentajeManual" type="number" inputmode="decimal" step="0.001" value="0" />
+            </div>
+            <p class="hint">
+              Puede ser negativo. Un 10 es +10 %. El mismo porcentaje efectivo,
+              escrito aquí o compuesto con los meses, produce el mismo sueldo.
+            </p>
+          </div>
+          <div id="wrapRango" hidden>
+            <div class="row">
+              <div class="field">
+                <label for="desdeMes">Mes desde</label>
+                <input id="desdeMes" type="month" />
+              </div>
+              <div class="field">
+                <label for="hastaMes">Mes hasta</label>
+                <input id="hastaMes" type="month" />
+              </div>
+            </div>
+            <p class="hint" id="ipcFuente">
+              Se leen las variaciones mensuales del IPC en mindicador.cl (unidad porcentaje)
+              y se componen: producto de (1 + v/100) − 1. No es una tabla fija de Haberes.
+            </p>
+          </div>
+        </form>
+
+        <aside class="panel sticky">
+          <p class="metric-label">Sueldo reajustado</p>
+          <p class="metric" id="outReajustado">$ 0</p>
+          <p class="hint" id="outNota"></p>
+          <div class="mini">
+            <div><span>Porcentaje efectivo</span><strong id="outPct">0 %</strong></div>
+            <div><span>Diferencia en pesos</span><strong id="outDelta">$ 0</strong></div>
+          </div>
+          <p class="hint">
+            Pesos enteros. En el sector privado el reajuste por IPC no es automático por ley.
+            La mora del artículo 63 está en
+            <a href="/interes-mora">calcular interés por mora</a>.
+            La rebaja de impuesto por zona extrema está en
+            <a href="/zona-extrema">calcular zona extrema</a>.
+          </p>
+          <div class="actions">
+            <a class="btn" href="/sueldo">Ver sueldo líquido</a>
+            <a class="btn btn-ghost" href="/costo-empresa">Costo empresa</a>
+          </div>
+        </aside>
+      </div>
+
+      <section class="prose u-mt-6" aria-labelledby="reajuste-explica">
+        <h2 id="reajuste-explica">Qué estima esta página (y qué no)</h2>
+        <p>
+          El IPC es el Índice de Precios al Consumidor que publica el INE: una
+          <strong>variación porcentual mensual</strong>. Esta calculadora aplica esa
+          variación (o la que usted escriba) a un monto en pesos:
+          <strong>reajustado = redondeo al peso de sueldo × (1 + porcentaje / 100)</strong>.
+          Si elige varios meses, no suma los porcentajes: compone los factores
+          mensuales, ∏(1 + v<sub>i</sub>/100) − 1.
+        </p>
+        <p>
+          La serie, cuando elige un rango, sale de
+          <a href="https://mindicador.cl/api/ipc">mindicador.cl/api/ipc</a>
+          (la misma familia de indicadores del sitio; unidad Porcentaje = variación mensual).
+          Si un mes no está en esa ventana, la página no inventa el dato: use el porcentaje manual.
+        </p>
+        <h3>No es automático en el sector privado</h3>
+        <p>
+          En el sector privado chileno el reajuste por IPC <strong>no es automático por ley</strong>.
+          Depende del contrato individual, del convenio colectivo o de un pacto.
+          No es un reajuste del sector público ni del Estatuto Administrativo.
+          No es la UTM ni la UF, ni la rebaja del impuesto único por
+          <a href="/zona-extrema">zona extrema</a>.
+        </p>
+        <h3>Distinto del artículo 63</h3>
+        <p>
+          Si el empleador paga tarde, el reajuste y el interés por mora del
+          artículo 63 del Código del Trabajo se estiman en
+          <a href="/interes-mora">calcular interés por mora</a>.
+          Esa cuenta usa índices del IPC entre el mes anterior al vencimiento y el
+          mes precedente al pago, más la tasa máxima convencional. Aquí solo se
+          reajusta una remuneración vigente.
+        </p>
+        <h3>Ejemplos con porcentajes fijos</h3>
+        <p>
+          Sueldo $1.000.000 y 0 %: reajustado $1.000.000, delta $0.
+          Sueldo $1.000.000 y 10 %: reajustado $1.100.000, delta $100.000.
+          Sueldo $1.000.000 y −2,5 %: reajustado $975.000, delta −$25.000.
+          Sueldo $0 con cualquier porcentaje: $0.
+          Dos meses de +1,0 % y +0,5 % sobre $1.000.000: factor 1,01 × 1,005 = 1,01505,
+          porcentaje efectivo 1,505 % y reajustado $1.015.050.
+        </p>
+        <h3>Qué no cubre esta página</h3>
+        <p>
+          No calcula el <a href="/sueldo">sueldo líquido</a>, ni el camino
+          <a href="/sueldo-liquido-a-bruto">de líquido a bruto</a>, ni el
+          <a href="/sueldo-proporcional">sueldo proporcional</a>, ni el
+          <a href="/sueldo-minimo">sueldo mínimo</a>, ni el
+          <a href="/impuesto-unico">impuesto único</a>, ni las
+          <a href="/cotizaciones-previsionales">cotizaciones previsionales</a>,
+          ni el <a href="/tope-imponible">tope imponible</a>, ni la
+          <a href="/gratificacion">gratificación</a>, ni el
+          <a href="/aguinaldo">aguinaldo</a>, ni la
+          <a href="/boleta-honorarios">boleta de honorarios</a>, ni
+          <a href="/colacion-movilizacion">colación y movilización</a>, ni el
+          <a href="/viatico">viático</a>, ni el
+          <a href="/promedio-remuneraciones">promedio de remuneraciones</a>.
+          La cuenta de la pyme sigue en <a href="/empresa">empresa</a>.
+        </p>
+        <p class="notice">
+          La ruta canónica es <code>/reajuste-ipc</code>.
+          No abre URLs hermanas <code>/reajuste</code>, <code>/reajuste-sueldo</code>,
+          <code>/reajuste-salarial</code>, <code>/ipc</code>, <code>/calculadora-ipc</code>,
+          <code>/ipc-acumulado</code>, <code>/inflacion</code>, <code>/actualizacion-sueldo</code>,
+          <code>/reajuste-por-ipc</code>, <code>/utm</code> ni <code>/uf</code>.
+        </p>
+        <h3>Guías y calculadoras relacionadas</h3>
+        <ul>
+          <li><a href="/sueldo">Calculadora de sueldo líquido</a></li>
+          <li><a href="/sueldo-empresarial">Calcular sueldo empresarial</a></li>
+          <li><a href="/costo-empresa">Calcular costo empresa</a></li>
+          <li><a href="/interes-mora">Calcular interés por mora</a></li>
+          <li><a href="/empresa">Cuenta de empresa</a></li>
+        </ul>
+        <h2 id="faq-reajuste-ipc">Preguntas frecuentes</h2>
+        <h3>¿El reajuste por IPC del sueldo es obligatorio?</h3>
+        <p>
+          En el sector privado chileno, no es automático por ley. Depende de lo que diga el contrato, el convenio colectivo o un pacto. Esta página solo aplica el porcentaje que usted indica, o el que resulta de componer las variaciones mensuales del IPC. No obliga al empleador a reajustar.
+        </p>
+        <h3>¿Cómo se acumula la variación del IPC de varios meses?</h3>
+        <p>
+          No se suman los porcentajes. Se componen los factores: el producto de (1 + variación mensual / 100), menos 1. Dos meses de 1,0 % y 0,5 % dan 1,505 %, no 1,5 %. El sueldo reajustado se redondea al peso.
+        </p>
+        <h3>¿Esto reemplaza el interés por mora del artículo 63?</h3>
+        <p>
+          No. El artículo 63 (reajuste e interés cuando el empleador paga tarde) se estima en calcular interés por mora. Aquí se reajusta una remuneración vigente por una variación del IPC. Tampoco es la rebaja de impuesto por zona extrema ni un reajuste del sector público o del Estatuto Administrativo.
+        </p>
+        <h3>¿Es un cálculo del INE, del SII o de la Dirección del Trabajo?</h3>
+        <p>
+          No. El IPC es el Índice de Precios al Consumidor que publica el INE, y la serie mensual se lee de mindicador.cl cuando elige un rango de meses. Haberes no es el INE, el SII ni la Dirección del Trabajo, y esto no es asesoría laboral ni previsional.
+        </p>
+      </section>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <div><strong>Haberes</strong> · reajuste por IPC</div>
+      <div class="footer-legal">
+        <a href="/como">Cómo funciona</a>
+        <span aria-hidden="true">·</span>
+        <a href="/precios">Precios</a>
+        <span aria-hidden="true">·</span>
+        <a href="/privacidad">Privacidad</a>
+        <span aria-hidden="true">·</span>
+        <a href="/terminos">Términos</a>
+      </div>
+      <div class="footer-credit">
+        Proyecto desarrollado por <a href="https://lx3.ai" rel="noopener noreferrer">lx3.ai</a>
+        · <a href="mailto:contacto@lx3.ai">contacto@lx3.ai</a>
+      </div>
+      <div data-indicadores>UF y UTM se cargan…</div>
+      <div>
+        Documento generado por Haberes. No es un cálculo del INE, del SII, de la Dirección del Trabajo ni de Previred.
+        En el sector privado chileno el reajuste por IPC no es automático por ley: depende del contrato, convenio o pacto.
+        No constituye asesoría legal, laboral ni previsional.
+      </div>
+    </div>
+  </footer>
+  <script type="module" src="js/app-reajuste-ipc.js"></script>
+</body>
+</html>

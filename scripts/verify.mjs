@@ -191,6 +191,7 @@ import {
 import { calcularViatico } from "../js/viatico.js";
 import { calcularSueldoEmpresarial } from "../js/sueldo-empresarial.js";
 import { calcularFranquiciaSence, UTM_SEP_2026, VALORES_HORA_SENCE_2026 } from "../js/franquicia-sence.js";
+import { calcularReajusteIpc, variacionesEnRango } from "../js/reajuste-ipc.js";
 import { calcularSueldoLiquidoABruto } from "../js/sueldo-liquido-a-bruto.js";
 import { clp, dvRut, validarRut } from "../js/format.js";
 import {
@@ -1021,6 +1022,68 @@ assert(
     /import\s*\{[^}]*calcularFranquiciaSence[^}]*\}\s*from\s*["']\.\/franquicia-sence\.js["']/.test(fsApp) &&
       /calcularFranquiciaSence\s*\(/.test(fsApp) &&
       /mountIndicadores\(/.test(fsApp),
+  );
+}
+{
+  const cero = calcularReajusteIpc({ sueldoActual: 1_000_000, porcentaje: 0 });
+  const diez = calcularReajusteIpc({ sueldoActual: 1_000_000, porcentaje: 10 });
+  const baja = calcularReajusteIpc({ sueldoActual: 1_000_000, porcentaje: -2.5 });
+  const nulo = calcularReajusteIpc({ sueldoActual: 0, porcentaje: 10 });
+  const acc = calcularReajusteIpc({
+    sueldoActual: 1_000_000,
+    variacionesMensuales: [1, 0.5],
+  });
+  const mismo = calcularReajusteIpc({
+    sueldoActual: 1_000_000,
+    porcentaje: acc.porcentajeEfectivo,
+  });
+  const rango = variacionesEnRango(
+    [
+      { fecha: "2026-02-01T03:00:00.000Z", valor: 0.5 },
+      { fecha: "2026-01-01T03:00:00.000Z", valor: 1 },
+    ],
+    "2026-02",
+    "2026-01",
+  );
+  const porRango = calcularReajusteIpc({
+    sueldoActual: 1_000_000,
+    variacionesMensuales: rango.variaciones,
+  });
+  assert(
+    "reajuste IPC 0 % deja el sueldo igual",
+    cero.sueldoReajustado === 1_000_000 && cero.deltaPesos === 0 && cero.porcentajeEfectivo === 0,
+  );
+  assert(
+    "reajuste IPC 10 % sobre 1000000 → 1100000",
+    diez.sueldoReajustado === 1_100_000 && diez.deltaPesos === 100_000,
+  );
+  assert(
+    "reajuste IPC −2,5 % sobre 1000000 → 975000",
+    baja.sueldoReajustado === 975_000 && baja.deltaPesos === -25_000,
+  );
+  assert("reajuste IPC sueldo 0 → 0", nulo.sueldoReajustado === 0 && nulo.deltaPesos === 0);
+  assert(
+    "reajuste IPC acumulado 1 % y 0,5 % → 1015050 y ≈ 1,505 %",
+    acc.sueldoReajustado === 1_015_050 &&
+      acc.deltaPesos === 15_050 &&
+      Math.abs(acc.porcentajeEfectivo - 1.505) < 1e-9 &&
+      mismo.sueldoReajustado === acc.sueldoReajustado,
+    `${acc.sueldoReajustado} ${acc.porcentajeEfectivo}`,
+  );
+  assert(
+    "reajuste IPC rango de meses compone en orden cronológico",
+    rango.ok === true &&
+      rango.variaciones[0] === 1 &&
+      rango.variaciones[1] === 0.5 &&
+      porRango.sueldoReajustado === 1_015_050,
+  );
+  const riApp = readFileSync(join(root, "js/app-reajuste-ipc.js"), "utf8");
+  assert(
+    "app-reajuste-ipc usa calcularReajusteIpc",
+    /import\s*\{[^}]*calcularReajusteIpc[^}]*\}\s*from\s*["']\.\/reajuste-ipc\.js["']/.test(riApp) &&
+      /calcularReajusteIpc\s*\(/.test(riApp) &&
+      /mountIndicadores\(/.test(riApp) &&
+      /mindicador|\/ipc/.test(riApp),
   );
 }
 assert(
@@ -5843,6 +5906,7 @@ const required = [
   "viatico.html",
   "sueldo-empresarial.html",
   "franquicia-sence.html",
+  "reajuste-ipc.html",
   "sueldo-minimo.html",
   "descuento-atrasos.html",
   "licencia-medica.html",
@@ -5906,6 +5970,7 @@ const required = [
   "js/app-viatico.js",
   "js/app-sueldo-empresarial.js",
   "js/app-franquicia-sence.js",
+  "js/app-reajuste-ipc.js",
   "js/app-sueldo-minimo.js",
   "js/app-descuento-atrasos.js",
   "js/app-licencia-medica.js",
@@ -5965,6 +6030,7 @@ const required = [
   "js/viatico.js",
   "js/sueldo-empresarial.js",
   "js/franquicia-sence.js",
+  "js/reajuste-ipc.js",
   "js/feriados.js",
   "js/interes-mora.js",
   "js/prescripcion-laboral.js",
@@ -6121,6 +6187,7 @@ const htmlFiles = [
   "viatico.html",
   "sueldo-empresarial.html",
   "franquicia-sence.html",
+  "reajuste-ipc.html",
   "sueldo-minimo.html",
   "descuento-atrasos.html",
   "licencia-medica.html",
@@ -6260,6 +6327,7 @@ const appEntries = [
   "js/app-viatico.js",
   "js/app-sueldo-empresarial.js",
   "js/app-franquicia-sence.js",
+  "js/app-reajuste-ipc.js",
   "js/app-sueldo-minimo.js",
   "js/app-descuento-atrasos.js",
   "js/app-licencia-medica.js",
@@ -6338,7 +6406,7 @@ assert("robots Allow /", /Allow:\s*\//.test(robots));
 assert("robots Disallow /admin", /Disallow:\s*\/admin/.test(robots));
 assert("robots Disallow /api", /Disallow:\s*\/api/.test(robots));
 assert("robots Disallow /docs", /Disallow:\s*\/docs/.test(robots));
-assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/trabajo-pesado/.test(robots) && !/Disallow:\s*\/nulidad-despido/.test(robots) && !/Disallow:\s*\/tutela-laboral/.test(robots) && !/Disallow:\s*\/despido-injustificado/.test(robots) && !/Disallow:\s*\/autodespido/.test(robots) && !/Disallow:\s*\/obra-faena/.test(robots) && !/Disallow:\s*\/prescripcion-laboral/.test(robots) && !/Disallow:\s*\/descanso-compensatorio/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/feriado-anual/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/licencia-medica/.test(robots) && !/Disallow:\s*\/boleta-honorarios/.test(robots) && !/Disallow:\s*\/retencion-judicial/.test(robots) && !/Disallow:\s*\/apv/.test(robots) && !/Disallow:\s*\/sala-cuna/.test(robots) && !/Disallow:\s*\/postnatal-parental/.test(robots) && !/Disallow:\s*\/permiso-prenatal/.test(robots) && !/Disallow:\s*\/fuero-maternal/.test(robots) && !/Disallow:\s*\/permiso-paternidad/.test(robots) && !/Disallow:\s*\/permiso-matrimonio/.test(robots) && !/Disallow:\s*\/permiso-fallecimiento/.test(robots) && !/Disallow:\s*\/interes-mora/.test(robots) && !/Disallow:\s*\/hora-lactancia/.test(robots) && !/Disallow:\s*\/jornada-40-horas/.test(robots) && !/Disallow:\s*\/jornada-parcial/.test(robots) && !/Disallow:\s*\/teletrabajo/.test(robots) && !/Disallow:\s*\/bandas-horarias/.test(robots) && !/Disallow:\s*\/pacto-4x3/.test(robots) && !/Disallow:\s*\/jornada-excepcional/.test(robots) && !/Disallow:\s*\/jornada-bisemanal/.test(robots) && !/Disallow:\s*\/compensacion-horas-extras/.test(robots) && !/Disallow:\s*\/pacto-horas-extras/.test(robots) && !/Disallow:\s*\/contrato-plazo-fijo/.test(robots) && !/Disallow:\s*\/termino-anticipado-plazo-fijo/.test(robots) && !/Disallow:\s*\/permiso-sin-goce/.test(robots) && !/Disallow:\s*\/zona-extrema/.test(robots) && !/Disallow:\s*\/promedio-remuneraciones/.test(robots) && !/Disallow:\s*\/antiguedad-laboral/.test(robots) && !/Disallow:\s*\/tope-imponible/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots) && !/Disallow:\s*\/inclusion-laboral/.test(robots));
+assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/trabajo-pesado/.test(robots) && !/Disallow:\s*\/nulidad-despido/.test(robots) && !/Disallow:\s*\/tutela-laboral/.test(robots) && !/Disallow:\s*\/despido-injustificado/.test(robots) && !/Disallow:\s*\/autodespido/.test(robots) && !/Disallow:\s*\/obra-faena/.test(robots) && !/Disallow:\s*\/prescripcion-laboral/.test(robots) && !/Disallow:\s*\/descanso-compensatorio/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/feriado-anual/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/licencia-medica/.test(robots) && !/Disallow:\s*\/boleta-honorarios/.test(robots) && !/Disallow:\s*\/retencion-judicial/.test(robots) && !/Disallow:\s*\/apv/.test(robots) && !/Disallow:\s*\/sala-cuna/.test(robots) && !/Disallow:\s*\/postnatal-parental/.test(robots) && !/Disallow:\s*\/permiso-prenatal/.test(robots) && !/Disallow:\s*\/fuero-maternal/.test(robots) && !/Disallow:\s*\/permiso-paternidad/.test(robots) && !/Disallow:\s*\/permiso-matrimonio/.test(robots) && !/Disallow:\s*\/permiso-fallecimiento/.test(robots) && !/Disallow:\s*\/interes-mora/.test(robots) && !/Disallow:\s*\/hora-lactancia/.test(robots) && !/Disallow:\s*\/jornada-40-horas/.test(robots) && !/Disallow:\s*\/jornada-parcial/.test(robots) && !/Disallow:\s*\/teletrabajo/.test(robots) && !/Disallow:\s*\/bandas-horarias/.test(robots) && !/Disallow:\s*\/pacto-4x3/.test(robots) && !/Disallow:\s*\/jornada-excepcional/.test(robots) && !/Disallow:\s*\/jornada-bisemanal/.test(robots) && !/Disallow:\s*\/compensacion-horas-extras/.test(robots) && !/Disallow:\s*\/pacto-horas-extras/.test(robots) && !/Disallow:\s*\/contrato-plazo-fijo/.test(robots) && !/Disallow:\s*\/termino-anticipado-plazo-fijo/.test(robots) && !/Disallow:\s*\/permiso-sin-goce/.test(robots) && !/Disallow:\s*\/zona-extrema/.test(robots) && !/Disallow:\s*\/promedio-remuneraciones/.test(robots) && !/Disallow:\s*\/antiguedad-laboral/.test(robots) && !/Disallow:\s*\/tope-imponible/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots) && !/Disallow:\s*\/inclusion-laboral/.test(robots) && !/Disallow:\s*\/reajuste-ipc/.test(robots));
 assert("robots Sitemap", /Sitemap:\s*https:\/\/www\.haberes\.cl\/sitemap\.xml/.test(robots));
 
 const { seoPaths, GUIDE_SLUGS, GUIDES, CAUSAL_PAGES, BASE_PATHS, lastmodForPath } = await import("../content/registry.js");
@@ -6374,6 +6442,7 @@ assert(
     BASE_PATHS.includes("/viatico") &&
     BASE_PATHS.includes("/sueldo-empresarial") &&
     BASE_PATHS.includes("/franquicia-sence") &&
+    BASE_PATHS.includes("/reajuste-ipc") &&
     BASE_PATHS.includes("/feriado-progresivo") &&
     BASE_PATHS.includes("/indemnizacion-anos-servicio") &&
     BASE_PATHS.includes("/aguinaldo") &&
@@ -6775,7 +6844,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 110,
+      seoPaths().length === 111,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -6787,7 +6856,7 @@ try {
   const docsSeo = await hitLocal("/docs/seo-map.md");
   assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
   assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
-  for (const p of ["/sueldo/", "/sueldo-liquido-a-bruto/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/obra-faena/", "/prescripcion-laboral/", "/descanso-compensatorio/", "/inclusion-laboral/", "/jornada-parcial/", "/teletrabajo/", "/bandas-horarias/", "/pacto-4x3/", "/jornada-excepcional/", "/jornada-bisemanal/", "/compensacion-horas-extras/", "/pacto-horas-extras/", "/contrato-plazo-fijo/", "/termino-anticipado-plazo-fijo/", "/permiso-sin-goce/", "/zona-extrema/", "/promedio-remuneraciones/", "/antiguedad-laboral/", "/tope-imponible/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/viatico/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+  for (const p of ["/sueldo/", "/sueldo-liquido-a-bruto/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/obra-faena/", "/prescripcion-laboral/", "/descanso-compensatorio/", "/inclusion-laboral/", "/jornada-parcial/", "/teletrabajo/", "/bandas-horarias/", "/pacto-4x3/", "/jornada-excepcional/", "/jornada-bisemanal/", "/compensacion-horas-extras/", "/pacto-horas-extras/", "/contrato-plazo-fijo/", "/termino-anticipado-plazo-fijo/", "/permiso-sin-goce/", "/zona-extrema/", "/promedio-remuneraciones/", "/antiguedad-laboral/", "/tope-imponible/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/viatico/", "/reajuste-ipc/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
   }
@@ -6865,6 +6934,7 @@ try {
     "/viatico",
     "/sueldo-empresarial",
     "/franquicia-sence",
+    "/reajuste-ipc",
     "/sueldo-liquido-a-bruto",
     "/guias/liquidacion-de-sueldo",
     "/guias/finiquito",
@@ -10641,6 +10711,7 @@ assert(
     ["viatico.html", "/viatico"],
     ["sueldo-empresarial.html", "/sueldo-empresarial"],
     ["franquicia-sence.html", "/franquicia-sence"],
+    ["reajuste-ipc.html", "/reajuste-ipc"],
     ["sueldo-minimo.html", "/sueldo-minimo"],
     ["descuento-atrasos.html", "/descuento-atrasos"],
     ["licencia-medica.html", "/licencia-medica"],
@@ -12390,8 +12461,7 @@ assert(
         !existsSync(join(root, "franquicia-889.html")) &&
         !existsSync(join(root, "credito-zona-extrema.html")) &&
         !existsSync(join(root, "asignacion-zona.html")) &&
-        !existsSync(join(root, "gratificacion-zona.html")) &&
-        !existsSync(join(root, "reajuste-ipc.html")),
+        !existsSync(join(root, "gratificacion-zona.html")),
     );
     assert(
       "home y nav enlazan /zona-extrema",
@@ -15362,7 +15432,6 @@ assert(
         /href="\/guias\/plazo-de-pago-del-finiquito"/.test(imHtml) &&
         /no constituye asesor[ií]a legal/i.test(imHtml) &&
         /liquidaci[oó]n judicial/.test(imHtml) &&
-        !existsSync(join(root, "reajuste-ipc.html")) &&
         !existsSync(join(root, "mora-sueldo.html")) &&
         !existsSync(join(root, "art-63.html")),
     );
@@ -15385,7 +15454,10 @@ assert(
         /no canibalizar `\/finiquito`, `\/sueldo`, `\/descuento-atrasos`/.test(
           readFileSync(join(root, "docs/seo-map.md"), "utf8"),
         ) &&
-        /no crear `\/reajuste-ipc`/i.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")),
+        /El reajuste de un sueldo vigente por variaci[oó]n del IPC vive en `\/reajuste-ipc`/.test(
+          readFileSync(join(root, "docs/seo-map.md"), "utf8"),
+        ) &&
+        /no crear `\/mora-sueldo`/i.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")),
     );
     assert(
       "hub /guias enlaza /interes-mora en el cluster de liquidación",
@@ -17537,6 +17609,106 @@ assert(
     );
   }
   {
+    const riHtml = readFileSync(join(root, "reajuste-ipc.html"), "utf8");
+    const riTitle = (riHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const riH1 = (riHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const riDesc = (riHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "";
+    const sueldoHtmlRi = readFileSync(join(root, "sueldo.html"), "utf8");
+    const seHtmlRi = readFileSync(join(root, "sueldo-empresarial.html"), "utf8");
+    const ceHtmlRi = readFileSync(join(root, "costo-empresa.html"), "utf8");
+    const acc = calcularReajusteIpc({ sueldoActual: 1_000_000, variacionesMensuales: [1, 0.5] });
+    assert(
+      "SEO title reajuste IPC apunta a calcular reajuste de sueldo por IPC",
+      /calcular reajuste de sueldo por IPC/i.test(riTitle) &&
+        riTitle !== ((sueldoHtmlRi.match(/<title>([^<]*)<\/title>/) || [])[1] || "") &&
+        riTitle !== ((seHtmlRi.match(/<title>([^<]*)<\/title>/) || [])[1] || "") &&
+        riTitle !== ((ceHtmlRi.match(/<title>([^<]*)<\/title>/) || [])[1] || "") &&
+        riTitle.length <= 65,
+      riTitle,
+    );
+    assert(
+      "SEO H1 reajuste IPC Chile 2026",
+      riH1 === "Calcular reajuste de sueldo por IPC Chile 2026",
+      riH1,
+    );
+    assert(
+      "SEO reajuste IPC meta distinta de /sueldo",
+      riDesc &&
+        riDesc !== ((sueldoHtmlRi.match(/meta name="description" content="([^"]*)"/) || [])[1] || "") &&
+        /no es autom[aá]tico por ley/i.test(riDesc),
+    );
+    assert(
+      "SEO reajuste IPC disclaimer sector privado y FAQPage",
+      /no es autom[aá]tico por ley/i.test(riHtml) &&
+        /contrato, convenio o pacto/i.test(riHtml) &&
+        /INE/.test(riHtml) &&
+        /Direcci[oó]n del Trabajo/.test(riHtml) &&
+        /no constituye asesor[ií]a legal/i.test(riHtml) &&
+        /mindicador\.cl\/api\/ipc/.test(riHtml) &&
+        /"@type": "FAQPage"/.test(riHtml),
+    );
+    assert(
+      "SEO reajuste IPC gold 1100000, 975000 y 1015050",
+      acc.sueldoReajustado === 1_015_050 &&
+        /\$1\.100\.000/.test(riHtml) &&
+        /\$975\.000/.test(riHtml) &&
+        /\$1\.015\.050/.test(riHtml) &&
+        /1,505/.test(riHtml),
+    );
+    assert(
+      "SEO reajuste IPC no inventa hermanas",
+      /no abre URLs hermanas/i.test(riHtml) &&
+        !existsSync(join(root, "reajuste.html")) &&
+        !existsSync(join(root, "reajuste-sueldo.html")) &&
+        !existsSync(join(root, "reajuste-salarial.html")) &&
+        !existsSync(join(root, "ipc.html")) &&
+        !existsSync(join(root, "calculadora-ipc.html")) &&
+        !existsSync(join(root, "ipc-acumulado.html")) &&
+        !existsSync(join(root, "inflacion.html")) &&
+        !existsSync(join(root, "actualizacion-sueldo.html")) &&
+        !existsSync(join(root, "reajuste-por-ipc.html")) &&
+        !existsSync(join(root, "utm.html")) &&
+        !existsSync(join(root, "uf.html")),
+    );
+    assert(
+      "home y nav enlazan /reajuste-ipc",
+      /href="\/reajuste-ipc"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/reajuste-ipc" data-nav>Reajuste IPC<\/a>/.test(
+          readFileSync(join(root, "index.html"), "utf8"),
+        ) &&
+        /href="\/reajuste-ipc" data-nav>Reajuste IPC<\/a>/.test(riHtml) &&
+        /href="\/reajuste-ipc" data-nav>Reajuste IPC<\/a>/.test(
+          readFileSync(join(root, "js/ui.js"), "utf8"),
+        ) &&
+        /\["\/reajuste-ipc", "Reajuste IPC"\]/.test(
+          readFileSync(join(root, "scripts/patch-nav.mjs"), "utf8"),
+        ),
+    );
+    assert(
+      "sitemap incluye /reajuste-ipc",
+      locs.includes("https://www.haberes.cl/reajuste-ipc") &&
+        lastmodForPath("/reajuste-ipc") === "2026-09-26",
+    );
+    assert(
+      "seo-map documenta /reajuste-ipc y no-canibalizar /sueldo",
+      /\/reajuste-ipc/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no canibalizar `\/sueldo`, `\/sueldo-liquido-a-bruto`, `\/sueldo-empresarial`/.test(
+          readFileSync(join(root, "docs/seo-map.md"), "utf8"),
+        ) &&
+        /no crear `\/reajuste`, `\/reajuste-sueldo`/i.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")),
+    );
+    assert(
+      "hub /guias enlaza /reajuste-ipc en el cluster de liquidación",
+      /href="\/reajuste-ipc"/.test(readFileSync(join(root, "guias.html"), "utf8")) &&
+        /<h2>Liquidaci[oó]n de sueldo<\/h2>[\s\S]*href="\/reajuste-ipc"/.test(
+          readFileSync(join(root, "guias.html"), "utf8"),
+        ) &&
+        !/<h2>Finiquito<\/h2>[\s\S]*href="\/reajuste-ipc"/.test(
+          readFileSync(join(root, "guias.html"), "utf8"),
+        ),
+    );
+  }
+  {
     const smHtml = readFileSync(join(root, "sueldo-minimo.html"), "utf8");
     const smTitle = (smHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
     const smH1 = (smHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
@@ -19123,7 +19295,7 @@ assert(
     return acc;
   }
   const pages = listHtml(root);
-  assert("112 páginas HTML", pages.length === 112, String(pages.length));
+  assert("113 páginas HTML", pages.length === 113, String(pages.length));
   for (const file of pages) {
     const html = readFileSync(file, "utf8");
     const rel = file.slice(root.length + 1);

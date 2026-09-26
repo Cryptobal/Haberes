@@ -63,6 +63,7 @@ const DRAWER_LINKS = [
   ["/viatico", "Viático"],
   ["/sueldo-empresarial", "Sueldo empresarial"],
   ["/franquicia-sence", "Franquicia SENCE"],
+  ["/reajuste-ipc", "Reajuste IPC"],
   ["/vacaciones-proporcionales", "Vacaciones proporcionales"],
   ["/feriado-anual", "Feriado anual"],
   ["/feriado-progresivo", "Feriado progresivo"],
