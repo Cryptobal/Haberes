@@ -41,6 +41,7 @@ en `js/picker.js` (hoja inferior con velo en móvil, panel anclado en escritorio
 - `/sueldo` calculadora simple y completa
 - `/sueldo-liquido-a-bruto` del líquido objetivo al bruto (inversión del mismo motor)
 - `/horas-extras` valor de la hora extra (art. 32) y total del mes
+- `/valor-hora` valor de la hora ordinaria (mismo divisor DT) y 1 hora extra al 50 %; no es el total de N horas ni el costo empresa
 - `/pacto-horas-extras` pacto escrito de horas extras (arts. 31 y 32), recargo 50 % y tope de 2 h al día
 - `/gratificacion` gratificación legal art. 50 (25 % con tope mensual)
 - `/impuesto-unico` impuesto único de segunda categoría (IUSC) sobre la renta líquida imponible

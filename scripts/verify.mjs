@@ -192,6 +192,7 @@ import { calcularViatico } from "../js/viatico.js";
 import { calcularSueldoEmpresarial } from "../js/sueldo-empresarial.js";
 import { calcularFranquiciaSence, UTM_SEP_2026, VALORES_HORA_SENCE_2026 } from "../js/franquicia-sence.js";
 import { calcularReajusteIpc, variacionesEnRango } from "../js/reajuste-ipc.js";
+import { calcularValorHora } from "../js/valor-hora.js";
 import { calcularSueldoLiquidoABruto } from "../js/sueldo-liquido-a-bruto.js";
 import { clp, dvRut, validarRut } from "../js/format.js";
 import {
@@ -605,6 +606,64 @@ assert(
   "hora extra = hora ordinaria × 1,5",
   close(valorHoraExtra(800000, 42), valorHoraOrdinaria(800000, 42) * 1.5, 0.0001),
 );
+
+console.log("\nValor hora ordinaria");
+{
+  const vhMod = readFileSync(join(root, "js/valor-hora.js"), "utf8");
+  const vhApp = readFileSync(join(root, "js/app-valor-hora.js"), "utf8");
+  const g42 = calcularValorHora({ sueldoBase: 1_000_000, jornada: 42 });
+  const g40 = calcularValorHora({ sueldoBase: 1_000_000, jornada: 40 });
+  const gImm = calcularValorHora({ sueldoBase: IMM, jornada: 42 });
+  const g0 = calcularValorHora({ sueldoBase: 0, jornada: 42 });
+  const gJ = calcularValorHora({ sueldoBase: 1_000_000, jornada: 0 });
+  const gNeg = calcularValorHora({ sueldoBase: 1_000_000, jornada: -4 });
+  assert(
+    "valor-hora reutiliza valorHoraOrdinaria y valorHoraExtra",
+    /import\s*\{[^}]*valorHoraOrdinaria[^}]*valorHoraExtra[^}]*\}\s*from\s*["']\.\/sueldo\.js["']/.test(vhMod) ||
+      /import\s*\{[^}]*valorHoraExtra[^}]*valorHoraOrdinaria[^}]*\}\s*from\s*["']\.\/sueldo\.js["']/.test(vhMod),
+  );
+  assert(
+    "valor-hora usa IMM y JORNADA_DEFAULT, sin otro monto de mínimo",
+    (/import\s*\{[^}]*IMM[^}]*JORNADA_DEFAULT[^}]*\}\s*from\s*["']\.\/constants\.js["']/.test(vhMod) ||
+      /import\s*\{[^}]*JORNADA_DEFAULT[^}]*IMM[^}]*\}\s*from\s*["']\.\/constants\.js["']/.test(vhMod)) &&
+      !/553553|553\.553/.test(vhMod),
+  );
+  assert(
+    "app-valor-hora usa calcularValorHora",
+    /import\s*\{[^}]*calcularValorHora[^}]*\}\s*from\s*["']\.\/valor-hora\.js["']/.test(vhApp) &&
+      /calcularValorHora\s*\(/.test(vhApp),
+  );
+  assert(
+    "gold 1000000/42 hora ordinaria 5556 y extra 8333",
+    g42.valorHoraOrdinariaRedondeada === 5_556 &&
+      g42.valorHoraExtraRedondeada === 8_333 &&
+      g42.valorHoraOrdinariaRedondeada === Math.round(valorHoraOrdinaria(1_000_000, 42)) &&
+      g42.valorHoraExtraRedondeada === Math.round(valorHoraExtra(1_000_000, 42)),
+    `${g42.valorHoraOrdinaria}/${g42.valorHoraExtra}`,
+  );
+  assert(
+    "gold 1000000/40 hora ordinaria 5833 y extra 8750",
+    g40.valorHoraOrdinariaRedondeada === 5_833 && g40.valorHoraExtraRedondeada === 8_750,
+    `${g40.valorHoraOrdinariaRedondeada}/${g40.valorHoraExtraRedondeada}`,
+  );
+  assert(
+    "gold IMM 553553/42 hora ordinaria 3075",
+    IMM === 553_553 && gImm.valorHoraOrdinariaRedondeada === 3_075 && gImm.imm === IMM,
+    String(gImm.valorHoraOrdinaria),
+  );
+  assert(
+    "gold sueldo 0 o jornada ≤ 0 es cero",
+    g0.valorHoraOrdinaria === 0 &&
+      g0.valorHoraExtra === 0 &&
+      g0.valorHoraImmRedondeada === 3_075 &&
+      gJ.valorHoraOrdinaria === 0 &&
+      gJ.valorHoraExtraRedondeada === 0 &&
+      gJ.valorHoraImm === 0 &&
+      gNeg.valorHoraOrdinaria === 0 &&
+      gNeg.valorHoraExtra === 0 &&
+      gNeg.valorHoraImm === 0,
+  );
+}
 {
   const rd = calcularRecargoDomingoComercio({ sueldoBase: 800000, jornada: 42, horasOrdinarias: 8 });
   assert(
@@ -5891,6 +5950,7 @@ const required = [
   "sueldo.html",
   "sueldo-liquido-a-bruto.html",
   "horas-extras.html",
+  "valor-hora.html",
   "vacaciones-proporcionales.html",
   "gratificacion.html",
   "impuesto-unico.html",
@@ -5955,6 +6015,7 @@ const required = [
   "tope-imponible.html",
   "finiquito.html",
   "js/app-horas-extras.js",
+  "js/app-valor-hora.js",
   "js/app-vacaciones-proporcionales.js",
   "js/app-gratificacion.js",
   "js/app-impuesto-unico.js",
@@ -6044,6 +6105,7 @@ const required = [
   "js/jornada-bisemanal.js",
   "js/compensacion-horas-extras.js",
   "js/pacto-horas-extras.js",
+  "js/valor-hora.js",
   "js/contrato-plazo-fijo.js",
   "js/termino-anticipado-plazo-fijo.js",
   "js/permiso-sin-goce.js",
@@ -6172,6 +6234,7 @@ const htmlFiles = [
   "sueldo.html",
   "sueldo-liquido-a-bruto.html",
   "horas-extras.html",
+  "valor-hora.html",
   "vacaciones-proporcionales.html",
   "gratificacion.html",
   "impuesto-unico.html",
@@ -6312,6 +6375,7 @@ const appEntries = [
   "js/app-sueldo.js",
   "js/app-sueldo-liquido-a-bruto.js",
   "js/app-horas-extras.js",
+  "js/app-valor-hora.js",
   "js/app-vacaciones-proporcionales.js",
   "js/app-gratificacion.js",
   "js/app-impuesto-unico.js",
@@ -6406,7 +6470,7 @@ assert("robots Allow /", /Allow:\s*\//.test(robots));
 assert("robots Disallow /admin", /Disallow:\s*\/admin/.test(robots));
 assert("robots Disallow /api", /Disallow:\s*\/api/.test(robots));
 assert("robots Disallow /docs", /Disallow:\s*\/docs/.test(robots));
-assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/trabajo-pesado/.test(robots) && !/Disallow:\s*\/nulidad-despido/.test(robots) && !/Disallow:\s*\/tutela-laboral/.test(robots) && !/Disallow:\s*\/despido-injustificado/.test(robots) && !/Disallow:\s*\/autodespido/.test(robots) && !/Disallow:\s*\/obra-faena/.test(robots) && !/Disallow:\s*\/prescripcion-laboral/.test(robots) && !/Disallow:\s*\/descanso-compensatorio/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/feriado-anual/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/licencia-medica/.test(robots) && !/Disallow:\s*\/boleta-honorarios/.test(robots) && !/Disallow:\s*\/retencion-judicial/.test(robots) && !/Disallow:\s*\/apv/.test(robots) && !/Disallow:\s*\/sala-cuna/.test(robots) && !/Disallow:\s*\/postnatal-parental/.test(robots) && !/Disallow:\s*\/permiso-prenatal/.test(robots) && !/Disallow:\s*\/fuero-maternal/.test(robots) && !/Disallow:\s*\/permiso-paternidad/.test(robots) && !/Disallow:\s*\/permiso-matrimonio/.test(robots) && !/Disallow:\s*\/permiso-fallecimiento/.test(robots) && !/Disallow:\s*\/interes-mora/.test(robots) && !/Disallow:\s*\/hora-lactancia/.test(robots) && !/Disallow:\s*\/jornada-40-horas/.test(robots) && !/Disallow:\s*\/jornada-parcial/.test(robots) && !/Disallow:\s*\/teletrabajo/.test(robots) && !/Disallow:\s*\/bandas-horarias/.test(robots) && !/Disallow:\s*\/pacto-4x3/.test(robots) && !/Disallow:\s*\/jornada-excepcional/.test(robots) && !/Disallow:\s*\/jornada-bisemanal/.test(robots) && !/Disallow:\s*\/compensacion-horas-extras/.test(robots) && !/Disallow:\s*\/pacto-horas-extras/.test(robots) && !/Disallow:\s*\/contrato-plazo-fijo/.test(robots) && !/Disallow:\s*\/termino-anticipado-plazo-fijo/.test(robots) && !/Disallow:\s*\/permiso-sin-goce/.test(robots) && !/Disallow:\s*\/zona-extrema/.test(robots) && !/Disallow:\s*\/promedio-remuneraciones/.test(robots) && !/Disallow:\s*\/antiguedad-laboral/.test(robots) && !/Disallow:\s*\/tope-imponible/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots) && !/Disallow:\s*\/inclusion-laboral/.test(robots) && !/Disallow:\s*\/reajuste-ipc/.test(robots));
+assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/trabajo-pesado/.test(robots) && !/Disallow:\s*\/nulidad-despido/.test(robots) && !/Disallow:\s*\/tutela-laboral/.test(robots) && !/Disallow:\s*\/despido-injustificado/.test(robots) && !/Disallow:\s*\/autodespido/.test(robots) && !/Disallow:\s*\/obra-faena/.test(robots) && !/Disallow:\s*\/prescripcion-laboral/.test(robots) && !/Disallow:\s*\/descanso-compensatorio/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/feriado-anual/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/licencia-medica/.test(robots) && !/Disallow:\s*\/boleta-honorarios/.test(robots) && !/Disallow:\s*\/retencion-judicial/.test(robots) && !/Disallow:\s*\/apv/.test(robots) && !/Disallow:\s*\/sala-cuna/.test(robots) && !/Disallow:\s*\/postnatal-parental/.test(robots) && !/Disallow:\s*\/permiso-prenatal/.test(robots) && !/Disallow:\s*\/fuero-maternal/.test(robots) && !/Disallow:\s*\/permiso-paternidad/.test(robots) && !/Disallow:\s*\/permiso-matrimonio/.test(robots) && !/Disallow:\s*\/permiso-fallecimiento/.test(robots) && !/Disallow:\s*\/interes-mora/.test(robots) && !/Disallow:\s*\/hora-lactancia/.test(robots) && !/Disallow:\s*\/jornada-40-horas/.test(robots) && !/Disallow:\s*\/jornada-parcial/.test(robots) && !/Disallow:\s*\/teletrabajo/.test(robots) && !/Disallow:\s*\/bandas-horarias/.test(robots) && !/Disallow:\s*\/pacto-4x3/.test(robots) && !/Disallow:\s*\/jornada-excepcional/.test(robots) && !/Disallow:\s*\/jornada-bisemanal/.test(robots) && !/Disallow:\s*\/compensacion-horas-extras/.test(robots) && !/Disallow:\s*\/pacto-horas-extras/.test(robots) && !/Disallow:\s*\/contrato-plazo-fijo/.test(robots) && !/Disallow:\s*\/termino-anticipado-plazo-fijo/.test(robots) && !/Disallow:\s*\/permiso-sin-goce/.test(robots) && !/Disallow:\s*\/zona-extrema/.test(robots) && !/Disallow:\s*\/promedio-remuneraciones/.test(robots) && !/Disallow:\s*\/antiguedad-laboral/.test(robots) && !/Disallow:\s*\/tope-imponible/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots) && !/Disallow:\s*\/inclusion-laboral/.test(robots) && !/Disallow:\s*\/reajuste-ipc/.test(robots) && !/Disallow:\s*\/valor-hora/.test(robots));
 assert("robots Sitemap", /Sitemap:\s*https:\/\/www\.haberes\.cl\/sitemap\.xml/.test(robots));
 
 const { seoPaths, GUIDE_SLUGS, GUIDES, CAUSAL_PAGES, BASE_PATHS, lastmodForPath } = await import("../content/registry.js");
@@ -6426,6 +6490,7 @@ assert(
     BASE_PATHS.includes("/sueldo-liquido-a-bruto") &&
     BASE_PATHS.includes("/finiquito") &&
     BASE_PATHS.includes("/horas-extras") &&
+    BASE_PATHS.includes("/valor-hora") &&
     BASE_PATHS.includes("/vacaciones-proporcionales") &&
     BASE_PATHS.includes("/gratificacion") &&
     BASE_PATHS.includes("/impuesto-unico") &&
@@ -6844,7 +6909,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 111,
+      seoPaths().length === 112,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -6856,7 +6921,7 @@ try {
   const docsSeo = await hitLocal("/docs/seo-map.md");
   assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
   assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
-  for (const p of ["/sueldo/", "/sueldo-liquido-a-bruto/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/obra-faena/", "/prescripcion-laboral/", "/descanso-compensatorio/", "/inclusion-laboral/", "/jornada-parcial/", "/teletrabajo/", "/bandas-horarias/", "/pacto-4x3/", "/jornada-excepcional/", "/jornada-bisemanal/", "/compensacion-horas-extras/", "/pacto-horas-extras/", "/contrato-plazo-fijo/", "/termino-anticipado-plazo-fijo/", "/permiso-sin-goce/", "/zona-extrema/", "/promedio-remuneraciones/", "/antiguedad-laboral/", "/tope-imponible/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/viatico/", "/reajuste-ipc/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+  for (const p of ["/sueldo/", "/sueldo-liquido-a-bruto/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/valor-hora/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/obra-faena/", "/prescripcion-laboral/", "/descanso-compensatorio/", "/inclusion-laboral/", "/jornada-parcial/", "/teletrabajo/", "/bandas-horarias/", "/pacto-4x3/", "/jornada-excepcional/", "/jornada-bisemanal/", "/compensacion-horas-extras/", "/pacto-horas-extras/", "/contrato-plazo-fijo/", "/termino-anticipado-plazo-fijo/", "/permiso-sin-goce/", "/zona-extrema/", "/promedio-remuneraciones/", "/antiguedad-laboral/", "/tope-imponible/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/viatico/", "/reajuste-ipc/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
   }
@@ -6873,6 +6938,7 @@ try {
   );
   for (const p of [
     "/horas-extras",
+    "/valor-hora",
     "/recargo-domingo-comercio",
     "/feriado-irrenunciable",
     "/feriado-anual",
@@ -10696,6 +10762,7 @@ assert(
     ["index.html", "/"],
     ["sueldo.html", "/sueldo"],
     ["horas-extras.html", "/horas-extras"],
+    ["valor-hora.html", "/valor-hora"],
     ["vacaciones-proporcionales.html", "/vacaciones-proporcionales"],
     ["gratificacion.html", "/gratificacion"],
     ["impuesto-unico.html", "/impuesto-unico"],
@@ -17709,6 +17776,112 @@ assert(
     );
   }
   {
+    const vhHtml = readFileSync(join(root, "valor-hora.html"), "utf8");
+    const vhTitle = (vhHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const vhH1 = (vhHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const vhDesc = (vhHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "";
+    const heHtmlVh = readFileSync(join(root, "horas-extras.html"), "utf8");
+    const heTitleVh = (heHtmlVh.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const heH1Vh = (heHtmlVh.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const smHtmlVh = readFileSync(join(root, "sueldo-minimo.html"), "utf8");
+    assert(
+      "SEO title valor hora apunta a calcular valor hora de trabajo",
+      /calcular valor hora/i.test(vhTitle) &&
+        /valor hora de trabajo/i.test(vhTitle) &&
+        !/horas extras/i.test(vhTitle) &&
+        vhTitle !== heTitleVh &&
+        vhTitle.length <= 65,
+      vhTitle,
+    );
+    assert(
+      "SEO H1 valor hora ordinaria Chile 2026",
+      vhH1 === "Calcular valor hora ordinaria Chile 2026" && vhH1 !== heH1Vh,
+      vhH1,
+    );
+    assert(
+      "SEO valor hora meta distinta de /horas-extras",
+      vhDesc &&
+        vhDesc !== ((heHtmlVh.match(/meta name="description" content="([^"]*)"/) || [])[1] || "") &&
+        /hora ordinaria/i.test(vhDesc) &&
+        /no es el total de extras/i.test(vhDesc),
+    );
+    assert(
+      "SEO valor hora disclaimer DT, art. 32 y FAQPage",
+      /Direcci[oó]n del Trabajo/.test(vhHtml) &&
+        /Previred/.test(vhHtml) &&
+        /art[ií]culo 32/i.test(vhHtml) &&
+        /50\s*%/.test(vhHtml) &&
+        /m[ií]nimo/i.test(vhHtml) &&
+        /Ley 21\.561/.test(vhHtml) &&
+        /Ley 21\.830/.test(vhHtml) &&
+        /553\.553/.test(vhHtml) &&
+        /\$5\.556/.test(vhHtml) &&
+        /\$8\.333/.test(vhHtml) &&
+        /\$5\.833/.test(vhHtml) &&
+        /\$8\.750/.test(vhHtml) &&
+        /\$3\.075/.test(vhHtml) &&
+        /hora hombre/i.test(vhHtml) &&
+        /href="\/costo-empresa"/.test(vhHtml) &&
+        /href="\/horas-extras"/.test(vhHtml) &&
+        /href="\/sueldo-minimo"/.test(vhHtml) &&
+        /href="\/descuento-atrasos"/.test(vhHtml) &&
+        /href="\/pacto-horas-extras"/.test(vhHtml) &&
+        /href="\/compensacion-horas-extras"/.test(vhHtml) &&
+        /href="\/feriado-irrenunciable"/.test(vhHtml) &&
+        /href="\/recargo-domingo-comercio"/.test(vhHtml) &&
+        /"@type": "FAQPage"/.test(vhHtml),
+    );
+    assert(
+      "SEO valor hora no inventa hermanas",
+      /no abre URLs hermanas/i.test(vhHtml) &&
+        !existsSync(join(root, "hora-hombre.html")) &&
+        !existsSync(join(root, "valor-hora-extra.html")) &&
+        !existsSync(join(root, "calcular-hora.html")) &&
+        !existsSync(join(root, "hh.html")),
+    );
+    assert(
+      "home y nav enlazan /valor-hora",
+      /href="\/valor-hora"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/valor-hora" data-nav>Valor hora<\/a>/.test(
+          readFileSync(join(root, "index.html"), "utf8"),
+        ) &&
+        /href="\/valor-hora" data-nav>Valor hora<\/a>/.test(vhHtml) &&
+        /href="\/valor-hora" data-nav>Valor hora<\/a>/.test(
+          readFileSync(join(root, "js/ui.js"), "utf8"),
+        ) &&
+        /\["\/valor-hora", "Valor hora"\]/.test(
+          readFileSync(join(root, "scripts/patch-nav.mjs"), "utf8"),
+        ) &&
+        /href="\/valor-hora"/.test(heHtmlVh) &&
+        /href="\/valor-hora"/.test(smHtmlVh),
+    );
+    assert(
+      "sitemap incluye /valor-hora",
+      locs.includes("https://www.haberes.cl/valor-hora") &&
+        lastmodForPath("/valor-hora") === "2026-09-26",
+    );
+    assert(
+      "seo-map documenta /valor-hora y no-canibalizar /horas-extras",
+      /\/valor-hora/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no canibalizar `\/horas-extras`, `\/descuento-atrasos`, `\/sueldo`/.test(
+          readFileSync(join(root, "docs/seo-map.md"), "utf8"),
+        ) &&
+        /no crear `\/hora-hombre`, `\/valor-hora-extra`/i.test(
+          readFileSync(join(root, "docs/seo-map.md"), "utf8"),
+        ),
+    );
+    assert(
+      "hub /guias enlaza /valor-hora en el cluster de liquidación",
+      /href="\/valor-hora"/.test(readFileSync(join(root, "guias.html"), "utf8")) &&
+        /<h2>Liquidaci[oó]n de sueldo<\/h2>[\s\S]*href="\/valor-hora"/.test(
+          readFileSync(join(root, "guias.html"), "utf8"),
+        ) &&
+        !/<h2>Finiquito<\/h2>[\s\S]*href="\/valor-hora"/.test(
+          readFileSync(join(root, "guias.html"), "utf8"),
+        ),
+    );
+  }
+  {
     const smHtml = readFileSync(join(root, "sueldo-minimo.html"), "utf8");
     const smTitle = (smHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
     const smH1 = (smHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
@@ -19295,7 +19468,7 @@ assert(
     return acc;
   }
   const pages = listHtml(root);
-  assert("113 páginas HTML", pages.length === 113, String(pages.length));
+  assert("114 páginas HTML", pages.length === 114, String(pages.length));
   for (const file of pages) {
     const html = readFileSync(file, "utf8");
     const rel = file.slice(root.length + 1);
