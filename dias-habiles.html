@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="es-CL">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script>
+  (function () {
+    try {
+      var t = localStorage.getItem("haberes:theme");
+      if (t !== "day" && t !== "night") t = "day";
+      document.documentElement.setAttribute("data-theme", t);
+    } catch (e) {}
+  })();
+  </script>
+<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-PCR596Z2');</script>
+<!-- End Google Tag Manager -->
+  <title>Contador de días hábiles Chile 2026 — Haberes</title>
+  <meta name="description" content="Contador de días hábiles en Chile: cuente entre dos fechas o sume N hábiles. Muestra días corridos y feriados legales. Estimación, no plazo judicial ni SII." />
+  <link rel="canonical" href="https://www.haberes.cl/dias-habiles" />
+  <meta property="og:type" content="website" />
+  <meta property="og:locale" content="es_CL" />
+  <meta property="og:site_name" content="Haberes" />
+  <meta property="og:title" content="Contador de días hábiles Chile 2026 — Haberes" />
+  <meta property="og:description" content="Contador de días hábiles en Chile: cuente entre dos fechas o sume N hábiles. Muestra días corridos y feriados legales. Estimación, no plazo judicial ni SII." />
+  <meta property="og:url" content="https://www.haberes.cl/dias-habiles" />
+  <meta property="og:image" content="https://www.haberes.cl/img/og-default.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Contador de días hábiles Chile 2026 — Haberes" />
+  <meta name="twitter:description" content="Contador de días hábiles en Chile: cuente entre dos fechas o sume N hábiles. Muestra días corridos y feriados legales. Estimación, no plazo judicial ni SII." />
+  <meta name="twitter:image" content="https://www.haberes.cl/img/og-default.png" />
+  <link rel="icon" href="favicon.ico" sizes="32x32" />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="css/app.css" />
+  <!-- GA4: para activarlo, asigne un ID G-… a window.HABERES_GA4 antes de este script. Vacío = sin peticiones. -->
+  <script src="js/analytics.js" defer></script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "Haberes",
+  "url": "https://www.haberes.cl/",
+  "logo": "https://www.haberes.cl/favicon.svg",
+  "areaServed": "CL",
+  "sameAs": []
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Contador de días hábiles — Haberes",
+  "url": "https://www.haberes.cl/dias-habiles",
+  "applicationCategory": "FinanceApplication",
+  "operatingSystem": "Web",
+  "inLanguage": "es-CL",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "CLP"
+  }
+}
+  </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "¿Qué cuenta como día hábil en esta calculadora?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Hábil es lunes a viernes que no sea feriado legal nacional. El sábado es siempre inhábil, la misma convención del artículo 69 que usa el feriado anual. No se consideran feriados regionales."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "¿El sábado es día hábil?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. El sábado no se cuenta, aunque no sea feriado. El domingo tampoco. Un feriado que cae sábado aparece en la lista de feriados del tramo, pero no suma un día hábil."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "¿Se incluyen el primer y el último día?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "En el modo Contar, sí: si el desde y el hasta son hábiles, ambos entran. En el modo Sumar el día ancla no se consume: el primer hábil es el día siguiente, como el artículo 48 del Código Civil."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "¿Sirve para un plazo judicial o del SII?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. Es una estimación educativa de Haberes. No es el día hábil de un tribunal, ni el calendario del contador o del SII, ni una herramienta oficial de la Dirección del Trabajo o de Previred."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "¿En qué se diferencia del feriado anual?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "El feriado anual reparte un cupo de 15 o 20 días hábiles y entrega término y reintegro. Esta página solo cuenta hábiles entre dos fechas o suma N hábiles. Las vacaciones en dinero, el progresivo y los permisos tienen su propia calculadora."
+      }
+    }
+  ]
+}
+  </script>
+</head>
+<body>
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PCR596Z2"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+  <header class="site-header">
+    <nav class="nav">
+      <a class="brand" href="/" data-nav>
+        <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32" fill="currentColor" aria-hidden="true"><rect x="8" y="2" width="6" height="4" rx="2"/><rect x="18" y="2" width="6" height="4" rx="2"/><rect x="8" y="8" width="6" height="4" rx="2"/><rect x="18" y="8" width="6" height="4" rx="2"/><rect x="8" y="14" width="6" height="4" rx="2"/><rect x="18" y="14" width="6" height="4" rx="2"/><rect x="8" y="20" width="6" height="4" rx="2"/><rect x="18" y="20" width="6" height="4" rx="2"/><rect x="8" y="26" width="6" height="4" rx="2"/><rect x="18" y="26" width="6" height="4" rx="2"/><rect x="14" y="14" width="4" height="4" rx="2"/></svg></span> Haberes
+      </a>
+      <div class="nav-links">
+        <a href="/como" data-nav>Cómo</a>
+        <a href="/precios" data-nav>Precios</a>
+      </div>
+      <div class="nav-actions">
+        <button type="button" class="theme-toggle" data-theme-toggle aria-label="Cambiar a modo noche" aria-pressed="false">
+          <svg class="ic-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.64 5.64l1.41 1.41M16.95 16.95l1.41 1.41M18.36 5.64l-1.41 1.41M7.05 16.95l-1.41 1.41"/></svg>
+          <svg class="ic-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 14.35A8.4 8.4 0 1 1 9.65 3 6.6 6.6 0 0 0 21 14.35z"/></svg>
+        </button>
+        <a class="btn btn-ghost btn-sm nav-login" href="/empresa">Entrar</a>
+        <a class="btn btn-sm nav-cta" href="/empresa?registro=1">Empezar gratis</a>
+        <button type="button" class="nav-burger" data-nav-burger aria-expanded="false" aria-controls="navDrawer" aria-label="Abrir menú">
+          <i aria-hidden="true"></i>
+        </button>
+      </div>
+    </nav>
+  </header>
+<div class="nav-drawer" id="navDrawer" data-nav-drawer hidden>
+      <div class="nav-drawer-scrim" data-nav-scrim></div>
+      <div class="nav-drawer-panel" role="dialog" aria-modal="true" aria-label="Menú de navegación">
+        <div class="nav-drawer-grab" aria-hidden="true"></div>
+        <a href="/como" data-nav>Cómo</a>
+        <a href="/precios" data-nav>Precios</a>
+        <a href="/sueldo" data-nav>Sueldo líquido</a>
+        <a href="/sueldo-liquido-a-bruto" data-nav>Líquido a bruto</a>
+        <a href="/sueldo-proporcional" data-nav>Sueldo proporcional</a>
+        <a href="/sueldo-minimo" data-nav>Sueldo mínimo</a>
+        <a href="/descuento-atrasos" data-nav>Descuento atrasos</a>
+        <a href="/licencia-medica" data-nav>Licencia médica</a>
+        <a href="/retencion-judicial" data-nav>Retención judicial</a>
+        <a href="/apv" data-nav>APV Régimen B</a>
+        <a href="/valor-hora" data-nav>Valor hora</a>
+        <a href="/horas-extras" data-nav>Horas extras</a>
+        <a href="/compensacion-horas-extras" data-nav>Compensación horas extras</a>
+        <a href="/pacto-horas-extras" data-nav>Pacto horas extras</a>
+        <a href="/jornada-40-horas" data-nav>Jornada 40 horas</a>
+        <a href="/jornada-parcial" data-nav>Jornada parcial</a>
+        <a href="/teletrabajo" data-nav>Teletrabajo</a>
+        <a href="/bandas-horarias" data-nav>Bandas horarias</a>
+        <a href="/pacto-4x3" data-nav>Pacto 4×3</a>
+        <a href="/jornada-excepcional" data-nav>Jornada excepcional</a>
+        <a href="/jornada-bisemanal" data-nav>Jornada bisemanal</a>
+        <a href="/recargo-domingo-comercio" data-nav>Recargo domingo comercio</a>
+        <a href="/descanso-compensatorio" data-nav>Descanso compensatorio</a>
+        <a href="/feriado-irrenunciable" data-nav>Feriado irrenunciable</a>
+        <a href="/semana-corrida" data-nav>Semana corrida</a>
+        <a href="/gratificacion" data-nav>Gratificación</a>
+        <a href="/aguinaldo" data-nav>Aguinaldo</a>
+        <a href="/impuesto-unico" data-nav>Impuesto único</a>
+        <a href="/zona-extrema" data-nav>Zona extrema</a>
+        <a href="/boleta-honorarios" data-nav>Boleta honorarios</a>
+        <a href="/cotizaciones-previsionales" data-nav>Cotizaciones previsionales</a>
+        <a href="/tope-imponible" data-nav>Tope imponible</a>
+        <a href="/costo-empresa" data-nav>Costo empresa</a>
+        <a href="/seguro-cesantia" data-nav>Seguro de cesantía</a>
+        <a href="/trabajo-pesado" data-nav>Trabajo pesado</a>
+        <a href="/asignacion-familiar" data-nav>Asignación familiar</a>
+        <a href="/sala-cuna" data-nav>Sala cuna</a>
+        <a href="/inclusion-laboral" data-nav>Inclusión laboral</a>
+        <a href="/permiso-prenatal" data-nav>Permiso prenatal</a>
+        <a href="/postnatal-parental" data-nav>Postnatal parental</a>
+        <a href="/fuero-maternal" data-nav>Fuero maternal</a>
+        <a href="/permiso-paternidad" data-nav>Permiso paternidad</a>
+        <a href="/permiso-matrimonio" data-nav>Permiso matrimonio</a>
+        <a href="/permiso-fallecimiento" data-nav>Permiso fallecimiento</a>
+        <a href="/permiso-sin-goce" data-nav>Permiso sin goce</a>
+        <a href="/interes-mora" data-nav>Interés por mora</a>
+        <a href="/hora-lactancia" data-nav>Hora de lactancia</a>
+        <a href="/colacion-movilizacion" data-nav>Colación y movilización</a>
+        <a href="/viatico" data-nav>Viático</a>
+        <a href="/sueldo-empresarial" data-nav>Sueldo empresarial</a>
+        <a href="/franquicia-sence" data-nav>Franquicia SENCE</a>
+        <a href="/reajuste-ipc" data-nav>Reajuste IPC</a>
+        <a href="/vacaciones-proporcionales" data-nav>Vacaciones proporcionales</a>
+        <a href="/dias-habiles" data-nav>Días hábiles</a>
+        <a href="/feriado-anual" data-nav>Feriado anual</a>
+        <a href="/feriado-progresivo" data-nav>Feriado progresivo</a>
+        <a href="/indemnizacion-anos-servicio" data-nav>Indemnización años de servicio</a>
+        <a href="/indemnizacion-aviso-previo" data-nav>Indemnización aviso previo</a>
+        <a href="/promedio-remuneraciones" data-nav>Promedio remuneraciones</a>
+        <a href="/antiguedad-laboral" data-nav>Antigüedad laboral</a>
+        <a href="/nulidad-despido" data-nav>Nulidad del despido</a>
+        <a href="/tutela-laboral" data-nav>Tutela laboral</a>
+        <a href="/despido-injustificado" data-nav>Despido injustificado</a>
+        <a href="/autodespido" data-nav>Autodespido</a>
+        <a href="/obra-faena" data-nav>Obra o faena</a>
+        <a href="/contrato-plazo-fijo" data-nav>Contrato a plazo fijo</a>
+        <a href="/termino-anticipado-plazo-fijo" data-nav>Término anticipado plazo fijo</a>
+        <a href="/prescripcion-laboral" data-nav>Prescripción laboral</a>
+        <a href="/finiquito-casa-particular" data-nav>Finiquito casa particular</a>
+        <a href="/finiquito" data-nav>Finiquito</a>
+        <div class="nav-drawer-foot">
+          <a class="btn" href="/empresa?registro=1">Empezar gratis</a>
+          <button type="button" class="btn btn-ghost" data-nav-close>Cerrar</button>
+        </div>
+      </div>
+    </div>
+
+  <main>
+    <div class="wrap">
+      <p class="kicker">Calculadora</p>
+      <h1>Calcular días hábiles Chile 2026</h1>
+      <p class="lede">
+        Contador de días hábiles Chile: cuente los hábiles entre dos fechas o sume N a una fecha.
+        Hábil es lunes a viernes que no sea feriado legal nacional. El sábado queda fuera,
+        igual que en el feriado anual. Si le sirve el dato, también ve los días corridos del mismo tramo.
+      </p>
+      <p class="notice">
+        Documento generado por Haberes. No es un cálculo de la Dirección del Trabajo ni de Previred.
+        No constituye asesoría legal ni previsional. Es una estimación educativa: no es el día hábil
+        de un plazo judicial, ni el calendario administrativo del contador o del SII, ni una herramienta
+        oficial de la DT. Si necesita el feriado anual o un permiso, use esas calculadoras.
+      </p>
+
+      <div class="layout" style="margin-top: 24px">
+        <form id="formDiasHabiles" class="panel">
+          <div class="seg" role="radiogroup" aria-label="Qué quiere calcular">
+            <label><input type="radio" name="modo" value="contar" checked /> <span>Contar</span></label>
+            <label><input type="radio" name="modo" value="sumar" /> <span>Sumar</span></label>
+          </div>
+
+          <div id="panelContar">
+            <div class="field">
+              <span class="lbl">Fecha desde</span>
+              <div id="pickDesde"></div>
+            </div>
+            <div class="field">
+              <span class="lbl">Fecha hasta</span>
+              <div id="pickHasta"></div>
+            </div>
+            <p class="hint">
+              Se cuentan el día desde y el día hasta cuando cada uno es hábil.
+              Si el hasta queda antes que el desde, no hay resultado.
+            </p>
+            <label class="check">
+              <input id="listarFechas" type="checkbox" checked />
+              Listar las fechas hábiles contadas
+            </label>
+          </div>
+
+          <div id="panelSumar" hidden>
+            <div class="field">
+              <span class="lbl">Fecha ancla</span>
+              <div id="pickAncla"></div>
+            </div>
+            <p class="hint">
+              Ese día no se consume. El conteo parte al día siguiente
+              (artículo 48 del Código Civil).
+            </p>
+            <div class="field">
+              <label for="diasN">Días hábiles a sumar</label>
+              <input id="diasN" type="number" min="0" max="400" step="1" value="5" inputmode="numeric" />
+            </div>
+            <p class="hint">
+              Con 0 o un número negativo no hay fecha resultante.
+            </p>
+          </div>
+        </form>
+
+        <aside class="panel sticky">
+          <div id="resContar">
+            <p class="metric-label">Días hábiles</p>
+            <p class="metric" id="outHabiles">0</p>
+            <p class="hint" id="outNota"></p>
+            <div class="mini">
+              <div><span>Días corridos</span><strong id="outCorridos">0</strong></div>
+              <div><span>Desde</span><strong id="outDesde">—</strong></div>
+              <div><span>Hasta</span><strong id="outHasta">—</strong></div>
+            </div>
+            <p class="hint"><strong>Feriados legales en el tramo</strong></p>
+            <p class="hint" id="outFeriados"></p>
+            <p class="hint" id="rotuloFechas"><strong>Fechas hábiles contadas</strong></p>
+            <p class="hint" id="outFechas"></p>
+          </div>
+          <div id="resSumar" hidden>
+            <p class="metric-label">Fecha resultante</p>
+            <p class="metric" id="outFecha">—</p>
+            <p class="hint" id="outNotaSumar"></p>
+            <div class="mini">
+              <div><span>Fecha ancla</span><strong id="outAncla">—</strong></div>
+              <div><span>Días hábiles sumados</span><strong id="outN">0</strong></div>
+            </div>
+          </div>
+          <p class="hint">
+            El cupo de vacaciones y la fecha de reintegro están en
+            <a href="/feriado-anual">feriado anual</a>.
+            Un plazo para reclamar, en
+            <a href="/prescripcion-laboral">prescripción laboral</a>.
+          </p>
+          <div class="actions">
+            <a class="btn" href="/feriado-anual">Ver feriado anual</a>
+            <a class="btn btn-ghost" href="/permiso-paternidad">Permisos en días hábiles</a>
+          </div>
+        </aside>
+      </div>
+
+      <section class="prose u-mt-6" aria-labelledby="dh-explica">
+        <h2 id="dh-explica">Cómo calcular días hábiles en Chile</h2>
+        <p>
+          Esta página es un contador de días hábiles para un tramo de oficina.
+          Toma el mismo calendario de feriados legales nacionales que el resto de Haberes
+          (2025, 2026 y 2027) y no arma otra lista. No entran feriados regionales,
+          como el de Arica o el de Chillán.
+        </p>
+        <ul>
+          <li><strong>Día hábil</strong> = lunes a viernes que no sea feriado legal nacional.</li>
+          <li><strong>Sábado</strong> = siempre inhábil, aunque no sea feriado. Es la convención del <a href="https://www.dt.gob.cl/portal/1628/w3-article-60177.html">artículo 69</a> que ya usa el feriado anual.</li>
+          <li><strong>Contar</strong> incluye el día desde y el día hasta cuando cada uno es hábil.</li>
+          <li><strong>Sumar</strong> no toca la fecha ancla: el primer hábil es el día siguiente (artículo 48 del Código Civil).</li>
+          <li><strong>Días corridos</strong> = todos los días de calendario del tramo, de punta a punta, sábados y domingos incluidos.</li>
+        </ul>
+        <h3>Ejemplo de Fiestas Patrias 2026</h3>
+        <p>
+          Del lunes 14 al viernes 25 de septiembre de 2026 hay <strong>9 días hábiles</strong>
+          y <strong>12 días corridos</strong>. El viernes 18 (Independencia Nacional) cae dentro
+          y no se cuenta como hábil. El sábado 19 es feriado de las Glorias del Ejército y,
+          además, sábado: aparece en la lista de feriados y no suma un hábil.
+          El domingo 20 tampoco.
+        </p>
+        <p>
+          En modo Sumar, el domingo 27 de septiembre de 2026 más 5 días hábiles cae el
+          <strong>viernes 2 de octubre de 2026</strong>. El 27 no se consume.
+        </p>
+        <h3>Qué no calcula esta página</h3>
+        <p>
+          No reparte el cupo de vacaciones:
+          eso está en <a href="/feriado-anual">calcular feriado anual</a>.
+          No convierte días a pesos:
+          <a href="/vacaciones-proporcionales">vacaciones proporcionales</a>.
+          No cuenta la antigüedad del artículo 68:
+          <a href="/feriado-progresivo">feriado progresivo</a>.
+          El pago de un feriado irrenunciable está en
+          <a href="/feriado-irrenunciable">feriado irrenunciable</a>.
+          Los años, meses y días de un contrato están en
+          <a href="/antiguedad-laboral">antigüedad laboral</a>.
+        </p>
+        <p>
+          Los permisos que ya traen su propio conteo hábil siguen en su calculadora:
+          <a href="/permiso-paternidad">permiso paternidad</a> (5 días, art. 195),
+          <a href="/permiso-matrimonio">permiso matrimonio o AUC</a> (art. 207 bis) y
+          <a href="/permiso-fallecimiento">permiso fallecimiento</a> (art. 66).
+          El plazo para reclamar está en
+          <a href="/prescripcion-laboral">prescripción laboral</a>.
+        </p>
+        <h3>Guías y calculadoras relacionadas</h3>
+        <ul>
+          <li><a href="/feriado-anual">Calcular feriado anual (15 o 20 días hábiles, art. 67)</a></li>
+          <li><a href="/vacaciones-proporcionales">Calcular vacaciones proporcionales</a></li>
+          <li><a href="/feriado-progresivo">Calcular feriado progresivo (art. 68)</a></li>
+          <li><a href="/feriado-irrenunciable">Calcular pago de feriado irrenunciable</a></li>
+          <li><a href="/prescripcion-laboral">Calcular prescripción laboral</a></li>
+          <li><a href="/permiso-paternidad">Calcular permiso paternidad</a></li>
+          <li><a href="/permiso-matrimonio">Calcular permiso matrimonio o AUC</a></li>
+          <li><a href="/permiso-fallecimiento">Calcular permiso fallecimiento</a></li>
+          <li><a href="/antiguedad-laboral">Calcular antigüedad laboral</a></li>
+        </ul>
+        <h2 id="faq-dias-habiles">Preguntas frecuentes</h2>
+        <h3>¿Qué cuenta como día hábil en esta calculadora?</h3>
+        <p>
+          Hábil es lunes a viernes que no sea feriado legal nacional. El sábado es siempre
+          inhábil, la misma convención del artículo 69 que usa el feriado anual. No se
+          consideran feriados regionales.
+        </p>
+        <h3>¿El sábado es día hábil?</h3>
+        <p>
+          No. El sábado no se cuenta, aunque no sea feriado. El domingo tampoco. Un feriado
+          que cae sábado aparece en la lista de feriados del tramo, pero no suma un día hábil.
+        </p>
+        <h3>¿Se incluyen el primer y el último día?</h3>
+        <p>
+          En el modo Contar, sí: si el desde y el hasta son hábiles, ambos entran. En el modo
+          Sumar el día ancla no se consume: el primer hábil es el día siguiente, como el
+          artículo 48 del Código Civil.
+        </p>
+        <h3>¿Sirve para un plazo judicial o del SII?</h3>
+        <p>
+          No. Es una estimación educativa de Haberes. No es el día hábil de un tribunal, ni el
+          calendario del contador o del SII, ni una herramienta oficial de la Dirección del
+          Trabajo o de Previred.
+        </p>
+        <h3>¿En qué se diferencia del feriado anual?</h3>
+        <p>
+          El feriado anual reparte un cupo de 15 o 20 días hábiles y entrega término y reintegro.
+          Esta página solo cuenta hábiles entre dos fechas o suma N hábiles. Las vacaciones en
+          dinero, el progresivo y los permisos tienen su propia calculadora.
+        </p>
+        <p class="notice">
+          No abre URLs hermanas <code>/feriados-chile</code>, <code>/calendario-feriados</code>,
+          <code>/contador-dias</code>, <code>/dias-corridos</code>, <code>/dias-habiles-chile</code>
+          ni <code>/calculadora-dias-habiles</code>. El listado cubre feriados legales nacionales
+          de 2025 a 2027; fuera de esos años se cuentan los lunes a viernes y no se inventan festivos.
+        </p>
+      </section>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <div><strong>Haberes</strong> · días hábiles</div>
+      <div class="footer-legal">
+        <a href="/como">Cómo funciona</a>
+        <span aria-hidden="true">·</span>
+        <a href="/precios">Precios</a>
+        <span aria-hidden="true">·</span>
+        <a href="/privacidad">Privacidad</a>
+        <span aria-hidden="true">·</span>
+        <a href="/terminos">Términos</a>
+      </div>
+      <div class="footer-credit">
+        Proyecto desarrollado por <a href="https://lx3.ai" rel="noopener noreferrer">lx3.ai</a>
+        · <a href="mailto:contacto@lx3.ai">contacto@lx3.ai</a>
+      </div>
+      <div data-indicadores>UF y UTM se cargan…</div>
+      <div>
+        Documento generado por Haberes. No es un cálculo de la Dirección del Trabajo ni de Previred.
+        No constituye asesoría legal ni previsional.
+      </div>
+    </div>
+  </footer>
+  <script type="module" src="js/app-dias-habiles.js"></script>
+</body>
+</html>

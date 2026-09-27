@@ -193,6 +193,8 @@ import { calcularSueldoEmpresarial } from "../js/sueldo-empresarial.js";
 import { calcularFranquiciaSence, UTM_SEP_2026, VALORES_HORA_SENCE_2026 } from "../js/franquicia-sence.js";
 import { calcularReajusteIpc, variacionesEnRango } from "../js/reajuste-ipc.js";
 import { calcularValorHora } from "../js/valor-hora.js";
+import { addDiasHabilesPosteriores } from "../js/feriados.js";
+import { contarDiasHabiles, sumarDiasHabiles } from "../js/dias-habiles.js";
 import { calcularSueldoLiquidoABruto } from "../js/sueldo-liquido-a-bruto.js";
 import { clp, dvRut, validarRut } from "../js/format.js";
 import {
@@ -2750,6 +2752,92 @@ console.log("\nFeriado anual art. 67 (días hábiles)");
     "app-feriado-anual usa calcularFeriadoAnual",
     /import\s*\{[^}]*calcularFeriadoAnual[^}]*\}\s*from\s*["']\.\/sueldo\.js["']/.test(faApp) &&
       /calcularFeriadoAnual\s*\(/.test(faApp),
+  );
+}
+
+console.log("\nDías hábiles (contador entre fechas y suma)");
+{
+  const dhSrc = readFileSync(join(root, "js/dias-habiles.js"), "utf8");
+  assert(
+    "dias-habiles reutiliza feriados.js y no fork de feriados",
+    /from\s*["']\.\/feriados\.js["']/.test(dhSrc) &&
+      /FERIADOS_LEGALES_CL/.test(dhSrc) &&
+      /esDiaHabilFeriadoAnual/.test(dhSrc) &&
+      /addDiasHabilesPosteriores/.test(dhSrc) &&
+      /parseIsoFecha/.test(dhSrc) &&
+      /ymdIso/.test(dhSrc) &&
+      /feriadoLegal/.test(dhSrc) &&
+      !/Año Nuevo/.test(dhSrc) &&
+      !/Independencia Nacional/.test(dhSrc),
+  );
+  const sum = sumarDiasHabiles({ ancla: "2026-09-27", n: 5 });
+  assert(
+    "sumar 2026-09-27 + 5 hábiles → 2026-10-02 (día siguiente al ancla)",
+    sum.ok &&
+      sum.fecha === "2026-10-02" &&
+      sum.diasHabiles === 5 &&
+      sum.fecha === addDiasHabilesPosteriores("2026-09-27", 5),
+    JSON.stringify(sum),
+  );
+  const c = contarDiasHabiles({ desde: "2026-09-14", hasta: "2026-09-25" });
+  assert(
+    "contar 14–25 sep 2026 inclusive: 9 hábiles, 12 corridos, 18 sep en feriados",
+    c.ok &&
+      c.diasHabiles === 9 &&
+      c.diasCorridos === 12 &&
+      c.fechas.length === 9 &&
+      c.fechas[0] === "2026-09-14" &&
+      c.fechas[c.fechas.length - 1] === "2026-09-25" &&
+      !c.fechas.includes("2026-09-18") &&
+      !c.fechas.includes("2026-09-19") &&
+      c.feriados.some((f) => f.fecha === "2026-09-18" && /Independencia/.test(f.nombre)) &&
+      c.feriados.some((f) => f.fecha === "2026-09-19"),
+    JSON.stringify(c),
+  );
+  const semana = contarDiasHabiles({ desde: "2026-09-07", hasta: "2026-09-13" });
+  assert(
+    "semana 7–13 sep 2026: sábado no es hábil (5 hábiles, 7 corridos)",
+    semana.ok && semana.diasHabiles === 5 && semana.diasCorridos === 7 && !semana.fechas.includes("2026-09-12"),
+    JSON.stringify(semana),
+  );
+  let threw = false;
+  try {
+    const vacio = contarDiasHabiles();
+    const malo = contarDiasHabiles({ desde: "2026-02-31", hasta: "2026-03-01" });
+    const rev = contarDiasHabiles({ desde: "2026-09-25", hasta: "2026-09-14" });
+    const cero = sumarDiasHabiles({ ancla: "2026-09-27", n: 0 });
+    const neg = sumarDiasHabiles({ ancla: "2026-09-27", n: -5 });
+    const sinFecha = sumarDiasHabiles({ ancla: "no-fecha", n: 3 });
+    const sinN = sumarDiasHabiles();
+    if (
+      vacio.ok !== false ||
+      vacio.diasHabiles !== 0 ||
+      vacio.diasCorridos !== 0 ||
+      malo.ok !== false ||
+      rev.ok !== false ||
+      rev.diasHabiles !== 0 ||
+      cero.ok !== false ||
+      cero.fecha !== "" ||
+      cero.diasHabiles !== 0 ||
+      neg.ok !== false ||
+      neg.fecha !== "" ||
+      sinFecha.ok !== false ||
+      sinN.ok !== false
+    ) {
+      threw = true;
+    }
+  } catch {
+    threw = true;
+  }
+  assert("fechas inválidas y N no positivo no lanzan y devuelven ceros", !threw);
+  const dhApp = readFileSync(join(root, "js/app-dias-habiles.js"), "utf8");
+  assert(
+    "app-dias-habiles usa contarDiasHabiles y sumarDiasHabiles",
+    /import\s*\{[^}]*contarDiasHabiles[^}]*sumarDiasHabiles[^}]*\}\s*from\s*["']\.\/dias-habiles\.js["']/.test(
+      dhApp,
+    ) &&
+      /contarDiasHabiles\s*\(/.test(dhApp) &&
+      /sumarDiasHabiles\s*\(/.test(dhApp),
   );
 }
 
@@ -5985,6 +6073,7 @@ const required = [
   "hora-lactancia.html",
   "jornada-40-horas.html",
   "feriado-anual.html",
+  "dias-habiles.html",
   "feriado-progresivo.html",
   "indemnizacion-anos-servicio.html",
   "aguinaldo.html",
@@ -6050,6 +6139,7 @@ const required = [
   "js/app-hora-lactancia.js",
   "js/app-jornada-40-horas.js",
   "js/app-feriado-anual.js",
+  "js/app-dias-habiles.js",
   "js/app-feriado-progresivo.js",
   "js/app-indemnizacion-anos-servicio.js",
   "js/app-aguinaldo.js",
@@ -6093,6 +6183,7 @@ const required = [
   "js/franquicia-sence.js",
   "js/reajuste-ipc.js",
   "js/feriados.js",
+  "js/dias-habiles.js",
   "js/interes-mora.js",
   "js/prescripcion-laboral.js",
   "js/descanso-compensatorio.js",
@@ -6269,6 +6360,7 @@ const htmlFiles = [
   "hora-lactancia.html",
   "jornada-40-horas.html",
   "feriado-anual.html",
+  "dias-habiles.html",
   "feriado-progresivo.html",
   "indemnizacion-anos-servicio.html",
   "aguinaldo.html",
@@ -6410,6 +6502,7 @@ const appEntries = [
   "js/app-hora-lactancia.js",
   "js/app-jornada-40-horas.js",
   "js/app-feriado-anual.js",
+  "js/app-dias-habiles.js",
   "js/app-feriado-progresivo.js",
   "js/app-indemnizacion-anos-servicio.js",
   "js/app-aguinaldo.js",
@@ -6470,7 +6563,7 @@ assert("robots Allow /", /Allow:\s*\//.test(robots));
 assert("robots Disallow /admin", /Disallow:\s*\/admin/.test(robots));
 assert("robots Disallow /api", /Disallow:\s*\/api/.test(robots));
 assert("robots Disallow /docs", /Disallow:\s*\/docs/.test(robots));
-assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/trabajo-pesado/.test(robots) && !/Disallow:\s*\/nulidad-despido/.test(robots) && !/Disallow:\s*\/tutela-laboral/.test(robots) && !/Disallow:\s*\/despido-injustificado/.test(robots) && !/Disallow:\s*\/autodespido/.test(robots) && !/Disallow:\s*\/obra-faena/.test(robots) && !/Disallow:\s*\/prescripcion-laboral/.test(robots) && !/Disallow:\s*\/descanso-compensatorio/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/feriado-anual/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/licencia-medica/.test(robots) && !/Disallow:\s*\/boleta-honorarios/.test(robots) && !/Disallow:\s*\/retencion-judicial/.test(robots) && !/Disallow:\s*\/apv/.test(robots) && !/Disallow:\s*\/sala-cuna/.test(robots) && !/Disallow:\s*\/postnatal-parental/.test(robots) && !/Disallow:\s*\/permiso-prenatal/.test(robots) && !/Disallow:\s*\/fuero-maternal/.test(robots) && !/Disallow:\s*\/permiso-paternidad/.test(robots) && !/Disallow:\s*\/permiso-matrimonio/.test(robots) && !/Disallow:\s*\/permiso-fallecimiento/.test(robots) && !/Disallow:\s*\/interes-mora/.test(robots) && !/Disallow:\s*\/hora-lactancia/.test(robots) && !/Disallow:\s*\/jornada-40-horas/.test(robots) && !/Disallow:\s*\/jornada-parcial/.test(robots) && !/Disallow:\s*\/teletrabajo/.test(robots) && !/Disallow:\s*\/bandas-horarias/.test(robots) && !/Disallow:\s*\/pacto-4x3/.test(robots) && !/Disallow:\s*\/jornada-excepcional/.test(robots) && !/Disallow:\s*\/jornada-bisemanal/.test(robots) && !/Disallow:\s*\/compensacion-horas-extras/.test(robots) && !/Disallow:\s*\/pacto-horas-extras/.test(robots) && !/Disallow:\s*\/contrato-plazo-fijo/.test(robots) && !/Disallow:\s*\/termino-anticipado-plazo-fijo/.test(robots) && !/Disallow:\s*\/permiso-sin-goce/.test(robots) && !/Disallow:\s*\/zona-extrema/.test(robots) && !/Disallow:\s*\/promedio-remuneraciones/.test(robots) && !/Disallow:\s*\/antiguedad-laboral/.test(robots) && !/Disallow:\s*\/tope-imponible/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots) && !/Disallow:\s*\/inclusion-laboral/.test(robots) && !/Disallow:\s*\/reajuste-ipc/.test(robots) && !/Disallow:\s*\/valor-hora/.test(robots));
+assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/trabajo-pesado/.test(robots) && !/Disallow:\s*\/nulidad-despido/.test(robots) && !/Disallow:\s*\/tutela-laboral/.test(robots) && !/Disallow:\s*\/despido-injustificado/.test(robots) && !/Disallow:\s*\/autodespido/.test(robots) && !/Disallow:\s*\/obra-faena/.test(robots) && !/Disallow:\s*\/prescripcion-laboral/.test(robots) && !/Disallow:\s*\/descanso-compensatorio/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/feriado-anual/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/licencia-medica/.test(robots) && !/Disallow:\s*\/boleta-honorarios/.test(robots) && !/Disallow:\s*\/retencion-judicial/.test(robots) && !/Disallow:\s*\/apv/.test(robots) && !/Disallow:\s*\/sala-cuna/.test(robots) && !/Disallow:\s*\/postnatal-parental/.test(robots) && !/Disallow:\s*\/permiso-prenatal/.test(robots) && !/Disallow:\s*\/fuero-maternal/.test(robots) && !/Disallow:\s*\/permiso-paternidad/.test(robots) && !/Disallow:\s*\/permiso-matrimonio/.test(robots) && !/Disallow:\s*\/permiso-fallecimiento/.test(robots) && !/Disallow:\s*\/interes-mora/.test(robots) && !/Disallow:\s*\/hora-lactancia/.test(robots) && !/Disallow:\s*\/jornada-40-horas/.test(robots) && !/Disallow:\s*\/jornada-parcial/.test(robots) && !/Disallow:\s*\/teletrabajo/.test(robots) && !/Disallow:\s*\/bandas-horarias/.test(robots) && !/Disallow:\s*\/pacto-4x3/.test(robots) && !/Disallow:\s*\/jornada-excepcional/.test(robots) && !/Disallow:\s*\/jornada-bisemanal/.test(robots) && !/Disallow:\s*\/compensacion-horas-extras/.test(robots) && !/Disallow:\s*\/pacto-horas-extras/.test(robots) && !/Disallow:\s*\/contrato-plazo-fijo/.test(robots) && !/Disallow:\s*\/termino-anticipado-plazo-fijo/.test(robots) && !/Disallow:\s*\/permiso-sin-goce/.test(robots) && !/Disallow:\s*\/zona-extrema/.test(robots) && !/Disallow:\s*\/promedio-remuneraciones/.test(robots) && !/Disallow:\s*\/antiguedad-laboral/.test(robots) && !/Disallow:\s*\/tope-imponible/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots) && !/Disallow:\s*\/inclusion-laboral/.test(robots) && !/Disallow:\s*\/reajuste-ipc/.test(robots) && !/Disallow:\s*\/valor-hora/.test(robots) && !/Disallow:\s*\/dias-habiles/.test(robots));
 assert("robots Sitemap", /Sitemap:\s*https:\/\/www\.haberes\.cl\/sitemap\.xml/.test(robots));
 
 const { seoPaths, GUIDE_SLUGS, GUIDES, CAUSAL_PAGES, BASE_PATHS, lastmodForPath } = await import("../content/registry.js");
@@ -6501,6 +6594,7 @@ assert(
     BASE_PATHS.includes("/recargo-domingo-comercio") &&
     BASE_PATHS.includes("/feriado-irrenunciable") &&
     BASE_PATHS.includes("/feriado-anual") &&
+    BASE_PATHS.includes("/dias-habiles") &&
     BASE_PATHS.includes("/semana-corrida") &&
     BASE_PATHS.includes("/asignacion-familiar") &&
     BASE_PATHS.includes("/colacion-movilizacion") &&
@@ -6909,7 +7003,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 112,
+      seoPaths().length === 113,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -6921,7 +7015,7 @@ try {
   const docsSeo = await hitLocal("/docs/seo-map.md");
   assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
   assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
-  for (const p of ["/sueldo/", "/sueldo-liquido-a-bruto/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/valor-hora/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/obra-faena/", "/prescripcion-laboral/", "/descanso-compensatorio/", "/inclusion-laboral/", "/jornada-parcial/", "/teletrabajo/", "/bandas-horarias/", "/pacto-4x3/", "/jornada-excepcional/", "/jornada-bisemanal/", "/compensacion-horas-extras/", "/pacto-horas-extras/", "/contrato-plazo-fijo/", "/termino-anticipado-plazo-fijo/", "/permiso-sin-goce/", "/zona-extrema/", "/promedio-remuneraciones/", "/antiguedad-laboral/", "/tope-imponible/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/viatico/", "/reajuste-ipc/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+  for (const p of ["/sueldo/", "/sueldo-liquido-a-bruto/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/valor-hora/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/dias-habiles/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/obra-faena/", "/prescripcion-laboral/", "/descanso-compensatorio/", "/inclusion-laboral/", "/jornada-parcial/", "/teletrabajo/", "/bandas-horarias/", "/pacto-4x3/", "/jornada-excepcional/", "/jornada-bisemanal/", "/compensacion-horas-extras/", "/pacto-horas-extras/", "/contrato-plazo-fijo/", "/termino-anticipado-plazo-fijo/", "/permiso-sin-goce/", "/zona-extrema/", "/promedio-remuneraciones/", "/antiguedad-laboral/", "/tope-imponible/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/viatico/", "/reajuste-ipc/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
   }
@@ -6942,6 +7036,7 @@ try {
     "/recargo-domingo-comercio",
     "/feriado-irrenunciable",
     "/feriado-anual",
+    "/dias-habiles",
     "/semana-corrida",
     "/vacaciones-proporcionales",
     "/feriado-progresivo",
@@ -10796,6 +10891,7 @@ assert(
     ["hora-lactancia.html", "/hora-lactancia"],
     ["jornada-40-horas.html", "/jornada-40-horas"],
     ["feriado-anual.html", "/feriado-anual"],
+    ["dias-habiles.html", "/dias-habiles"],
     ["feriado-progresivo.html", "/feriado-progresivo"],
     ["indemnizacion-anos-servicio.html", "/indemnizacion-anos-servicio"],
     ["aguinaldo.html", "/aguinaldo"],
@@ -17882,6 +17978,108 @@ assert(
     );
   }
   {
+    const dhHtml = readFileSync(join(root, "dias-habiles.html"), "utf8");
+    const dhTitle = (dhHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const dhH1 = (dhHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const dhDesc = (dhHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "";
+    const faHtmlDh = readFileSync(join(root, "feriado-anual.html"), "utf8");
+    const faTitleDh = (faHtmlDh.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const faH1Dh = (faHtmlDh.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    assert(
+      "SEO title días hábiles apunta a contador Chile 2026",
+      /contador de d[ií]as h[aá]biles/i.test(dhTitle) &&
+        /Chile 2026/.test(dhTitle) &&
+        !/feriados chile 2026/i.test(dhTitle) &&
+        !/calendario feriados/i.test(dhTitle) &&
+        dhTitle !== faTitleDh &&
+        dhTitle.length <= 65,
+      dhTitle,
+    );
+    assert(
+      "SEO H1 calcular días hábiles Chile 2026",
+      dhH1 === "Calcular días hábiles Chile 2026" &&
+        dhH1 !== faH1Dh &&
+        !/calendario feriados/i.test(dhH1),
+      dhH1,
+    );
+    assert(
+      "SEO días hábiles meta distinta de /feriado-anual",
+      dhDesc &&
+        dhDesc !== ((faHtmlDh.match(/meta name="description" content="([^"]*)"/) || [])[1] || "") &&
+        /d[ií]as h[aá]biles/i.test(dhDesc) &&
+        /d[ií]as corridos/i.test(dhDesc) &&
+        /no plazo judicial/i.test(dhDesc),
+    );
+    assert(
+      "SEO días hábiles disclaimer, art. 69, FAQ y enlaces",
+      /Direcci[oó]n del Trabajo/.test(dhHtml) &&
+        /Previred/.test(dhHtml) &&
+        /asesor[ií]a legal/i.test(dhHtml) &&
+        /art[ií]culo 69/i.test(dhHtml) &&
+        /art[ií]culo 48/i.test(dhHtml) &&
+        /s[aá]bado/i.test(dhHtml) &&
+        /9 d[ií]as h[aá]biles/i.test(dhHtml) &&
+        /12 d[ií]as corridos/i.test(dhHtml) &&
+        /2 de octubre de 2026/.test(dhHtml) &&
+        /Independencia Nacional/.test(dhHtml) &&
+        /href="\/feriado-anual"/.test(dhHtml) &&
+        /href="\/vacaciones-proporcionales"/.test(dhHtml) &&
+        /href="\/feriado-progresivo"/.test(dhHtml) &&
+        /href="\/feriado-irrenunciable"/.test(dhHtml) &&
+        /href="\/prescripcion-laboral"/.test(dhHtml) &&
+        /href="\/permiso-paternidad"/.test(dhHtml) &&
+        /href="\/permiso-matrimonio"/.test(dhHtml) &&
+        /href="\/permiso-fallecimiento"/.test(dhHtml) &&
+        /href="\/antiguedad-laboral"/.test(dhHtml) &&
+        /"@type": "FAQPage"/.test(dhHtml),
+    );
+    assert(
+      "SEO días hábiles no inventa hermanas",
+      /no abre URLs hermanas/i.test(dhHtml) &&
+        !existsSync(join(root, "feriados-chile.html")) &&
+        !existsSync(join(root, "calendario-feriados.html")) &&
+        !existsSync(join(root, "contador-dias.html")) &&
+        !existsSync(join(root, "dias-corridos.html")) &&
+        !existsSync(join(root, "dias-habiles-chile.html")) &&
+        !existsSync(join(root, "calculadora-dias-habiles.html")),
+    );
+    assert(
+      "home y nav enlazan /dias-habiles",
+      /href="\/dias-habiles"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/dias-habiles" data-nav>D[ií]as h[aá]biles<\/a>/.test(
+          readFileSync(join(root, "index.html"), "utf8"),
+        ) &&
+        /href="\/dias-habiles" data-nav>D[ií]as h[aá]biles<\/a>/.test(dhHtml) &&
+        /href="\/dias-habiles" data-nav>D[ií]as h[aá]biles<\/a>/.test(
+          readFileSync(join(root, "js/ui.js"), "utf8"),
+        ) &&
+        /\["\/dias-habiles", "Días hábiles"\]/.test(
+          readFileSync(join(root, "scripts/patch-nav.mjs"), "utf8"),
+        ) &&
+        /href="\/dias-habiles"/.test(faHtmlDh),
+    );
+    assert(
+      "sitemap incluye /dias-habiles",
+      locs.includes("https://www.haberes.cl/dias-habiles") &&
+        lastmodForPath("/dias-habiles") === "2026-09-27",
+    );
+    assert(
+      "seo-map documenta /dias-habiles y no-canibalizar /feriado-anual",
+      /\/dias-habiles/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no canibalizar `\/feriado-anual`/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no crear `\/feriados-chile`, `\/calendario-feriados`/i.test(
+          readFileSync(join(root, "docs/seo-map.md"), "utf8"),
+        ),
+    );
+    assert(
+      "hub /guias enlaza /dias-habiles en el cluster de finiquito",
+      /href="\/dias-habiles"/.test(readFileSync(join(root, "guias.html"), "utf8")) &&
+        /<h2>Finiquito<\/h2>[\s\S]*href="\/dias-habiles"/.test(
+          readFileSync(join(root, "guias.html"), "utf8"),
+        ),
+    );
+  }
+  {
     const smHtml = readFileSync(join(root, "sueldo-minimo.html"), "utf8");
     const smTitle = (smHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
     const smH1 = (smHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
@@ -19262,6 +19460,7 @@ assert(
       "hora-lactancia.html",
       "jornada-40-horas.html",
       "feriado-anual.html",
+      "dias-habiles.html",
       "feriado-progresivo.html",
       "indemnizacion-anos-servicio.html",
       "aguinaldo.html",
@@ -19468,7 +19667,7 @@ assert(
     return acc;
   }
   const pages = listHtml(root);
-  assert("114 páginas HTML", pages.length === 114, String(pages.length));
+  assert("115 páginas HTML", pages.length === 115, String(pages.length));
   for (const file of pages) {
     const html = readFileSync(file, "utf8");
     const rel = file.slice(root.length + 1);
