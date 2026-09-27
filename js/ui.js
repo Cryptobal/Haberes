@@ -248,6 +248,7 @@ function paintLoggedInNav(emp) {
         <a href="/franquicia-sence" data-nav>Franquicia SENCE</a>
         <a href="/reajuste-ipc" data-nav>Reajuste IPC</a>
         <a href="/vacaciones-proporcionales" data-nav>Vacaciones proporcionales</a>
+        <a href="/dias-habiles" data-nav>Días hábiles</a>
         <a href="/feriado-anual" data-nav>Feriado anual</a>
         <a href="/feriado-progresivo" data-nav>Feriado progresivo</a>
         <a href="/indemnizacion-anos-servicio" data-nav>Indemnización años de servicio</a>

@@ -66,6 +66,7 @@ const DRAWER_LINKS = [
   ["/franquicia-sence", "Franquicia SENCE"],
   ["/reajuste-ipc", "Reajuste IPC"],
   ["/vacaciones-proporcionales", "Vacaciones proporcionales"],
+  ["/dias-habiles", "Días hábiles"],
   ["/feriado-anual", "Feriado anual"],
   ["/feriado-progresivo", "Feriado progresivo"],
   ["/indemnizacion-anos-servicio", "Indemnización años de servicio"],
