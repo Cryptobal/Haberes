@@ -24,6 +24,7 @@ const DRAWER_LINKS = [
   ["/descuento-atrasos", "Descuento atrasos"],
   ["/licencia-medica", "Licencia médica"],
   ["/retencion-judicial", "Retención judicial"],
+  ["/descuentos-legales", "Descuentos legales"],
   ["/apv", "APV Régimen B"],
   ["/valor-hora", "Valor hora"],
   ["/horas-extras", "Horas extras"],

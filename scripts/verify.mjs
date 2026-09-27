@@ -195,6 +195,7 @@ import { calcularReajusteIpc, variacionesEnRango } from "../js/reajuste-ipc.js";
 import { calcularValorHora } from "../js/valor-hora.js";
 import { addDiasHabilesPosteriores } from "../js/feriados.js";
 import { contarDiasHabiles, sumarDiasHabiles } from "../js/dias-habiles.js";
+import { calcularDescuentosLegales } from "../js/descuentos-legales.js";
 import { calcularSueldoLiquidoABruto } from "../js/sueldo-liquido-a-bruto.js";
 import { clp, dvRut, validarRut } from "../js/format.js";
 import {
@@ -6060,6 +6061,7 @@ const required = [
   "licencia-medica.html",
   "boleta-honorarios.html",
   "retencion-judicial.html",
+  "descuentos-legales.html",
   "apv.html",
   "sala-cuna.html",
   "postnatal-parental.html",
@@ -6126,6 +6128,7 @@ const required = [
   "js/app-licencia-medica.js",
   "js/app-boleta-honorarios.js",
   "js/app-retencion-judicial.js",
+  "js/app-descuentos-legales.js",
   "js/app-apv.js",
   "js/app-sala-cuna.js",
   "js/app-postnatal-parental.js",
@@ -6197,6 +6200,7 @@ const required = [
   "js/compensacion-horas-extras.js",
   "js/pacto-horas-extras.js",
   "js/valor-hora.js",
+  "js/descuentos-legales.js",
   "js/contrato-plazo-fijo.js",
   "js/termino-anticipado-plazo-fijo.js",
   "js/permiso-sin-goce.js",
@@ -6347,6 +6351,7 @@ const htmlFiles = [
   "licencia-medica.html",
   "boleta-honorarios.html",
   "retencion-judicial.html",
+  "descuentos-legales.html",
   "apv.html",
   "sala-cuna.html",
   "postnatal-parental.html",
@@ -6489,6 +6494,7 @@ const appEntries = [
   "js/app-licencia-medica.js",
   "js/app-boleta-honorarios.js",
   "js/app-retencion-judicial.js",
+  "js/app-descuentos-legales.js",
   "js/app-apv.js",
   "js/app-sala-cuna.js",
   "js/app-postnatal-parental.js",
@@ -6563,7 +6569,7 @@ assert("robots Allow /", /Allow:\s*\//.test(robots));
 assert("robots Disallow /admin", /Disallow:\s*\/admin/.test(robots));
 assert("robots Disallow /api", /Disallow:\s*\/api/.test(robots));
 assert("robots Disallow /docs", /Disallow:\s*\/docs/.test(robots));
-assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/trabajo-pesado/.test(robots) && !/Disallow:\s*\/nulidad-despido/.test(robots) && !/Disallow:\s*\/tutela-laboral/.test(robots) && !/Disallow:\s*\/despido-injustificado/.test(robots) && !/Disallow:\s*\/autodespido/.test(robots) && !/Disallow:\s*\/obra-faena/.test(robots) && !/Disallow:\s*\/prescripcion-laboral/.test(robots) && !/Disallow:\s*\/descanso-compensatorio/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/feriado-anual/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/licencia-medica/.test(robots) && !/Disallow:\s*\/boleta-honorarios/.test(robots) && !/Disallow:\s*\/retencion-judicial/.test(robots) && !/Disallow:\s*\/apv/.test(robots) && !/Disallow:\s*\/sala-cuna/.test(robots) && !/Disallow:\s*\/postnatal-parental/.test(robots) && !/Disallow:\s*\/permiso-prenatal/.test(robots) && !/Disallow:\s*\/fuero-maternal/.test(robots) && !/Disallow:\s*\/permiso-paternidad/.test(robots) && !/Disallow:\s*\/permiso-matrimonio/.test(robots) && !/Disallow:\s*\/permiso-fallecimiento/.test(robots) && !/Disallow:\s*\/interes-mora/.test(robots) && !/Disallow:\s*\/hora-lactancia/.test(robots) && !/Disallow:\s*\/jornada-40-horas/.test(robots) && !/Disallow:\s*\/jornada-parcial/.test(robots) && !/Disallow:\s*\/teletrabajo/.test(robots) && !/Disallow:\s*\/bandas-horarias/.test(robots) && !/Disallow:\s*\/pacto-4x3/.test(robots) && !/Disallow:\s*\/jornada-excepcional/.test(robots) && !/Disallow:\s*\/jornada-bisemanal/.test(robots) && !/Disallow:\s*\/compensacion-horas-extras/.test(robots) && !/Disallow:\s*\/pacto-horas-extras/.test(robots) && !/Disallow:\s*\/contrato-plazo-fijo/.test(robots) && !/Disallow:\s*\/termino-anticipado-plazo-fijo/.test(robots) && !/Disallow:\s*\/permiso-sin-goce/.test(robots) && !/Disallow:\s*\/zona-extrema/.test(robots) && !/Disallow:\s*\/promedio-remuneraciones/.test(robots) && !/Disallow:\s*\/antiguedad-laboral/.test(robots) && !/Disallow:\s*\/tope-imponible/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots) && !/Disallow:\s*\/inclusion-laboral/.test(robots) && !/Disallow:\s*\/reajuste-ipc/.test(robots) && !/Disallow:\s*\/valor-hora/.test(robots) && !/Disallow:\s*\/dias-habiles/.test(robots));
+assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/trabajo-pesado/.test(robots) && !/Disallow:\s*\/nulidad-despido/.test(robots) && !/Disallow:\s*\/tutela-laboral/.test(robots) && !/Disallow:\s*\/despido-injustificado/.test(robots) && !/Disallow:\s*\/autodespido/.test(robots) && !/Disallow:\s*\/obra-faena/.test(robots) && !/Disallow:\s*\/prescripcion-laboral/.test(robots) && !/Disallow:\s*\/descanso-compensatorio/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/feriado-anual/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/licencia-medica/.test(robots) && !/Disallow:\s*\/boleta-honorarios/.test(robots) && !/Disallow:\s*\/retencion-judicial/.test(robots) && !/Disallow:\s*\/apv/.test(robots) && !/Disallow:\s*\/sala-cuna/.test(robots) && !/Disallow:\s*\/postnatal-parental/.test(robots) && !/Disallow:\s*\/permiso-prenatal/.test(robots) && !/Disallow:\s*\/fuero-maternal/.test(robots) && !/Disallow:\s*\/permiso-paternidad/.test(robots) && !/Disallow:\s*\/permiso-matrimonio/.test(robots) && !/Disallow:\s*\/permiso-fallecimiento/.test(robots) && !/Disallow:\s*\/interes-mora/.test(robots) && !/Disallow:\s*\/hora-lactancia/.test(robots) && !/Disallow:\s*\/jornada-40-horas/.test(robots) && !/Disallow:\s*\/jornada-parcial/.test(robots) && !/Disallow:\s*\/teletrabajo/.test(robots) && !/Disallow:\s*\/bandas-horarias/.test(robots) && !/Disallow:\s*\/pacto-4x3/.test(robots) && !/Disallow:\s*\/jornada-excepcional/.test(robots) && !/Disallow:\s*\/jornada-bisemanal/.test(robots) && !/Disallow:\s*\/compensacion-horas-extras/.test(robots) && !/Disallow:\s*\/pacto-horas-extras/.test(robots) && !/Disallow:\s*\/contrato-plazo-fijo/.test(robots) && !/Disallow:\s*\/termino-anticipado-plazo-fijo/.test(robots) && !/Disallow:\s*\/permiso-sin-goce/.test(robots) && !/Disallow:\s*\/zona-extrema/.test(robots) && !/Disallow:\s*\/promedio-remuneraciones/.test(robots) && !/Disallow:\s*\/antiguedad-laboral/.test(robots) && !/Disallow:\s*\/tope-imponible/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots) && !/Disallow:\s*\/inclusion-laboral/.test(robots) && !/Disallow:\s*\/reajuste-ipc/.test(robots) && !/Disallow:\s*\/valor-hora/.test(robots) && !/Disallow:\s*\/dias-habiles/.test(robots) && !/Disallow:\s*\/descuentos-legales/.test(robots));
 assert("robots Sitemap", /Sitemap:\s*https:\/\/www\.haberes\.cl\/sitemap\.xml/.test(robots));
 
 const { seoPaths, GUIDE_SLUGS, GUIDES, CAUSAL_PAGES, BASE_PATHS, lastmodForPath } = await import("../content/registry.js");
@@ -6612,6 +6618,7 @@ assert(
     BASE_PATHS.includes("/licencia-medica") &&
     BASE_PATHS.includes("/boleta-honorarios") &&
     BASE_PATHS.includes("/retencion-judicial") &&
+    BASE_PATHS.includes("/descuentos-legales") &&
     BASE_PATHS.includes("/apv") &&
     BASE_PATHS.includes("/sala-cuna") &&
     BASE_PATHS.includes("/postnatal-parental") &&
@@ -7003,7 +7010,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 113,
+      seoPaths().length === 114,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -7015,7 +7022,7 @@ try {
   const docsSeo = await hitLocal("/docs/seo-map.md");
   assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
   assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
-  for (const p of ["/sueldo/", "/sueldo-liquido-a-bruto/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/valor-hora/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/dias-habiles/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/obra-faena/", "/prescripcion-laboral/", "/descanso-compensatorio/", "/inclusion-laboral/", "/jornada-parcial/", "/teletrabajo/", "/bandas-horarias/", "/pacto-4x3/", "/jornada-excepcional/", "/jornada-bisemanal/", "/compensacion-horas-extras/", "/pacto-horas-extras/", "/contrato-plazo-fijo/", "/termino-anticipado-plazo-fijo/", "/permiso-sin-goce/", "/zona-extrema/", "/promedio-remuneraciones/", "/antiguedad-laboral/", "/tope-imponible/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/viatico/", "/reajuste-ipc/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+  for (const p of ["/sueldo/", "/sueldo-liquido-a-bruto/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/valor-hora/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/dias-habiles/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/obra-faena/", "/prescripcion-laboral/", "/descanso-compensatorio/", "/inclusion-laboral/", "/jornada-parcial/", "/teletrabajo/", "/bandas-horarias/", "/pacto-4x3/", "/jornada-excepcional/", "/jornada-bisemanal/", "/compensacion-horas-extras/", "/pacto-horas-extras/", "/contrato-plazo-fijo/", "/termino-anticipado-plazo-fijo/", "/permiso-sin-goce/", "/zona-extrema/", "/promedio-remuneraciones/", "/antiguedad-laboral/", "/tope-imponible/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/descuentos-legales/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/viatico/", "/reajuste-ipc/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
   }
@@ -7049,6 +7056,7 @@ try {
     "/licencia-medica",
     "/boleta-honorarios",
     "/retencion-judicial",
+    "/descuentos-legales",
     "/apv",
     "/sala-cuna",
     "/postnatal-parental",
@@ -10879,6 +10887,7 @@ assert(
     ["licencia-medica.html", "/licencia-medica"],
     ["boleta-honorarios.html", "/boleta-honorarios"],
     ["retencion-judicial.html", "/retencion-judicial"],
+    ["descuentos-legales.html", "/descuentos-legales"],
     ["apv.html", "/apv"],
     ["sala-cuna.html", "/sala-cuna"],
     ["postnatal-parental.html", "/postnatal-parental"],
@@ -16810,7 +16819,6 @@ assert(
     assert(
       "no se crean URLs hermanas de cotizaciones",
       !existsSync(join(root, "cotizacion-afp.html")) &&
-        !existsSync(join(root, "descuentos-legales.html")) &&
         !existsSync(join(root, "calculadora-sueldo.html")),
     );
     assert(
@@ -19448,6 +19456,7 @@ assert(
       "licencia-medica.html",
       "boleta-honorarios.html",
       "retencion-judicial.html",
+      "descuentos-legales.html",
       "apv.html",
       "sala-cuna.html",
       "postnatal-parental.html",
@@ -19667,7 +19676,7 @@ assert(
     return acc;
   }
   const pages = listHtml(root);
-  assert("115 páginas HTML", pages.length === 115, String(pages.length));
+  assert("116 páginas HTML", pages.length === 116, String(pages.length));
   for (const file of pages) {
     const html = readFileSync(file, "utf8");
     const rel = file.slice(root.length + 1);
@@ -19768,6 +19777,186 @@ assert(
   } else {
     assert("reveal no oculta secciones fuera de .js", true);
   }
+}
+
+console.log("\nDescuentos legales art. 58");
+{
+  const dlSrc = readFileSync(join(root, "js/descuentos-legales.js"), "utf8");
+  const dlApp = readFileSync(join(root, "js/app-descuentos-legales.js"), "utf8");
+  const dlHtml = readFileSync(join(root, "descuentos-legales.html"), "utf8");
+  const dlTitle = (dlHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+  const dlH1 = (dlHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+  const dlDesc = (dlHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "";
+  const daHtmlDl = readFileSync(join(root, "descuento-atrasos.html"), "utf8");
+  const caps = calcularDescuentosLegales({ remuneracion: 1_000_000 });
+  const otros = calcularDescuentosLegales({ remuneracion: 1_000_000, otros: 200_000 });
+  const vivienda = calcularDescuentosLegales({ remuneracion: 1_000_000, vivienda: 350_000 });
+  const conjunto = calcularDescuentosLegales({
+    remuneracion: 1_000_000,
+    obligatorios: 280_000,
+    vivienda: 350_000,
+    otros: 200_000,
+  });
+  const vacio = calcularDescuentosLegales();
+  const neg = calcularDescuentosLegales({ remuneracion: -1, obligatorios: 10 });
+  const nan = calcularDescuentosLegales({ remuneracion: "x", otros: 1 });
+  const oblSolo = calcularDescuentosLegales({ remuneracion: 1_000_000, obligatorios: 500_000 });
+  assert(
+    "descuentos-legales documenta el orden obligatorios, vivienda, otros",
+    /Se conservan primero los obligatorios/.test(dlSrc) &&
+      /Después vivienda/.test(dlSrc) &&
+      /Al final los otros voluntarios/.test(dlSrc),
+  );
+  assert(
+    "app-descuentos-legales usa calcularDescuentosLegales y no mete el anticipo al motor",
+    /import\s*\{[^}]*calcularDescuentosLegales[^}]*\}\s*from\s*["']\.\/descuentos-legales\.js["']/.test(dlApp) &&
+      /calcularDescuentosLegales\s*\(\s*leer\(\s*\)\s*\)/.test(dlApp) &&
+      !/anticipo\s*:/.test(dlApp),
+  );
+  assert(
+    "gold 1000000 topes 15/30/45",
+    caps.ok === true && caps.tope15 === 150_000 && caps.tope30 === 300_000 && caps.tope45 === 450_000,
+    JSON.stringify(caps),
+  );
+  assert(
+    "gold otros 200000 aplicable 150000 exceso 50000",
+    otros.ok && otros.aplicable15 === 150_000 && otros.exceso15 === 50_000 && otros.otrosAplicables === 150_000,
+    JSON.stringify({ aplicable15: otros.aplicable15, exceso15: otros.exceso15, otrosAplicables: otros.otrosAplicables }),
+  );
+  assert(
+    "gold vivienda 350000 aplicable 300000 exceso 50000",
+    vivienda.ok &&
+      vivienda.aplicable30 === 300_000 &&
+      vivienda.exceso30 === 50_000 &&
+      vivienda.viviendaAplicables === 300_000,
+    JSON.stringify({ aplicable30: vivienda.aplicable30, exceso30: vivienda.exceso30 }),
+  );
+  assert(
+    "gold conjunto 730000 se recorta a 450000 conservando obligatorios",
+    conjunto.ok &&
+      conjunto.aplicable15 === 150_000 &&
+      conjunto.aplicable30 === 300_000 &&
+      conjunto.obligatoriosAplicables === 280_000 &&
+      conjunto.viviendaAplicables === 170_000 &&
+      conjunto.otrosAplicables === 0 &&
+      conjunto.totalAplicable === 450_000 &&
+      conjunto.totalAplicable <= conjunto.tope45 &&
+      conjunto.excedeGlobal === true &&
+      conjunto.remanente === 550_000,
+    JSON.stringify(conjunto),
+  );
+  assert(
+    "descuentos-legales vacío, negativo o inválido no lanza y devuelve ok false",
+    vacio.ok === false &&
+      vacio.tope15 === 0 &&
+      neg.ok === false &&
+      neg.tope45 === 0 &&
+      nan.ok === false &&
+      nan.totalAplicable === 0 &&
+      oblSolo.ok === true &&
+      oblSolo.obligatoriosAplicables === 450_000 &&
+      oblSolo.excesoObligatorios === 50_000 &&
+      oblSolo.viviendaAplicables === 0 &&
+      oblSolo.totalAplicable === 450_000,
+  );
+  assert(
+    "SEO title descuentos legales apunta al artículo 58 Chile 2026",
+    /descuentos legales/i.test(dlTitle) &&
+      /art[ií]culo 58/i.test(dlTitle) &&
+      /2026/.test(dlTitle) &&
+      dlTitle.length <= 65 &&
+      !/^Haberes\b/.test(dlTitle),
+    dlTitle,
+  );
+  assert(
+    "SEO H1 descuentos legales artículo 58 Chile 2026",
+    dlH1 === "Calcular descuentos legales artículo 58 Chile 2026",
+    dlH1,
+  );
+  assert(
+    "SEO descuentos legales meta distinta de atrasos y retención",
+    dlDesc.length >= 110 &&
+      dlDesc.length <= 160 &&
+      /descuentos legales/i.test(dlDesc) &&
+      /art[ií]culo 58/i.test(dlDesc) &&
+      dlDesc !== ((daHtmlDl.match(/meta name="description" content="([^"]*)"/) || [])[1] || "") &&
+      dlDesc !==
+        ((readFileSync(join(root, "retencion-judicial.html"), "utf8").match(/meta name="description" content="([^"]*)"/) || [])[1] || ""),
+  );
+  assert(
+    "SEO descuentos legales disclaimer, topes, anticipo, FAQ y enlaces",
+    /Direcci[oó]n del Trabajo/.test(dlHtml) &&
+      /Previred/.test(dlHtml) &&
+      /asesor[ií]a legal/i.test(dlHtml) &&
+      /7051\/332/.test(dlHtml) &&
+      /15 %/.test(dlHtml) &&
+      /30 %/.test(dlHtml) &&
+      /45 %/.test(dlHtml) &&
+      /\$150\.000/.test(dlHtml) &&
+      /\$300\.000/.test(dlHtml) &&
+      /\$450\.000/.test(dlHtml) &&
+      /\$200\.000/.test(dlHtml) &&
+      /\$350\.000/.test(dlHtml) &&
+      /\$280\.000/.test(dlHtml) &&
+      /\$730\.000/.test(dlHtml) &&
+      /\$170\.000/.test(dlHtml) &&
+      /\$550\.000/.test(dlHtml) &&
+      /anticipo/i.test(dlHtml) &&
+      /href="\/descuento-atrasos"/.test(dlHtml) &&
+      /href="\/retencion-judicial"/.test(dlHtml) &&
+      /href="\/sueldo"/.test(dlHtml) &&
+      /href="\/sueldo-liquido-a-bruto"/.test(dlHtml) &&
+      /href="\/cotizaciones-previsionales"/.test(dlHtml) &&
+      /href="\/impuesto-unico"/.test(dlHtml) &&
+      /href="\/costo-empresa"/.test(dlHtml) &&
+      /href="\/seguro-cesantia"/.test(dlHtml) &&
+      /"@type": "FAQPage"/.test(dlHtml),
+  );
+  assert(
+    "SEO descuentos legales no inventa hermanas",
+    /no abre URLs hermanas/i.test(dlHtml) &&
+      !existsSync(join(root, "articulo-58.html")) &&
+      !existsSync(join(root, "tope-descuentos.html")) &&
+      !existsSync(join(root, "anticipo-sueldo.html")) &&
+      !existsSync(join(root, "descuentos-sueldo.html")),
+  );
+  assert(
+    "home y nav enlazan /descuentos-legales",
+    /href="\/descuentos-legales"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+      /href="\/descuentos-legales" data-nav>Descuentos legales<\/a>/.test(
+        readFileSync(join(root, "index.html"), "utf8"),
+      ) &&
+      /href="\/descuentos-legales" data-nav>Descuentos legales<\/a>/.test(dlHtml) &&
+      /href="\/descuentos-legales" data-nav>Descuentos legales<\/a>/.test(
+        readFileSync(join(root, "js/ui.js"), "utf8"),
+      ) &&
+      /\["\/descuentos-legales", "Descuentos legales"\]/.test(
+        readFileSync(join(root, "scripts/patch-nav.mjs"), "utf8"),
+      ) &&
+      /href="\/descuentos-legales"/.test(daHtmlDl),
+  );
+  assert(
+    "sitemap incluye /descuentos-legales",
+    locs.includes("https://www.haberes.cl/descuentos-legales") &&
+      lastmodForPath("/descuentos-legales") === "2026-09-27",
+  );
+  assert(
+    "seo-map documenta /descuentos-legales y no-canibalizar /descuento-atrasos",
+    /\/descuentos-legales/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+      /no canibalizar `\/descuento-atrasos`, `\/retencion-judicial`, `\/sueldo`/.test(
+        readFileSync(join(root, "docs/seo-map.md"), "utf8"),
+      ) &&
+      /no crear `\/articulo-58`, `\/tope-descuentos`/i.test(
+        readFileSync(join(root, "docs/seo-map.md"), "utf8"),
+      ),
+  );
+  assert(
+    "hub /guias enlaza /descuentos-legales en el cluster de liquidación",
+    /href="\/descuentos-legales"/.test(readFileSync(join(root, "guias.html"), "utf8")) &&
+      !/<h2>Finiquito<\/h2>[\s\S]*href="\/descuentos-legales"/.test(
+        readFileSync(join(root, "guias.html"), "utf8"),
+      ),
+  );
 }
 
 console.log(`\n${passed} ok, ${failed} fail`);
