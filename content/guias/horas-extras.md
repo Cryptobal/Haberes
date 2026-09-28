@@ -15,7 +15,7 @@ faq:
 
 # Horas extras en Chile: recargo 50 %, tope diario y fórmula DT
 
-Las **horas extraordinarias** son las que exceden la jornada máxima legal o la **pactada**, si esta es menor ([artículo 30](https://www.bcn.cl/leychile/navegar?idNorma=207436)). El [artículo 32](https://www.bcn.cl/leychile/navegar?idNorma=207436) las paga con un recargo del **50 %** sobre el **sueldo convenido** para la jornada ordinaria. El valor de una hora y el total del mes se estiman en [calcular horas extras](/horas-extras). El efecto en AFP, salud e impuesto único, en la [calculadora de sueldo líquido](/sueldo).
+Las **horas extraordinarias** son las que exceden la jornada máxima legal o la **pactada**, si esta es menor ([artículo 30](https://www.bcn.cl/leychile/navegar?idNorma=207436)). El [artículo 32](https://www.bcn.cl/leychile/navegar?idNorma=207436) las paga con un recargo del **50 %** sobre el **sueldo convenido** para la jornada ordinaria. La hora ordinaria, sin recargo, se estima en [calcular valor hora](/valor-hora). El valor de una hora extra y el total del mes se estiman en [calcular horas extras](/horas-extras). El efecto en AFP, salud e impuesto único, en la [calculadora de sueldo líquido](/sueldo).
 
 ## A quién aplica y a quién no
 

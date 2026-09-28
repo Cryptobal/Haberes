@@ -2696,6 +2696,15 @@ console.log("\nFuero maternal art. 201 (calendario; parental excluido)");
       !/\bprompt\s*\(/.test(fmApp) &&
       !/window\.open/.test(fmApp),
   );
+  const seoCalc = readFileSync(join(root, "js/seo-calc.js"), "utf8");
+  assert(
+    "seo-calc monta fuero con calcularFueroMaternal",
+    /import\s*\{[^}]*calcularFueroMaternal[^}]*\}\s*from\s*["']\.\/sueldo\.js["']/.test(seoCalc) &&
+      /function mountFuero/.test(seoCalc) &&
+      /fuero:\s*mountFuero/.test(seoCalc) &&
+      /Abrir calculadora completa/.test(seoCalc) &&
+      /href="\/fuero-maternal"/.test(seoCalc),
+  );
 }
 
 {
@@ -6714,7 +6723,8 @@ assert(
     lastmodForPath("/guias/me-reservo-el-derecho-en-el-finiquito") === "2026-09-07" &&
     lastmodForPath("/guias/vacaciones-proporcionales") === "2026-09-14" &&
     lastmodForPath("/guias/liquidacion-de-sueldo-y-previred") === "2026-09-21" &&
-    lastmodForPath("/guias") === "2026-09-21" &&
+    lastmodForPath("/guias/fuero-maternal") === "2026-09-28" &&
+    lastmodForPath("/guias") === "2026-09-28" &&
     /<loc>https:\/\/www\.haberes\.cl\/guias\/liquidacion-de-sueldo<\/loc>\s*<lastmod>2026-08-18<\/lastmod>/.test(sitemap) &&
     /<loc>https:\/\/www\.haberes\.cl\/guias\/gratificacion-legal<\/loc>\s*<lastmod>2026-08-18<\/lastmod>/.test(sitemap) &&
     /<loc>https:\/\/www\.haberes\.cl\/guias\/indemnizacion-por-anos-de-servicio<\/loc>\s*<lastmod>2026-08-19<\/lastmod>/.test(sitemap) &&
@@ -6724,7 +6734,8 @@ assert(
     /<loc>https:\/\/www\.haberes\.cl\/guias\/me-reservo-el-derecho-en-el-finiquito<\/loc>\s*<lastmod>2026-09-07<\/lastmod>/.test(sitemap) &&
     /<loc>https:\/\/www\.haberes\.cl\/guias\/vacaciones-proporcionales<\/loc>\s*<lastmod>2026-09-14<\/lastmod>/.test(sitemap) &&
     /<loc>https:\/\/www\.haberes\.cl\/guias\/liquidacion-de-sueldo-y-previred<\/loc>\s*<lastmod>2026-09-21<\/lastmod>/.test(sitemap) &&
-    /<loc>https:\/\/www\.haberes\.cl\/guias<\/loc>\s*<lastmod>2026-09-21<\/lastmod>/.test(sitemap),
+    /<loc>https:\/\/www\.haberes\.cl\/guias\/fuero-maternal<\/loc>\s*<lastmod>2026-09-28<\/lastmod>/.test(sitemap) &&
+    /<loc>https:\/\/www\.haberes\.cl\/guias<\/loc>\s*<lastmod>2026-09-28<\/lastmod>/.test(sitemap),
 );
 assert("sin ruta /blog ni /noticias", !existsSync(join(root, "blog.html")) && !existsSync(join(root, "noticias.html")));
 assert("sitemap sin .html (cleanUrls)", !locs.some((u) => u.endsWith(".html")));
@@ -7010,7 +7021,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 114,
+      seoPaths().length === 115,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -18393,6 +18404,7 @@ assert(
       ["guias/me-reservo-el-derecho-en-el-finiquito.html", "/finiquito", /artículo 177/, /dt\.gob\.cl/],
       ["guias/vacaciones-proporcionales.html", "/vacaciones-proporcionales", /artículo 73/, /dt\.gob\.cl/],
       ["guias/liquidacion-de-sueldo-y-previred.html", "/sueldo", /54/, /dt\.gob\.cl/],
+      ["guias/fuero-maternal.html", "/fuero-maternal", /artículo 201/, /dt\.gob\.cl/],
     ];
     function visibleWords(html) {
       const main = html.match(/<main\b[\s\S]*?<\/main>/i)?.[0] || html;
@@ -18417,11 +18429,14 @@ assert(
         file.includes("horas-extras") ||
         file.includes("me-reservo-el-derecho-en-el-finiquito") ||
         file.includes("vacaciones-proporcionales") ||
-        file.includes("liquidacion-de-sueldo-y-previred")
+        file.includes("liquidacion-de-sueldo-y-previred") ||
+        file.includes("fuero-maternal")
           ? 900
           : 800;
       const dateRe =
-        file.includes("liquidacion-de-sueldo-y-previred")
+        file.includes("fuero-maternal")
+          ? /<time datetime="2026-09-28">/
+          : file.includes("liquidacion-de-sueldo-y-previred")
           ? /<time datetime="2026-09-21">/
           : file.includes("vacaciones-proporcionales")
           ? /<time datetime="2026-09-14">/
@@ -18444,6 +18459,61 @@ assert(
       assert(`SEO ${file} cita fuente oficial`, source.test(html));
       assert(`SEO ${file} tiene FAQ visible`, /<h2>Preguntas frecuentes<\/h2>/.test(html));
       assert(`SEO ${file} tiene fecha`, dateRe.test(html));
+    }
+    {
+      const html = readFileSync(join(root, "guias/fuero-maternal.html"), "utf8");
+      const landing = readFileSync(join(root, "fuero-maternal.html"), "utf8");
+      const sueldoHtml = readFileSync(join(root, "sueldo.html"), "utf8");
+      const finiHtml = readFileSync(join(root, "finiquito.html"), "utf8");
+      const title = (html.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+      const h1 = (html.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+      const landingTitle = (landing.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+      const landingH1 = (landing.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+      const sueldoTitle = (sueldoHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+      const sueldoH1 = (sueldoHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+      const finiTitle = (finiHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+      const finiH1 = (finiHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+      assert(
+        "SEO guía fuero maternal title/H1 únicos y alineados al calendario del motor",
+        title &&
+          h1 &&
+          title !== landingTitle &&
+          h1 !== landingH1 &&
+          title !== sueldoTitle &&
+          h1 !== sueldoH1 &&
+          title !== finiTitle &&
+          h1 !== finiH1 &&
+          /fuero maternal/i.test(title) &&
+          /201/.test(title) &&
+          /fuero maternal/i.test(h1) &&
+          /201/.test(h1) &&
+          !/calculadora/i.test(title) &&
+          !/calculadora/i.test(h1) &&
+          !/^Calcular /i.test(h1) &&
+          !/sueldo l[ií]quido/i.test(h1) &&
+          !/finiquito/i.test(h1) &&
+          /data-seo-calc="fuero"/.test(html) &&
+          /30 de marzo de 2026/.test(html) &&
+          /30 de marzo de 2027/.test(html) &&
+          /22 de junio de 2026/.test(html) &&
+          /3 de agosto de 2026/.test(html) &&
+          /17 de abril de 2026/.test(html) &&
+          /17 de abril de 2027/.test(html) &&
+          /24 de noviembre de 2025/.test(html) &&
+          /5 de enero de 2026/.test(html) &&
+          /197 bis/.test(html) &&
+          /no corre/.test(html) &&
+          /href="\/permiso-prenatal"/.test(html) &&
+          /href="\/postnatal-parental"/.test(html) &&
+          /href="\/permiso-paternidad"/.test(html) &&
+          /href="\/sala-cuna"/.test(html) &&
+          /href="\/hora-lactancia"/.test(html) &&
+          /href="\/guias"/.test(html) &&
+          /60062/.test(html) &&
+          /3366/.test(html) &&
+          landingH1 === "Calculadora fuero maternal Chile 2026",
+        `${title} | ${h1}`,
+      );
     }
     {
       const iasHtml = readFileSync(join(root, "guias/indemnizacion-por-anos-de-servicio.html"), "utf8");
@@ -19523,8 +19593,8 @@ assert(
     const hub = readFileSync(join(root, "guias.html"), "utf8");
     assert("SEO hub /guias existe", existsSync(join(root, "guias.html")));
     assert(
-      "SEO hub lista 17 guías agrupadas",
-      GUIDE_SLUGS.length === 17 &&
+      "SEO hub lista 18 guías agrupadas",
+      GUIDE_SLUGS.length === 18 &&
         GUIDE_SLUGS.every((s) => hub.includes(`/guias/${s}`)) &&
         /Liquidaci[oó]n de sueldo/.test(hub) &&
         /<h2>Finiquito<\/h2>/.test(hub) &&
@@ -19537,9 +19607,11 @@ assert(
       /<h2>Últimas actualizaciones<\/h2>/.test(hub) &&
         /<ol class="guide-latest">/.test(hub) &&
         /datetime="2026-09-21"/.test(hub) &&
+        /datetime="2026-09-28"/.test(hub) &&
         /datetime="2026-09-14"/.test(hub) &&
         /datetime="2026-09-07"/.test(hub) &&
         /datetime="2026-08-31"/.test(hub) &&
+        /href="\/guias\/fuero-maternal"/.test(hub) &&
         /href="\/guias\/liquidacion-de-sueldo-y-previred"/.test(hub) &&
         /href="\/guias\/vacaciones-proporcionales"/.test(hub) &&
         /href="\/guias\/me-reservo-el-derecho-en-el-finiquito"/.test(hub) &&
@@ -19676,7 +19748,7 @@ assert(
     return acc;
   }
   const pages = listHtml(root);
-  assert("116 páginas HTML", pages.length === 116, String(pages.length));
+  assert("117 páginas HTML", pages.length === 117, String(pages.length));
   for (const file of pages) {
     const html = readFileSync(file, "utf8");
     const rel = file.slice(root.length + 1);
