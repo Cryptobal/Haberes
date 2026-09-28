@@ -21,7 +21,21 @@
     { "source": "/indemnizacion-despido-injustificado", "destination": "/despido-injustificado", "permanent": true },
     { "source": "/indemnizacion-despido-injustificado/", "destination": "/despido-injustificado", "permanent": true },
     { "source": "/despido-indirecto", "destination": "/autodespido", "permanent": true },
-    { "source": "/despido-indirecto/", "destination": "/autodespido", "permanent": true }
+    { "source": "/despido-indirecto/", "destination": "/autodespido", "permanent": true },
+    { "source": "/aportes-patronales", "destination": "/cotizacion-empleador", "permanent": true },
+    { "source": "/aportes-patronales/", "destination": "/cotizacion-empleador", "permanent": true },
+    { "source": "/costo-trabajador", "destination": "/cotizacion-empleador", "permanent": true },
+    { "source": "/costo-trabajador/", "destination": "/cotizacion-empleador", "permanent": true },
+    { "source": "/sis", "destination": "/cotizacion-empleador", "permanent": true },
+    { "source": "/sis/", "destination": "/cotizacion-empleador", "permanent": true },
+    { "source": "/seguro-invalidez", "destination": "/cotizacion-empleador", "permanent": true },
+    { "source": "/seguro-invalidez/", "destination": "/cotizacion-empleador", "permanent": true },
+    { "source": "/ley-21735", "destination": "/cotizacion-empleador", "permanent": true },
+    { "source": "/ley-21735/", "destination": "/cotizacion-empleador", "permanent": true },
+    { "source": "/reforma-pensiones", "destination": "/cotizacion-empleador", "permanent": true },
+    { "source": "/reforma-pensiones/", "destination": "/cotizacion-empleador", "permanent": true },
+    { "source": "/fapp", "destination": "/cotizacion-empleador", "permanent": true },
+    { "source": "/fapp/", "destination": "/cotizacion-empleador", "permanent": true }
   ],
   "rewrites": [
     { "source": "/sitemap.xml", "destination": "/api/sitemap" },
