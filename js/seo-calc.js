@@ -12,7 +12,7 @@ import {
   DISCLAIMER,
 } from "./constants.js";
 import { calcularFiniquitoCompleto, calcularFiniquitoCasaParticular, feriadoProporcional } from "./finiquito.js";
-import { calcularAguinaldo, calcularSueldo, valorHoraExtra, gratificacionArt50 } from "./sueldo.js";
+import { calcularAguinaldo, calcularFueroMaternal, calcularSueldo, valorHoraExtra, gratificacionArt50 } from "./sueldo.js";
 
 function pesos(n) {
   return new Intl.NumberFormat("es-CL", {
@@ -271,6 +271,69 @@ function mountAguinaldo(root) {
   run();
 }
 
+function fechaLarga(iso) {
+  const m = String(iso || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return "—";
+  const dt = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  return new Intl.DateTimeFormat("es-CL", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(dt);
+}
+
+function mountFuero(root) {
+  root.innerHTML = `
+    <form class="seo-calc__form" novalidate>
+      <p class="seo-calc__title">Estimar término del fuero maternal</p>
+      <label class="seo-calc__field"><span>Situación</span>
+        <select name="situacion">
+          <option value="nacido" selected>Ya nació (fecha de parto)</option>
+          <option value="probable">Aún no nace (fecha probable)</option>
+        </select>
+      </label>
+      ${field("Fecha de parto o fecha probable", "fechaParto", 'type="date" value="2026-01-05"')}
+      <label class="seo-calc__field"><span>Descanso postnatal</span>
+        <select name="modalidad">
+          <option value="postnatal" selected>Solo postnatal legal 12 semanas</option>
+          <option value="completa">+ parental completo 12 semanas</option>
+          <option value="parcial">+ parental parcial 18 semanas</option>
+        </select>
+      </label>
+      ${field("Días de postnatal suplementario (art. 196)", "diasSuplementario", 'type="number" min="0" max="366" step="1" value="0"')}
+      <p class="seo-calc__result" data-out>—</p>
+      <div class="seo-calc__actions">
+        <button type="submit" class="btn">Calcular</button>
+        <a class="btn btn-ghost" href="/fuero-maternal">Abrir calculadora completa</a>
+      </div>
+      <p class="seo-calc__note">${DISCLAIMER}</p>
+    </form>`;
+  const form = root.querySelector("form");
+  const out = root.querySelector("[data-out]");
+  const run = () => {
+    const r = calcularFueroMaternal({
+      fechaParto: form.fechaParto.value,
+      situacion: form.situacion.value,
+      modalidad: form.modalidad.value,
+      diasSuplementario: Number(form.diasSuplementario.value) || 0,
+    });
+    if (!r.ok) {
+      out.textContent = "Indique la fecha de parto o la fecha probable de parto.";
+      return;
+    }
+    const parental = r.fechaTerminoParental
+      ? ` Parental (no corre el fuero): ${fechaLarga(r.fechaTerminoParental)}.`
+      : "";
+    out.textContent = `Término del fuero: ${fechaLarga(r.fechaTerminoFuero)}. Postnatal (base): ${fechaLarga(r.fechaTerminoPostnatal)}.${parental}`;
+  };
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    run();
+  });
+  form.addEventListener("change", run);
+  run();
+}
+
 function mountCasaParticular(root) {
   root.innerHTML = `
     <form class="seo-calc__form" novalidate>
@@ -323,6 +386,7 @@ const MOUNTERS = {
   feriado: mountFeriado,
   iusc: mountIusc,
   aguinaldo: mountAguinaldo,
+  fuero: mountFuero,
   "casa-particular": mountCasaParticular,
 };
 

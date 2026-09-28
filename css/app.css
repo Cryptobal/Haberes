@@ -1899,7 +1899,8 @@ input:disabled {
   font-size: var(--fs-sm);
 }
 
-.seo-calc__field input {
+.seo-calc__field input,
+.seo-calc__field select {
   width: 100%;
   max-width: 20rem;
 }
