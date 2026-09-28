@@ -364,7 +364,7 @@ function yearBounds() {
  * El panel es calendario (popover en escritorio, hoja inferior en móvil).
  * No usa <input type="date"> ni un modal que tape el formulario.
  */
-export function createDateField(root, { value, onChange, title, placeholder } = {}) {
+export function createDateField(root, { value, onChange, title, placeholder, minYear, maxYear } = {}) {
   if (!root) return null;
   wireDocumentOnce();
   const now = new Date();
@@ -376,6 +376,8 @@ export function createDateField(root, { value, onChange, title, placeholder } = 
   let viewMo = mo;
   let mode = "days";
   const bounds = yearBounds();
+  if (Number.isFinite(minYear)) bounds.min = Math.trunc(minYear);
+  if (Number.isFinite(maxYear)) bounds.max = Math.trunc(maxYear);
   const sheetTitle = title || placeholder || "Fecha";
   const emptyLabel = placeholder || "Elija una fecha";
 
