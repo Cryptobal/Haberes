@@ -195,6 +195,7 @@ import { calcularReajusteIpc, variacionesEnRango } from "../js/reajuste-ipc.js";
 import { calcularValorHora } from "../js/valor-hora.js";
 import { addDiasHabilesPosteriores } from "../js/feriados.js";
 import { contarDiasHabiles, sumarDiasHabiles } from "../js/dias-habiles.js";
+import { calcularFueroSindical, directoresConFuero } from "../js/fuero-sindical.js";
 import { calcularDescuentosLegales } from "../js/descuentos-legales.js";
 import { calcularSueldoLiquidoABruto } from "../js/sueldo-liquido-a-bruto.js";
 import { clp, dvRut, validarRut } from "../js/format.js";
@@ -2706,6 +2707,106 @@ console.log("\nFuero maternal art. 201 (calendario; parental excluido)");
       /href="\/fuero-maternal"/.test(seoCalc),
   );
 }
+
+console.log("\nFuero sindical art. 243 (calendario y directores art. 235)");
+{
+  const cese = calcularFueroSindical({
+    modo: "cese",
+    fechaEleccion: "2024-03-15",
+    fechaCese: "2026-03-15",
+  });
+  assert(
+    "gold elección 2024-03-15 cese 2026-03-15 → fuero 2026-09-15",
+    cese.ok &&
+      cese.fechaTerminoFuero === "2026-09-15" &&
+      cese.mesesFuero === 6 &&
+      cese.fechaEleccion === "2024-03-15" &&
+      cese.fechaCese === "2026-03-15",
+    JSON.stringify(cese),
+  );
+  const mandato = calcularFueroSindical({
+    modo: "mandato",
+    fechaEleccion: "2026-01-10",
+    aniosMandato: 2,
+    mesesMandato: 0,
+  });
+  assert(
+    "gold elección 2026-01-10 mandato 2 años → cese 2028-01-10 fuero 2028-07-10",
+    mandato.ok &&
+      mandato.fechaCese === "2028-01-10" &&
+      mandato.fechaTerminoFuero === "2028-07-10" &&
+      mandato.mesesMandatoTotal === 24 &&
+      mandato.mandatoFueraDeRango === false,
+    JSON.stringify(mandato),
+  );
+  const a80 = calcularFueroSindical({ modo: "afiliados", afiliados: 80 });
+  const a400 = calcularFueroSindical({ modo: "afiliados", afiliados: 400 });
+  const a1500 = calcularFueroSindical({ modo: "afiliados", afiliados: 1500 });
+  assert(
+    "gold afiliados 80 → 3, 400 → 5, 1500 → 7",
+    a80.ok && a80.directoresConFuero === 3 && a80.tramo === "a" &&
+      a400.ok && a400.directoresConFuero === 5 && a400.tramo === "b" &&
+      a1500.ok && a1500.directoresConFuero === 7 && a1500.tramo === "c",
+    JSON.stringify({ a80, a400, a1500 }),
+  );
+  assert(
+    "tramos art. 235: 24 empresa → 1, 25/249 → 3, 250/999 → 5, 1000/2999 → 7, 3000 → 9, multi región → 11",
+    directoresConFuero({ afiliados: 24, sindicatoEmpresa: true }).directores === 1 &&
+      directoresConFuero({ afiliados: 25 }).directores === 3 &&
+      directoresConFuero({ afiliados: 249 }).directores === 3 &&
+      directoresConFuero({ afiliados: 250 }).directores === 5 &&
+      directoresConFuero({ afiliados: 999 }).directores === 5 &&
+      directoresConFuero({ afiliados: 1000 }).directores === 7 &&
+      directoresConFuero({ afiliados: 2999 }).directores === 7 &&
+      directoresConFuero({ afiliados: 3000 }).directores === 9 &&
+      directoresConFuero({ afiliados: 3000, sindicatoEmpresa: true, multiRegion: true }).directores === 11 &&
+      directoresConFuero({ afiliados: 2999, sindicatoEmpresa: true, multiRegion: true }).directores === 7 &&
+      directoresConFuero({ afiliados: 3000, sindicatoEmpresa: false, multiRegion: true }).directores === 9 &&
+      directoresConFuero({ afiliados: 10, sindicatoEmpresa: false }).ok === false &&
+      directoresConFuero({ afiliados: 10, sindicatoEmpresa: false }).motivo === "menos_25",
+  );
+  const clamp = calcularFueroSindical({
+    modo: "cese",
+    fechaEleccion: "2024-01-31",
+    fechaCese: "2024-03-31",
+  });
+  assert(
+    "seis meses de calendario: cese 2024-03-31 → fuero 2024-09-30",
+    clamp.ok && clamp.fechaTerminoFuero === "2024-09-30",
+    JSON.stringify(clamp),
+  );
+  const corto = calcularFueroSindical({
+    modo: "mandato",
+    fechaEleccion: "2026-01-10",
+    aniosMandato: 1,
+    mesesMandato: 0,
+  });
+  assert(
+    "mandato de 1 año se calcula y marca fuera del rango 2 a 4 años",
+    corto.ok && corto.fechaCese === "2027-01-10" && corto.mandatoFueraDeRango === true,
+    JSON.stringify(corto),
+  );
+  assert(
+    "cese anterior, sin fecha y sin plazo → ok false; sin montos",
+    calcularFueroSindical({ modo: "cese", fechaEleccion: "2026-03-15", fechaCese: "2024-03-15" }).motivo === "orden" &&
+      calcularFueroSindical({ modo: "cese" }).motivo === "sin_fecha" &&
+      calcularFueroSindical({ modo: "mandato", fechaEleccion: "2026-01-10", aniosMandato: 0, mesesMandato: 0 }).motivo === "sin_plazo" &&
+      calcularFueroSindical({}).motivo === "modo" &&
+      !("indemnizacion" in cese) &&
+      !("monto" in cese),
+  );
+  const fsApp = readFileSync(join(root, "js/app-fuero-sindical.js"), "utf8");
+  assert(
+    "app-fuero-sindical usa calcularFueroSindical",
+    /import\s*\{[^}]*calcularFueroSindical[^}]*\}\s*from\s*["']\.\/fuero-sindical\.js["']/.test(fsApp) &&
+      /calcularFueroSindical\s*\(/.test(fsApp) &&
+      !/\balert\s*\(/.test(fsApp) &&
+      !/\bconfirm\s*\(/.test(fsApp) &&
+      !/\bprompt\s*\(/.test(fsApp) &&
+      !/window\.open/.test(fsApp),
+  );
+}
+
 
 {
   const fpApp = readFileSync(join(root, "js/app-feriado-progresivo.js"), "utf8");
@@ -6077,6 +6178,7 @@ const required = [
   "permiso-prenatal.html",
   "nulidad-despido.html",
   "fuero-maternal.html",
+  "fuero-sindical.html",
   "permiso-paternidad.html",
   "permiso-matrimonio.html",
   "permiso-fallecimiento.html",
@@ -6144,6 +6246,7 @@ const required = [
   "js/app-permiso-prenatal.js",
   "js/app-nulidad-despido.js",
   "js/app-fuero-maternal.js",
+  "js/app-fuero-sindical.js",
   "js/app-permiso-paternidad.js",
   "js/app-permiso-matrimonio.js",
   "js/app-permiso-fallecimiento.js",
@@ -6196,6 +6299,7 @@ const required = [
   "js/reajuste-ipc.js",
   "js/feriados.js",
   "js/dias-habiles.js",
+  "js/fuero-sindical.js",
   "js/interes-mora.js",
   "js/prescripcion-laboral.js",
   "js/descanso-compensatorio.js",
@@ -6367,6 +6471,7 @@ const htmlFiles = [
   "permiso-prenatal.html",
   "nulidad-despido.html",
   "fuero-maternal.html",
+  "fuero-sindical.html",
   "permiso-paternidad.html",
   "permiso-matrimonio.html",
   "permiso-fallecimiento.html",
@@ -6510,6 +6615,7 @@ const appEntries = [
   "js/app-permiso-prenatal.js",
   "js/app-nulidad-despido.js",
   "js/app-fuero-maternal.js",
+  "js/app-fuero-sindical.js",
   "js/app-permiso-paternidad.js",
   "js/app-permiso-matrimonio.js",
   "js/app-permiso-fallecimiento.js",
@@ -6633,6 +6739,7 @@ assert(
     BASE_PATHS.includes("/postnatal-parental") &&
     BASE_PATHS.includes("/permiso-prenatal") &&
     BASE_PATHS.includes("/fuero-maternal") &&
+    BASE_PATHS.includes("/fuero-sindical") &&
     BASE_PATHS.includes("/permiso-paternidad") &&
     BASE_PATHS.includes("/permiso-matrimonio") &&
     BASE_PATHS.includes("/permiso-fallecimiento") &&
@@ -7021,7 +7128,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 115,
+      seoPaths().length === 116,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -7033,7 +7140,7 @@ try {
   const docsSeo = await hitLocal("/docs/seo-map.md");
   assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
   assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
-  for (const p of ["/sueldo/", "/sueldo-liquido-a-bruto/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/valor-hora/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/dias-habiles/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/obra-faena/", "/prescripcion-laboral/", "/descanso-compensatorio/", "/inclusion-laboral/", "/jornada-parcial/", "/teletrabajo/", "/bandas-horarias/", "/pacto-4x3/", "/jornada-excepcional/", "/jornada-bisemanal/", "/compensacion-horas-extras/", "/pacto-horas-extras/", "/contrato-plazo-fijo/", "/termino-anticipado-plazo-fijo/", "/permiso-sin-goce/", "/zona-extrema/", "/promedio-remuneraciones/", "/antiguedad-laboral/", "/tope-imponible/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/descuentos-legales/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/viatico/", "/reajuste-ipc/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+  for (const p of ["/sueldo/", "/sueldo-liquido-a-bruto/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/valor-hora/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/dias-habiles/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/obra-faena/", "/prescripcion-laboral/", "/descanso-compensatorio/", "/inclusion-laboral/", "/jornada-parcial/", "/teletrabajo/", "/bandas-horarias/", "/pacto-4x3/", "/jornada-excepcional/", "/jornada-bisemanal/", "/compensacion-horas-extras/", "/pacto-horas-extras/", "/contrato-plazo-fijo/", "/termino-anticipado-plazo-fijo/", "/permiso-sin-goce/", "/zona-extrema/", "/promedio-remuneraciones/", "/antiguedad-laboral/", "/tope-imponible/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/descuentos-legales/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/fuero-sindical/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/viatico/", "/reajuste-ipc/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
   }
@@ -7073,6 +7180,7 @@ try {
     "/postnatal-parental",
     "/permiso-prenatal",
     "/fuero-maternal",
+    "/fuero-sindical",
     "/permiso-paternidad",
     "/permiso-matrimonio",
     "/permiso-fallecimiento",
@@ -10904,6 +11012,7 @@ assert(
     ["postnatal-parental.html", "/postnatal-parental"],
     ["permiso-prenatal.html", "/permiso-prenatal"],
     ["fuero-maternal.html", "/fuero-maternal"],
+    ["fuero-sindical.html", "/fuero-sindical"],
     ["permiso-paternidad.html", "/permiso-paternidad"],
     ["permiso-matrimonio.html", "/permiso-matrimonio"],
     ["permiso-fallecimiento.html", "/permiso-fallecimiento"],
@@ -15776,6 +15885,130 @@ assert(
         /href="\/fuero-maternal"/.test(readFileSync(join(root, "permiso-prenatal.html"), "utf8")),
     );
   }
+
+  {
+    const fsHtml = readFileSync(join(root, "fuero-sindical.html"), "utf8");
+    const fsTitle = (fsHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const fsH1 = (fsHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const fsDesc = (fsHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "";
+    const goldCese = calcularFueroSindical({
+      modo: "cese",
+      fechaEleccion: "2024-03-15",
+      fechaCese: "2026-03-15",
+    });
+    const goldMandato = calcularFueroSindical({
+      modo: "mandato",
+      fechaEleccion: "2026-01-10",
+      aniosMandato: 2,
+    });
+    const gold80 = calcularFueroSindical({ modo: "afiliados", afiliados: 80 });
+    const gold400 = calcularFueroSindical({ modo: "afiliados", afiliados: 400 });
+    const gold1500 = calcularFueroSindical({ modo: "afiliados", afiliados: 1500 });
+    assert(
+      "SEO fuero sindical title único y corto",
+      /calculadora fuero sindical/i.test(fsTitle) &&
+        fsTitle.length <= 65 &&
+        !/fuero maternal/i.test(fsTitle) &&
+        !/tutela/i.test(fsTitle) &&
+        !/nulidad/i.test(fsTitle) &&
+        !/postnatal/i.test(fsTitle) &&
+        !/licencia m[eé]dica/i.test(fsTitle),
+      fsTitle,
+    );
+    assert(
+      "SEO fuero sindical H1 único art. 243",
+      fsH1 === "Calculadora fuero sindical Chile 2026" &&
+        /art[íi]culo 243/.test(fsHtml) &&
+        /art[íi]culo 235/.test(fsHtml) &&
+        !/art[íi]culo 201/.test(fsH1),
+      fsH1,
+    );
+    assert(
+      "SEO fuero sindical description propia",
+      fsDesc.length >= 110 &&
+        fsDesc.length <= 160 &&
+        /art\. 243/.test(fsDesc) &&
+        /fuero sindical/.test(fsDesc) &&
+        !/fuero maternal/i.test(fsDesc) &&
+        !/tutela/i.test(fsDesc),
+      `${fsDesc.length}:${fsDesc}`,
+    );
+    assert(
+      "SEO fuero sindical cita art. 243, 235, 174 y DT",
+      /art[íi]culo 243/.test(fsHtml) &&
+        /art[íi]culo 235/.test(fsHtml) &&
+        /art[íi]culo 174/.test(fsHtml) &&
+        /61072/.test(fsHtml) &&
+        /61073/.test(fsHtml) &&
+        /14\/03\/2025/.test(fsHtml) &&
+        /159/.test(fsHtml) &&
+        /160/.test(fsHtml),
+    );
+    assert(
+      "SEO fuero sindical golds en copy",
+      goldCese.fechaTerminoFuero === "2026-09-15" &&
+        goldMandato.fechaCese === "2028-01-10" &&
+        goldMandato.fechaTerminoFuero === "2028-07-10" &&
+        gold80.directoresConFuero === 3 &&
+        gold400.directoresConFuero === 5 &&
+        gold1500.directoresConFuero === 7 &&
+        /15 de marzo de 2024/.test(fsHtml) &&
+        /15 de marzo de 2026/.test(fsHtml) &&
+        /15 de septiembre de 2026/.test(fsHtml) &&
+        /10 de enero de 2026/.test(fsHtml) &&
+        /10 de enero de 2028/.test(fsHtml) &&
+        /10 de julio de 2028/.test(fsHtml) &&
+        /80 afiliados/.test(fsHtml) &&
+        /400 afiliados/.test(fsHtml) &&
+        /1\.500 afiliados/.test(fsHtml),
+    );
+    assert("SEO fuero sindical FAQPage", /"@type": "FAQPage"/.test(fsHtml));
+    assert(
+      "SEO fuero sindical no canibaliza hermanas vetadas",
+      /href="\/fuero-maternal"/.test(fsHtml) &&
+        /href="\/guias\/fuero-maternal"/.test(fsHtml) &&
+        /href="\/tutela-laboral"/.test(fsHtml) &&
+        /href="\/nulidad-despido"/.test(fsHtml) &&
+        /href="\/permiso-paternidad"/.test(fsHtml) &&
+        /href="\/postnatal-parental"/.test(fsHtml) &&
+        /href="\/licencia-medica"/.test(fsHtml) &&
+        /no constituye asesor[ií]a legal/i.test(fsHtml) &&
+        /no inventa indemnizaciones/i.test(fsHtml) &&
+        !existsSync(join(root, "fuero-laboral.html")) &&
+        !existsSync(join(root, "fuero-dirigentes.html")) &&
+        !existsSync(join(root, "art-243.html")) &&
+        !existsSync(join(root, "sindicato-fuero.html")) &&
+        !existsSync(join(root, "fuero-sindical-chile.html")),
+    );
+    assert(
+      "home y nav enlazan /fuero-sindical",
+      /href="\/fuero-sindical"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/fuero-sindical" data-nav>Fuero sindical<\/a>/.test(
+          readFileSync(join(root, "index.html"), "utf8"),
+        ) &&
+        /href="\/fuero-sindical" data-nav>Fuero sindical<\/a>/.test(fsHtml),
+    );
+    assert(
+      "sitemap incluye /fuero-sindical",
+      locs.includes("https://www.haberes.cl/fuero-sindical") &&
+        lastmodForPath("/fuero-sindical") === "2026-09-28",
+    );
+    assert(
+      "seo-map documenta /fuero-sindical y no-canibalizar hermanas",
+      /\/fuero-sindical/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no canibalizar `\/fuero-maternal`, `\/guias\/fuero-maternal`, `\/tutela-laboral`, `\/nulidad-despido`, `\/permiso-paternidad`, `\/postnatal-parental`/.test(
+          readFileSync(join(root, "docs/seo-map.md"), "utf8"),
+        ) &&
+        /no crear `\/fuero-laboral`/i.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")),
+    );
+    assert(
+      "hub /guias enlaza /fuero-sindical en el cluster de liquidación",
+      /href="\/fuero-sindical"/.test(readFileSync(join(root, "guias.html"), "utf8")) &&
+        !/<h2>Finiquito<\/h2>[\s\S]*href="\/fuero-sindical"/.test(
+          readFileSync(join(root, "guias.html"), "utf8"),
+        ),
+    );
+  }
   {
     const hlHtml = readFileSync(join(root, "hora-lactancia.html"), "utf8");
     const hlTitle = (hlHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
@@ -19532,6 +19765,7 @@ assert(
       "postnatal-parental.html",
       "permiso-prenatal.html",
       "fuero-maternal.html",
+      "fuero-sindical.html",
       "permiso-paternidad.html",
       "permiso-matrimonio.html",
       "permiso-fallecimiento.html",
@@ -19748,7 +19982,7 @@ assert(
     return acc;
   }
   const pages = listHtml(root);
-  assert("117 páginas HTML", pages.length === 117, String(pages.length));
+  assert("118 páginas HTML", pages.length === 118, String(pages.length));
   for (const file of pages) {
     const html = readFileSync(file, "utf8");
     const rel = file.slice(root.length + 1);
