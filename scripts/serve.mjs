@@ -127,6 +127,18 @@ export function handleRequest(req, res) {
     send(res, 301, { Location: `/autodespido${url.search}` }, "");
     return;
   }
+  if (
+    urlPath === "/aportes-patronales" ||
+    urlPath === "/costo-trabajador" ||
+    urlPath === "/sis" ||
+    urlPath === "/seguro-invalidez" ||
+    urlPath === "/ley-21735" ||
+    urlPath === "/reforma-pensiones" ||
+    urlPath === "/fapp"
+  ) {
+    send(res, 301, { Location: `/cotizacion-empleador${url.search}` }, "");
+    return;
+  }
   const hit = resolvePath(urlPath);
   if (hit.kind === "bad") {
     send(res, 400, { "Content-Type": "text/plain; charset=utf-8" }, "Bad Request");

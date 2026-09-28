@@ -197,6 +197,12 @@ import { addDiasHabilesPosteriores } from "../js/feriados.js";
 import { contarDiasHabiles, sumarDiasHabiles } from "../js/dias-habiles.js";
 import { calcularFueroSindical, directoresConFuero } from "../js/fuero-sindical.js";
 import { calcularDescuentosLegales } from "../js/descuentos-legales.js";
+import {
+  CRONOGRAMA_LEY_21735,
+  calcularCotizacionEmpleador,
+  cronogramaAlineadoConCostoEmpresa,
+  tasaTotalCotizacionEmpleador,
+} from "../js/cotizacion-empleador.js";
 import { calcularSueldoLiquidoABruto } from "../js/sueldo-liquido-a-bruto.js";
 import { clp, dvRut, validarRut } from "../js/format.js";
 import {
@@ -478,6 +484,65 @@ assert(
     LEY_21735_SSP === 0.025 &&
     close(LEY_21735_CUENTA_INDIVIDUAL + LEY_21735_CRP + LEY_21735_SSP, LEY_21735_TASA, 1e-12),
 );
+{
+  const g2026 = calcularCotizacionEmpleador(
+    { remuneracionImponible: 1_000_000, periodo: "2026-08" },
+    { uf: 39_000 },
+  );
+  const g2025 = calcularCotizacionEmpleador(
+    { remuneracionImponible: 1_000_000, periodo: "2025-08" },
+    { uf: 39_000 },
+  );
+  const g2033 = calcularCotizacionEmpleador(
+    { remuneracionImponible: 1_000_000, periodo: "2033-08" },
+    { uf: 39_000 },
+  );
+  const sobreTope = calcularCotizacionEmpleador(
+    { remuneracionImponible: 4_000_000, periodo: "2026-08" },
+    { uf: 39_000 },
+  );
+  assert(
+    "cotización empleador $1.000.000 agosto 2026 = $35.000 (0,1/1,0/0,9/1,5)",
+    g2026.ok &&
+      g2026.tasa === 0.035 &&
+      g2026.total === 35_000 &&
+      g2026.capitalizacion.monto === 1_000 &&
+      g2026.expectativaVida.monto === 10_000 &&
+      g2026.rentabilidadProtegida.monto === 9_000 &&
+      g2026.sis.monto === 15_000 &&
+      g2026.topeAplicado === false,
+  );
+  assert(
+    "cotización empleador $1.000.000 agosto 2025 = $10.000 sin SIS ni rentabilidad protegida",
+    g2025.ok &&
+      g2025.tasa === 0.01 &&
+      g2025.total === 10_000 &&
+      g2025.capitalizacion.monto === 1_000 &&
+      g2025.expectativaVida.monto === 9_000 &&
+      g2025.rentabilidadProtegida.monto === 0 &&
+      g2025.sis.monto === 0 &&
+      g2025.sis.tasa === 0 &&
+      g2025.rentabilidadProtegida.tasa === 0,
+  );
+  assert(
+    "cotización empleador $1.000.000 agosto 2033 = $85.000",
+    g2033.ok && g2033.tasa === 0.085 && g2033.total === 85_000,
+  );
+  assert(
+    "cotización empleador usa tope AFP 90 UF y no cesantía 135,2 UF",
+    cronogramaAlineadoConCostoEmpresa() &&
+      CRONOGRAMA_LEY_21735.length === 9 &&
+      CRONOGRAMA_LEY_21735.every(
+        (fila) => Math.abs(tasaTotalCotizacionEmpleador(fila) - (
+          fila.capitalizacion + fila.expectativaVida + fila.rentabilidadProtegida + fila.sis
+        )) < 1e-12,
+      ) &&
+      sobreTope.topeAplicado === true &&
+      sobreTope.imponibleEfectiva === 3_510_000 &&
+      sobreTope.total === 122_850 &&
+      calcularCotizacionEmpleador({ remuneracionImponible: 1_000_000, periodo: "no-existe" }).ok === false,
+  );
+}
 assert("Mutual básica 0,90 % y SANNA 0,03 %", MUTUAL_TASA_BASICA === 0.009 && SANNA_TASA === 0.0003);
 assert("IUSC 8 tramos ago 2026", IUSC_TRAMOS.length === 8 && IUSC_TRAMOS[0].hasta === 967261.5);
 assert(
@@ -6155,6 +6220,7 @@ const required = [
   "impuesto-unico.html",
   "cotizaciones-previsionales.html",
   "costo-empresa.html",
+  "cotizacion-empleador.html",
   "seguro-cesantia.html",
   "trabajo-pesado.html",
   "recargo-domingo-comercio.html",
@@ -6223,6 +6289,7 @@ const required = [
   "js/app-impuesto-unico.js",
   "js/app-cotizaciones-previsionales.js",
   "js/app-costo-empresa.js",
+  "js/app-cotizacion-empleador.js",
   "js/app-seguro-cesantia.js",
   "js/app-trabajo-pesado.js",
   "js/app-recargo-domingo-comercio.js",
@@ -6314,6 +6381,7 @@ const required = [
   "js/pacto-horas-extras.js",
   "js/valor-hora.js",
   "js/descuentos-legales.js",
+  "js/cotizacion-empleador.js",
   "js/contrato-plazo-fijo.js",
   "js/termino-anticipado-plazo-fijo.js",
   "js/permiso-sin-goce.js",
@@ -6448,6 +6516,7 @@ const htmlFiles = [
   "impuesto-unico.html",
   "cotizaciones-previsionales.html",
   "costo-empresa.html",
+  "cotizacion-empleador.html",
   "seguro-cesantia.html",
   "trabajo-pesado.html",
   "recargo-domingo-comercio.html",
@@ -6592,6 +6661,7 @@ const appEntries = [
   "js/app-impuesto-unico.js",
   "js/app-cotizaciones-previsionales.js",
   "js/app-costo-empresa.js",
+  "js/app-cotizacion-empleador.js",
   "js/app-seguro-cesantia.js",
   "js/app-trabajo-pesado.js",
   "js/app-recargo-domingo-comercio.js",
@@ -6710,6 +6780,7 @@ assert(
     BASE_PATHS.includes("/impuesto-unico") &&
     BASE_PATHS.includes("/cotizaciones-previsionales") &&
     BASE_PATHS.includes("/costo-empresa") &&
+    BASE_PATHS.includes("/cotizacion-empleador") &&
     BASE_PATHS.includes("/seguro-cesantia") &&
     BASE_PATHS.includes("/trabajo-pesado") &&
     BASE_PATHS.includes("/recargo-domingo-comercio") &&
@@ -7128,7 +7199,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 116,
+      seoPaths().length === 117,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -7140,7 +7211,7 @@ try {
   const docsSeo = await hitLocal("/docs/seo-map.md");
   assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
   assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
-  for (const p of ["/sueldo/", "/sueldo-liquido-a-bruto/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/valor-hora/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/dias-habiles/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/obra-faena/", "/prescripcion-laboral/", "/descanso-compensatorio/", "/inclusion-laboral/", "/jornada-parcial/", "/teletrabajo/", "/bandas-horarias/", "/pacto-4x3/", "/jornada-excepcional/", "/jornada-bisemanal/", "/compensacion-horas-extras/", "/pacto-horas-extras/", "/contrato-plazo-fijo/", "/termino-anticipado-plazo-fijo/", "/permiso-sin-goce/", "/zona-extrema/", "/promedio-remuneraciones/", "/antiguedad-laboral/", "/tope-imponible/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/descuentos-legales/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/fuero-sindical/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/viatico/", "/reajuste-ipc/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+  for (const p of ["/sueldo/", "/sueldo-liquido-a-bruto/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/valor-hora/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/dias-habiles/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/obra-faena/", "/prescripcion-laboral/", "/descanso-compensatorio/", "/inclusion-laboral/", "/jornada-parcial/", "/teletrabajo/", "/bandas-horarias/", "/pacto-4x3/", "/jornada-excepcional/", "/jornada-bisemanal/", "/compensacion-horas-extras/", "/pacto-horas-extras/", "/contrato-plazo-fijo/", "/termino-anticipado-plazo-fijo/", "/permiso-sin-goce/", "/zona-extrema/", "/promedio-remuneraciones/", "/antiguedad-laboral/", "/tope-imponible/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/descuentos-legales/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/fuero-sindical/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/cotizacion-empleador/", "/seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/viatico/", "/reajuste-ipc/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
   }
@@ -7215,6 +7286,7 @@ try {
     "/impuesto-unico",
     "/cotizaciones-previsionales",
     "/costo-empresa",
+    "/cotizacion-empleador",
     "/seguro-cesantia",
     "/trabajo-pesado",
     "/asignacion-familiar",
@@ -7293,6 +7365,12 @@ try {
     "301 /despido-indirecto → /autodespido",
     autodespidoAlias.status === 301 && autodespidoAlias.location === "/autodespido",
     `${autodespidoAlias.status} ${autodespidoAlias.location}`,
+  );
+  const leyAlias = await hitLocal("/ley-21735");
+  assert(
+    "301 /ley-21735 → /cotizacion-empleador",
+    leyAlias.status === 301 && leyAlias.location === "/cotizacion-empleador",
+    `${leyAlias.status} ${leyAlias.location}`,
   );
   writeFileSync(join(root, "sitemap.xml"), "<urlset>STATIC-LEFTOVER</urlset>");
   try {
@@ -10990,6 +11068,7 @@ assert(
     ["impuesto-unico.html", "/impuesto-unico"],
     ["cotizaciones-previsionales.html", "/cotizaciones-previsionales"],
     ["costo-empresa.html", "/costo-empresa"],
+    ["cotizacion-empleador.html", "/cotizacion-empleador"],
     ["seguro-cesantia.html", "/seguro-cesantia"],
     ["trabajo-pesado.html", "/trabajo-pesado"],
     ["recargo-domingo-comercio.html", "/recargo-domingo-comercio"],
@@ -19443,7 +19522,7 @@ assert(
     assert(
       "seo-map documenta /costo-empresa y no-canibalizar /sueldo",
       /\/costo-empresa/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
-        /no canibalizar `\/sueldo` ni `\/cotizaciones-previsionales`/.test(
+        /no canibalizar `\/sueldo`, `\/cotizaciones-previsionales` ni `\/cotizacion-empleador`/.test(
           readFileSync(join(root, "docs/seo-map.md"), "utf8"),
         ) &&
         /no crear `\/costo-trabajador`/i.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")),
@@ -19458,6 +19537,136 @@ assert(
       /href="\/costo-empresa"/.test(sueldoHtml) &&
         /href="\/costo-empresa"/.test(cpHtml) &&
         /href="\/costo-empresa"/.test(gratHtml),
+    );
+  }
+  {
+    const coHtml = readFileSync(join(root, "cotizacion-empleador.html"), "utf8");
+    const coApp = readFileSync(join(root, "js/app-cotizacion-empleador.js"), "utf8");
+    const coTitle = (coHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const coH1 = (coHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const coDesc = (coHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "";
+    const ceTitleCo = (readFileSync(join(root, "costo-empresa.html"), "utf8").match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const cpTitleCo = (readFileSync(join(root, "cotizaciones-previsionales.html"), "utf8").match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const scTitleCo = (readFileSync(join(root, "seguro-cesantia.html"), "utf8").match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const tpTitleCo = (readFileSync(join(root, "trabajo-pesado.html"), "utf8").match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const suTitleCo = (readFileSync(join(root, "sueldo.html"), "utf8").match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const tiTitleCo = (readFileSync(join(root, "tope-imponible.html"), "utf8").match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const vercelCo = JSON.parse(readFileSync(join(root, "vercel.json"), "utf8"));
+    const serveCo = readFileSync(join(root, "scripts/serve.mjs"), "utf8");
+    const alias = (source) =>
+      Array.isArray(vercelCo.redirects) &&
+      vercelCo.redirects.some(
+        (r) => r.source === source && r.destination === "/cotizacion-empleador" && r.permanent === true,
+      );
+    assert(
+      "SEO title cotización empleador único",
+      /calcular cotizaci[oó]n empleador/i.test(coTitle) &&
+        coTitle.length <= 65 &&
+        coTitle !== ceTitleCo &&
+        coTitle !== cpTitleCo &&
+        coTitle !== scTitleCo &&
+        coTitle !== tpTitleCo &&
+        coTitle !== suTitleCo &&
+        coTitle !== tiTitleCo &&
+        !/costo empresa/i.test(coTitle) &&
+        !/sueldo l[ií]quido/i.test(coTitle),
+      coTitle,
+    );
+    assert(
+      "SEO H1 cotización empleador",
+      coH1 === "Calcular cotización empleador Chile 2026" &&
+        /Ley 21\.735/.test(coHtml) &&
+        !/costo empresa/i.test(coH1),
+      coH1,
+    );
+    assert(
+      "SEO cotización empleador description propia",
+      coDesc.length >= 110 &&
+        coDesc.length <= 160 &&
+        /Ley 21\.735/.test(coDesc) &&
+        /90 UF/.test(coDesc) &&
+        !/costo empresa/i.test(coDesc) &&
+        !/\bKD\b|\bvolumen\b/i.test(coDesc),
+      `${coDesc.length}:${coDesc}`,
+    );
+    assert(
+      "SEO cotización empleador golds y SIS dentro del 3,5 %",
+      /\$1\.000\.000/.test(coHtml) &&
+        /\$35\.000/.test(coHtml) &&
+        /\$10\.000/.test(coHtml) &&
+        /\$85\.000/.test(coHtml) &&
+        /dentro del 3,5 %/.test(coHtml) &&
+        /No se suma un SIS adicional/.test(coHtml) &&
+        /135,2 UF/.test(coHtml) &&
+        /spensiones\.cl/.test(coHtml),
+    );
+    assert("SEO cotización empleador FAQPage", /"@type": "FAQPage"/.test(coHtml));
+    assert(
+      "SEO cotización empleador no canibaliza hermanas",
+      /href="\/costo-empresa"/.test(coHtml) &&
+        /href="\/cotizaciones-previsionales"/.test(coHtml) &&
+        /href="\/seguro-cesantia"/.test(coHtml) &&
+        /href="\/trabajo-pesado"/.test(coHtml) &&
+        /href="\/sueldo"/.test(coHtml) &&
+        /href="\/tope-imponible"/.test(coHtml) &&
+        /estimaci[oó]n/i.test(coHtml) &&
+        /Superintendencia de Pensiones/.test(coHtml) &&
+        !existsSync(join(root, "aportes-patronales.html")) &&
+        !existsSync(join(root, "costo-trabajador.html")) &&
+        !existsSync(join(root, "sis.html")) &&
+        !existsSync(join(root, "seguro-invalidez.html")) &&
+        !existsSync(join(root, "ley-21735.html")) &&
+        !existsSync(join(root, "reforma-pensiones.html")) &&
+        !existsSync(join(root, "fapp.html")),
+    );
+    assert(
+      "app-cotizacion-empleador usa calcularCotizacionEmpleador",
+      /import\s*\{[^}]*calcularCotizacionEmpleador[^}]*\}\s*from\s*["']\.\/cotizacion-empleador\.js["']/.test(coApp) &&
+        /calcularCotizacionEmpleador\s*\(/.test(coApp) &&
+        /wireNav\(\s*\)/.test(coApp),
+    );
+    assert(
+      "home y nav enlazan /cotizacion-empleador",
+      /href="\/cotizacion-empleador"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/cotizacion-empleador" data-nav>Cotización empleador<\/a>/.test(
+          readFileSync(join(root, "index.html"), "utf8"),
+        ) &&
+        /href="\/cotizacion-empleador" data-nav>Cotización empleador<\/a>/.test(coHtml),
+    );
+    assert(
+      "sitemap incluye /cotizacion-empleador",
+      locs.includes("https://www.haberes.cl/cotizacion-empleador") &&
+        lastmodForPath("/cotizacion-empleador") === "2026-09-28",
+    );
+    assert(
+      "seo-map documenta /cotizacion-empleador y no-canibalizar hermanas",
+      /\/cotizacion-empleador/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no canibalizar `\/costo-empresa`, `\/cotizaciones-previsionales`, `\/seguro-cesantia`, `\/trabajo-pesado`, `\/sueldo` ni `\/tope-imponible`/.test(
+          readFileSync(join(root, "docs/seo-map.md"), "utf8"),
+        ) &&
+        /No crear `\/aportes-patronales`, `\/costo-trabajador`, `\/sis`, `\/seguro-invalidez`, `\/ley-21735`, `\/reforma-pensiones` ni `\/fapp`/i.test(
+          readFileSync(join(root, "docs/seo-map.md"), "utf8"),
+        ) &&
+        !/\/cotizacion-empleador` \| [^|]*\d+\/\d+/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")),
+    );
+    assert(
+      "hub /guias enlaza /cotizacion-empleador en el cluster de liquidación",
+      /href="\/cotizacion-empleador"/.test(readFileSync(join(root, "guias.html"), "utf8")) &&
+        !/<h2>Finiquito<\/h2>[\s\S]*href="\/cotizacion-empleador"/.test(
+          readFileSync(join(root, "guias.html"), "utf8"),
+        ),
+    );
+    assert(
+      "alias de cotización empleador redirigen a /cotizacion-empleador",
+      alias("/aportes-patronales") &&
+        alias("/costo-trabajador") &&
+        alias("/sis") &&
+        alias("/seguro-invalidez") &&
+        alias("/ley-21735") &&
+        alias("/reforma-pensiones") &&
+        alias("/fapp") &&
+        /urlPath === "\/ley-21735"/.test(serveCo) &&
+        /urlPath === "\/fapp"/.test(serveCo),
     );
   }
   {
@@ -19747,6 +19956,7 @@ assert(
       "impuesto-unico.html",
       "cotizaciones-previsionales.html",
       "costo-empresa.html",
+      "cotizacion-empleador.html",
       "seguro-cesantia.html",
       "trabajo-pesado.html",
       "recargo-domingo-comercio.html",
@@ -19982,7 +20192,7 @@ assert(
     return acc;
   }
   const pages = listHtml(root);
-  assert("118 páginas HTML", pages.length === 118, String(pages.length));
+  assert("119 páginas HTML", pages.length === 119, String(pages.length));
   for (const file of pages) {
     const html = readFileSync(file, "utf8");
     const rel = file.slice(root.length + 1);

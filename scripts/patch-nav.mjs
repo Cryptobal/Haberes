@@ -48,6 +48,7 @@ const DRAWER_LINKS = [
   ["/cotizaciones-previsionales", "Cotizaciones previsionales"],
   ["/tope-imponible", "Tope imponible"],
   ["/costo-empresa", "Costo empresa"],
+  ["/cotizacion-empleador", "Cotización empleador"],
   ["/seguro-cesantia", "Seguro de cesantía"],
   ["/trabajo-pesado", "Trabajo pesado"],
   ["/asignacion-familiar", "Asignación familiar"],

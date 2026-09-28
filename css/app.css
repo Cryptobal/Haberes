@@ -1861,6 +1861,10 @@ input:disabled {
   color: var(--ink);
 }
 
+.table-scroll tr[aria-current="true"] {
+  background: var(--surface-3);
+}
+
 .table-scroll caption {
   caption-side: top;
   text-align: left;
