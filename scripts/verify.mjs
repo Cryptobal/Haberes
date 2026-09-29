@@ -188,6 +188,7 @@ import {
   valorHoraExtra,
   valorHoraOrdinaria,
 } from "../js/sueldo.js";
+import { calcularGirosCesantia } from "../js/giro-seguro-cesantia.js";
 import { calcularViatico } from "../js/viatico.js";
 import { calcularSueldoEmpresarial } from "../js/sueldo-empresarial.js";
 import { calcularFranquiciaSence, UTM_SEP_2026, VALORES_HORA_SENCE_2026 } from "../js/franquicia-sence.js";
@@ -3326,6 +3327,105 @@ assert(
 }
 
 {
+  const cic = calcularGirosCesantia({
+    contrato: "indefinido",
+    promedio: 1_000_000,
+    saldoCic: 3_000_000,
+  });
+  assert(
+    "giro CIC indefinido 1000000 / saldo 3000000",
+    cic.ok &&
+      cic.fcsActivo === false &&
+      cic.giros.length === 7 &&
+      cic.giros[0].monto === 700_000 &&
+      cic.giros[1].monto === 600_000 &&
+      cic.giros[2].monto === 450_000 &&
+      cic.giros[3].monto === 400_000 &&
+      cic.giros[4].monto === 350_000 &&
+      cic.giros[4].saldo === 500_000 &&
+      cic.giros[5].teorico === 300_000 &&
+      cic.giros[5].monto === 300_000 &&
+      cic.giros[5].saldo === 200_000 &&
+      cic.giros[6].teorico === 300_000 &&
+      cic.giros[6].monto === 200_000 &&
+      cic.giros[6].saldo === 0 &&
+      cic.total === 3_000_000,
+    cic.giros.map((g) => g.monto).join(","),
+  );
+  const plazo = calcularGirosCesantia({
+    contrato: "plazo_fijo",
+    promedio: 800_000,
+    saldoCic: 500_000,
+  });
+  assert(
+    "giro CIC plazo fijo 800000 / saldo 500000",
+    plazo.giros.length === 1 &&
+      plazo.giros[0].teorico === 560_000 &&
+      plazo.giros[0].monto === 500_000 &&
+      plazo.giros[0].saldo === 0 &&
+      plazo.ventana === 5,
+    String(plazo.giros[0]?.monto),
+  );
+  const fcs = calcularGirosCesantia({
+    contrato: "indefinido",
+    promedio: 1_000_000,
+    saldoCic: 0,
+    fondoSolidario: true,
+  });
+  assert(
+    "giro FCS indefinido 1000000 sin CIC",
+    fcs.fcsActivo &&
+      fcs.giros.map((g) => g.monto).join(",") === "700000,600000,450000,400000,350000" &&
+      fcs.totalFcs === 2_500_000,
+  );
+  const fcsMin = calcularGirosCesantia({
+    contrato: "indefinido",
+    promedio: 200_000,
+    saldoCic: 0,
+    fondoSolidario: true,
+  });
+  assert(
+    "giro FCS indefinido 200000 usa mínimos Res. 383",
+    fcsMin.giros[0].teorico === 140_000 &&
+      fcsMin.giros[0].monto === 301_201 &&
+      fcsMin.giros[1].monto === 258_171 &&
+      fcsMin.giros[2].monto === 193_629 &&
+      fcsMin.giros[3].monto === 172_115 &&
+      fcsMin.giros[4].monto === 150_602,
+    fcsMin.giros.map((g) => g.monto).join(","),
+  );
+  const fcsMax = calcularGirosCesantia({
+    contrato: "indefinido",
+    promedio: 2_000_000,
+    saldoCic: 0,
+    fondoSolidario: true,
+  });
+  assert(
+    "giro FCS indefinido 2000000 usa máximos Res. 383",
+    fcsMax.giros[0].teorico === 1_400_000 && fcsMax.giros[0].monto === 1_004_003,
+  );
+  const noFcs = calcularGirosCesantia({
+    contrato: "indefinido",
+    promedio: 1_000_000,
+    saldoCic: 3_000_000,
+    fondoSolidario: true,
+  });
+  assert(
+    "giro FCS no corre si la CIC financia los 5 giros del art. 25",
+    noFcs.fcsActivo === false && noFcs.motivo === "cic_alcanza_cinco" && noFcs.giros.length === 7,
+  );
+  const casa = calcularGirosCesantia({
+    contrato: "casa_particular",
+    remuneraciones: [900_000, 1_100_000],
+    saldoCic: 500_000,
+  });
+  assert(
+    "giro casa particular promedia como indefinido (ventana 10)",
+    casa.ventana === 10 && casa.promedio === 1_000_000 && casa.giros[0].monto === 500_000,
+  );
+}
+
+{
   const indTp = { uf: FALLBACK_UF };
   const goldTpCalc = calcularTrabajoPesado(
     { remuneracionImponible: 1_000_000, calificacion: "pesado" },
@@ -6222,6 +6322,7 @@ const required = [
   "costo-empresa.html",
   "cotizacion-empleador.html",
   "seguro-cesantia.html",
+  "giro-seguro-cesantia.html",
   "trabajo-pesado.html",
   "recargo-domingo-comercio.html",
   "feriado-irrenunciable.html",
@@ -6291,6 +6392,7 @@ const required = [
   "js/app-costo-empresa.js",
   "js/app-cotizacion-empleador.js",
   "js/app-seguro-cesantia.js",
+  "js/app-giro-seguro-cesantia.js",
   "js/app-trabajo-pesado.js",
   "js/app-recargo-domingo-comercio.js",
   "js/app-feriado-irrenunciable.js",
@@ -6518,6 +6620,7 @@ const htmlFiles = [
   "costo-empresa.html",
   "cotizacion-empleador.html",
   "seguro-cesantia.html",
+  "giro-seguro-cesantia.html",
   "trabajo-pesado.html",
   "recargo-domingo-comercio.html",
   "feriado-irrenunciable.html",
@@ -6663,6 +6766,7 @@ const appEntries = [
   "js/app-costo-empresa.js",
   "js/app-cotizacion-empleador.js",
   "js/app-seguro-cesantia.js",
+  "js/app-giro-seguro-cesantia.js",
   "js/app-trabajo-pesado.js",
   "js/app-recargo-domingo-comercio.js",
   "js/app-feriado-irrenunciable.js",
@@ -7199,7 +7303,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 117,
+      seoPaths().length === 118,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -7211,7 +7315,7 @@ try {
   const docsSeo = await hitLocal("/docs/seo-map.md");
   assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
   assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
-  for (const p of ["/sueldo/", "/sueldo-liquido-a-bruto/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/valor-hora/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/dias-habiles/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/obra-faena/", "/prescripcion-laboral/", "/descanso-compensatorio/", "/inclusion-laboral/", "/jornada-parcial/", "/teletrabajo/", "/bandas-horarias/", "/pacto-4x3/", "/jornada-excepcional/", "/jornada-bisemanal/", "/compensacion-horas-extras/", "/pacto-horas-extras/", "/contrato-plazo-fijo/", "/termino-anticipado-plazo-fijo/", "/permiso-sin-goce/", "/zona-extrema/", "/promedio-remuneraciones/", "/antiguedad-laboral/", "/tope-imponible/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/descuentos-legales/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/fuero-sindical/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/cotizacion-empleador/", "/seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/viatico/", "/reajuste-ipc/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+  for (const p of ["/sueldo/", "/sueldo-liquido-a-bruto/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/valor-hora/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/dias-habiles/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/obra-faena/", "/prescripcion-laboral/", "/descanso-compensatorio/", "/inclusion-laboral/", "/jornada-parcial/", "/teletrabajo/", "/bandas-horarias/", "/pacto-4x3/", "/jornada-excepcional/", "/jornada-bisemanal/", "/compensacion-horas-extras/", "/pacto-horas-extras/", "/contrato-plazo-fijo/", "/termino-anticipado-plazo-fijo/", "/permiso-sin-goce/", "/zona-extrema/", "/promedio-remuneraciones/", "/antiguedad-laboral/", "/tope-imponible/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/descuentos-legales/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/fuero-sindical/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/cotizacion-empleador/", "/seguro-cesantia/", "/giro-seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/viatico/", "/reajuste-ipc/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
   }
@@ -7365,6 +7469,29 @@ try {
     "301 /despido-indirecto → /autodespido",
     autodespidoAlias.status === 301 && autodespidoAlias.location === "/autodespido",
     `${autodespidoAlias.status} ${autodespidoAlias.location}`,
+  );
+  for (const alias of [
+    "/prestacion-seguro-cesantia",
+    "/cobro-seguro-cesantia",
+    "/simulador-afc",
+    "/giro-afc",
+    "/fondo-solidario-cesantia",
+    "/cuenta-individual-cesantia",
+    "/seguro-cesantia-giro",
+    "/cuanto-me-pagan-seguro-cesantia",
+  ]) {
+    const hit = await hitLocal(alias);
+    assert(
+      `301 ${alias} → /giro-seguro-cesantia`,
+      hit.status === 301 && hit.location === "/giro-seguro-cesantia",
+      `${alias} → ${hit.status} ${hit.location}`,
+    );
+  }
+  const giroPage = await hitLocal("/giro-seguro-cesantia");
+  assert(
+    "GET /giro-seguro-cesantia 200",
+    giroPage.status === 200 && /<h1>/.test(giroPage.text),
+    String(giroPage.status),
   );
   const leyAlias = await hitLocal("/ley-21735");
   assert(
@@ -11070,6 +11197,7 @@ assert(
     ["costo-empresa.html", "/costo-empresa"],
     ["cotizacion-empleador.html", "/cotizacion-empleador"],
     ["seguro-cesantia.html", "/seguro-cesantia"],
+    ["giro-seguro-cesantia.html", "/giro-seguro-cesantia"],
     ["trabajo-pesado.html", "/trabajo-pesado"],
     ["recargo-domingo-comercio.html", "/recargo-domingo-comercio"],
     ["feriado-irrenunciable.html", "/feriado-irrenunciable"],
@@ -19799,6 +19927,89 @@ assert(
   }
 
   {
+    const giroHtml = readFileSync(join(root, "giro-seguro-cesantia.html"), "utf8");
+    const giroApp = readFileSync(join(root, "js/app-giro-seguro-cesantia.js"), "utf8");
+    const giroTitle = (giroHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const giroH1 = (giroHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const scHtmlGiro = readFileSync(join(root, "seguro-cesantia.html"), "utf8");
+    const scTitleGiro = (scHtmlGiro.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const vercelGiro = JSON.parse(readFileSync(join(root, "vercel.json"), "utf8"));
+    const serveGiro = readFileSync(join(root, "scripts/serve.mjs"), "utf8");
+    const aliasGiro = (source) =>
+      Array.isArray(vercelGiro.redirects) &&
+      vercelGiro.redirects.some(
+        (r) => r.source === source && r.destination === "/giro-seguro-cesantia" && r.permanent === true,
+      );
+    assert(
+      "SEO title giro cesantía distinto de la cotización",
+      /giro/i.test(giroTitle) &&
+        giroTitle.length <= 65 &&
+        giroTitle !== scTitleGiro &&
+        giroH1 === "Calcular giro del seguro de cesantía Chile 2026" &&
+        !/cotizaci[oó]n mensual/i.test(giroH1),
+      giroTitle,
+    );
+    assert(
+      "giro-seguro-cesantia documenta Ley 19.728, art. 15 y Res. 383",
+      /Ley 19\.728/.test(giroHtml) &&
+        /art[ií]culo 15/i.test(giroHtml) &&
+        /301\.201/.test(giroHtml) &&
+        /1\.004\.003/.test(giroHtml) &&
+        /258\.161/.test(giroHtml) &&
+        /\$700\.000/.test(giroHtml) &&
+        /\$200\.000/.test(giroHtml) &&
+        /no aparecen el sexto y el s[eé]ptimo giro/i.test(giroHtml),
+    );
+    assert("SEO giro cesantía FAQPage y WebApplication", /"@type": "FAQPage"/.test(giroHtml) && /"@type": "WebApplication"/.test(giroHtml));
+    assert(
+      "app-giro-seguro-cesantia usa calcularGirosCesantia",
+      /import\s*\{[^}]*calcularGirosCesantia[^}]*\}\s*from\s*["']\.\/giro-seguro-cesantia\.js["']/.test(giroApp) &&
+        /calcularGirosCesantia\s*\(/.test(giroApp) &&
+        /wireNav\(\s*\)/.test(giroApp),
+    );
+    assert(
+      "home, nav y seguro-cesantia enlazan /giro-seguro-cesantia",
+      /href="\/giro-seguro-cesantia"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/giro-seguro-cesantia" data-nav>Giro seguro de cesantía<\/a>/.test(
+          readFileSync(join(root, "index.html"), "utf8"),
+        ) &&
+        /href="\/giro-seguro-cesantia" data-nav>Giro seguro de cesantía<\/a>/.test(giroHtml) &&
+        /href="\/giro-seguro-cesantia"/.test(scHtmlGiro),
+    );
+    assert(
+      "sitemap incluye /giro-seguro-cesantia",
+      locs.includes("https://www.haberes.cl/giro-seguro-cesantia") &&
+        lastmodForPath("/giro-seguro-cesantia") === "2026-09-29",
+    );
+    assert(
+      "seo-map documenta /giro-seguro-cesantia y no canibaliza la cotización",
+      /\/giro-seguro-cesantia/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no canibalizar `\/seguro-cesantia`/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /No crear `\/prestacion-seguro-cesantia`/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")),
+    );
+    assert(
+      "no se crean URLs hermanas de giros",
+      !existsSync(join(root, "prestacion-seguro-cesantia.html")) &&
+        !existsSync(join(root, "cobro-seguro-cesantia.html")) &&
+        !existsSync(join(root, "simulador-afc.html")) &&
+        !existsSync(join(root, "giro-afc.html")) &&
+        !existsSync(join(root, "fondo-solidario-cesantia.html")) &&
+        !existsSync(join(root, "cuenta-individual-cesantia.html")) &&
+        !existsSync(join(root, "seguro-cesantia-giro.html")) &&
+        !existsSync(join(root, "cuanto-me-pagan-seguro-cesantia.html")) &&
+        aliasGiro("/prestacion-seguro-cesantia") &&
+        aliasGiro("/giro-afc") &&
+        aliasGiro("/cuanto-me-pagan-seguro-cesantia") &&
+        /prestacion-seguro-cesantia/.test(serveGiro) &&
+        /giro-seguro-cesantia/.test(serveGiro),
+    );
+    assert(
+      "hub /guias enlaza /giro-seguro-cesantia",
+      /href="\/giro-seguro-cesantia"/.test(readFileSync(join(root, "guias.html"), "utf8")),
+    );
+  }
+
+  {
     const tpHtml = readFileSync(join(root, "trabajo-pesado.html"), "utf8");
     const tpTitle = (tpHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
     const tpH1 = (tpHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
@@ -19958,6 +20169,7 @@ assert(
       "costo-empresa.html",
       "cotizacion-empleador.html",
       "seguro-cesantia.html",
+      "giro-seguro-cesantia.html",
       "trabajo-pesado.html",
       "recargo-domingo-comercio.html",
       "feriado-irrenunciable.html",
@@ -20192,7 +20404,7 @@ assert(
     return acc;
   }
   const pages = listHtml(root);
-  assert("119 páginas HTML", pages.length === 119, String(pages.length));
+  assert("120 páginas HTML", pages.length === 120, String(pages.length));
   for (const file of pages) {
     const html = readFileSync(file, "utf8");
     const rel = file.slice(root.length + 1);

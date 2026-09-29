@@ -139,6 +139,19 @@ export function handleRequest(req, res) {
     send(res, 301, { Location: `/cotizacion-empleador${url.search}` }, "");
     return;
   }
+  if (
+    urlPath === "/prestacion-seguro-cesantia" ||
+    urlPath === "/cobro-seguro-cesantia" ||
+    urlPath === "/simulador-afc" ||
+    urlPath === "/giro-afc" ||
+    urlPath === "/fondo-solidario-cesantia" ||
+    urlPath === "/cuenta-individual-cesantia" ||
+    urlPath === "/seguro-cesantia-giro" ||
+    urlPath === "/cuanto-me-pagan-seguro-cesantia"
+  ) {
+    send(res, 301, { Location: `/giro-seguro-cesantia${url.search}` }, "");
+    return;
+  }
   const hit = resolvePath(urlPath);
   if (hit.kind === "bad") {
     send(res, 400, { "Content-Type": "text/plain; charset=utf-8" }, "Bad Request");
