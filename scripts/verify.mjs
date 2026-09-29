@@ -34,6 +34,7 @@ import {
   LEY_21735_TASA,
   MUTUAL_TASA_BASICA,
   SANNA_TASA,
+  SALUD_TASA,
   TEXTO_LEGAL_MAX,
   TOPE_AFP_SALUD_UF,
   TOPE_APV_REGIMEN_B_UF,
@@ -187,6 +188,7 @@ import {
   tasaAfp,
   valorHoraExtra,
   valorHoraOrdinaria,
+  roundPeso,
 } from "../js/sueldo.js";
 import { calcularGirosCesantia } from "../js/giro-seguro-cesantia.js";
 import { calcularViatico } from "../js/viatico.js";
@@ -247,6 +249,7 @@ import {
   textoAntiguedad,
 } from "../js/antiguedad-laboral.js";
 import { calcularTopeImponible, ufValida } from "../js/tope-imponible.js";
+import { calcularDiferenciaIsapre } from "../js/diferencia-isapre.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 let failed = 0;
@@ -5637,6 +5640,133 @@ console.log("\nTope imponible en UF y pesos (gold 2026, UF fija $39.000)");
   );
 }
 
+console.log("\nDiferencia Isapre sobre el 7 % (gold FALLBACK_UF, roundPeso = Math.round)");
+{
+  const uf = FALLBACK_UF;
+  const plan45 = roundPeso(4.5 * uf);
+  const plan10 = roundPeso(10 * uf);
+  const plan1 = roundPeso(1 * uf);
+  const topeExacto = TOPE_AFP_SALUD_UF * uf;
+  const legalTope = roundPeso(topeExacto * SALUD_TASA);
+  assert(
+    "roundPeso(4,5 / 1,0 / 10 UF × FALLBACK_UF) y 7 % sobre 90 UF coinciden con el gold (sin ajuste de $1)",
+    uf === 40854.01 &&
+      plan45 === 183_843 &&
+      plan1 === 40_854 &&
+      plan10 === 408_540 &&
+      legalTope === 257_380 &&
+      roundPeso(183_843.045) === 183_843 &&
+      roundPeso(408_540.1) === 408_540,
+    `${plan45} ${plan1} ${plan10} ${legalTope}`,
+  );
+  const g1 = calcularDiferenciaIsapre({ imponible: 1_000_000, planUf: 4.5, uf });
+  assert(
+    "gold imponible $1.000.000 plan 4,5 UF → legal 70000, plan 183843, diferencia 113843, Isapre 183843, Fonasa 70000",
+    g1.ok === true &&
+      g1.saludLegal === 70_000 &&
+      g1.planPesos === 183_843 &&
+      g1.planPesos === plan45 &&
+      g1.diferencia === 113_843 &&
+      g1.saludIsapre === 183_843 &&
+      g1.fonasa === 70_000 &&
+      g1.extraMensual === 113_843 &&
+      g1.extraAnual === 113_843 * 12 &&
+      g1.topeUf === TOPE_AFP_SALUD_UF &&
+      g1.baseAfpSalud === 1_000_000,
+    JSON.stringify(g1),
+  );
+  const g2 = calcularDiferenciaIsapre({ imponible: 1_000_000, planUf: 1, uf });
+  assert(
+    "gold imponible $1.000.000 plan 1,0 UF → plan 40854 bajo el piso, diferencia 0, total Isapre 70000",
+    g2.ok === true &&
+      g2.planPesos === 40_854 &&
+      g2.planPesos === plan1 &&
+      g2.saludLegal === 70_000 &&
+      g2.diferencia === 0 &&
+      g2.saludIsapre === 70_000 &&
+      g2.fonasa === 70_000 &&
+      g2.extraAnual === 0,
+    JSON.stringify(g2),
+  );
+  const g3 = calcularDiferenciaIsapre({ imponible: 5_000_000, planUf: 10, uf });
+  assert(
+    "gold imponible $5.000.000 plan 10 UF → legal 257380, plan 408540, diferencia 151160, Isapre 408540",
+    g3.ok === true &&
+      g3.baseAfpSalud === topeExacto &&
+      g3.saludLegal === 257_380 &&
+      g3.saludLegal === legalTope &&
+      g3.planPesos === 408_540 &&
+      g3.diferencia === 151_160 &&
+      g3.saludIsapre === 408_540 &&
+      g3.fonasa === 257_380 &&
+      g3.diferencia === g3.saludIsapre - g3.saludLegal,
+    JSON.stringify(g3),
+  );
+  const cero = calcularDiferenciaIsapre({ imponible: 0, planUf: 0, uf });
+  const planCero = calcularDiferenciaIsapre({ imponible: 1_000_000, planUf: 0, uf });
+  assert(
+    "imponible 0 y plan 0 UF → legal 0 y diferencia 0; plan 0 con renta deja el piso 7 % y diferencia 0 (sin NaN)",
+    cero.ok === true &&
+      cero.saludLegal === 0 &&
+      cero.diferencia === 0 &&
+      cero.saludIsapre === 0 &&
+      cero.fonasa === 0 &&
+      cero.planPesos === 0 &&
+      planCero.ok === true &&
+      planCero.saludLegal === 70_000 &&
+      planCero.diferencia === 0 &&
+      planCero.saludIsapre === 70_000 &&
+      [cero, planCero].every((r) =>
+        [r.saludLegal, r.planPesos, r.diferencia, r.saludIsapre, r.fonasa, r.extraAnual].every((n) =>
+          Number.isFinite(n),
+        ),
+      ),
+    JSON.stringify({ cero, planCero }),
+  );
+  const enPesos = calcularDiferenciaIsapre({ imponible: 1_000_000, planClp: 200_000, uf });
+  assert(
+    "plan ya en CLP (sin UF) usa ese monto: 200000 − 70000 = diferencia 130000",
+    enPesos.ok === true &&
+      enPesos.planFuente === "clp" &&
+      enPesos.planPesos === 200_000 &&
+      enPesos.saludIsapre === 200_000 &&
+      enPesos.diferencia === 130_000 &&
+      enPesos.fonasa === 70_000,
+    JSON.stringify(enPesos),
+  );
+  const ufMala = calcularDiferenciaIsapre({ imponible: 1_000_000, planUf: 4.5, uf: Number.NaN });
+  assert(
+    "UF inválida → motivo uf y ceros finitos (sin NaN)",
+    ufMala.ok === false &&
+      ufMala.motivo === "uf" &&
+      ufMala.diferencia === 0 &&
+      ufMala.saludLegal === 0 &&
+      Number.isFinite(ufMala.planPesos),
+    JSON.stringify(ufMala),
+  );
+  const diLib = readFileSync(join(root, "js/diferencia-isapre.js"), "utf8");
+  const diApp = readFileSync(join(root, "js/app-diferencia-isapre.js"), "utf8");
+  assert(
+    "diferencia-isapre.js reutiliza SALUD_TASA, TOPE_AFP_SALUD_UF, FALLBACK_UF y roundPeso",
+    /SALUD_TASA/.test(diLib) &&
+      /TOPE_AFP_SALUD_UF/.test(diLib) &&
+      /FALLBACK_UF/.test(diLib) &&
+      /roundPeso/.test(diLib) &&
+      /from\s*["']\.\/constants\.js["']/.test(diLib) &&
+      /from\s*["']\.\/sueldo\.js["']/.test(diLib),
+  );
+  assert(
+    "app-diferencia-isapre usa calcularDiferenciaIsapre, mountIndicadores y no usa alert/confirm/prompt",
+    /import\s*\{[^}]*calcularDiferenciaIsapre[^}]*\}\s*from\s*["']\.\/diferencia-isapre\.js["']/.test(diApp) &&
+      /calcularDiferenciaIsapre\s*\(/.test(diApp) &&
+      /mountIndicadores\s*\(/.test(diApp) &&
+      /mindicador\.cl/.test(diApp) &&
+      !/\balert\s*\(/.test(diApp) &&
+      !/\bconfirm\s*\(/.test(diApp) &&
+      !/\bprompt\s*\(/.test(diApp),
+  );
+}
+
 {
   const millon = calcularAvisoPrevio(
     { causal: "161-necesidades", remuneracion: 1_000_000, avisoPrevio: false },
@@ -6382,6 +6512,7 @@ const required = [
   "promedio-remuneraciones.html",
   "antiguedad-laboral.html",
   "tope-imponible.html",
+  "diferencia-isapre.html",
   "finiquito.html",
   "js/app-horas-extras.js",
   "js/app-valor-hora.js",
@@ -6452,6 +6583,7 @@ const required = [
   "js/app-promedio-remuneraciones.js",
   "js/app-antiguedad-laboral.js",
   "js/app-tope-imponible.js",
+  "js/app-diferencia-isapre.js",
   "empresa.html",
   "privacidad.html",
   "terminos.html",
@@ -6491,6 +6623,7 @@ const required = [
   "js/promedio-remuneraciones.js",
   "js/antiguedad-laboral.js",
   "js/tope-imponible.js",
+  "js/diferencia-isapre.js",
   "js/causales.js",
   "js/finiquito.js",
   "js/indicadores.js",
@@ -6680,6 +6813,7 @@ const htmlFiles = [
   "promedio-remuneraciones.html",
   "antiguedad-laboral.html",
   "tope-imponible.html",
+  "diferencia-isapre.html",
   "finiquito.html",
   "empresa.html",
   "privacidad.html",
@@ -6826,6 +6960,7 @@ const appEntries = [
   "js/app-promedio-remuneraciones.js",
   "js/app-antiguedad-laboral.js",
   "js/app-tope-imponible.js",
+  "js/app-diferencia-isapre.js",
   "js/app-finiquito.js",
   "js/app-empresa.js",
   "js/app-admin.js",
@@ -6944,7 +7079,8 @@ assert(
     BASE_PATHS.includes("/zona-extrema") &&
     BASE_PATHS.includes("/promedio-remuneraciones") &&
     BASE_PATHS.includes("/antiguedad-laboral") &&
-    BASE_PATHS.includes("/tope-imponible"),
+    BASE_PATHS.includes("/tope-imponible") &&
+    BASE_PATHS.includes("/diferencia-isapre"),
   `${locs.length} vs ${expectedFromRegistry.length}`,
 );
 assert(
@@ -7303,7 +7439,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 118,
+      seoPaths().length === 119,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -7315,7 +7451,7 @@ try {
   const docsSeo = await hitLocal("/docs/seo-map.md");
   assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
   assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
-  for (const p of ["/sueldo/", "/sueldo-liquido-a-bruto/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/valor-hora/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/dias-habiles/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/obra-faena/", "/prescripcion-laboral/", "/descanso-compensatorio/", "/inclusion-laboral/", "/jornada-parcial/", "/teletrabajo/", "/bandas-horarias/", "/pacto-4x3/", "/jornada-excepcional/", "/jornada-bisemanal/", "/compensacion-horas-extras/", "/pacto-horas-extras/", "/contrato-plazo-fijo/", "/termino-anticipado-plazo-fijo/", "/permiso-sin-goce/", "/zona-extrema/", "/promedio-remuneraciones/", "/antiguedad-laboral/", "/tope-imponible/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/descuentos-legales/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/fuero-sindical/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/cotizacion-empleador/", "/seguro-cesantia/", "/giro-seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/viatico/", "/reajuste-ipc/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+  for (const p of ["/sueldo/", "/sueldo-liquido-a-bruto/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/valor-hora/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/dias-habiles/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/obra-faena/", "/prescripcion-laboral/", "/descanso-compensatorio/", "/inclusion-laboral/", "/jornada-parcial/", "/teletrabajo/", "/bandas-horarias/", "/pacto-4x3/", "/jornada-excepcional/", "/jornada-bisemanal/", "/compensacion-horas-extras/", "/pacto-horas-extras/", "/contrato-plazo-fijo/", "/termino-anticipado-plazo-fijo/", "/permiso-sin-goce/", "/zona-extrema/", "/promedio-remuneraciones/", "/antiguedad-laboral/", "/tope-imponible/", "/diferencia-isapre/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/descuentos-legales/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/fuero-sindical/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/cotizacion-empleador/", "/seguro-cesantia/", "/giro-seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/viatico/", "/reajuste-ipc/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
   }
@@ -7386,6 +7522,7 @@ try {
     "/promedio-remuneraciones",
     "/antiguedad-laboral",
     "/tope-imponible",
+    "/diferencia-isapre",
     "/gratificacion",
     "/impuesto-unico",
     "/cotizaciones-previsionales",
@@ -11257,6 +11394,7 @@ assert(
     ["promedio-remuneraciones.html", "/promedio-remuneraciones"],
     ["antiguedad-laboral.html", "/antiguedad-laboral"],
     ["tope-imponible.html", "/tope-imponible"],
+    ["diferencia-isapre.html", "/diferencia-isapre"],
     ["finiquito.html", "/finiquito"],
     ["empresa.html", "/empresa"],
     ["como.html", "/como"],
@@ -13412,6 +13550,125 @@ assert(
     );
   }
 
+
+
+  {
+    const diHtml = readFileSync(join(root, "diferencia-isapre.html"), "utf8");
+    const diTitle = (diHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const diH1 = (diHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const diDesc = (diHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "";
+    const sueldoHtmlDi = readFileSync(join(root, "sueldo.html"), "utf8");
+    const cpHtmlDi = readFileSync(join(root, "cotizaciones-previsionales.html"), "utf8");
+    assert(
+      "SEO diferencia Isapre title único y corto",
+      /calcular diferencia Isapre/i.test(diTitle) &&
+        diTitle.length <= 65 &&
+        !/sueldo l[ií]quido/i.test(diTitle) &&
+        !/cotizaciones previsionales/i.test(diTitle) &&
+        !/^Haberes\b/.test(diTitle),
+      diTitle,
+    );
+    assert(
+      "SEO diferencia Isapre H1 único",
+      diH1 === "Calcular diferencia Isapre Chile 2026" &&
+        /7 %/.test(diHtml) &&
+        /90 UF/.test(diHtml) &&
+        /\$183\.843/.test(diHtml) &&
+        /\$113\.843/.test(diHtml) &&
+        /\$70\.000/.test(diHtml) &&
+        /\$40\.854/.test(diHtml) &&
+        /\$257\.380/.test(diHtml) &&
+        /\$408\.540/.test(diHtml) &&
+        /\$151\.160/.test(diHtml),
+      diH1,
+    );
+    assert(
+      "SEO diferencia Isapre description propia",
+      diDesc.length >= 110 &&
+        diDesc.length <= 160 &&
+        /diferencia/i.test(diDesc) &&
+        /Isapre/.test(diDesc) &&
+        /7 %/.test(diDesc) &&
+        /90 UF/.test(diDesc),
+      `${diDesc.length}:${diDesc}`,
+    );
+    assert(
+      "SEO diferencia Isapre cita 7 %, tope 90 UF, Ley 21.674 y Superintendencia de Salud",
+      /bcn\.cl\/leychile\/navegar\?idNorma=7147/.test(diHtml) &&
+        /bcn\.cl\/leychile\/navegar\?idNorma=1203779/.test(diHtml) &&
+        /superdesalud\.gob\.cl\/tax-temas-de-orientacion\/exceso-de-cotizacion-4015/.test(diHtml) &&
+        /Ley 21\.674/.test(diHtml) &&
+        /febrero de 2026/.test(diHtml) &&
+        /mindicador\.cl/.test(diHtml),
+    );
+    assert("SEO diferencia Isapre FAQPage", /"@type": "FAQPage"/.test(diHtml));
+    assert(
+      "SEO diferencia Isapre no canibaliza hermanas ni crea alias de contenido",
+      /href="\/sueldo"/.test(diHtml) &&
+        /href="\/cotizaciones-previsionales"/.test(diHtml) &&
+        /href="\/tope-imponible"/.test(diHtml) &&
+        /href="\/descuentos-legales"/.test(diHtml) &&
+        /href="\/impuesto-unico"/.test(diHtml) &&
+        /href="\/costo-empresa"/.test(diHtml) &&
+        /href="\/cotizacion-empleador"/.test(diHtml) &&
+        /href="\/seguro-cesantia"/.test(diHtml) &&
+        /href="\/apv"/.test(diHtml) &&
+        /no constituye asesor[ií]a legal/i.test(diHtml) &&
+        /Isapre/.test(diHtml) &&
+        /Fonasa/.test(diHtml) &&
+        /Direcci[oó]n del Trabajo/.test(diHtml) &&
+        /Previred/.test(diHtml) &&
+        !existsSync(join(root, "exceso-isapre.html")) &&
+        !existsSync(join(root, "sobreprecio-isapre.html")) &&
+        !existsSync(join(root, "plan-isapre.html")) &&
+        !existsSync(join(root, "isapre-vs-fonasa.html")) &&
+        !existsSync(join(root, "cotizacion-isapre.html")) &&
+        !existsSync(join(root, "fonasa-vs-isapre.html")) &&
+        !existsSync(join(root, "calcular-isapre.html")),
+    );
+    assert(
+      "home y nav enlazan /diferencia-isapre",
+      /href="\/diferencia-isapre"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/diferencia-isapre" data-nav>Diferencia Isapre<\/a>/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/diferencia-isapre" data-nav>Diferencia Isapre<\/a>/.test(diHtml) &&
+        /href="\/diferencia-isapre" data-nav>Diferencia Isapre<\/a>/.test(readFileSync(join(root, "js/ui.js"), "utf8")) &&
+        /\["\/diferencia-isapre", "Diferencia Isapre"\]/.test(readFileSync(join(root, "scripts/patch-nav.mjs"), "utf8")),
+    );
+    assert(
+      "sitemap incluye /diferencia-isapre",
+      locs.includes("https://www.haberes.cl/diferencia-isapre") &&
+        lastmodForPath("/diferencia-isapre") === "2026-09-29",
+    );
+    assert(
+      "seo-map documenta /diferencia-isapre sin volumen inventado",
+      /\/diferencia-isapre/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no canibalizar `\/sueldo`, `\/sueldo-liquido-a-bruto`, `\/cotizaciones-previsionales`/i.test(
+          readFileSync(join(root, "docs/seo-map.md"), "utf8"),
+        ) &&
+        /no crear `\/exceso-isapre`, `\/sobreprecio-isapre`/i.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /Sin volumen ni KD/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")),
+    );
+    assert(
+      "hermanas enlazan /diferencia-isapre (sueldo y cotizaciones, sin reescribir su H1)",
+      /href="\/diferencia-isapre"/.test(sueldoHtmlDi) &&
+        /href="\/diferencia-isapre"/.test(cpHtmlDi) &&
+        /<h1>Calculadora de sueldo l[ií]quido Chile 2026<\/h1>/.test(sueldoHtmlDi) &&
+        /<h1>Calcular cotizaciones previsionales Chile 2026<\/h1>/.test(cpHtmlDi) &&
+        /¿Cuánto extra pago si mi plan Isapre vale más que el 7 %?/.test(sueldoHtmlDi) &&
+        /¿Dónde veo cuánto extra cobra mi plan Isapre sobre el 7 %?/.test(cpHtmlDi),
+    );
+    assert(
+      "alias de diferencia Isapre redirigen a la canónica",
+      ["/exceso-isapre", "/sobreprecio-isapre", "/plan-isapre", "/isapre-vs-fonasa", "/cotizacion-isapre", "/fonasa-vs-isapre", "/calcular-isapre"].every(
+        (src) =>
+          vercel.redirects.some(
+            (r) => r.source === src && r.destination === "/diferencia-isapre" && r.permanent === true,
+          ),
+      ) &&
+        /urlPath === "\/exceso-isapre"/.test(readFileSync(join(root, "scripts/serve.mjs"), "utf8")) &&
+        /Location: `\/diferencia-isapre/.test(readFileSync(join(root, "scripts/serve.mjs"), "utf8")),
+    );
+  }
 
   {
     const bhHtml = readFileSync(join(root, "bandas-horarias.html"), "utf8");
@@ -20404,7 +20661,7 @@ assert(
     return acc;
   }
   const pages = listHtml(root);
-  assert("120 páginas HTML", pages.length === 120, String(pages.length));
+  assert("121 páginas HTML", pages.length === 121, String(pages.length));
   for (const file of pages) {
     const html = readFileSync(file, "utf8");
     const rel = file.slice(root.length + 1);

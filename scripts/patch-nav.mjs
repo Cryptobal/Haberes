@@ -47,6 +47,7 @@ const DRAWER_LINKS = [
   ["/boleta-honorarios", "Boleta honorarios"],
   ["/cotizaciones-previsionales", "Cotizaciones previsionales"],
   ["/tope-imponible", "Tope imponible"],
+  ["/diferencia-isapre", "Diferencia Isapre"],
   ["/costo-empresa", "Costo empresa"],
   ["/cotizacion-empleador", "Cotización empleador"],
   ["/seguro-cesantia", "Seguro de cesantía"],
