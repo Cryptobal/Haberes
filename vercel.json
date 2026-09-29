@@ -51,7 +51,21 @@
     { "source": "/seguro-cesantia-giro", "destination": "/giro-seguro-cesantia", "permanent": true },
     { "source": "/seguro-cesantia-giro/", "destination": "/giro-seguro-cesantia", "permanent": true },
     { "source": "/cuanto-me-pagan-seguro-cesantia", "destination": "/giro-seguro-cesantia", "permanent": true },
-    { "source": "/cuanto-me-pagan-seguro-cesantia/", "destination": "/giro-seguro-cesantia", "permanent": true }
+    { "source": "/cuanto-me-pagan-seguro-cesantia/", "destination": "/giro-seguro-cesantia", "permanent": true },
+    { "source": "/exceso-isapre", "destination": "/diferencia-isapre", "permanent": true },
+    { "source": "/exceso-isapre/", "destination": "/diferencia-isapre", "permanent": true },
+    { "source": "/sobreprecio-isapre", "destination": "/diferencia-isapre", "permanent": true },
+    { "source": "/sobreprecio-isapre/", "destination": "/diferencia-isapre", "permanent": true },
+    { "source": "/plan-isapre", "destination": "/diferencia-isapre", "permanent": true },
+    { "source": "/plan-isapre/", "destination": "/diferencia-isapre", "permanent": true },
+    { "source": "/isapre-vs-fonasa", "destination": "/diferencia-isapre", "permanent": true },
+    { "source": "/isapre-vs-fonasa/", "destination": "/diferencia-isapre", "permanent": true },
+    { "source": "/cotizacion-isapre", "destination": "/diferencia-isapre", "permanent": true },
+    { "source": "/cotizacion-isapre/", "destination": "/diferencia-isapre", "permanent": true },
+    { "source": "/fonasa-vs-isapre", "destination": "/diferencia-isapre", "permanent": true },
+    { "source": "/fonasa-vs-isapre/", "destination": "/diferencia-isapre", "permanent": true },
+    { "source": "/calcular-isapre", "destination": "/diferencia-isapre", "permanent": true },
+    { "source": "/calcular-isapre/", "destination": "/diferencia-isapre", "permanent": true }
   ],
   "rewrites": [
     { "source": "/sitemap.xml", "destination": "/api/sitemap" },

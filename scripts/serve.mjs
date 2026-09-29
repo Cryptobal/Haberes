@@ -140,6 +140,18 @@ export function handleRequest(req, res) {
     return;
   }
   if (
+    urlPath === "/exceso-isapre" ||
+    urlPath === "/sobreprecio-isapre" ||
+    urlPath === "/plan-isapre" ||
+    urlPath === "/isapre-vs-fonasa" ||
+    urlPath === "/cotizacion-isapre" ||
+    urlPath === "/fonasa-vs-isapre" ||
+    urlPath === "/calcular-isapre"
+  ) {
+    send(res, 301, { Location: `/diferencia-isapre${url.search}` }, "");
+    return;
+  }
+  if (
     urlPath === "/prestacion-seguro-cesantia" ||
     urlPath === "/cobro-seguro-cesantia" ||
     urlPath === "/simulador-afc" ||
