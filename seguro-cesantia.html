@@ -75,7 +75,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
       "name": "¿Qué calcula esta página del seguro de cesantía?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Los aportes mensuales a la AFC (Ley 19.728): porcentaje y pesos del trabajador y del empleador, con destino a la cuenta individual y al fondo solidario según el tipo de contrato. No es cotizaciones previsionales (AFP y salud), no es el costo empresa completo ni el sueldo líquido, y no estima la prestación si hay despido."
+        "text": "Los aportes mensuales a la AFC (Ley 19.728): porcentaje y pesos del trabajador y del empleador, con destino a la cuenta individual y al fondo solidario según el tipo de contrato. No es cotizaciones previsionales (AFP y salud), no es el costo empresa completo ni el sueldo líquido. Los giros de la prestación se estiman en /giro-seguro-cesantia."
       }
     },
     {
@@ -107,7 +107,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
       "name": "¿Incluye el giro del seguro si me despiden?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "No. Aquí solo se estima la cotización mensual. Los giros desde la cuenta individual o el fondo solidario, y el finiquito, no se calculan en esta página."
+        "text": "No. Aquí solo se estima la cotización mensual. Los giros de la prestación, con cargo a la cuenta individual o al fondo solidario, se estiman en /giro-seguro-cesantia. El finiquito no se calcula en esta página."
       }
     },
     {
@@ -193,6 +193,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <a href="/cotizacion-empleador" data-nav>Cotización empleador</a>
         <a href="/inclusion-laboral" data-nav>Inclusión laboral</a>
         <a href="/seguro-cesantia" data-nav>Seguro de cesantía</a>
+        <a href="/giro-seguro-cesantia" data-nav>Giro seguro de cesantía</a>
         <a href="/trabajo-pesado" data-nav>Trabajo pesado</a>
         <a href="/asignacion-familiar" data-nav>Asignación familiar</a>
         <a href="/hora-lactancia" data-nav>Hora de lactancia</a>
@@ -320,8 +321,9 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           No se modela el tope de once años de cotización por relación laboral (el 0,8 % al fondo
           solidario sigue, según AFC, mientras el contrato esté vigente). Tampoco el régimen de
           <a href="/guias/finiquito-trabajadora-de-casa-particular">casa particular</a>
-          (indemnización a todo evento). No estima giros de la prestación si hay despido:
-          eso no es esta página ni
+          (indemnización a todo evento).           Los giros de la prestación (cuenta individual y fondo solidario) se estiman en
+          <a href="/giro-seguro-cesantia">calcular giro del seguro de cesantía</a>.
+          El finiquito sigue en
           <a href="/finiquito">finiquito</a>.
         </p>
         <h3>Ejemplo orientativo (pyme ficticia)</h3>
@@ -334,6 +336,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         </p>
         <h3>Guías relacionadas</h3>
         <ul>
+          <li><a href="/giro-seguro-cesantia">Calcular giro del seguro de cesantía</a></li>
           <li><a href="/cotizaciones-previsionales">Calcular cotizaciones previsionales</a></li>
           <li><a href="/tope-imponible">Calcular tope imponible (90 UF AFP/salud y 135,2 UF cesantía, en pesos del mes)</a></li>
           <li><a href="/trabajo-pesado">Calculadora trabajo pesado (cotización CEN)</a></li>
@@ -353,7 +356,9 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           (AFP y salud), no es el
           <a href="/costo-empresa">costo empresa</a>
           completo ni el
-          <a href="/sueldo">sueldo líquido</a>, y no estima la prestación si hay despido.
+          <a href="/sueldo">sueldo líquido</a>.
+          Los giros de la prestación se estiman en
+          <a href="/giro-seguro-cesantia">calcular giro del seguro de cesantía</a>.
         </p>
         <h3>¿Cuánto cotizan el trabajador y el empleador?</h3>
         <p>
@@ -374,7 +379,9 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         </p>
         <h3>¿Incluye el giro del seguro si me despiden?</h3>
         <p>
-          No. Aquí solo se estima la cotización mensual. Los giros desde la cuenta individual o el fondo solidario, y el finiquito, no se calculan en esta página.
+          No. Aquí solo se estima la cotización mensual. Los giros de la prestación, con cargo a la cuenta individual o al fondo solidario, se estiman en
+          <a href="/giro-seguro-cesantia">calcular giro del seguro de cesantía</a>.
+          El finiquito no se calcula en esta página.
         </p>
         <h3>¿Haberes declara estas cotizaciones en Previred?</h3>
         <p>

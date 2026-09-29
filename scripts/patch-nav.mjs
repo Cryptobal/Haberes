@@ -50,6 +50,7 @@ const DRAWER_LINKS = [
   ["/costo-empresa", "Costo empresa"],
   ["/cotizacion-empleador", "Cotización empleador"],
   ["/seguro-cesantia", "Seguro de cesantía"],
+  ["/giro-seguro-cesantia", "Giro seguro de cesantía"],
   ["/trabajo-pesado", "Trabajo pesado"],
   ["/asignacion-familiar", "Asignación familiar"],
   ["/sala-cuna", "Sala cuna"],
