@@ -236,6 +236,7 @@ function paintLoggedInNav(emp) {
         <a href="/aguinaldo" data-nav>Aguinaldo</a>
         <a href="/impuesto-unico" data-nav>Impuesto único</a>
         <a href="/boleta-honorarios" data-nav>Boleta honorarios</a>
+        <a href="/cotizacion-independiente" data-nav>Cotización independiente</a>
         <a href="/cotizaciones-previsionales" data-nav>Cotizaciones previsionales</a>
         <a href="/tope-imponible" data-nav>Tope imponible</a>
         <a href="/diferencia-isapre" data-nav>Diferencia Isapre</a>

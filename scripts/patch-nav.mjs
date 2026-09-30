@@ -45,6 +45,7 @@ const DRAWER_LINKS = [
   ["/aguinaldo", "Aguinaldo"],
   ["/impuesto-unico", "Impuesto único"],
   ["/boleta-honorarios", "Boleta honorarios"],
+  ["/cotizacion-independiente", "Cotización independiente"],
   ["/cotizaciones-previsionales", "Cotizaciones previsionales"],
   ["/tope-imponible", "Tope imponible"],
   ["/diferencia-isapre", "Diferencia Isapre"],

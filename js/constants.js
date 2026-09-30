@@ -1226,6 +1226,59 @@ export const RETENCION_BOLETA_HONORARIOS = {
 export const RETENCION_BOLETA_ANIO_DEFAULT = 2026;
 
 /**
+ * Trabajador independiente que emite boletas de honorarios (Ley 21.133).
+ * Renta imponible anual = 80 % de los honorarios brutos del año, con tope
+ * anual AFP/salud = TOPE_AFP_SALUD_UF × 12 × UF (D.L. 3.500 arts. 16 y 90).
+ * Obligación típica: brutos anuales ≥ 5 IMM (ChileAtiende; 5 × IMM del sitio).
+ * No es la retención de la boleta ni las cotizaciones de un dependiente.
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=1128420
+ * @see https://www.chileatiende.gob.cl/fichas/12016-cotizacion-de-trabajadores-que-emiten-boletas-de-honorarios
+ * @see https://previsionsocial.gob.cl/ley-honorarios/
+ */
+export const RENTA_IMPONIBLE_HONORARIOS = 0.8;
+export const UMBRAL_OBLIGACION_HONORARIOS_IMM = 5;
+
+/**
+ * Cobertura parcial (Ley 21.133, artículo segundo transitorio): porcentaje de
+ * la renta imponible para pensiones (10 % + comisión) y salud (7 %).
+ * La lista es por año tributario (Operación Renta), no por año de emisión.
+ * Rentas 2026 (retención 15,25 %) se declaran en el año tributario 2027 → 90 %.
+ * Rentas 2025 (retención 14,5 %) → año tributario 2026 → 80 % (ChileAtiende).
+ * A partir del año tributario 2028 la misma lista llega a 100 %.
+ * SIS, Ley 16.744 (ATEP) y SANNA quedan fuera de este porcentaje: van sobre
+ * el 100 % de la renta imponible.
+ * @see https://www.bcn.cl/leychile/navegar?idNorma=1128420
+ * @see https://www.chileatiende.gob.cl/fichas/12016-cotizacion-de-trabajadores-que-emiten-boletas-de-honorarios
+ */
+export const COBERTURA_PARCIAL_HONORARIOS = {
+  2019: 0.05,
+  2020: 0.17,
+  2021: 0.27,
+  2022: 0.37,
+  2023: 0.47,
+  2024: 0.57,
+  2025: 0.7,
+  2026: 0.8,
+  2027: 0.9,
+  2028: 1,
+};
+/** Último año tributario de la lista legal; después la cobertura parcial es 100 %. */
+export const COBERTURA_PARCIAL_HONORARIOS_CIERRE_AT = 2028;
+
+/**
+ * SIS del independiente que cotiza por retención de impuestos (Operación Renta).
+ * Superintendencia de Pensiones: año tributario 2026 = 1,49 %.
+ * No es la tasa mensual de Previred desde abril 2026 (1,62 %), que aplica a
+ * empleadores e independientes que pagan mes a mes. Esta calculadora usa solo
+ * 1,49 % y lo etiqueta como camino retención / año tributario 2026. No inventa
+ * una tasa distinta para años tributarios posteriores.
+ * @see https://www.spensiones.cl/portal/institucional/594/w3-propertyvalue-9913.html
+ */
+export const SIS_INDEPENDIENTE_RETENCION_AT2026 = 0.0149;
+/** Tasa mensual SP desde abril 2026. No la usa /cotizacion-independiente. */
+export const SIS_INDEPENDIENTE_MENSUAL_ABR2026 = 0.0162;
+
+/**
  * Asignación familiar y maternal — tramos a contar del 1 de mayo de 2026.
  * Ley N° 21.830 (D.O. 22.06.2026) modifica el inciso primero del art. 1° de la Ley N° 18.987.
  * SUSESO dictamen O-01-S-02728-2026; DT consulta «¿Cuál es el valor de la asignación familiar?».
