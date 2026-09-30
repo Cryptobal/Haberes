@@ -112,6 +112,11 @@ import {
   RECARGO_168_PORCENTAJES,
   RETENCION_BOLETA_ANIO_DEFAULT,
   RETENCION_BOLETA_HONORARIOS,
+  RENTA_IMPONIBLE_HONORARIOS,
+  COBERTURA_PARCIAL_HONORARIOS,
+  SIS_INDEPENDIENTE_RETENCION_AT2026,
+  SIS_INDEPENDIENTE_MENSUAL_ABR2026,
+  UMBRAL_OBLIGACION_HONORARIOS_IMM,
   UMBRAL_SALA_CUNA,
   POSTNATAL_PARENTAL_SEMANAS_COMPLETA,
   POSTNATAL_PARENTAL_SEMANAS_MIN_MADRE,
@@ -191,6 +196,7 @@ import {
   roundPeso,
 } from "../js/sueldo.js";
 import { calcularGirosCesantia } from "../js/giro-seguro-cesantia.js";
+import { calcularCotizacionIndependiente } from "../js/cotizacion-independiente.js";
 import { calcularViatico } from "../js/viatico.js";
 import { calcularSueldoEmpresarial } from "../js/sueldo-empresarial.js";
 import { calcularFranquiciaSence, UTM_SEP_2026, VALORES_HORA_SENCE_2026 } from "../js/franquicia-sence.js";
@@ -1644,6 +1650,168 @@ console.log("\nBoleta de honorarios (retención Ley 21.133 / SII)");
     "app-boleta-honorarios usa calcularBoletaHonorarios",
     /import\s*\{[^}]*calcularBoletaHonorarios[^}]*\}\s*from\s*["']\.\/sueldo\.js["']/.test(bhApp) &&
       /calcularBoletaHonorarios\s*\(/.test(bhApp),
+  );
+}
+
+console.log("\nCotización independiente (Ley 21.133, boletas de honorarios)");
+{
+  assert(
+    "tasas Ley 21.133 pinneadas",
+    RENTA_IMPONIBLE_HONORARIOS === 0.8 &&
+      UMBRAL_OBLIGACION_HONORARIOS_IMM === 5 &&
+      COBERTURA_PARCIAL_HONORARIOS[2026] === 0.8 &&
+      COBERTURA_PARCIAL_HONORARIOS[2027] === 0.9 &&
+      COBERTURA_PARCIAL_HONORARIOS[2028] === 1 &&
+      SIS_INDEPENDIENTE_RETENCION_AT2026 === 0.0149 &&
+      SIS_INDEPENDIENTE_MENSUAL_ABR2026 === 0.0162 &&
+      MUTUAL_TASA_BASICA === 0.009 &&
+      SANNA_TASA === 0.0003,
+  );
+  const uf = FALLBACK_UF;
+  const g1 = calcularCotizacionIndependiente({
+    honorariosBrutos: 12_000_000,
+    anio: 2026,
+    cobertura: "total",
+    comisionPct: 0,
+    uf,
+  });
+  const imponible = 9_600_000;
+  assert(
+    "gold total $12.000.000 / 2026 / comisión 0",
+    g1.ok &&
+      g1.anio === 2026 &&
+      g1.anioTributario === 2027 &&
+      g1.rentaImponible === imponible &&
+      g1.topeAplicado === false &&
+      g1.obligado === true &&
+      g1.factorPensionesSalud === 1 &&
+      g1.afp === roundPeso(imponible * 0.1) &&
+      g1.afp === 960_000 &&
+      g1.comision === 0 &&
+      g1.salud === roundPeso(imponible * 0.07) &&
+      g1.salud === 672_000 &&
+      g1.atep === roundPeso(imponible * MUTUAL_TASA_BASICA) &&
+      g1.atep === 86_400 &&
+      g1.sanna === roundPeso(imponible * SANNA_TASA) &&
+      g1.sanna === 2_880 &&
+      g1.sis === roundPeso(imponible * SIS_INDEPENDIENTE_RETENCION_AT2026) &&
+      g1.sis === 143_040 &&
+      g1.cesantia === 0 &&
+      g1.total === 960_000 + 672_000 + 86_400 + 2_880 + 143_040 &&
+      g1.total === 1_864_320 &&
+      g1.retencion === roundPeso(12_000_000 * RETENCION_BOLETA_HONORARIOS[2026]) &&
+      g1.retencion === 1_830_000 &&
+      g1.saldoEducativo === 1_830_000 - 1_864_320 &&
+      g1.saldoEducativo < 0,
+  );
+  const g2 = calcularCotizacionIndependiente({
+    honorariosBrutos: 12_000_000,
+    anio: 2026,
+    cobertura: "parcial",
+    comisionPct: 0,
+    uf,
+  });
+  const baseParcial = imponible * 0.9;
+  assert(
+    "gold parcial 90 % (rentas 2026 = OR 2027); seguros al 100 %",
+    g2.factorPensionesSalud === 0.9 &&
+      g2.anioTributario === 2027 &&
+      g2.basePensionesSalud === roundPeso(baseParcial) &&
+      g2.basePensionesSalud === 8_640_000 &&
+      g2.afp === roundPeso(baseParcial * 0.1) &&
+      g2.afp === 864_000 &&
+      g2.salud === roundPeso(baseParcial * 0.07) &&
+      g2.salud === 604_800 &&
+      g2.sis === g1.sis &&
+      g2.atep === g1.atep &&
+      g2.sanna === g1.sanna &&
+      g2.total === 1_701_120 &&
+      g2.total !== g1.total,
+  );
+  const parcial2025 = calcularCotizacionIndependiente({
+    honorariosBrutos: 12_000_000,
+    anio: 2025,
+    cobertura: "parcial",
+    comisionPct: 0,
+    uf,
+  });
+  assert(
+    "rentas 2025 (retención 14,5 %) usan parcial 80 % del AT 2026",
+    parcial2025.anioTributario === 2026 &&
+      parcial2025.factorPensionesSalud === 0.8 &&
+      parcial2025.tasaRetencion === 0.145,
+  );
+  const topeExact = TOPE_AFP_SALUD_UF * 12 * uf;
+  const g3 = calcularCotizacionIndependiente({
+    honorariosBrutos: 80_000_000,
+    anio: 2026,
+    cobertura: "total",
+    comisionPct: 0,
+    uf,
+  });
+  assert(
+    "brutos $80.000.000 topan renta imponible en 90×12×UF",
+    g3.topeAplicado &&
+      g3.rentaImponible === roundPeso(topeExact) &&
+      g3.rentaImponible === 44_122_331 &&
+      g3.afp === roundPeso(topeExact * 0.1) &&
+      g3.afp === 4_412_233 &&
+      g3.salud === roundPeso(topeExact * 0.07) &&
+      g3.salud === 3_088_563 &&
+      g3.atep === roundPeso(topeExact * MUTUAL_TASA_BASICA) &&
+      g3.atep === 397_101 &&
+      g3.sanna === roundPeso(topeExact * SANNA_TASA) &&
+      g3.sanna === 13_237 &&
+      g3.sis === roundPeso(topeExact * SIS_INDEPENDIENTE_RETENCION_AT2026) &&
+      g3.sis === 657_423,
+  );
+  const cero = calcularCotizacionIndependiente({
+    honorariosBrutos: 0,
+    anio: 2026,
+    comisionPct: 0,
+    uf,
+  });
+  const bajo = calcularCotizacionIndependiente({
+    honorariosBrutos: 2_000_000,
+    anio: 2026,
+    comisionPct: 0,
+    uf,
+  });
+  const nums = (calc) =>
+    [calc.rentaImponible, calc.afp, calc.comision, calc.salud, calc.sis, calc.atep, calc.sanna, calc.total, calc.retencion, calc.saldoEducativo];
+  assert(
+    "brutos 0 → ceros sin NaN; bajo 5 IMM estima y obligado false",
+    nums(cero).every((n) => n === 0) &&
+      !nums(cero).some((n) => Number.isNaN(n)) &&
+      cero.obligado === false &&
+      bajo.obligado === false &&
+      bajo.umbralBrutos === 5 * IMM &&
+      bajo.umbralBrutos === 2_767_765 &&
+      2_000_000 < bajo.umbralBrutos &&
+      bajo.rentaImponible === 1_600_000 &&
+      bajo.afp === 160_000 &&
+      bajo.total > 0,
+  );
+  const conComision = calcularCotizacionIndependiente({
+    honorariosBrutos: 12_000_000,
+    anio: 2026,
+    cobertura: "total",
+    afp: "uno",
+    uf,
+  });
+  assert(
+    "comisión AFP Uno (0,49 %) entra al total y no es la tasa mensual SIS",
+    conComision.comision === roundPeso(imponible * (AFP_COMISION.uno / 100)) &&
+      conComision.comision === 47_040 &&
+      conComision.total === g1.total + 47_040 &&
+      conComision.tasaSis === SIS_INDEPENDIENTE_RETENCION_AT2026 &&
+      conComision.sisCamino === "retencion-at-2026",
+  );
+  const ciApp = readFileSync(join(root, "js/app-cotizacion-independiente.js"), "utf8");
+  assert(
+    "app-cotizacion-independiente usa calcularCotizacionIndependiente",
+    /import\s*\{[^}]*calcularCotizacionIndependiente[^}]*\}\s*from\s*["']\.\/cotizacion-independiente\.js["']/.test(ciApp) &&
+      /calcularCotizacionIndependiente\s*\(/.test(ciApp),
   );
 }
 
@@ -6467,6 +6635,7 @@ const required = [
   "descuento-atrasos.html",
   "licencia-medica.html",
   "boleta-honorarios.html",
+  "cotizacion-independiente.html",
   "retencion-judicial.html",
   "descuentos-legales.html",
   "apv.html",
@@ -6538,6 +6707,7 @@ const required = [
   "js/app-descuento-atrasos.js",
   "js/app-licencia-medica.js",
   "js/app-boleta-honorarios.js",
+  "js/app-cotizacion-independiente.js",
   "js/app-retencion-judicial.js",
   "js/app-descuentos-legales.js",
   "js/app-apv.js",
@@ -6768,6 +6938,7 @@ const htmlFiles = [
   "descuento-atrasos.html",
   "licencia-medica.html",
   "boleta-honorarios.html",
+  "cotizacion-independiente.html",
   "retencion-judicial.html",
   "descuentos-legales.html",
   "apv.html",
@@ -6915,6 +7086,7 @@ const appEntries = [
   "js/app-descuento-atrasos.js",
   "js/app-licencia-medica.js",
   "js/app-boleta-honorarios.js",
+  "js/app-cotizacion-independiente.js",
   "js/app-retencion-judicial.js",
   "js/app-descuentos-legales.js",
   "js/app-apv.js",
@@ -6993,7 +7165,7 @@ assert("robots Allow /", /Allow:\s*\//.test(robots));
 assert("robots Disallow /admin", /Disallow:\s*\/admin/.test(robots));
 assert("robots Disallow /api", /Disallow:\s*\/api/.test(robots));
 assert("robots Disallow /docs", /Disallow:\s*\/docs/.test(robots));
-assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/trabajo-pesado/.test(robots) && !/Disallow:\s*\/nulidad-despido/.test(robots) && !/Disallow:\s*\/tutela-laboral/.test(robots) && !/Disallow:\s*\/despido-injustificado/.test(robots) && !/Disallow:\s*\/autodespido/.test(robots) && !/Disallow:\s*\/obra-faena/.test(robots) && !/Disallow:\s*\/prescripcion-laboral/.test(robots) && !/Disallow:\s*\/descanso-compensatorio/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/feriado-anual/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/licencia-medica/.test(robots) && !/Disallow:\s*\/boleta-honorarios/.test(robots) && !/Disallow:\s*\/retencion-judicial/.test(robots) && !/Disallow:\s*\/apv/.test(robots) && !/Disallow:\s*\/sala-cuna/.test(robots) && !/Disallow:\s*\/postnatal-parental/.test(robots) && !/Disallow:\s*\/permiso-prenatal/.test(robots) && !/Disallow:\s*\/fuero-maternal/.test(robots) && !/Disallow:\s*\/permiso-paternidad/.test(robots) && !/Disallow:\s*\/permiso-matrimonio/.test(robots) && !/Disallow:\s*\/permiso-fallecimiento/.test(robots) && !/Disallow:\s*\/interes-mora/.test(robots) && !/Disallow:\s*\/hora-lactancia/.test(robots) && !/Disallow:\s*\/jornada-40-horas/.test(robots) && !/Disallow:\s*\/jornada-parcial/.test(robots) && !/Disallow:\s*\/teletrabajo/.test(robots) && !/Disallow:\s*\/bandas-horarias/.test(robots) && !/Disallow:\s*\/pacto-4x3/.test(robots) && !/Disallow:\s*\/jornada-excepcional/.test(robots) && !/Disallow:\s*\/jornada-bisemanal/.test(robots) && !/Disallow:\s*\/compensacion-horas-extras/.test(robots) && !/Disallow:\s*\/pacto-horas-extras/.test(robots) && !/Disallow:\s*\/contrato-plazo-fijo/.test(robots) && !/Disallow:\s*\/termino-anticipado-plazo-fijo/.test(robots) && !/Disallow:\s*\/permiso-sin-goce/.test(robots) && !/Disallow:\s*\/zona-extrema/.test(robots) && !/Disallow:\s*\/promedio-remuneraciones/.test(robots) && !/Disallow:\s*\/antiguedad-laboral/.test(robots) && !/Disallow:\s*\/tope-imponible/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots) && !/Disallow:\s*\/inclusion-laboral/.test(robots) && !/Disallow:\s*\/reajuste-ipc/.test(robots) && !/Disallow:\s*\/valor-hora/.test(robots) && !/Disallow:\s*\/dias-habiles/.test(robots) && !/Disallow:\s*\/descuentos-legales/.test(robots));
+assert("robots no Disallow /guias ni calculadoras", !/Disallow:\s*\/guias/.test(robots) && !/Disallow:\s*\/sueldo/.test(robots) && !/Disallow:\s*\/finiquito/.test(robots) && !/Disallow:\s*\/horas-extras/.test(robots) && !/Disallow:\s*\/vacaciones-proporcionales/.test(robots) && !/Disallow:\s*\/gratificacion/.test(robots) && !/Disallow:\s*\/impuesto-unico/.test(robots) && !/Disallow:\s*\/cotizaciones-previsionales/.test(robots) && !/Disallow:\s*\/costo-empresa/.test(robots) && !/Disallow:\s*\/seguro-cesantia/.test(robots) && !/Disallow:\s*\/trabajo-pesado/.test(robots) && !/Disallow:\s*\/nulidad-despido/.test(robots) && !/Disallow:\s*\/tutela-laboral/.test(robots) && !/Disallow:\s*\/despido-injustificado/.test(robots) && !/Disallow:\s*\/autodespido/.test(robots) && !/Disallow:\s*\/obra-faena/.test(robots) && !/Disallow:\s*\/prescripcion-laboral/.test(robots) && !/Disallow:\s*\/descanso-compensatorio/.test(robots) && !/Disallow:\s*\/recargo-domingo-comercio/.test(robots) && !/Disallow:\s*\/feriado-irrenunciable/.test(robots) && !/Disallow:\s*\/feriado-anual/.test(robots) && !/Disallow:\s*\/semana-corrida/.test(robots) && !/Disallow:\s*\/asignacion-familiar/.test(robots) && !/Disallow:\s*\/colacion-movilizacion/.test(robots) && !/Disallow:\s*\/feriado-progresivo/.test(robots) && !/Disallow:\s*\/indemnizacion-anos-servicio/.test(robots) && !/Disallow:\s*\/aguinaldo/.test(robots) && !/Disallow:\s*\/finiquito-casa-particular/.test(robots) && !/Disallow:\s*\/sueldo-proporcional/.test(robots) && !/Disallow:\s*\/sueldo-minimo/.test(robots) && !/Disallow:\s*\/descuento-atrasos/.test(robots) && !/Disallow:\s*\/licencia-medica/.test(robots) && !/Disallow:\s*\/boleta-honorarios/.test(robots) && !/Disallow:\s*\/cotizacion-independiente/.test(robots) && !/Disallow:\s*\/retencion-judicial/.test(robots) && !/Disallow:\s*\/apv/.test(robots) && !/Disallow:\s*\/sala-cuna/.test(robots) && !/Disallow:\s*\/postnatal-parental/.test(robots) && !/Disallow:\s*\/permiso-prenatal/.test(robots) && !/Disallow:\s*\/fuero-maternal/.test(robots) && !/Disallow:\s*\/permiso-paternidad/.test(robots) && !/Disallow:\s*\/permiso-matrimonio/.test(robots) && !/Disallow:\s*\/permiso-fallecimiento/.test(robots) && !/Disallow:\s*\/interes-mora/.test(robots) && !/Disallow:\s*\/hora-lactancia/.test(robots) && !/Disallow:\s*\/jornada-40-horas/.test(robots) && !/Disallow:\s*\/jornada-parcial/.test(robots) && !/Disallow:\s*\/teletrabajo/.test(robots) && !/Disallow:\s*\/bandas-horarias/.test(robots) && !/Disallow:\s*\/pacto-4x3/.test(robots) && !/Disallow:\s*\/jornada-excepcional/.test(robots) && !/Disallow:\s*\/jornada-bisemanal/.test(robots) && !/Disallow:\s*\/compensacion-horas-extras/.test(robots) && !/Disallow:\s*\/pacto-horas-extras/.test(robots) && !/Disallow:\s*\/contrato-plazo-fijo/.test(robots) && !/Disallow:\s*\/termino-anticipado-plazo-fijo/.test(robots) && !/Disallow:\s*\/permiso-sin-goce/.test(robots) && !/Disallow:\s*\/zona-extrema/.test(robots) && !/Disallow:\s*\/promedio-remuneraciones/.test(robots) && !/Disallow:\s*\/antiguedad-laboral/.test(robots) && !/Disallow:\s*\/tope-imponible/.test(robots) && !/Disallow:\s*\/indemnizacion-aviso-previo/.test(robots) && !/Disallow:\s*\/inclusion-laboral/.test(robots) && !/Disallow:\s*\/reajuste-ipc/.test(robots) && !/Disallow:\s*\/valor-hora/.test(robots) && !/Disallow:\s*\/dias-habiles/.test(robots) && !/Disallow:\s*\/descuentos-legales/.test(robots));
 assert("robots Sitemap", /Sitemap:\s*https:\/\/www\.haberes\.cl\/sitemap\.xml/.test(robots));
 
 const { seoPaths, GUIDE_SLUGS, GUIDES, CAUSAL_PAGES, BASE_PATHS, lastmodForPath } = await import("../content/registry.js");
@@ -7439,7 +7611,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 119,
+      seoPaths().length === 120,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -7451,7 +7623,7 @@ try {
   const docsSeo = await hitLocal("/docs/seo-map.md");
   assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
   assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
-  for (const p of ["/sueldo/", "/sueldo-liquido-a-bruto/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/valor-hora/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/dias-habiles/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/obra-faena/", "/prescripcion-laboral/", "/descanso-compensatorio/", "/inclusion-laboral/", "/jornada-parcial/", "/teletrabajo/", "/bandas-horarias/", "/pacto-4x3/", "/jornada-excepcional/", "/jornada-bisemanal/", "/compensacion-horas-extras/", "/pacto-horas-extras/", "/contrato-plazo-fijo/", "/termino-anticipado-plazo-fijo/", "/permiso-sin-goce/", "/zona-extrema/", "/promedio-remuneraciones/", "/antiguedad-laboral/", "/tope-imponible/", "/diferencia-isapre/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/retencion-judicial/", "/descuentos-legales/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/fuero-sindical/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/cotizacion-empleador/", "/seguro-cesantia/", "/giro-seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/viatico/", "/reajuste-ipc/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+  for (const p of ["/sueldo/", "/sueldo-liquido-a-bruto/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/valor-hora/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/dias-habiles/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/obra-faena/", "/prescripcion-laboral/", "/descanso-compensatorio/", "/inclusion-laboral/", "/jornada-parcial/", "/teletrabajo/", "/bandas-horarias/", "/pacto-4x3/", "/jornada-excepcional/", "/jornada-bisemanal/", "/compensacion-horas-extras/", "/pacto-horas-extras/", "/contrato-plazo-fijo/", "/termino-anticipado-plazo-fijo/", "/permiso-sin-goce/", "/zona-extrema/", "/promedio-remuneraciones/", "/antiguedad-laboral/", "/tope-imponible/", "/diferencia-isapre/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/cotizacion-independiente/", "/retencion-judicial/", "/descuentos-legales/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/fuero-sindical/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/cotizacion-empleador/", "/seguro-cesantia/", "/giro-seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/viatico/", "/reajuste-ipc/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
   }
@@ -7484,6 +7656,7 @@ try {
     "/descuento-atrasos",
     "/licencia-medica",
     "/boleta-honorarios",
+    "/cotizacion-independiente",
     "/retencion-judicial",
     "/descuentos-legales",
     "/apv",
@@ -11349,6 +11522,7 @@ assert(
     ["descuento-atrasos.html", "/descuento-atrasos"],
     ["licencia-medica.html", "/licencia-medica"],
     ["boleta-honorarios.html", "/boleta-honorarios"],
+    ["cotizacion-independiente.html", "/cotizacion-independiente"],
     ["retencion-judicial.html", "/retencion-judicial"],
     ["descuentos-legales.html", "/descuentos-legales"],
     ["apv.html", "/apv"],
@@ -14990,6 +15164,78 @@ assert(
         !/<h2>Finiquito<\/h2>[\s\S]*href="\/boleta-honorarios"/.test(
           readFileSync(join(root, "guias.html"), "utf8"),
         ),
+    );
+    assert(
+      "boleta de honorarios enlaza el desglose en /cotizacion-independiente",
+      /href="\/cotizacion-independiente"/.test(bhHtml) &&
+        /no reparte/.test(bhHtml.toLowerCase()) &&
+        /desglose/.test(bhHtml.toLowerCase()),
+    );
+  }
+  {
+    const ciHtml = readFileSync(join(root, "cotizacion-independiente.html"), "utf8");
+    const ciTitle = (ciHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const ciH1 = (ciHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const bhHtml = readFileSync(join(root, "boleta-honorarios.html"), "utf8");
+    const cpHtml = readFileSync(join(root, "cotizaciones-previsionales.html"), "utf8");
+    assert(
+      "SEO title cotización independiente",
+      ciTitle === "Calcular cotización independiente Chile 2026 — Haberes" &&
+        ciTitle.length <= 65 &&
+        ciTitle !== ((bhHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "") &&
+        ciTitle !== ((cpHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || ""),
+      ciTitle,
+    );
+    assert(
+      "SEO H1 cotización independiente",
+      ciH1 === "Calcular cotización independiente Chile 2026" &&
+        ciH1 !== ((bhHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "") &&
+        ciH1 !== ((cpHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || ""),
+      ciH1,
+    );
+    assert(
+      "SEO cotización independiente cita Ley 21.133, ChileAtiende y SP",
+      /Ley 21\.133/.test(ciHtml) &&
+        /bcn\.cl\/leychile\/navegar\?idNorma=1128420/.test(ciHtml) &&
+        /chileatiende\.gob\.cl\/fichas\/12016/.test(ciHtml) &&
+        /spensiones\.cl\/portal\/institucional\/594\/w3-propertyvalue-9913/.test(ciHtml) &&
+        /1,49\s*%/.test(ciHtml) &&
+        /90\s*%/.test(ciHtml) &&
+        /15,25\s*%/.test(ciHtml) &&
+        /cesantía/i.test(ciHtml),
+    );
+    assert(
+      "SEO cotización independiente no canibaliza retención ni dependiente",
+      /href="\/boleta-honorarios"/.test(ciHtml) &&
+        /href="\/cotizaciones-previsionales"/.test(ciHtml) &&
+        /canonical" href="https:\/\/www\.haberes\.cl\/cotizacion-independiente"/.test(ciHtml) &&
+        /"@type": "FAQPage"/.test(ciHtml) &&
+        /"@type": "WebApplication"/.test(ciHtml) &&
+        !existsSync(join(root, "cotizaciones-honorarios.html")) &&
+        !existsSync(join(root, "previred-independiente.html")) &&
+        !existsSync(join(root, "operacion-renta-cotizaciones.html")) &&
+        !existsSync(join(root, "ley-21133.html")) &&
+        !existsSync(join(root, "honorarios-prevision.html")),
+    );
+    assert(
+      "home, nav y boleta enlazan /cotizacion-independiente",
+      /href="\/cotizacion-independiente"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/cotizacion-independiente" data-nav>Cotización independiente<\/a>/.test(
+          readFileSync(join(root, "index.html"), "utf8"),
+        ) &&
+        /href="\/cotizacion-independiente" data-nav>Cotización independiente<\/a>/.test(ciHtml) &&
+        /href="\/cotizacion-independiente"/.test(bhHtml),
+    );
+    assert(
+      "sitemap incluye /cotizacion-independiente",
+      locs.includes("https://www.haberes.cl/cotizacion-independiente") &&
+        lastmodForPath("/cotizacion-independiente") === "2026-09-30",
+    );
+    assert(
+      "seo-map documenta /cotizacion-independiente sin URLs prohibidas",
+      /\/cotizacion-independiente/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no crear `\/cotizaciones-honorarios`/i.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /Sin volumen ni KD/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")),
     );
   }
   {
@@ -20437,6 +20683,7 @@ assert(
       "descuento-atrasos.html",
       "licencia-medica.html",
       "boleta-honorarios.html",
+      "cotizacion-independiente.html",
       "retencion-judicial.html",
       "descuentos-legales.html",
       "apv.html",
@@ -20661,7 +20908,7 @@ assert(
     return acc;
   }
   const pages = listHtml(root);
-  assert("121 páginas HTML", pages.length === 121, String(pages.length));
+  assert("122 páginas HTML", pages.length === 122, String(pages.length));
   for (const file of pages) {
     const html = readFileSync(file, "utf8");
     const rel = file.slice(root.length + 1);
