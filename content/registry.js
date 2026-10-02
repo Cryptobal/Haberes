@@ -63,6 +63,7 @@ export const GUIDES = [
 export const PATH_LASTMOD = {
   "/guias": "2026-09-28",
   "/finiquito-casa-particular": "2026-08-31",
+  "/sueldo-casa-particular": "2026-10-02",
   "/costo-empresa": "2026-08-30",
   "/cotizacion-empleador": "2026-09-28",
   "/cotizacion-independiente": "2026-09-30",
@@ -222,6 +223,7 @@ export const BASE_PATHS = [
   "/giro-seguro-cesantia",
   "/trabajo-pesado",
   "/sueldo",
+  "/sueldo-casa-particular",
   "/sueldo-liquido-a-bruto",
   "/sueldo-empresarial",
   "/reajuste-ipc",

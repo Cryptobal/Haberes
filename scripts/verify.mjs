@@ -213,6 +213,7 @@ import {
   tasaTotalCotizacionEmpleador,
 } from "../js/cotizacion-empleador.js";
 import { calcularSueldoLiquidoABruto } from "../js/sueldo-liquido-a-bruto.js";
+import { calcularSueldoCasaParticular } from "../js/sueldo-casa-particular.js";
 import { clp, dvRut, validarRut } from "../js/format.js";
 import {
   LRE_AFP,
@@ -6291,6 +6292,164 @@ console.log("\nFiniquito casa particular");
   );
 }
 
+console.log("\nSueldo casa particular");
+{
+  const gold = calcularSueldoCasaParticular(
+    { remuneracion: 500_000, comisionAfpPct: 0, afp: "modelo", salud: "fonasa", mesesCotizados: 0 },
+    { uf: FALLBACK_UF },
+  );
+  const ref = calcularSueldo(
+    {
+      sueldoBase: 500_000,
+      afp: "modelo",
+      salud: "fonasa",
+      contrato: "indefinido",
+      cotizaCesantia: false,
+    },
+    { uf: FALLBACK_UF },
+  );
+  const afp0 = roundPeso(ref.baseAfpSalud * 0.1);
+  const iusc0 = calcularIusc(Math.max(0, ref.imponible - afp0 - ref.salud.monto));
+  const liquido0 = ref.totalHaberes - afp0 - ref.salud.monto - iusc0;
+  const costo = calcularCostoEmpresa(
+    { modo: "bruto", monto: 500_000, afp: "modelo", contrato: "indefinido", mutualAdicionalPct: 0 },
+    { uf: FALLBACK_UF },
+  );
+  assert(
+    "casa particular mes $500.000 comisión 0: líquido $415.000, ITE $5.550, AFC $15.000, costo $542.700",
+    gold.liquido === 415_000 &&
+      gold.liquido === liquido0 &&
+      gold.afp.monto === 50_000 &&
+      gold.salud.monto === 35_000 &&
+      gold.cesantiaTrabajador.monto === 0 &&
+      gold.iusc === 0 &&
+      gold.ite.monto === 5_550 &&
+      gold.ite.tasa === 0.0111 &&
+      gold.afc.monto === 15_000 &&
+      gold.afc.cic.monto === 11_000 &&
+      gold.afc.fcs.monto === 4_000 &&
+      gold.ley21735.monto === costo.ley21735.monto &&
+      gold.ley21735.monto === 17_500 &&
+      gold.mutual.monto === costo.mutual.monto &&
+      gold.mutual.monto === 4_500 &&
+      gold.sanna.monto === costo.sanna.monto &&
+      gold.sanna.monto === 150 &&
+      gold.totalAportes === 42_700 &&
+      gold.costoEmpleador === 542_700 &&
+      costo.cesantiaEmpleador.monto === 12_000,
+    JSON.stringify({
+      liq: gold.liquido,
+      ite: gold.ite.monto,
+      afc: gold.afc.monto,
+      costo: gold.costoEmpleador,
+      ley: gold.ley21735.monto,
+    }),
+  );
+  const modelo = calcularSueldoCasaParticular(
+    { remuneracion: 500_000, afp: "modelo", salud: "fonasa", mesesCotizados: 0 },
+    { uf: FALLBACK_UF },
+  );
+  assert(
+    "casa particular líquido con comisión Modelo reusa calcularSueldo",
+    modelo.liquido === ref.liquido && modelo.afp.monto === ref.afp.monto && modelo.costoEmpleador === 542_700,
+    `${modelo.liquido} ${ref.liquido}`,
+  );
+  const agotado = calcularSueldoCasaParticular(
+    { remuneracion: 500_000, comisionAfpPct: 0, mesesRestantesIte: 0 },
+    { uf: FALLBACK_UF },
+  );
+  assert(
+    "casa particular 0 meses restantes del 1,11 % → ITE $0 y costo $537.150",
+    agotado.ite.monto === 0 &&
+      agotado.ite.aplica === false &&
+      agotado.ite.mesesRestantes === 0 &&
+      agotado.afc.monto === 15_000 &&
+      agotado.liquido === 415_000 &&
+      agotado.costoEmpleador === 537_150,
+    String(agotado.costoEmpleador),
+  );
+  const cero = calcularSueldoCasaParticular({ remuneracion: 0, comisionAfpPct: 0 }, { uf: FALLBACK_UF });
+  assert(
+    "casa particular bruto $0 → líquido, aportes y costo en 0",
+    cero.liquido === 0 &&
+      cero.costoEmpleador === 0 &&
+      cero.ite.monto === 0 &&
+      cero.afc.monto === 0 &&
+      cero.afp.monto === 0 &&
+      cero.salud.monto === 0 &&
+      cero.iusc === 0 &&
+      cero.ley21735.monto === 0 &&
+      cero.mutual.monto === 0 &&
+      cero.sanna.monto === 0 &&
+      cero.totalAportes === 0,
+  );
+  const afuera = calcularSueldoCasaParticular({
+    remuneracion: 500_000,
+    comisionAfpPct: 0,
+    modalidad: "afuera",
+  });
+  const adentro = calcularSueldoCasaParticular({
+    remuneracion: 500_000,
+    comisionAfpPct: 0,
+    modalidad: "adentro",
+  });
+  assert(
+    "puertas adentro y afuera no cambian el líquido ni el costo",
+    afuera.modalidad === "afuera" &&
+      adentro.modalidad === "adentro" &&
+      afuera.liquido === adentro.liquido &&
+      afuera.costoEmpleador === adentro.costoEmpleador,
+  );
+  const ufTope = 40_000;
+  const tope = calcularSueldoCasaParticular(
+    { remuneracion: 10_000_000, comisionAfpPct: 0 },
+    { uf: ufTope },
+  );
+  assert(
+    "casa particular usa tope 90 UF (ITE, Ley 21.735) y 135,2 UF (AFC)",
+    tope.baseAfpSalud === 90 * ufTope &&
+      tope.baseCesantia === 135.2 * ufTope &&
+      tope.ite.monto === roundPeso(90 * ufTope * 0.0111) &&
+      tope.afc.monto === roundPeso(135.2 * ufTope * 0.03),
+    `${tope.baseAfpSalud} ${tope.ite.monto} ${tope.afc.monto}`,
+  );
+  const conColacion = calcularSueldoCasaParticular({
+    remuneracion: 500_000,
+    comisionAfpPct: 0,
+    colacion: 20_000,
+    movilizacion: 10_000,
+  });
+  assert(
+    "colación y movilización suben el líquido y no la base del 1,11 % ni del 3 %",
+    conColacion.imponible === 500_000 &&
+      conColacion.noImponible === 30_000 &&
+      conColacion.liquido === 445_000 &&
+      conColacion.ite.monto === 5_550 &&
+      conColacion.afc.monto === 15_000 &&
+      conColacion.costoEmpleador === 572_700,
+    String(conColacion.liquido),
+  );
+  const scpMod = readFileSync(join(root, "js/sueldo-casa-particular.js"), "utf8");
+  const scpApp = readFileSync(join(root, "js/app-sueldo-casa-particular.js"), "utf8");
+  assert(
+    "sueldo casa particular reusa calcularSueldo y las tasas compartidas",
+    /import\s*\{[^}]*calcularSueldo[^}]*\}\s*from\s*["']\.\/sueldo\.js["']/.test(scpMod) &&
+      /calcularSueldo\s*\(/.test(scpMod) &&
+      /CASA_PARTICULAR_ITE_TASA/.test(scpMod) &&
+      /CASA_PARTICULAR_AFC_TASA/.test(scpMod) &&
+      /LEY_21735_TASA/.test(scpMod) &&
+      /MUTUAL_TASA_BASICA/.test(scpMod) &&
+      /SANNA_TASA/.test(scpMod) &&
+      !/alert\s*\(|confirm\s*\(|prompt\s*\(/.test(scpApp),
+  );
+  assert(
+    "app-sueldo-casa-particular usa calcularSueldoCasaParticular",
+    /import\s*\{[^}]*calcularSueldoCasaParticular[^}]*\}\s*from\s*["']\.\/sueldo-casa-particular\.js["']/.test(scpApp) &&
+      /calcularSueldoCasaParticular\s*\(/.test(scpApp) &&
+      /wireNav\(\s*\)/.test(scpApp),
+  );
+}
+
 const f161 = calcularFiniquito(
   {
     articulo: "161",
@@ -6657,6 +6816,7 @@ const required = [
   "indemnizacion-anos-servicio.html",
   "aguinaldo.html",
   "finiquito-casa-particular.html",
+  "sueldo-casa-particular.html",
   "sueldo-proporcional.html",
   "indemnizacion-aviso-previo.html",
   "tutela-laboral.html",
@@ -6729,6 +6889,7 @@ const required = [
   "js/app-indemnizacion-anos-servicio.js",
   "js/app-aguinaldo.js",
   "js/app-finiquito-casa-particular.js",
+  "js/app-sueldo-casa-particular.js",
   "js/app-sueldo-proporcional.js",
   "js/app-indemnizacion-aviso-previo.js",
   "js/app-tutela-laboral.js",
@@ -6763,6 +6924,7 @@ const required = [
   "css/app.css",
   "js/constants.js",
   "js/sueldo.js",
+  "js/sueldo-casa-particular.js",
   "js/sueldo-liquido-a-bruto.js",
   "js/viatico.js",
   "js/sueldo-empresarial.js",
@@ -6960,6 +7122,7 @@ const htmlFiles = [
   "indemnizacion-anos-servicio.html",
   "aguinaldo.html",
   "finiquito-casa-particular.html",
+  "sueldo-casa-particular.html",
   "sueldo-proporcional.html",
   "indemnizacion-aviso-previo.html",
   "tutela-laboral.html",
@@ -7108,6 +7271,7 @@ const appEntries = [
   "js/app-indemnizacion-anos-servicio.js",
   "js/app-aguinaldo.js",
   "js/app-finiquito-casa-particular.js",
+  "js/app-sueldo-casa-particular.js",
   "js/app-sueldo-proporcional.js",
   "js/app-indemnizacion-aviso-previo.js",
   "js/app-tutela-laboral.js",
@@ -7209,6 +7373,7 @@ assert(
     BASE_PATHS.includes("/indemnizacion-anos-servicio") &&
     BASE_PATHS.includes("/aguinaldo") &&
     BASE_PATHS.includes("/finiquito-casa-particular") &&
+    BASE_PATHS.includes("/sueldo-casa-particular") &&
     BASE_PATHS.includes("/sueldo-proporcional") &&
     BASE_PATHS.includes("/sueldo-minimo") &&
     BASE_PATHS.includes("/descuento-atrasos") &&
@@ -7611,7 +7776,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 120,
+      seoPaths().length === 121,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -7623,7 +7788,7 @@ try {
   const docsSeo = await hitLocal("/docs/seo-map.md");
   assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
   assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
-  for (const p of ["/sueldo/", "/sueldo-liquido-a-bruto/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/valor-hora/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/dias-habiles/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/obra-faena/", "/prescripcion-laboral/", "/descanso-compensatorio/", "/inclusion-laboral/", "/jornada-parcial/", "/teletrabajo/", "/bandas-horarias/", "/pacto-4x3/", "/jornada-excepcional/", "/jornada-bisemanal/", "/compensacion-horas-extras/", "/pacto-horas-extras/", "/contrato-plazo-fijo/", "/termino-anticipado-plazo-fijo/", "/permiso-sin-goce/", "/zona-extrema/", "/promedio-remuneraciones/", "/antiguedad-laboral/", "/tope-imponible/", "/diferencia-isapre/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/cotizacion-independiente/", "/retencion-judicial/", "/descuentos-legales/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/fuero-sindical/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/cotizacion-empleador/", "/seguro-cesantia/", "/giro-seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/viatico/", "/reajuste-ipc/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+  for (const p of ["/sueldo/", "/sueldo-liquido-a-bruto/", "/sueldo-casa-particular/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/valor-hora/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/dias-habiles/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/obra-faena/", "/prescripcion-laboral/", "/descanso-compensatorio/", "/inclusion-laboral/", "/jornada-parcial/", "/teletrabajo/", "/bandas-horarias/", "/pacto-4x3/", "/jornada-excepcional/", "/jornada-bisemanal/", "/compensacion-horas-extras/", "/pacto-horas-extras/", "/contrato-plazo-fijo/", "/termino-anticipado-plazo-fijo/", "/permiso-sin-goce/", "/zona-extrema/", "/promedio-remuneraciones/", "/antiguedad-laboral/", "/tope-imponible/", "/diferencia-isapre/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/cotizacion-independiente/", "/retencion-judicial/", "/descuentos-legales/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/fuero-sindical/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/cotizacion-empleador/", "/seguro-cesantia/", "/giro-seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/viatico/", "/reajuste-ipc/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
   }
@@ -7651,6 +7816,7 @@ try {
     "/indemnizacion-anos-servicio",
     "/aguinaldo",
     "/finiquito-casa-particular",
+    "/sueldo-casa-particular",
     "/sueldo-proporcional",
     "/sueldo-minimo",
     "/descuento-atrasos",
@@ -11543,6 +11709,7 @@ assert(
     ["indemnizacion-anos-servicio.html", "/indemnizacion-anos-servicio"],
     ["aguinaldo.html", "/aguinaldo"],
     ["finiquito-casa-particular.html", "/finiquito-casa-particular"],
+    ["sueldo-casa-particular.html", "/sueldo-casa-particular"],
     ["sueldo-proporcional.html", "/sueldo-proporcional"],
     ["indemnizacion-aviso-previo.html", "/indemnizacion-aviso-previo"],
     ["nulidad-despido.html", "/nulidad-despido"],
@@ -20061,6 +20228,115 @@ assert(
     );
   }
   {
+    const scHtml = readFileSync(join(root, "sueldo-casa-particular.html"), "utf8");
+    const scTitle = (scHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const scH1 = (scHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const scDesc = (scHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "";
+    const sueldoHtmlSc = readFileSync(join(root, "sueldo.html"), "utf8");
+    const costoHtmlSc = readFileSync(join(root, "costo-empresa.html"), "utf8");
+    const afcHtmlSc = readFileSync(join(root, "seguro-cesantia.html"), "utf8");
+    const finiCpHtml = readFileSync(join(root, "finiquito-casa-particular.html"), "utf8");
+    const guideCp = readFileSync(join(root, "guias/finiquito-trabajadora-de-casa-particular.html"), "utf8");
+    assert(
+      "SEO title sueldo casa particular",
+      scTitle === "Calcular sueldo casa particular Chile 2026 — Haberes" &&
+        scTitle !== ((sueldoHtmlSc.match(/<title>([^<]*)<\/title>/) || [])[1] || "") &&
+        scTitle !== ((costoHtmlSc.match(/<title>([^<]*)<\/title>/) || [])[1] || "") &&
+        scTitle !== ((afcHtmlSc.match(/<title>([^<]*)<\/title>/) || [])[1] || "") &&
+        scTitle !== ((finiCpHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "") &&
+        scTitle.length <= 65,
+      scTitle,
+    );
+    assert(
+      "SEO H1 sueldo casa particular distinto de sueldo, costo, cesantía y finiquito",
+      scH1 === "Calcular sueldo casa particular Chile 2026" &&
+        scH1 !== ((sueldoHtmlSc.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "") &&
+        scH1 !== ((costoHtmlSc.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "") &&
+        scH1 !== ((finiCpHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || ""),
+      scH1,
+    );
+    assert(
+      "SEO sueldo casa particular meta distinta",
+      scDesc.length >= 110 &&
+        scDesc.length <= 160 &&
+        scDesc !== ((sueldoHtmlSc.match(/meta name="description" content="([^"]*)"/) || [])[1] || "") &&
+        scDesc !== ((costoHtmlSc.match(/meta name="description" content="([^"]*)"/) || [])[1] || "") &&
+        scDesc !== ((finiCpHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || ""),
+    );
+    assert(
+      "SEO sueldo casa particular cita Ley 21.269, DT y Código",
+      /Ley 21\.269/.test(scHtml) &&
+        /1,11/.test(scHtml) &&
+        /2,2/.test(scHtml) &&
+        /0,8/.test(scHtml) &&
+        /C[oó]digo del Trabajo/.test(scHtml) &&
+        /dt\.gob\.cl\/portal\/1626\/w3-article-98984/.test(scHtml) &&
+        /bcn\.cl\/leychile\/navegar\?idLey=21269/.test(scHtml) &&
+        /bcn\.cl\/leychile\/navegar\?idNorma=207436/.test(scHtml),
+    );
+    assert(
+      "SEO sueldo casa particular ejemplo $500.000",
+      /\$415\.000/.test(scHtml) &&
+        /\$5\.550/.test(scHtml) &&
+        /\$15\.000/.test(scHtml) &&
+        /\$11\.000/.test(scHtml) &&
+        /\$4\.000/.test(scHtml) &&
+        /\$542\.700/.test(scHtml) &&
+        /\$537\.150/.test(scHtml) &&
+        /\$17\.500/.test(scHtml) &&
+        /\$4\.500/.test(scHtml),
+    );
+    assert("SEO sueldo casa particular FAQPage", /"@type": "FAQPage"/.test(scHtml));
+    assert(
+      "SEO sueldo casa particular no canibaliza y enlaza el término",
+      /href="\/finiquito-casa-particular"/.test(scHtml) &&
+        /href="\/guias\/finiquito-trabajadora-de-casa-particular"/.test(scHtml) &&
+        /href="\/sueldo"/.test(scHtml) &&
+        /href="\/costo-empresa"/.test(scHtml) &&
+        /href="\/seguro-cesantia"/.test(scHtml) &&
+        /no es el/i.test(scHtml) &&
+        /Choferes de casa particular/.test(scHtml) &&
+        !existsSync(join(root, "sueldo-nana.html")) &&
+        !existsSync(join(root, "asesora-hogar.html")) &&
+        !existsSync(join(root, "liquidacion-casa-particular.html")) &&
+        !existsSync(join(root, "costo-casa-particular.html")) &&
+        !existsSync(join(root, "cotizacion-casa-particular.html")) &&
+        !existsSync(join(root, "finiquito-nana.html")),
+    );
+    assert(
+      "home y nav enlazan /sueldo-casa-particular",
+      /href="\/sueldo-casa-particular"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/sueldo-casa-particular" data-nav>Sueldo casa particular<\/a>/.test(
+          readFileSync(join(root, "index.html"), "utf8"),
+        ) &&
+        /href="\/sueldo-casa-particular" data-nav>Sueldo casa particular<\/a>/.test(scHtml) &&
+        /href="\/sueldo-casa-particular" data-nav>Sueldo casa particular<\/a>/.test(
+          readFileSync(join(root, "js/ui.js"), "utf8"),
+        ),
+    );
+    assert(
+      "sitemap incluye /sueldo-casa-particular",
+      locs.includes("https://www.haberes.cl/sueldo-casa-particular") &&
+        lastmodForPath("/sueldo-casa-particular") === "2026-10-02",
+    );
+    assert(
+      "seo-map documenta /sueldo-casa-particular y las URLs que no hay que crear",
+      /\/sueldo-casa-particular/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no canibalizar `\/sueldo`, `\/sueldo-liquido-a-bruto`, `\/costo-empresa`/.test(
+          readFileSync(join(root, "docs/seo-map.md"), "utf8"),
+        ) &&
+        /\/sueldo-nana/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /\/liquidacion-casa-particular/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /\/costo-casa-particular/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /\/cotizacion-casa-particular/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /\/finiquito-nana/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")),
+    );
+    assert(
+      "finiquito casa particular y la guía enlazan el mes",
+      /href="\/sueldo-casa-particular"/.test(finiCpHtml) && /href="\/sueldo-casa-particular"/.test(guideCp),
+    );
+  }
+  {
     const ceHtml = readFileSync(join(root, "costo-empresa.html"), "utf8");
     const ceTitle = (ceHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
     const ceH1 = (ceHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
@@ -20704,6 +20980,7 @@ assert(
       "indemnizacion-anos-servicio.html",
       "aguinaldo.html",
       "finiquito-casa-particular.html",
+      "sueldo-casa-particular.html",
       "sueldo-proporcional.html",
       "indemnizacion-aviso-previo.html",
       "nulidad-despido.html",
@@ -20908,7 +21185,7 @@ assert(
     return acc;
   }
   const pages = listHtml(root);
-  assert("122 páginas HTML", pages.length === 122, String(pages.length));
+  assert("123 páginas HTML", pages.length === 123, String(pages.length));
   for (const file of pages) {
     const html = readFileSync(file, "utf8");
     const rel = file.slice(root.length + 1);

@@ -969,8 +969,9 @@ export const TOPE_APV_REGIMEN_B_UF = 50;
  * (1,6 % CIC + 0,8 % fondo solidario). Plazo fijo u obra o faena: trabajador
  * 0 %; el empleador cotiza el 3,0 % (2,8 % CIC + 0,2 % fondo solidario).
  * Misma base y tope de 135,2 UF (distinto del tope AFP de 90 UF). No se inventa
- * un tope distinto. No modela el tope de 11 años por relación laboral ni el
- * régimen de casa particular (indemnización a todo evento).
+ * un tope distinto. El régimen de casa particular (3 % del empleador, sin el
+ * 0,6 % del trabajador, más el 1,11 % a todo evento) está en
+ * CASA_PARTICULAR_AFC_* y CASA_PARTICULAR_ITE_TASA.
  * @see https://www.bcn.cl/leychile/navegar?idNorma=189967
  * @see https://www.suseso.gob.cl/613/w3-propertyvalue-122245.html
  * @see https://www.spensiones.gob.cl/portal/institucional/594/w3-propertyvalue-9927.html
@@ -1390,6 +1391,22 @@ export const CASA_PARTICULAR_ITE_DESDE = "2020-10-01";
 export const CASA_PARTICULAR_ITE_DESDE_1991 = "1991-01-01";
 export const CASA_PARTICULAR_FERIADO_ANUAL = 15;
 export const CASA_PARTICULAR_PRUEBA_DIAS = 15;
+
+/**
+ * Seguro de cesantía de casa particular (Ley 21.269, desde el 1 oct. 2020).
+ * El empleador paga el 3 % completo de la remuneración imponible: 2,2 % a la
+ * cuenta individual (CIC) y 0,8 % al fondo de cesantía solidario (FCS).
+ * El trabajador no cotiza el 0,6 % del contrato indefinido común.
+ * Misma base y tope de 135,2 UF que CESANTIA / TOPE_CESANTIA_UF.
+ * El 1,11 % (CASA_PARTICULAR_ITE_TASA) va a la AFP, sobre el tope de 90 UF,
+ * y la obligación cesa a los 11 años (IAS_TOPE_ANIOS).
+ * @see https://www.bcn.cl/leychile/navegar?idLey=21269
+ * @see https://www.dt.gob.cl/portal/1628/w3-article-119845.html
+ * @see https://www.dt.gob.cl/portal/1626/w3-article-98984.html
+ */
+export const CASA_PARTICULAR_AFC_TASA = 0.03;
+export const CASA_PARTICULAR_AFC_CIC = 0.022;
+export const CASA_PARTICULAR_AFC_FCS = 0.008;
 
 /**
  * Interés máximo convencional para operaciones reajustables en moneda nacional
