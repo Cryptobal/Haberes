@@ -267,6 +267,7 @@ function paintLoggedInNav(emp) {
         <a href="/contrato-plazo-fijo" data-nav>Contrato a plazo fijo</a>
         <a href="/termino-anticipado-plazo-fijo" data-nav>Término anticipado plazo fijo</a>
         <a href="/prescripcion-laboral" data-nav>Prescripción laboral</a>
+        <a href="/sueldo-casa-particular" data-nav>Sueldo casa particular</a>
         <a href="/finiquito-casa-particular" data-nav>Finiquito casa particular</a>
         <a href="/finiquito" data-nav>Finiquito</a>`;
     const anchor = foot || null;
