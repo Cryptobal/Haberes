@@ -152,6 +152,15 @@ export function handleRequest(req, res) {
     return;
   }
   if (
+    urlPath === "/comisiones-afp" ||
+    urlPath === "/mejor-afp" ||
+    urlPath === "/comision-afp" ||
+    urlPath === "/comparador-afp"
+  ) {
+    send(res, 301, { Location: `/comparar-afp${url.search}` }, "");
+    return;
+  }
+  if (
     urlPath === "/prestacion-seguro-cesantia" ||
     urlPath === "/cobro-seguro-cesantia" ||
     urlPath === "/simulador-afc" ||

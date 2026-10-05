@@ -295,7 +295,7 @@ const META = {
             name: "¿La comisión de la AFP va aparte del 10 % obligatorio?",
             acceptedAnswer: {
               "@type": "Answer",
-              text: "Sí. El 10 % es la cotización obligatoria de pensión. La comisión es un porcentaje extra que cobra cada AFP (Circular 2414). Haberes suma ambos sobre la misma base, con el tope de 90 UF.",
+              text: "Sí. El 10 % es la cotización obligatoria de pensión. La comisión es un porcentaje extra que cobra cada AFP (tabla de la Superintendencia de Pensiones, octubre 2026). Haberes suma ambos sobre la misma base, con el tope de 90 UF.",
             },
           },
           {

@@ -240,6 +240,7 @@ function paintLoggedInNav(emp) {
         <a href="/cotizaciones-previsionales" data-nav>Cotizaciones previsionales</a>
         <a href="/tope-imponible" data-nav>Tope imponible</a>
         <a href="/diferencia-isapre" data-nav>Diferencia Isapre</a>
+        <a href="/comparar-afp" data-nav>Comparar AFP</a>
         <a href="/costo-empresa" data-nav>Costo empresa</a>
         <a href="/cotizacion-empleador" data-nav>Cotización empleador</a>
         <a href="/inclusion-laboral" data-nav>Inclusión laboral</a>

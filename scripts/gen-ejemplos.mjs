@@ -37,7 +37,7 @@ writeFileSync(join(outDir, "novedades.csv"), novText, "utf8");
 const trabajadores = parseTrabajadoresCsv(csvText);
 if (trabajadores.length !== 3) throw new Error(`Se esperaban 3 trabajadores, hay ${trabajadores.length}`);
 
-const esperados = [988656, 988031, 1570949];
+const esperados = [988656, 988031, 1571463];
 for (let i = 0; i < 3; i += 1) {
   const calc = calcularSueldo(trabajadores[i], { uf: FALLBACK_UF });
   if (calc.liquido !== esperados[i]) {
