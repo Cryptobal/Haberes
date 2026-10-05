@@ -9,6 +9,7 @@ import { fileURLToPath } from "node:url";
 
 import {
   AFP_COMISION,
+  AFP_OBLIGATORIO,
   ASIGNACION_FAMILIAR_TRAMOS,
   CESANTIA_EMPLEADOR_INDEFINIDO,
   CESANTIA_EMPLEADOR_INDEFINIDO_CIC,
@@ -257,6 +258,7 @@ import {
 } from "../js/antiguedad-laboral.js";
 import { calcularTopeImponible, ufValida } from "../js/tope-imponible.js";
 import { calcularDiferenciaIsapre } from "../js/diferencia-isapre.js";
+import { calcularCompararAfp } from "../js/comparar-afp.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 let failed = 0;
@@ -288,8 +290,8 @@ console.log("No regresión · mes completo sin novedades");
   const csvNamed0 = parseTrabajadoresCsv(readFileSync(join(root, "ejemplos/trabajadores.csv"), "utf8"));
   const liqs0 = csvNamed0.map((t) => calcularSueldo(t, { uf: FALLBACK_UF }).liquido);
   assert(
-    "No regresión: Ana/Luis/Camila sin novedades → 988656 / 988031 / 1570949",
-    liqs0[0] === 988656 && liqs0[1] === 988031 && liqs0[2] === 1570949,
+    "No regresión: Ana/Luis/Camila sin novedades → 988656 / 988031 / 1571463",
+    liqs0[0] === 988656 && liqs0[1] === 988031 && liqs0[2] === 1571463,
     JSON.stringify(liqs0),
   );
 }
@@ -303,8 +305,8 @@ assert("IMM no remuneracional Ley 21.830", IMM_NO_REMUNERACIONAL === 356815, Str
 assert("IMM anterior Ley 21.751 ene-2026", IMM_ANTERIOR === 539000, String(IMM_ANTERIOR));
 assert("Tope gratificación art.50", GRATIFICACION_TOPE === 219115, String(GRATIFICACION_TOPE));
 assert(
-  "AFP Circular 2414",
-  AFP_COMISION.uno === 0.49 &&
+  "AFP comisión octubre 2026 (SP Infórmate y Decide)",
+  AFP_COMISION.uno === 0.46 &&
     AFP_COMISION.modelo === 0.58 &&
     AFP_COMISION.planvital === 1.16 &&
     AFP_COMISION.habitat === 1.27 &&
@@ -1801,10 +1803,10 @@ console.log("\nCotización independiente (Ley 21.133, boletas de honorarios)");
     uf,
   });
   assert(
-    "comisión AFP Uno (0,49 %) entra al total y no es la tasa mensual SIS",
+    "comisión AFP Uno (0,46 %) entra al total y no es la tasa mensual SIS",
     conComision.comision === roundPeso(imponible * (AFP_COMISION.uno / 100)) &&
-      conComision.comision === 47_040 &&
-      conComision.total === g1.total + 47_040 &&
+      conComision.comision === 44_160 &&
+      conComision.total === g1.total + 44_160 &&
       conComision.tasaSis === SIS_INDEPENDIENTE_RETENCION_AT2026 &&
       conComision.sisCamino === "retencion-at-2026",
   );
@@ -5936,6 +5938,108 @@ console.log("\nDiferencia Isapre sobre el 7 % (gold FALLBACK_UF, roundPeso = Mat
   );
 }
 
+console.log("\nComparar AFP (comisión dependiente, tabla SP octubre 2026)");
+{
+  const uf = FALLBACK_UF;
+  const bajo = calcularCompararAfp({ imponible: 1_000_000, afp: "provida", uf });
+  const porClave = Object.fromEntries(bajo.filas.map((f) => [f.key, f]));
+  assert(
+    "gold $1.000.000 bajo tope, Provida: Uno $4.600 y ahorro $9.900 / $118.800",
+    bajo.ok === true &&
+      bajo.topeAplicado === false &&
+      bajo.base === 1_000_000 &&
+      bajo.cotizacionObligatoria === 100_000 &&
+      bajo.filas.map((f) => f.key).join(",") === "uno,modelo,planvital,habitat,capital,cuprum,provida" &&
+      porClave.uno.pct === 0.46 &&
+      porClave.uno.mensual === 4_600 &&
+      porClave.uno.anual === 55_200 &&
+      porClave.modelo.mensual === 5_800 &&
+      porClave.planvital.mensual === 11_600 &&
+      porClave.habitat.mensual === 12_700 &&
+      porClave.capital.mensual === 14_400 &&
+      porClave.cuprum.mensual === 14_400 &&
+      porClave.provida.mensual === 14_500 &&
+      porClave.provida.anual === 174_000 &&
+      porClave.provida.esActual === true &&
+      porClave.uno.ahorroMensual === 9_900 &&
+      porClave.uno.ahorroAnual === 118_800 &&
+      bajo.menor === "uno" &&
+      bajo.ahorroMaxMensual === 9_900 &&
+      bajo.ahorroMaxAnual === 118_800 &&
+      porClave.capital.mensual === porClave.cuprum.mensual &&
+      bajo.filas.findIndex((f) => f.key === "capital") < bajo.filas.findIndex((f) => f.key === "cuprum"),
+    JSON.stringify(bajo.filas.map((f) => [f.key, f.mensual, f.ahorroMensual])),
+  );
+  const sobre = calcularCompararAfp({ imponible: 5_000_000, afp: "provida", uf });
+  const sobreMap = Object.fromEntries(sobre.filas.map((f) => [f.key, f]));
+  const topePesos = TOPE_AFP_SALUD_UF * uf;
+  assert(
+    "gold $5.000.000 sobre tope 90 UF: base tope, Uno $16.914, ahorro $36.400 / $436.800",
+    sobre.ok === true &&
+      sobre.topeAplicado === true &&
+      sobre.base === topePesos &&
+      sobre.cotizacionObligatoria === roundPeso(topePesos * AFP_OBLIGATORIO) &&
+      sobre.cotizacionObligatoria === 367_686 &&
+      sobreMap.uno.mensual === 16_914 &&
+      sobreMap.uno.anual === 202_968 &&
+      sobreMap.modelo.mensual === 21_326 &&
+      sobreMap.planvital.mensual === 42_652 &&
+      sobreMap.habitat.mensual === 46_696 &&
+      sobreMap.capital.mensual === 52_947 &&
+      sobreMap.cuprum.mensual === 52_947 &&
+      sobreMap.provida.mensual === 53_314 &&
+      sobreMap.provida.anual === 639_768 &&
+      sobreMap.uno.ahorroMensual === 36_400 &&
+      sobreMap.uno.ahorroAnual === 436_800 &&
+      sobre.ahorroMaxMensual === 36_400 &&
+      sobre.ahorroMaxAnual === 436_800,
+    JSON.stringify({ base: sobre.base, uno: sobreMap.uno, provida: sobreMap.provida }),
+  );
+  const sinActual = calcularCompararAfp({ imponible: 1_000_000, uf });
+  const cero = calcularCompararAfp({ imponible: 0, afp: "uno", uf });
+  const ufMala = calcularCompararAfp({ imponible: 1_000_000, uf: 10 });
+  const afpMala = calcularCompararAfp({ imponible: 1_000_000, afp: "no-existe", uf });
+  assert(
+    "sin AFP actual no hay ahorro; sueldo 0 en cero; UF y AFP inválidas no producen NaN",
+    sinActual.ok === true &&
+      sinActual.afpActual === null &&
+      sinActual.ahorroMaxMensual === null &&
+      sinActual.filas.every((f) => f.ahorroMensual === null && f.esActual === false) &&
+      cero.ok === true &&
+      cero.filas.every((f) => f.mensual === 0 && f.anual === 0 && f.ahorroMensual === 0) &&
+      cero.cotizacionObligatoria === 0 &&
+      ufMala.ok === false &&
+      ufMala.motivo === "uf" &&
+      ufMala.filas.length === 0 &&
+      afpMala.ok === false &&
+      afpMala.motivo === "afp" &&
+      [cero, ufMala, afpMala].every((r) => Number.isFinite(r.cotizacionObligatoria)),
+    JSON.stringify({ ufMala: ufMala.motivo, afpMala: afpMala.motivo }),
+  );
+  const caLib = readFileSync(join(root, "js/comparar-afp.js"), "utf8");
+  const caApp = readFileSync(join(root, "js/app-comparar-afp.js"), "utf8");
+  assert(
+    "comparar-afp.js reutiliza AFP_COMISION, TOPE_AFP_SALUD_UF, FALLBACK_UF y roundPeso",
+    /AFP_COMISION/.test(caLib) &&
+      /TOPE_AFP_SALUD_UF/.test(caLib) &&
+      /AFP_OBLIGATORIO/.test(caLib) &&
+      /FALLBACK_UF/.test(caLib) &&
+      /roundPeso/.test(caLib) &&
+      /from\s*["']\.\/constants\.js["']/.test(caLib) &&
+      /from\s*["']\.\/sueldo\.js["']/.test(caLib),
+  );
+  assert(
+    "app-comparar-afp usa calcularCompararAfp, mountIndicadores y no usa alert/confirm/prompt",
+    /import\s*\{[^}]*calcularCompararAfp[^}]*\}\s*from\s*["']\.\/comparar-afp\.js["']/.test(caApp) &&
+      /calcularCompararAfp\s*\(/.test(caApp) &&
+      /mountIndicadores\s*\(/.test(caApp) &&
+      /mindicador\.cl/.test(caApp) &&
+      !/\balert\s*\(/.test(caApp) &&
+      !/\bconfirm\s*\(/.test(caApp) &&
+      !/\bprompt\s*\(/.test(caApp),
+  );
+}
+
 {
   const millon = calcularAvisoPrevio(
     { causal: "161-necesidades", remuneracion: 1_000_000, avisoPrevio: false },
@@ -6671,7 +6775,7 @@ assert(
   const liqs = csvNamed.map((t) => calcularSueldo(t, { uf: FALLBACK_UF }).liquido);
   assert(
     "CSV ejemplo líquidos Ana/Luis/Camila",
-    liqs[0] === 988656 && liqs[1] === 988031 && liqs[2] === 1570949,
+    liqs[0] === 988656 && liqs[1] === 988031 && liqs[2] === 1571463,
     JSON.stringify(liqs),
   );
   const xlsxEj = await readXlsxSheet(
@@ -6842,6 +6946,7 @@ const required = [
   "antiguedad-laboral.html",
   "tope-imponible.html",
   "diferencia-isapre.html",
+  "comparar-afp.html",
   "finiquito.html",
   "js/app-horas-extras.js",
   "js/app-valor-hora.js",
@@ -6915,6 +7020,7 @@ const required = [
   "js/app-antiguedad-laboral.js",
   "js/app-tope-imponible.js",
   "js/app-diferencia-isapre.js",
+  "js/app-comparar-afp.js",
   "empresa.html",
   "privacidad.html",
   "terminos.html",
@@ -6956,6 +7062,7 @@ const required = [
   "js/antiguedad-laboral.js",
   "js/tope-imponible.js",
   "js/diferencia-isapre.js",
+  "js/comparar-afp.js",
   "js/causales.js",
   "js/finiquito.js",
   "js/indicadores.js",
@@ -7148,6 +7255,7 @@ const htmlFiles = [
   "antiguedad-laboral.html",
   "tope-imponible.html",
   "diferencia-isapre.html",
+  "comparar-afp.html",
   "finiquito.html",
   "empresa.html",
   "privacidad.html",
@@ -7342,6 +7450,7 @@ const appEntries = [
   "js/app-antiguedad-laboral.js",
   "js/app-tope-imponible.js",
   "js/app-diferencia-isapre.js",
+  "js/app-comparar-afp.js",
   "js/app-finiquito.js",
   "js/app-empresa.js",
   "js/app-admin.js",
@@ -7462,7 +7571,8 @@ assert(
     BASE_PATHS.includes("/promedio-remuneraciones") &&
     BASE_PATHS.includes("/antiguedad-laboral") &&
     BASE_PATHS.includes("/tope-imponible") &&
-    BASE_PATHS.includes("/diferencia-isapre"),
+    BASE_PATHS.includes("/diferencia-isapre") &&
+    BASE_PATHS.includes("/comparar-afp"),
   `${locs.length} vs ${expectedFromRegistry.length}`,
 );
 assert(
@@ -7821,7 +7931,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 121,
+      seoPaths().length === 122,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -7833,7 +7943,7 @@ try {
   const docsSeo = await hitLocal("/docs/seo-map.md");
   assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
   assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
-  for (const p of ["/sueldo/", "/sueldo-liquido-a-bruto/", "/sueldo-casa-particular/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/valor-hora/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/dias-habiles/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/obra-faena/", "/prescripcion-laboral/", "/descanso-compensatorio/", "/inclusion-laboral/", "/jornada-parcial/", "/teletrabajo/", "/bandas-horarias/", "/pacto-4x3/", "/jornada-excepcional/", "/jornada-bisemanal/", "/compensacion-horas-extras/", "/pacto-horas-extras/", "/contrato-plazo-fijo/", "/termino-anticipado-plazo-fijo/", "/permiso-sin-goce/", "/zona-extrema/", "/promedio-remuneraciones/", "/antiguedad-laboral/", "/tope-imponible/", "/diferencia-isapre/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/cotizacion-independiente/", "/retencion-judicial/", "/descuentos-legales/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/fuero-sindical/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/cotizacion-empleador/", "/seguro-cesantia/", "/giro-seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/viatico/", "/reajuste-ipc/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+  for (const p of ["/sueldo/", "/sueldo-liquido-a-bruto/", "/sueldo-casa-particular/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/valor-hora/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/dias-habiles/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/obra-faena/", "/prescripcion-laboral/", "/descanso-compensatorio/", "/inclusion-laboral/", "/jornada-parcial/", "/teletrabajo/", "/bandas-horarias/", "/pacto-4x3/", "/jornada-excepcional/", "/jornada-bisemanal/", "/compensacion-horas-extras/", "/pacto-horas-extras/", "/contrato-plazo-fijo/", "/termino-anticipado-plazo-fijo/", "/permiso-sin-goce/", "/zona-extrema/", "/promedio-remuneraciones/", "/antiguedad-laboral/", "/tope-imponible/", "/diferencia-isapre/", "/comparar-afp/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/cotizacion-independiente/", "/retencion-judicial/", "/descuentos-legales/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/fuero-sindical/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/cotizacion-empleador/", "/seguro-cesantia/", "/giro-seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/viatico/", "/reajuste-ipc/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
   }
@@ -11781,6 +11891,7 @@ assert(
     ["antiguedad-laboral.html", "/antiguedad-laboral"],
     ["tope-imponible.html", "/tope-imponible"],
     ["diferencia-isapre.html", "/diferencia-isapre"],
+    ["comparar-afp.html", "/comparar-afp"],
     ["finiquito.html", "/finiquito"],
     ["empresa.html", "/empresa"],
     ["como.html", "/como"],
@@ -14053,6 +14164,121 @@ assert(
       ) &&
         /urlPath === "\/exceso-isapre"/.test(readFileSync(join(root, "scripts/serve.mjs"), "utf8")) &&
         /Location: `\/diferencia-isapre/.test(readFileSync(join(root, "scripts/serve.mjs"), "utf8")),
+    );
+  }
+
+  {
+    const caHtml = readFileSync(join(root, "comparar-afp.html"), "utf8");
+    const caTitle = (caHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const caH1 = (caHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const caDesc = (caHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "";
+    const cpHtmlCa = readFileSync(join(root, "cotizaciones-previsionales.html"), "utf8");
+    const sueldoHtmlCa = readFileSync(join(root, "sueldo.html"), "utf8");
+    assert(
+      "SEO comparar AFP title único y corto",
+      /comparar AFP/i.test(caTitle) &&
+        caTitle.length <= 65 &&
+        !/sueldo l[ií]quido/i.test(caTitle) &&
+        !/cotizaciones previsionales/i.test(caTitle) &&
+        !/^Haberes\b/.test(caTitle),
+      caTitle,
+    );
+    assert(
+      "SEO comparar AFP H1 y gold de octubre 2026 en el copy",
+      caH1 === "Comparar AFP Chile 2026" &&
+        /0,46 %/.test(caHtml) &&
+        /0,58 %/.test(caHtml) &&
+        /1,16 %/.test(caHtml) &&
+        /1,27 %/.test(caHtml) &&
+        /1,44 %/.test(caHtml) &&
+        /1,45 %/.test(caHtml) &&
+        /\$4\.600/.test(caHtml) &&
+        /\$9\.900/.test(caHtml) &&
+        /\$118\.800/.test(caHtml) &&
+        /\$16\.914/.test(caHtml) &&
+        /\$53\.314/.test(caHtml) &&
+        /\$36\.400/.test(caHtml) &&
+        /\$436\.800/.test(caHtml) &&
+        /\$100\.000/.test(caHtml) &&
+        /\$367\.686/.test(caHtml),
+      caH1,
+    );
+    assert(
+      "SEO comparar AFP description propia",
+      caDesc.length >= 110 &&
+        caDesc.length <= 160 &&
+        /comisión/i.test(caDesc) &&
+        /7 AFP/.test(caDesc) &&
+        /90 UF/.test(caDesc) &&
+        /10 %/.test(caDesc),
+      `${caDesc.length}:${caDesc}`,
+    );
+    assert(
+      "SEO comparar AFP cita SP octubre 2026 y el trámite de traspaso",
+      /spensiones\.cl\/infoafp/.test(caHtml) &&
+        /w3-article-2810\.html/.test(caHtml) &&
+        /w3-article-2853\.html/.test(caHtml) &&
+        /w3-article-2860\.html/.test(caHtml) &&
+        /w3-propertyvalue-9915\.html/.test(caHtml) &&
+        /octubre de 2026/.test(caHtml) &&
+        /0,46 %/.test(caHtml),
+    );
+    assert("SEO comparar AFP FAQPage", /"@type": "FAQPage"/.test(caHtml));
+    assert(
+      "SEO comparar AFP no canibaliza hermanas ni crea alias de contenido",
+      /href="\/cotizaciones-previsionales"/.test(caHtml) &&
+        /href="\/sueldo"/.test(caHtml) &&
+        /href="\/cotizacion-empleador"/.test(caHtml) &&
+        /href="\/tope-imponible"/.test(caHtml) &&
+        /href="\/apv"/.test(caHtml) &&
+        /no constituye asesor[ií]a legal/i.test(caHtml) &&
+        /Direcci[oó]n del Trabajo/.test(caHtml) &&
+        /Previred/.test(caHtml) &&
+        /rentabilidad/i.test(caHtml) &&
+        /SIS/.test(caHtml) &&
+        !existsSync(join(root, "comisiones-afp.html")) &&
+        !existsSync(join(root, "mejor-afp.html")) &&
+        !existsSync(join(root, "comision-afp.html")) &&
+        !existsSync(join(root, "comparador-afp.html")),
+    );
+    assert(
+      "home y nav enlazan /comparar-afp",
+      /href="\/comparar-afp"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/comparar-afp" data-nav>Comparar AFP<\/a>/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/comparar-afp" data-nav>Comparar AFP<\/a>/.test(caHtml) &&
+        /href="\/comparar-afp" data-nav>Comparar AFP<\/a>/.test(readFileSync(join(root, "js/ui.js"), "utf8")) &&
+        /\["\/comparar-afp", "Comparar AFP"\]/.test(readFileSync(join(root, "scripts/patch-nav.mjs"), "utf8")),
+    );
+    assert(
+      "sitemap incluye /comparar-afp",
+      locs.includes("https://www.haberes.cl/comparar-afp") && lastmodForPath("/comparar-afp") === "2026-10-05",
+    );
+    assert(
+      "seo-map documenta /comparar-afp sin volumen inventado",
+      /\/comparar-afp/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /No canibalizar `\/cotizaciones-previsionales`, `\/sueldo`, `\/cotizacion-empleador`, `\/tope-imponible` ni `\/apv`/.test(
+          readFileSync(join(root, "docs/seo-map.md"), "utf8"),
+        ) &&
+        /no crear `\/comisiones-afp`, `\/mejor-afp`/i.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /Sin volumen ni KD/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")),
+    );
+    assert(
+      "hermanas enlazan /comparar-afp sin reescribir su H1",
+      /href="\/comparar-afp"/.test(cpHtmlCa) &&
+        /href="\/comparar-afp"/.test(sueldoHtmlCa) &&
+        /<h1>Calcular cotizaciones previsionales Chile 2026<\/h1>/.test(cpHtmlCa) &&
+        /<h1>Calculadora de sueldo l[ií]quido Chile 2026<\/h1>/.test(sueldoHtmlCa),
+    );
+    assert(
+      "alias de comparar AFP redirigen a la canónica",
+      ["/comisiones-afp", "/mejor-afp", "/comision-afp", "/comparador-afp"].every(
+        (src) =>
+          vercel.redirects.some(
+            (r) => r.source === src && r.destination === "/comparar-afp" && r.permanent === true,
+          ),
+      ) &&
+        /urlPath === "\/comisiones-afp"/.test(readFileSync(join(root, "scripts/serve.mjs"), "utf8")) &&
+        /Location: `\/comparar-afp/.test(readFileSync(join(root, "scripts/serve.mjs"), "utf8")),
     );
   }
 
@@ -21250,7 +21476,7 @@ assert(
     return acc;
   }
   const pages = listHtml(root);
-  assert("123 páginas HTML", pages.length === 123, String(pages.length));
+  assert("124 páginas HTML", pages.length === 124, String(pages.length));
   for (const file of pages) {
     const html = readFileSync(file, "utf8");
     const rel = file.slice(root.length + 1);

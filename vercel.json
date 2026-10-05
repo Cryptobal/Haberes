@@ -65,7 +65,15 @@
     { "source": "/fonasa-vs-isapre", "destination": "/diferencia-isapre", "permanent": true },
     { "source": "/fonasa-vs-isapre/", "destination": "/diferencia-isapre", "permanent": true },
     { "source": "/calcular-isapre", "destination": "/diferencia-isapre", "permanent": true },
-    { "source": "/calcular-isapre/", "destination": "/diferencia-isapre", "permanent": true }
+    { "source": "/calcular-isapre/", "destination": "/diferencia-isapre", "permanent": true },
+    { "source": "/comisiones-afp", "destination": "/comparar-afp", "permanent": true },
+    { "source": "/comisiones-afp/", "destination": "/comparar-afp", "permanent": true },
+    { "source": "/mejor-afp", "destination": "/comparar-afp", "permanent": true },
+    { "source": "/mejor-afp/", "destination": "/comparar-afp", "permanent": true },
+    { "source": "/comision-afp", "destination": "/comparar-afp", "permanent": true },
+    { "source": "/comision-afp/", "destination": "/comparar-afp", "permanent": true },
+    { "source": "/comparador-afp", "destination": "/comparar-afp", "permanent": true },
+    { "source": "/comparador-afp/", "destination": "/comparar-afp", "permanent": true }
   ],
   "rewrites": [
     { "source": "/sitemap.xml", "destination": "/api/sitemap" },

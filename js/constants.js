@@ -927,11 +927,28 @@ export const PACTO_HE_GOLD = Object.freeze({
 /** Mínimo legal art. 38 N°7: recargo sobre horas ordinarias en domingo (comercio/servicios al público). */
 export const RECARGO_DOMINGO_COMERCIO_MIN = 0.3;
 
-/** AFP: 10 % obligatorio + comisión (Circular 2414), sobre tope 90 UF */
+/**
+ * Comisión AFP sobre la remuneración o renta imponible del cotizante
+ * dependiente, independiente o voluntario. No incluye el 10 % obligatorio
+ * (AFP_OBLIGATORIO) ni el SIS, que es de cargo del empleador.
+ *
+ * Vigencia: octubre 2026. Fuente: Superintendencia de Pensiones,
+ * «Infórmate y Decide», cuadro «Comisión mensual sobre remuneración
+ * imponible, en porcentaje» (octubre 2026), consultado el 5 de octubre
+ * de 2026. La ficha «¿En qué consiste la comisión que cobra una AFP?»
+ * publica la misma tabla (Uno 0,46 % desde el 1 de octubre de 2025,
+ * licitación de nuevos afiliados hasta el 30 de septiembre de 2027).
+ * La Circular N° 2414 informó Uno en 0,49 % para agosto de 2026; la
+ * tabla vigente de octubre de 2026 es 0,46 %.
+ *
+ * @see https://www.spensiones.cl/infoafp
+ * @see https://www.spensiones.cl/portal/institucional/594/w3-article-2810.html
+ * @see https://www.spensiones.cl/apps/GetFile.php?id=001&namefile=CAFP2414.pdf
+ */
 export const AFP_OBLIGATORIO = 0.1;
 export const TOPE_AFP_SALUD_UF = 90;
 export const AFP_COMISION = {
-  uno: 0.49,
+  uno: 0.46,
   modelo: 0.58,
   planvital: 1.16,
   habitat: 1.27,
