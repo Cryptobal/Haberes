@@ -7220,6 +7220,51 @@ for (const f of htmlFiles) {
   assert(`${f} favicon.ico`, /favicon\.ico" sizes="32x32"/.test(html));
 }
 
+console.log("\nArtefactos de número de línea");
+{
+  // Pegar salida de un visor (`    20|código`) rompe <script> (SyntaxError en /autodespido).
+  // Las tablas markdown (`| 20 |` o `20 | valor`) no coinciden: exigen sangría y el pipe pegado al dígito.
+  const lineNumberArtifact = /^[ \t]+\d+\|/;
+  assert(
+    "el detector distingue artefacto de tabla markdown",
+    lineNumberArtifact.test("    20|})(window,document,'script','dataLayer','GTM-PCR596Z2');") &&
+      !lineNumberArtifact.test("| 20 | valor |") &&
+      !lineNumberArtifact.test("20 | valor") &&
+      !lineNumberArtifact.test("})(window,document,'script','dataLayer','GTM-PCR596Z2');"),
+  );
+  const exts = new Set([".html", ".jsx", ".tsx", ".md", ".vue", ".njk", ".hbs", ".ejs"]);
+  const templateScripts = new Set([
+    join(root, "scripts/patch-seo-heads.mjs"),
+    join(root, "scripts/gen-content-seo.mjs"),
+  ]);
+  const skipDirs = new Set(["node_modules", ".git", "dist", "coverage", ".next"]);
+  const hits = [];
+  function walkPageSources(dir) {
+    for (const name of readdirSync(dir)) {
+      if (skipDirs.has(name)) continue;
+      const p = join(dir, name);
+      const st = statSync(p);
+      if (st.isDirectory()) {
+        walkPageSources(p);
+        continue;
+      }
+      const dot = name.lastIndexOf(".");
+      const ext = dot >= 0 ? name.slice(dot) : "";
+      if (!exts.has(ext) && !templateScripts.has(p)) continue;
+      const lines = readFileSync(p, "utf8").split("\n");
+      for (let i = 0; i < lines.length; i++) {
+        if (lineNumberArtifact.test(lines[i])) hits.push(`${p.slice(root.length + 1)}:${i + 1}`);
+      }
+    }
+  }
+  walkPageSources(root);
+  assert(
+    "fuentes de página sin artefacto de número de línea",
+    hits.length === 0,
+    hits.slice(0, 8).join(", "),
+  );
+}
+
 console.log("\nNavegación móvil");
 const appEntries = [
   "js/app-home.js",
