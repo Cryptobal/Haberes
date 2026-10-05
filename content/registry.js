@@ -55,7 +55,7 @@ export const GUIDES = [
   { slug: "carta-aviso-termino-contrato", group: "finiquito", calc: "/finiquito", updated: "2026-08-18" },
   { slug: "plazo-de-pago-del-finiquito", group: "finiquito", calc: "/finiquito", updated: "2026-08-17" },
   { slug: "con-que-sueldo-se-calcula-el-finiquito", group: "finiquito", calc: "/finiquito", updated: "2026-08-17" },
-  { slug: "finiquito-trabajadora-de-casa-particular", group: "finiquito", calc: "/finiquito-casa-particular", updated: "2026-08-31" },
+  { slug: "finiquito-trabajadora-de-casa-particular", group: "finiquito", calc: "/finiquito-casa-particular", updated: "2026-10-05" },
   { slug: "me-reservo-el-derecho-en-el-finiquito", group: "finiquito", calc: "/finiquito", updated: "2026-09-07" },
 ];
 
