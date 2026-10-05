@@ -19515,6 +19515,7 @@ assert(
       ["guias/vacaciones-proporcionales.html", "/vacaciones-proporcionales", /artículo 73/, /dt\.gob\.cl/],
       ["guias/liquidacion-de-sueldo-y-previred.html", "/sueldo", /54/, /dt\.gob\.cl/],
       ["guias/fuero-maternal.html", "/fuero-maternal", /artículo 201/, /dt\.gob\.cl/],
+      ["guias/finiquito-trabajadora-de-casa-particular.html", "/finiquito-casa-particular", /artículo 163/, /dt\.gob\.cl/],
     ];
     function visibleWords(html) {
       const main = html.match(/<main\b[\s\S]*?<\/main>/i)?.[0] || html;
@@ -19540,11 +19541,14 @@ assert(
         file.includes("me-reservo-el-derecho-en-el-finiquito") ||
         file.includes("vacaciones-proporcionales") ||
         file.includes("liquidacion-de-sueldo-y-previred") ||
-        file.includes("fuero-maternal")
+        file.includes("fuero-maternal") ||
+        file.includes("finiquito-trabajadora-de-casa-particular")
           ? 900
           : 800;
       const dateRe =
-        file.includes("fuero-maternal")
+        file.includes("finiquito-trabajadora-de-casa-particular")
+          ? /<time datetime="2026-10-05">/
+          : file.includes("fuero-maternal")
           ? /<time datetime="2026-09-28">/
           : file.includes("liquidacion-de-sueldo-y-previred")
           ? /<time datetime="2026-09-21">/
@@ -20220,6 +20224,22 @@ assert(
       "guía casa particular y /finiquito enlazan /finiquito-casa-particular",
       /href="\/finiquito-casa-particular"/.test(guideHtml) &&
         /href="\/finiquito-casa-particular"/.test(finiHtml),
+    );
+    assert(
+      "guía casa particular es a todo evento (1,11 %, 11 años) y no IAS de 30 días",
+      /indemnizaci[oó]n a todo evento/i.test(guideHtml) &&
+        /1,11/.test(guideHtml) &&
+        /11 años/.test(guideHtml) &&
+        /\$16\.667/.test(guideHtml) &&
+        /\$83\.333/.test(guideHtml) &&
+        /\$600\.000/.test(guideHtml) &&
+        /\$199\.800/.test(guideHtml) &&
+        /\$100\.000/.test(guideHtml) &&
+        /119179/.test(guideHtml) &&
+        /idLey=21269/.test(guideHtml) &&
+        /no aplica/.test(guideHtml) &&
+        !/corresponde la indemnizaci[oó]n por a[nñ]os de servicio/i.test(guideHtml) &&
+        /data-seo-calc="casa-particular"/.test(guideHtml),
     );
     assert(
       "seo-calc casa particular CTA apunta a /finiquito-casa-particular",
