@@ -66,6 +66,7 @@ const DRAWER_LINKS = [
   ["/permiso-matrimonio", "Permiso matrimonio"],
   ["/permiso-fallecimiento", "Permiso fallecimiento"],
   ["/interes-mora", "Interés por mora"],
+  ["/multas-inspeccion-trabajo", "Multas inspección"],
   ["/hora-lactancia", "Hora de lactancia"],
   ["/colacion-movilizacion", "Colación y movilización"],
   ["/viatico", "Viático"],

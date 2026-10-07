@@ -73,7 +73,15 @@
     { "source": "/comision-afp", "destination": "/comparar-afp", "permanent": true },
     { "source": "/comision-afp/", "destination": "/comparar-afp", "permanent": true },
     { "source": "/comparador-afp", "destination": "/comparar-afp", "permanent": true },
-    { "source": "/comparador-afp/", "destination": "/comparar-afp", "permanent": true }
+    { "source": "/comparador-afp/", "destination": "/comparar-afp", "permanent": true },
+    { "source": "/multa-inspeccion-trabajo", "destination": "/multas-inspeccion-trabajo", "permanent": true },
+    { "source": "/multa-inspeccion-trabajo/", "destination": "/multas-inspeccion-trabajo", "permanent": true },
+    { "source": "/multas-dt", "destination": "/multas-inspeccion-trabajo", "permanent": true },
+    { "source": "/multas-dt/", "destination": "/multas-inspeccion-trabajo", "permanent": true },
+    { "source": "/multa-direccion-del-trabajo", "destination": "/multas-inspeccion-trabajo", "permanent": true },
+    { "source": "/multa-direccion-del-trabajo/", "destination": "/multas-inspeccion-trabajo", "permanent": true },
+    { "source": "/multas-direccion-del-trabajo", "destination": "/multas-inspeccion-trabajo", "permanent": true },
+    { "source": "/multas-direccion-del-trabajo/", "destination": "/multas-inspeccion-trabajo", "permanent": true }
   ],
   "rewrites": [
     { "source": "/sitemap.xml", "destination": "/api/sitemap" },
