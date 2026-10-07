@@ -161,6 +161,15 @@ export function handleRequest(req, res) {
     return;
   }
   if (
+    urlPath === "/multa-inspeccion-trabajo" ||
+    urlPath === "/multas-dt" ||
+    urlPath === "/multa-direccion-del-trabajo" ||
+    urlPath === "/multas-direccion-del-trabajo"
+  ) {
+    send(res, 301, { Location: `/multas-inspeccion-trabajo${url.search}` }, "");
+    return;
+  }
+  if (
     urlPath === "/prestacion-seguro-cesantia" ||
     urlPath === "/cobro-seguro-cesantia" ||
     urlPath === "/simulador-afc" ||

@@ -259,6 +259,7 @@ import {
 import { calcularTopeImponible, ufValida } from "../js/tope-imponible.js";
 import { calcularDiferenciaIsapre } from "../js/diferencia-isapre.js";
 import { calcularCompararAfp } from "../js/comparar-afp.js";
+import { calcularMultasInspeccion, UTM_OCTUBRE_2026 } from "../js/multas-inspeccion-trabajo.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 let failed = 0;
@@ -6947,6 +6948,7 @@ const required = [
   "tope-imponible.html",
   "diferencia-isapre.html",
   "comparar-afp.html",
+  "multas-inspeccion-trabajo.html",
   "finiquito.html",
   "js/app-horas-extras.js",
   "js/app-valor-hora.js",
@@ -7021,6 +7023,7 @@ const required = [
   "js/app-tope-imponible.js",
   "js/app-diferencia-isapre.js",
   "js/app-comparar-afp.js",
+  "js/app-multas-inspeccion-trabajo.js",
   "empresa.html",
   "privacidad.html",
   "terminos.html",
@@ -7063,6 +7066,7 @@ const required = [
   "js/tope-imponible.js",
   "js/diferencia-isapre.js",
   "js/comparar-afp.js",
+  "js/multas-inspeccion-trabajo.js",
   "js/causales.js",
   "js/finiquito.js",
   "js/indicadores.js",
@@ -7256,6 +7260,7 @@ const htmlFiles = [
   "tope-imponible.html",
   "diferencia-isapre.html",
   "comparar-afp.html",
+  "multas-inspeccion-trabajo.html",
   "finiquito.html",
   "empresa.html",
   "privacidad.html",
@@ -7451,6 +7456,7 @@ const appEntries = [
   "js/app-tope-imponible.js",
   "js/app-diferencia-isapre.js",
   "js/app-comparar-afp.js",
+  "js/app-multas-inspeccion-trabajo.js",
   "js/app-finiquito.js",
   "js/app-empresa.js",
   "js/app-admin.js",
@@ -7572,7 +7578,8 @@ assert(
     BASE_PATHS.includes("/antiguedad-laboral") &&
     BASE_PATHS.includes("/tope-imponible") &&
     BASE_PATHS.includes("/diferencia-isapre") &&
-    BASE_PATHS.includes("/comparar-afp"),
+    BASE_PATHS.includes("/comparar-afp") &&
+    BASE_PATHS.includes("/multas-inspeccion-trabajo"),
   `${locs.length} vs ${expectedFromRegistry.length}`,
 );
 assert(
@@ -7931,7 +7938,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 122,
+      seoPaths().length === 123,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -7943,7 +7950,7 @@ try {
   const docsSeo = await hitLocal("/docs/seo-map.md");
   assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
   assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
-  for (const p of ["/sueldo/", "/sueldo-liquido-a-bruto/", "/sueldo-casa-particular/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/valor-hora/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/dias-habiles/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/obra-faena/", "/prescripcion-laboral/", "/descanso-compensatorio/", "/inclusion-laboral/", "/jornada-parcial/", "/teletrabajo/", "/bandas-horarias/", "/pacto-4x3/", "/jornada-excepcional/", "/jornada-bisemanal/", "/compensacion-horas-extras/", "/pacto-horas-extras/", "/contrato-plazo-fijo/", "/termino-anticipado-plazo-fijo/", "/permiso-sin-goce/", "/zona-extrema/", "/promedio-remuneraciones/", "/antiguedad-laboral/", "/tope-imponible/", "/diferencia-isapre/", "/comparar-afp/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/cotizacion-independiente/", "/retencion-judicial/", "/descuentos-legales/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/fuero-sindical/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/cotizacion-empleador/", "/seguro-cesantia/", "/giro-seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/viatico/", "/reajuste-ipc/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+  for (const p of ["/sueldo/", "/sueldo-liquido-a-bruto/", "/sueldo-casa-particular/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/valor-hora/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/dias-habiles/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/obra-faena/", "/prescripcion-laboral/", "/descanso-compensatorio/", "/inclusion-laboral/", "/jornada-parcial/", "/teletrabajo/", "/bandas-horarias/", "/pacto-4x3/", "/jornada-excepcional/", "/jornada-bisemanal/", "/compensacion-horas-extras/", "/pacto-horas-extras/", "/contrato-plazo-fijo/", "/termino-anticipado-plazo-fijo/", "/permiso-sin-goce/", "/zona-extrema/", "/promedio-remuneraciones/", "/antiguedad-laboral/", "/tope-imponible/", "/diferencia-isapre/", "/comparar-afp/", "/multas-inspeccion-trabajo/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/cotizacion-independiente/", "/retencion-judicial/", "/descuentos-legales/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/fuero-sindical/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/cotizacion-empleador/", "/seguro-cesantia/", "/giro-seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/viatico/", "/reajuste-ipc/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
   }
@@ -7990,6 +7997,7 @@ try {
     "/permiso-matrimonio",
     "/permiso-fallecimiento",
     "/interes-mora",
+    "/multas-inspeccion-trabajo",
     "/hora-lactancia",
     "/jornada-40-horas",
     "/indemnizacion-aviso-previo",
@@ -11892,6 +11900,7 @@ assert(
     ["tope-imponible.html", "/tope-imponible"],
     ["diferencia-isapre.html", "/diferencia-isapre"],
     ["comparar-afp.html", "/comparar-afp"],
+    ["multas-inspeccion-trabajo.html", "/multas-inspeccion-trabajo"],
     ["finiquito.html", "/finiquito"],
     ["empresa.html", "/empresa"],
     ["como.html", "/como"],
@@ -21299,6 +21308,7 @@ assert(
       "empresa.html",
       "precios.html",
       "como.html",
+      "multas-inspeccion-trabajo.html",
       "guias.html",
       ...GUIDE_SLUGS.map((s) => `guias/${s}.html`),
       ...CAUSAL_PAGES.map((p) => `finiquito/${p.slug}.html`),
@@ -21476,7 +21486,7 @@ assert(
     return acc;
   }
   const pages = listHtml(root);
-  assert("124 páginas HTML", pages.length === 124, String(pages.length));
+  assert("125 páginas HTML", pages.length === 125, String(pages.length));
   for (const file of pages) {
     const html = readFileSync(file, "utf8");
     const rel = file.slice(root.length + 1);
@@ -21756,6 +21766,245 @@ console.log("\nDescuentos legales art. 58");
       !/<h2>Finiquito<\/h2>[\s\S]*href="\/descuentos-legales"/.test(
         readFileSync(join(root, "guias.html"), "utf8"),
       ),
+  );
+}
+
+console.log("\nMultas inspección del trabajo");
+{
+  const utm = UTM_OCTUBRE_2026;
+  assert("UTM octubre 2026 del gold es 72151", utm === 72151);
+  const micro = calcularMultasInspeccion({ trabajadores: 5, regimen: "general", utm });
+  const pequena = calcularMultasInspeccion({ trabajadores: 25, regimen: "general", utm });
+  const mediana = calcularMultasInspeccion({ trabajadores: 100, regimen: "general", utm });
+  const grande = calcularMultasInspeccion({ trabajadores: 250, regimen: "general", utm });
+  const borde9 = calcularMultasInspeccion({ trabajadores: 9, regimen: "general", utm });
+  const borde10 = calcularMultasInspeccion({ trabajadores: 10, regimen: "general", utm });
+  const borde199 = calcularMultasInspeccion({ trabajadores: 199, regimen: "general", utm });
+  const borde200 = calcularMultasInspeccion({ trabajadores: 200, regimen: "general", utm });
+  const maternidad = calcularMultasInspeccion({
+    trabajadores: 8,
+    regimen: "maternidad",
+    reincidencia: true,
+    utm,
+  });
+  const antisindical = calcularMultasInspeccion({
+    trabajadores: 12,
+    regimen: "antisindical",
+    reincidencia: true,
+    utm,
+  });
+  const plataformas = calcularMultasInspeccion({
+    trabajadores: 49,
+    regimen: "plataformas",
+    reincidencia: true,
+    utm,
+  });
+  const fuero = calcularMultasInspeccion({ trabajadores: 400, regimen: "fuero_sindical", utm });
+  const cero = calcularMultasInspeccion({ trabajadores: 0, regimen: "general", utm });
+  const utmMala = calcularMultasInspeccion({ trabajadores: 9, regimen: "general", utm: 0 });
+  assert(
+    "gold micro 5 trabajadores, art. 506 inciso 2°, 1–5 UTM",
+    micro.ok &&
+      micro.tamano === "micro" &&
+      micro.minUtm === 1 &&
+      micro.maxUtm === 5 &&
+      micro.minPesos === 72151 &&
+      micro.maxPesos === 360755 &&
+      micro.sustitucion.procede &&
+      micro.sustitucion.modalidad === "capacitacion",
+  );
+  assert(
+    "gold pequeña 25 trabajadores, art. 506 inciso 3°, 1–10 UTM",
+    pequena.ok &&
+      pequena.tamano === "pequena" &&
+      pequena.minUtm === 1 &&
+      pequena.maxUtm === 10 &&
+      pequena.minPesos === 72151 &&
+      pequena.maxPesos === 721510,
+  );
+  assert(
+    "gold mediana 100 trabajadores, art. 506 inciso 4°, 2–40 UTM",
+    mediana.ok &&
+      mediana.tamano === "mediana" &&
+      mediana.minUtm === 2 &&
+      mediana.maxUtm === 40 &&
+      mediana.minPesos === 144302 &&
+      mediana.maxPesos === 2886040 &&
+      mediana.sustitucion.procede === false,
+  );
+  assert(
+    "gold grande 250 trabajadores, art. 506 inciso 5°, 3–60 UTM",
+    grande.ok &&
+      grande.tamano === "grande" &&
+      grande.minUtm === 3 &&
+      grande.maxUtm === 60 &&
+      grande.minPesos === 216453 &&
+      grande.maxPesos === 4329060,
+  );
+  assert(
+    "gold borde 9 trabajadores sigue en micro (1–5 UTM), no en pequeña",
+    borde9.ok && borde9.tamano === "micro" && borde9.minUtm === 1 && borde9.maxUtm === 5,
+  );
+  assert(
+    "gold borde 10 trabajadores ya es pequeña (1–10 UTM)",
+    borde10.ok && borde10.tamano === "pequena" && borde10.maxUtm === 10,
+  );
+  assert(
+    "gold borde 199 mediana y 200 grande",
+    borde199.tamano === "mediana" &&
+      borde199.maxUtm === 40 &&
+      borde200.tamano === "grande" &&
+      borde200.minUtm === 3 &&
+      borde200.maxUtm === 60,
+  );
+  assert(
+    "gold art. 208 con reincidencia duplica 14–70 a 28–140 UTM",
+    maternidad.ok &&
+      maternidad.articulo === "208" &&
+      maternidad.reincidenciaEfecto === "duplica" &&
+      maternidad.minUtm === 28 &&
+      maternidad.maxUtm === 140 &&
+      maternidad.minPesos === 2020228 &&
+      maternidad.maxPesos === 10101140 &&
+      maternidad.sustitucion.procede,
+  );
+  assert(
+    "gold art. 292 pequeña 10–50 UTM y la reincidencia no multiplica sola",
+    antisindical.ok &&
+      antisindical.minUtm === 10 &&
+      antisindical.maxUtm === 50 &&
+      antisindical.minPesos === 721510 &&
+      antisindical.maxPesos === 3607550 &&
+      antisindical.factor === 1 &&
+      antisindical.reincidenciaEfecto === "sin_efecto",
+  );
+  assert(
+    "gold art. 152 quinquies I, 49 trabajadores y reincidencia: 2–20 UTM",
+    plataformas.ok &&
+      plataformas.tamano === "pequena" &&
+      plataformas.minUtm === 2 &&
+      plataformas.maxUtm === 20 &&
+      plataformas.minPesos === 144302 &&
+      plataformas.maxPesos === 1443020 &&
+      plataformas.reincidenciaEfecto === "duplica",
+  );
+  assert(
+    "gold fuero sindical 14–70 UTM aunque la empresa sea grande",
+    fuero.ok && fuero.minUtm === 14 && fuero.maxUtm === 70 && fuero.sustitucion.procede === false,
+  );
+  assert(
+    "multas rechaza 0 trabajadores y UTM no positiva",
+    cero.ok === false && cero.motivo === "trabajadores" && utmMala.ok === false && utmMala.motivo === "utm",
+  );
+  const higiene = calcularMultasInspeccion({ trabajadores: 9, regimen: "general", higiene: true, utm });
+  assert(
+    "sustitución 506 ter: higiene es PAC y los plazos son 30, 60 y 5 días hábiles",
+    higiene.sustitucion.modalidad === "pac" &&
+      higiene.sustitucion.plazoSolicitudDiasHabiles === 30 &&
+      higiene.sustitucion.plazoProgramaDiasHabiles === 60 &&
+      higiene.sustitucion.aumentoTopePct === 25 &&
+      higiene.sustitucion.plazoCorreccion506BisDiasHabiles === 5,
+  );
+
+  const miHtml = readFileSync(join(root, "multas-inspeccion-trabajo.html"), "utf8");
+  const miApp = readFileSync(join(root, "js/app-multas-inspeccion-trabajo.js"), "utf8");
+  const miTitle = (miHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+  const miH1 = (miHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+  assert(
+    "SEO multas DT title y H1",
+    /Inspecci[oó]n del Trabajo/i.test(miTitle) &&
+      miTitle.length <= 65 &&
+      miH1 === "Multas de la Inspección del Trabajo 2026" &&
+      /"@type": "FAQPage"/.test(miHtml) &&
+      /"@type": "WebApplication"/.test(miHtml),
+    miTitle,
+  );
+  assert(
+    "multas cita arts. 505 bis, 506, 506 bis, 506 ter y el ejemplo de octubre 2026",
+    /505 bis/.test(miHtml) &&
+      /art[íi]culo 506/.test(miHtml) &&
+      /506 bis/.test(miHtml) &&
+      /506 ter/.test(miHtml) &&
+      /\$72\.151/.test(miHtml) &&
+      /\$360\.755/.test(miHtml) &&
+      /1 a 5 UTM/.test(miHtml) &&
+      /3 a 60 UTM/.test(miHtml),
+  );
+  assert(
+    "app-multas usa calcularMultasInspeccion y no usa alert/confirm/prompt",
+    /import\s*\{[^}]*calcularMultasInspeccion[^}]*\}\s*from\s*["']\.\/multas-inspeccion-trabajo\.js["']/.test(miApp) &&
+      /mountIndicadores\(/.test(miApp) &&
+      /wireNav\(/.test(miApp) &&
+      !/\b(alert|confirm|prompt)\s*\(/.test(miApp),
+  );
+  assert(
+    "home y nav enlazan /multas-inspeccion-trabajo",
+    /href="\/multas-inspeccion-trabajo"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+      /href="\/multas-inspeccion-trabajo" data-nav>Multas inspecci[oó]n<\/a>/.test(miHtml) &&
+      /href="\/multas-inspeccion-trabajo" data-nav>Multas inspecci[oó]n<\/a>/.test(
+        readFileSync(join(root, "js/ui.js"), "utf8"),
+      ) &&
+      /\["\/multas-inspeccion-trabajo", "Multas inspecci[oó]n"\]/.test(
+        readFileSync(join(root, "scripts/patch-nav.mjs"), "utf8"),
+      ),
+  );
+  assert(
+    "sitemap incluye /multas-inspeccion-trabajo",
+    locs.includes("https://www.haberes.cl/multas-inspeccion-trabajo") &&
+      lastmodForPath("/multas-inspeccion-trabajo") === "2026-10-07",
+  );
+  assert(
+    "seo-map documenta /multas-inspeccion-trabajo sin volumen inventado",
+    /\/multas-inspeccion-trabajo/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+      /No canibalizar `\/interes-mora`, `\/reajuste-ipc`, `\/nulidad-despido`, `\/tutela-laboral`/.test(
+        readFileSync(join(root, "docs/seo-map.md"), "utf8"),
+      ) &&
+      /Sin volumen ni KD/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")),
+  );
+  assert(
+    "hermanas enlazan /multas-inspeccion-trabajo sin reescribir su H1",
+    /href="\/multas-inspeccion-trabajo"/.test(readFileSync(join(root, "interes-mora.html"), "utf8")) &&
+      /href="\/multas-inspeccion-trabajo"/.test(readFileSync(join(root, "cotizaciones-previsionales.html"), "utf8")) &&
+      /href="\/multas-inspeccion-trabajo"/.test(readFileSync(join(root, "jornada-40-horas.html"), "utf8")) &&
+      /href="\/multas-inspeccion-trabajo"/.test(readFileSync(join(root, "fuero-maternal.html"), "utf8")) &&
+      /href="\/multas-inspeccion-trabajo"/.test(readFileSync(join(root, "empresa.html"), "utf8")) &&
+      /<h1>Calculadora interés por mora de remuneraciones Chile 2026<\/h1>/.test(
+        readFileSync(join(root, "interes-mora.html"), "utf8"),
+      ) &&
+      /<h1>Calcular cotizaciones previsionales Chile 2026<\/h1>/.test(
+        readFileSync(join(root, "cotizaciones-previsionales.html"), "utf8"),
+      ) &&
+      /<h1>Calculadora jornada 40 horas Chile 2026<\/h1>/.test(
+        readFileSync(join(root, "jornada-40-horas.html"), "utf8"),
+      ) &&
+      /<h1>Calculadora fuero maternal Chile 2026<\/h1>/.test(
+        readFileSync(join(root, "fuero-maternal.html"), "utf8"),
+      ) &&
+      /<h1>Su nómina, sus documentos<\/h1>/.test(readFileSync(join(root, "empresa.html"), "utf8")),
+  );
+  assert(
+    "hub /guias enlaza /multas-inspeccion-trabajo en el cluster de liquidación",
+    /href="\/multas-inspeccion-trabajo"/.test(readFileSync(join(root, "guias.html"), "utf8")) &&
+      !/<h2>Finiquito<\/h2>[\s\S]*href="\/multas-inspeccion-trabajo"/.test(
+        readFileSync(join(root, "guias.html"), "utf8"),
+      ),
+  );
+  assert(
+    "alias de multas DT redirigen a /multas-inspeccion-trabajo",
+    ["/multa-inspeccion-trabajo", "/multas-dt", "/multa-direccion-del-trabajo", "/multas-direccion-del-trabajo"].every(
+      (src) =>
+        vercel.redirects.some(
+          (r) => r.source === src && r.destination === "/multas-inspeccion-trabajo" && r.permanent === true,
+        ),
+    ) &&
+      /urlPath === "\/multas-dt"/.test(readFileSync(join(root, "scripts/serve.mjs"), "utf8")) &&
+      /Location: `\/multas-inspeccion-trabajo/.test(readFileSync(join(root, "scripts/serve.mjs"), "utf8")) &&
+      !existsSync(join(root, "multas-dt.html")) &&
+      !existsSync(join(root, "multa-inspeccion-trabajo.html")),
+  );
+  assert(
+    "robots no Disallow /multas-inspeccion-trabajo",
+    !/Disallow:\s*\/multas-inspeccion-trabajo/.test(readFileSync(join(root, "robots.txt"), "utf8")),
   );
 }
 

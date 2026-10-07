@@ -243,6 +243,7 @@ function paintLoggedInNav(emp) {
         <a href="/comparar-afp" data-nav>Comparar AFP</a>
         <a href="/costo-empresa" data-nav>Costo empresa</a>
         <a href="/cotizacion-empleador" data-nav>Cotización empleador</a>
+        <a href="/multas-inspeccion-trabajo" data-nav>Multas inspección</a>
         <a href="/inclusion-laboral" data-nav>Inclusión laboral</a>
         <a href="/seguro-cesantia" data-nav>Seguro de cesantía</a>
         <a href="/trabajo-pesado" data-nav>Trabajo pesado</a>
