@@ -260,6 +260,12 @@ import { calcularTopeImponible, ufValida } from "../js/tope-imponible.js";
 import { calcularDiferenciaIsapre } from "../js/diferencia-isapre.js";
 import { calcularCompararAfp } from "../js/comparar-afp.js";
 import { calcularMultasInspeccion, UTM_OCTUBRE_2026 } from "../js/multas-inspeccion-trabajo.js";
+import {
+  calcularIuscAnual,
+  calcularReliquidacionIusc,
+  escalaIuscAnual,
+  totalesDesdeMesConstante,
+} from "../js/reliquidacion-impuesto.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 let failed = 0;
@@ -559,6 +565,147 @@ assert(
 }
 assert("Mutual básica 0,90 % y SANNA 0,03 %", MUTUAL_TASA_BASICA === 0.009 && SANNA_TASA === 0.0003);
 assert("IUSC 8 tramos ago 2026", IUSC_TRAMOS.length === 8 && IUSC_TRAMOS[0].hasta === 967261.5);
+
+console.log("\nReliquidación IUSC art. 47 (escala anual = tabla mensual × 12)");
+{
+  const escala = escalaIuscAnual();
+  assert(
+    "escala anual reutiliza factores IUSC y multiplica tramo y rebaja × 12",
+    escala.length === IUSC_TRAMOS.length &&
+      escala[0].hasta === 967261.5 * 12 &&
+      escala[0].tasa === 0 &&
+      escala[1].tasa === IUSC_TRAMOS[1].tasa &&
+      escala[1].rebaja === IUSC_TRAMOS[1].rebaja * 12 &&
+      escala[1].hasta === IUSC_TRAMOS[1].hasta * 12 &&
+      escala[escala.length - 1].hasta === Infinity &&
+      escala[escala.length - 1].tasa === 0.4,
+  );
+  const mesA = totalesDesdeMesConstante(900_000, 12);
+  const mesB = totalesDesdeMesConstante(900_000, 12);
+  assert(
+    "cada $900.000 mensual está exento en la tabla de agosto 2026",
+    calcularIusc(900_000) === 0 && mesA.impuestoMes === 0 && mesA.rentaAnual === 10_800_000 && mesA.retenido === 0,
+  );
+  const dosExentos = calcularReliquidacionIusc({
+    empleadores: [
+      { nombre: "A", rentaAnual: mesA.rentaAnual, retenido: mesA.retenido },
+      { nombre: "B", rentaAnual: mesB.rentaAnual, retenido: mesB.retenido },
+    ],
+  });
+  assert(
+    "dos empleadores × 12 meses bajo el exento mensual: suma anual entra al 4 % y hay que pagar $399.714",
+    dosExentos.obligatoria === true &&
+      dosExentos.rentaConsolidada === 21_600_000 &&
+      dosExentos.totalRetenido === 0 &&
+      dosExentos.tasa === 0.04 &&
+      dosExentos.iuscSinRedondear === 399_714.48 &&
+      dosExentos.iuscTeorico === 399_714 &&
+      dosExentos.iuscTeorico === roundPeso(dosExentos.iuscSinRedondear) &&
+      dosExentos.diferencia === 399_714 &&
+      dosExentos.sentido === "pagar",
+  );
+  const unMes = calcularReliquidacionIusc({
+    empleadores: [
+      { rentaAnual: 900_000, retenido: 0 },
+      { rentaAnual: 900_000, retenido: 0 },
+    ],
+  });
+  assert(
+    "un solo mes de dos sueldos exentos sigue exento en la escala anual (Ley 20.630, no se consolida el mes)",
+    unMes.obligatoria === true &&
+      unMes.rentaConsolidada === 1_800_000 &&
+      unMes.iuscTeorico === 0 &&
+      unMes.diferencia === 0 &&
+      unMes.sentido === "cuadra",
+  );
+  const solo = totalesDesdeMesConstante(2_000_000, 12);
+  const unEmpleador = calcularReliquidacionIusc({
+    empleadores: [{ rentaAnual: solo.rentaAnual, retenido: solo.retenido }],
+  });
+  assert(
+    "un empleador con $2.000.000 parejos: retención mensual $41.310 × 12 y diferencia de redondeo $6 a favor",
+    calcularIusc(2_000_000) === 41_310 &&
+      solo.impuestoMes === 41_310 &&
+      solo.retenido === 495_720 &&
+      unEmpleador.obligatoria === false &&
+      unEmpleador.voluntaria === true &&
+      unEmpleador.rentaConsolidada === 24_000_000 &&
+      unEmpleador.iuscTeorico === 495_714 &&
+      unEmpleador.totalRetenido === 495_720 &&
+      unEmpleador.diferencia === -6 &&
+      unEmpleador.sentido === "favor",
+  );
+  const alto = totalesDesdeMesConstante(3_000_000, 12);
+  const chico = totalesDesdeMesConstante(500_000, 12);
+  const mixto = calcularReliquidacionIusc({
+    empleadores: [
+      { rentaAnual: alto.rentaAnual, retenido: alto.retenido },
+      { rentaAnual: chico.rentaAnual, retenido: chico.retenido },
+    ],
+  });
+  assert(
+    "empleo alto ya retenido ($3.000.000 × 12) más uno chico exento: consolidar $42.000.000 deja $479.997 a pagar",
+    calcularIusc(3_000_000) === 115_331 &&
+      calcularIusc(500_000) === 0 &&
+      alto.retenido === 1_383_972 &&
+      chico.retenido === 0 &&
+      mixto.rentaConsolidada === 42_000_000 &&
+      mixto.tasa === 0.08 &&
+      mixto.iuscTeorico === 1_863_969 &&
+      mixto.totalRetenido === 1_383_972 &&
+      mixto.diferencia === 479_997 &&
+      mixto.sentido === "pagar" &&
+      mixto.obligatoria === true,
+  );
+  const redondeo = calcularReliquidacionIusc({
+    empleadores: [
+      { rentaAnual: 10_800_015, retenido: 0 },
+      { rentaAnual: 10_800_015, retenido: 0 },
+    ],
+  });
+  assert(
+    "roundPeso sube el IUSC anual 399.715,68 a $399.716",
+    redondeo.rentaConsolidada === 21_600_030 &&
+      Math.abs(redondeo.iuscSinRedondear - 399_715.68) < 1e-6 &&
+      redondeo.iuscTeorico === roundPeso(redondeo.iuscSinRedondear) &&
+      redondeo.iuscTeorico === 399_716,
+  );
+  const pesos = calcularReliquidacionIusc({
+    empleadores: [
+      { rentaAnual: 10_800_000.6, retenido: 0.4 },
+      { rentaAnual: 10_800_000.4, retenido: 0 },
+    ],
+  });
+  assert(
+    "cada renta y cada retención se redondea al peso antes de sumar",
+    roundPeso(10_800_000.6) === 10_800_001 &&
+      roundPeso(10_800_000.4) === 10_800_000 &&
+      pesos.empleadores[0].rentaAnual === 10_800_001 &&
+      pesos.empleadores[1].rentaAnual === 10_800_000 &&
+      pesos.rentaConsolidada === 21_600_001 &&
+      pesos.empleadores[0].retenido === 0 &&
+      pesos.totalRetenido === 0,
+  );
+  const techo = calcularIuscAnual(967261.5 * 12);
+  const paso = calcularIuscAnual(967261.5 * 12 + 100_000);
+  const borde4 = calcularIuscAnual(IUSC_TRAMOS[1].hasta * 12);
+  const borde8 = calcularIuscAnual(IUSC_TRAMOS[1].hasta * 12 + 1);
+  assert(
+    "borde del tramo exento anual: $11.607.138 queda en 0 % y $100.000 más pagan $4.000 al 4 %",
+    techo.hasta === 11_607_138 &&
+      techo.tasa === 0 &&
+      techo.iusc === 0 &&
+      paso.tasa === 0.04 &&
+      paso.iuscSinRedondear === 4_000 &&
+      paso.iusc === 4_000,
+  );
+  assert(
+    "borde del tramo 4 % anual: el peso exacto del hasta sigue en 4 % y el siguiente pasa a 8 %",
+    borde4.tasa === 0.04 &&
+      borde4.hasta === IUSC_TRAMOS[1].hasta * 12 &&
+      borde8.tasa === 0.08,
+  );
+}
 assert(
   "Asignación familiar 4 tramos Ley 21.830",
   ASIGNACION_FAMILIAR_TRAMOS.length === 4 &&
@@ -6891,6 +7038,7 @@ const required = [
   "vacaciones-proporcionales.html",
   "gratificacion.html",
   "impuesto-unico.html",
+  "reliquidacion-impuesto.html",
   "cotizaciones-previsionales.html",
   "costo-empresa.html",
   "cotizacion-empleador.html",
@@ -6966,6 +7114,7 @@ const required = [
   "js/app-vacaciones-proporcionales.js",
   "js/app-gratificacion.js",
   "js/app-impuesto-unico.js",
+  "js/app-reliquidacion-impuesto.js",
   "js/app-cotizaciones-previsionales.js",
   "js/app-costo-empresa.js",
   "js/app-cotizacion-empleador.js",
@@ -7203,6 +7352,7 @@ const htmlFiles = [
   "vacaciones-proporcionales.html",
   "gratificacion.html",
   "impuesto-unico.html",
+  "reliquidacion-impuesto.html",
   "cotizaciones-previsionales.html",
   "costo-empresa.html",
   "cotizacion-empleador.html",
@@ -7399,6 +7549,7 @@ const appEntries = [
   "js/app-vacaciones-proporcionales.js",
   "js/app-gratificacion.js",
   "js/app-impuesto-unico.js",
+  "js/app-reliquidacion-impuesto.js",
   "js/app-cotizaciones-previsionales.js",
   "js/app-costo-empresa.js",
   "js/app-cotizacion-empleador.js",
@@ -7951,7 +8102,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 124,
+      seoPaths().length === 125,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -7963,7 +8114,7 @@ try {
   const docsSeo = await hitLocal("/docs/seo-map.md");
   assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
   assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
-  for (const p of ["/sueldo/", "/sueldo-liquido-a-bruto/", "/sueldo-casa-particular/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/valor-hora/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/dias-habiles/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/obra-faena/", "/prescripcion-laboral/", "/descanso-compensatorio/", "/inclusion-laboral/", "/jornada-parcial/", "/teletrabajo/", "/bandas-horarias/", "/pacto-4x3/", "/jornada-excepcional/", "/jornada-bisemanal/", "/compensacion-horas-extras/", "/pacto-horas-extras/", "/contrato-plazo-fijo/", "/termino-anticipado-plazo-fijo/", "/permiso-sin-goce/", "/zona-extrema/", "/promedio-remuneraciones/", "/antiguedad-laboral/", "/tope-imponible/", "/diferencia-isapre/", "/comparar-afp/", "/multas-inspeccion-trabajo/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/cotizacion-independiente/", "/retencion-judicial/", "/descuentos-legales/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/fuero-sindical/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/cotizaciones-previsionales/", "/costo-empresa/", "/cotizacion-empleador/", "/seguro-cesantia/", "/giro-seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/viatico/", "/reajuste-ipc/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+  for (const p of ["/sueldo/", "/sueldo-liquido-a-bruto/", "/sueldo-casa-particular/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/valor-hora/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/dias-habiles/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/obra-faena/", "/prescripcion-laboral/", "/descanso-compensatorio/", "/inclusion-laboral/", "/jornada-parcial/", "/teletrabajo/", "/bandas-horarias/", "/pacto-4x3/", "/jornada-excepcional/", "/jornada-bisemanal/", "/compensacion-horas-extras/", "/pacto-horas-extras/", "/contrato-plazo-fijo/", "/termino-anticipado-plazo-fijo/", "/permiso-sin-goce/", "/zona-extrema/", "/promedio-remuneraciones/", "/antiguedad-laboral/", "/tope-imponible/", "/diferencia-isapre/", "/comparar-afp/", "/multas-inspeccion-trabajo/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/cotizacion-independiente/", "/retencion-judicial/", "/descuentos-legales/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/fuero-sindical/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/reliquidacion-impuesto/", "/cotizaciones-previsionales/", "/costo-empresa/", "/cotizacion-empleador/", "/seguro-cesantia/", "/giro-seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/viatico/", "/reajuste-ipc/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
   }
@@ -8040,6 +8191,7 @@ try {
     "/diferencia-isapre",
     "/gratificacion",
     "/impuesto-unico",
+    "/reliquidacion-impuesto",
     "/cotizaciones-previsionales",
     "/costo-empresa",
     "/cotizacion-empleador",
@@ -11845,6 +11997,7 @@ assert(
     ["vacaciones-proporcionales.html", "/vacaciones-proporcionales"],
     ["gratificacion.html", "/gratificacion"],
     ["impuesto-unico.html", "/impuesto-unico"],
+    ["reliquidacion-impuesto.html", "/reliquidacion-impuesto"],
     ["cotizaciones-previsionales.html", "/cotizaciones-previsionales"],
     ["costo-empresa.html", "/costo-empresa"],
     ["cotizacion-empleador.html", "/cotizacion-empleador"],
@@ -18120,6 +18273,133 @@ assert(
     );
   }
   {
+    const riHtml = readFileSync(join(root, "reliquidacion-impuesto.html"), "utf8");
+    const riJs = readFileSync(join(root, "js/reliquidacion-impuesto.js"), "utf8");
+    const riApp = readFileSync(join(root, "js/app-reliquidacion-impuesto.js"), "utf8");
+    const riTitle = (riHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const riH1 = (riHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const iuHtmlRi = readFileSync(join(root, "impuesto-unico.html"), "utf8");
+    const iuTitleRi = (iuHtmlRi.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const iuH1Ri = (iuHtmlRi.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const zeHtmlRi = readFileSync(join(root, "zona-extrema.html"), "utf8");
+    const zeH1Ri = (zeHtmlRi.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    assert(
+      "SEO title reliquidación apunta a calcular reliquidación impuesto único",
+      /calcular reliquidaci[oó]n impuesto [uú]nico/i.test(riTitle) &&
+        riTitle !== iuTitleRi &&
+        !/calcular impuesto [uú]nico chile/i.test(riTitle) &&
+        riTitle.length <= 65 &&
+        !/^Haberes\b/.test(riTitle),
+      riTitle,
+    );
+    assert(
+      "SEO H1 reliquidación distinto de /impuesto-unico y /zona-extrema",
+      riH1 === "Calcular reliquidación impuesto único Chile 2026" &&
+        riH1 !== iuH1Ri &&
+        riH1 !== zeH1Ri &&
+        !/calcular zona extrema/i.test(riH1),
+      riH1,
+    );
+    assert(
+      "reliquidación reutiliza calcularIusc y la tabla mensual, sin alert",
+      /calcularIusc/.test(riJs) &&
+        /IUSC_TRAMOS/.test(riJs) &&
+        /roundPeso/.test(riJs) &&
+        /calcularReliquidacionIusc/.test(riApp) &&
+        /mountIndicadores/.test(riApp) &&
+        !/\balert\s*\(/.test(riApp) &&
+        !/\bconfirm\s*\(/.test(riApp) &&
+        !/\bprompt\s*\(/.test(riApp) &&
+        !/window\.open/.test(riApp) &&
+        !/<dialog/.test(riHtml),
+    );
+    assert(
+      "página reliquidación muestra el gold de dos empleos exentos y cita art. 47",
+      /\$21\.600\.000/.test(riHtml) &&
+        /\$399\.714/.test(riHtml) &&
+        /\$10\.800\.000/.test(riHtml) &&
+        /\$495\.720/.test(riHtml) &&
+        /\$495\.714/.test(riHtml) &&
+        /\$479\.997/.test(riHtml) &&
+        /art[ií]culo 47/i.test(riHtml) &&
+        /20\.630/.test(riHtml) &&
+        /001\.140\.2712/.test(riHtml) &&
+        /idNorma=6368/.test(riHtml),
+    );
+    assert("SEO reliquidación FAQPage", /"@type": "FAQPage"/.test(riHtml));
+    assert(
+      "reliquidación enlaza hermanas sin robarles el H1",
+      /href="\/impuesto-unico"/.test(riHtml) &&
+        /href="\/zona-extrema"/.test(riHtml) &&
+        /href="\/sueldo"/.test(riHtml) &&
+        /href="\/boleta-honorarios"/.test(riHtml) &&
+        /href="\/apv"/.test(riHtml) &&
+        /<h1>Calcular impuesto [uú]nico Chile 2026<\/h1>/.test(iuHtmlRi) &&
+        /<h1>Calcular zona extrema Chile 2026<\/h1>/.test(zeHtmlRi),
+    );
+    assert(
+      "home y nav enlazan /reliquidacion-impuesto",
+      /href="\/reliquidacion-impuesto"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/reliquidacion-impuesto" data-nav>Reliquidaci[oó]n impuesto<\/a>/.test(
+          readFileSync(join(root, "index.html"), "utf8"),
+        ) &&
+        /href="\/reliquidacion-impuesto" data-nav>Reliquidaci[oó]n impuesto<\/a>/.test(riHtml) &&
+        /href="\/reliquidacion-impuesto" data-nav>Reliquidaci[oó]n impuesto<\/a>/.test(
+          readFileSync(join(root, "js/ui.js"), "utf8"),
+        ) &&
+        /\["\/reliquidacion-impuesto", "Reliquidación impuesto"\]/.test(
+          readFileSync(join(root, "scripts/patch-nav.mjs"), "utf8"),
+        ),
+    );
+    assert(
+      "sitemap incluye /reliquidacion-impuesto",
+      locs.includes("https://www.haberes.cl/reliquidacion-impuesto") &&
+        lastmodForPath("/reliquidacion-impuesto") === "2026-10-12",
+    );
+    assert(
+      "seo-map documenta /reliquidacion-impuesto sin canibalizar",
+      /\/reliquidacion-impuesto/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /no canibalizar `\/impuesto-unico`, `\/zona-extrema`, `\/sueldo`/.test(
+          readFileSync(join(root, "docs/seo-map.md"), "utf8"),
+        ) &&
+        /no crear `\/reliquidacion-iusc`, `\/impuesto-varios-empleadores`/.test(
+          readFileSync(join(root, "docs/seo-map.md"), "utf8"),
+        ) &&
+        /~20\/mes/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")),
+    );
+    assert(
+      "no existen páginas hermanas de reliquidación",
+      !existsSync(join(root, "reliquidacion-iusc.html")) &&
+        !existsSync(join(root, "impuesto-varios-empleadores.html")) &&
+        !existsSync(join(root, "art-47-lir.html")) &&
+        !existsSync(join(root, "operacion-renta-iusc.html")) &&
+        !existsSync(join(root, "reliquidacion-segunda-categoria.html")) &&
+        !existsSync(join(root, "impuesto-segundo-empleador.html")),
+    );
+    const aliasReliq = [
+      "/reliquidacion-iusc",
+      "/impuesto-varios-empleadores",
+      "/art-47-lir",
+      "/operacion-renta-iusc",
+      "/reliquidacion-segunda-categoria",
+      "/impuesto-segundo-empleador",
+    ];
+    assert(
+      "alias de reliquidación redirigen a la canónica",
+      aliasReliq.every(
+        (src) =>
+          vercel.redirects.some(
+            (r) => r.source === src && r.destination === "/reliquidacion-impuesto" && r.permanent === true,
+          ) &&
+          vercel.redirects.some(
+            (r) => r.source === `${src}/` && r.destination === "/reliquidacion-impuesto" && r.permanent === true,
+          ),
+      ) &&
+        /urlPath === "\/reliquidacion-iusc"/.test(readFileSync(join(root, "scripts/serve.mjs"), "utf8")) &&
+        /Location: `\/reliquidacion-impuesto/.test(readFileSync(join(root, "scripts/serve.mjs"), "utf8")),
+    );
+  }
+  {
     const cpHtml = readFileSync(join(root, "cotizaciones-previsionales.html"), "utf8");
     const cpTitle = (cpHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
     const cpH1 = (cpHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
@@ -21564,7 +21844,7 @@ assert(
     return acc;
   }
   const pages = listHtml(root);
-  assert("126 páginas HTML", pages.length === 126, String(pages.length));
+  assert("127 páginas HTML", pages.length === 127, String(pages.length));
   for (const file of pages) {
     const html = readFileSync(file, "utf8");
     const rel = file.slice(root.length + 1);

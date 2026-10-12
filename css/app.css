@@ -3191,3 +3191,13 @@ body[data-dialog-open] .toaster {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
+
+.reliq-emp + .reliq-emp {
+  margin-top: var(--s-5);
+  padding-top: var(--s-5);
+  border-top: 1px solid var(--line);
+}
+.reliq-emp h2 {
+  margin: 0 0 var(--s-3);
+  font-size: var(--t-md);
+}

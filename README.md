@@ -45,6 +45,7 @@ en `js/picker.js` (hoja inferior con velo en móvil, panel anclado en escritorio
 - `/pacto-horas-extras` pacto escrito de horas extras (arts. 31 y 32), recargo 50 % y tope de 2 h al día
 - `/gratificacion` gratificación legal art. 50 (25 % con tope mensual)
 - `/impuesto-unico` impuesto único de segunda categoría (IUSC) sobre la renta líquida imponible
+- `/reliquidacion-impuesto` reliquidación anual del IUSC con más de un empleador (art. 47 LIR)
 - `/cotizaciones-previsionales` AFP, salud Fonasa 7 % y cesantía del trabajador, con topes en UF
 - `/vacaciones-proporcionales` feriado proporcional (días × remuneración / 30)
 - `/finiquito` arts. 159 / 160 / 161

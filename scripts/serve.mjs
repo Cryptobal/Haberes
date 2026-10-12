@@ -170,6 +170,17 @@ export function handleRequest(req, res) {
     return;
   }
   if (
+    urlPath === "/reliquidacion-iusc" ||
+    urlPath === "/impuesto-varios-empleadores" ||
+    urlPath === "/art-47-lir" ||
+    urlPath === "/operacion-renta-iusc" ||
+    urlPath === "/reliquidacion-segunda-categoria" ||
+    urlPath === "/impuesto-segundo-empleador"
+  ) {
+    send(res, 301, { Location: `/reliquidacion-impuesto${url.search}` }, "");
+    return;
+  }
+  if (
     urlPath === "/prestacion-seguro-cesantia" ||
     urlPath === "/cobro-seguro-cesantia" ||
     urlPath === "/simulador-afc" ||
