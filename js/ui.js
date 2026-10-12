@@ -235,6 +235,7 @@ function paintLoggedInNav(emp) {
         <a href="/gratificacion" data-nav>Gratificación</a>
         <a href="/aguinaldo" data-nav>Aguinaldo</a>
         <a href="/impuesto-unico" data-nav>Impuesto único</a>
+        <a href="/reliquidacion-impuesto" data-nav>Reliquidación impuesto</a>
         <a href="/boleta-honorarios" data-nav>Boleta honorarios</a>
         <a href="/cotizacion-independiente" data-nav>Cotización independiente</a>
         <a href="/cotizaciones-previsionales" data-nav>Cotizaciones previsionales</a>
