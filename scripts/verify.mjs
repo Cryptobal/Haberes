@@ -3930,6 +3930,17 @@ console.log("\nAutodespido art. 171 (reusa calcularIas; gold 2026)");
       !/\bprompt\s*\(/.test(adApp) &&
       !/window\.open/.test(adApp),
   );
+  const seoCalcAd = readFileSync(join(root, "js/seo-calc.js"), "utf8");
+  assert(
+    "seo-calc monta autodespido con calcularIas",
+    /import\s*\{[^}]*calcularIas[^}]*\}\s*from\s*["']\.\/finiquito\.js["']/.test(seoCalcAd) &&
+      /function mountAutodespido/.test(seoCalcAd) &&
+      /autodespido:\s*mountAutodespido/.test(seoCalcAd) &&
+      /href="\/autodespido"/.test(seoCalcAd) &&
+      /value="2020-03-01"/.test(seoCalcAd) &&
+      /value="1000000"/.test(seoCalcAd) &&
+      !/\balert\s*\(/.test(seoCalcAd),
+  );
 }
 
 console.log("\nIndemnización obra o faena art. 163 (Ley 21.122; gold 2026)");
@@ -7641,7 +7652,8 @@ assert(
     lastmodForPath("/guias/vacaciones-proporcionales") === "2026-09-14" &&
     lastmodForPath("/guias/liquidacion-de-sueldo-y-previred") === "2026-09-21" &&
     lastmodForPath("/guias/fuero-maternal") === "2026-09-28" &&
-    lastmodForPath("/guias") === "2026-09-28" &&
+    lastmodForPath("/guias/autodespido") === "2026-10-12" &&
+    lastmodForPath("/guias") === "2026-10-12" &&
     /<loc>https:\/\/www\.haberes\.cl\/guias\/liquidacion-de-sueldo<\/loc>\s*<lastmod>2026-08-18<\/lastmod>/.test(sitemap) &&
     /<loc>https:\/\/www\.haberes\.cl\/guias\/gratificacion-legal<\/loc>\s*<lastmod>2026-08-18<\/lastmod>/.test(sitemap) &&
     /<loc>https:\/\/www\.haberes\.cl\/guias\/indemnizacion-por-anos-de-servicio<\/loc>\s*<lastmod>2026-08-19<\/lastmod>/.test(sitemap) &&
@@ -7652,7 +7664,8 @@ assert(
     /<loc>https:\/\/www\.haberes\.cl\/guias\/vacaciones-proporcionales<\/loc>\s*<lastmod>2026-09-14<\/lastmod>/.test(sitemap) &&
     /<loc>https:\/\/www\.haberes\.cl\/guias\/liquidacion-de-sueldo-y-previred<\/loc>\s*<lastmod>2026-09-21<\/lastmod>/.test(sitemap) &&
     /<loc>https:\/\/www\.haberes\.cl\/guias\/fuero-maternal<\/loc>\s*<lastmod>2026-09-28<\/lastmod>/.test(sitemap) &&
-    /<loc>https:\/\/www\.haberes\.cl\/guias<\/loc>\s*<lastmod>2026-09-28<\/lastmod>/.test(sitemap),
+    /<loc>https:\/\/www\.haberes\.cl\/guias\/autodespido<\/loc>\s*<lastmod>2026-10-12<\/lastmod>/.test(sitemap) &&
+    /<loc>https:\/\/www\.haberes\.cl\/guias<\/loc>\s*<lastmod>2026-10-12<\/lastmod>/.test(sitemap),
 );
 assert("sin ruta /blog ni /noticias", !existsSync(join(root, "blog.html")) && !existsSync(join(root, "noticias.html")));
 assert("sitemap sin .html (cleanUrls)", !locs.some((u) => u.endsWith(".html")));
@@ -7938,7 +7951,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 123,
+      seoPaths().length === 124,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -19795,6 +19808,7 @@ assert(
       ["guias/vacaciones-proporcionales.html", "/vacaciones-proporcionales", /artículo 73/, /dt\.gob\.cl/],
       ["guias/liquidacion-de-sueldo-y-previred.html", "/sueldo", /54/, /dt\.gob\.cl/],
       ["guias/fuero-maternal.html", "/fuero-maternal", /artículo 201/, /dt\.gob\.cl/],
+      ["guias/autodespido.html", "/autodespido", /artículo 171/, /dt\.gob\.cl/],
       ["guias/finiquito-trabajadora-de-casa-particular.html", "/finiquito-casa-particular", /artículo 163/, /dt\.gob\.cl/],
     ];
     function visibleWords(html) {
@@ -19822,11 +19836,14 @@ assert(
         file.includes("vacaciones-proporcionales") ||
         file.includes("liquidacion-de-sueldo-y-previred") ||
         file.includes("fuero-maternal") ||
+        file.includes("autodespido") ||
         file.includes("finiquito-trabajadora-de-casa-particular")
           ? 900
           : 800;
       const dateRe =
-        file.includes("finiquito-trabajadora-de-casa-particular")
+        file.includes("autodespido")
+          ? /<time datetime="2026-10-12">/
+          : file.includes("finiquito-trabajadora-de-casa-particular")
           ? /<time datetime="2026-10-05">/
           : file.includes("fuero-maternal")
           ? /<time datetime="2026-09-28">/
@@ -19906,6 +19923,66 @@ assert(
           /60062/.test(html) &&
           /3366/.test(html) &&
           landingH1 === "Calculadora fuero maternal Chile 2026",
+        `${title} | ${h1}`,
+      );
+    }
+    {
+      const html = readFileSync(join(root, "guias/autodespido.html"), "utf8");
+      const landing = readFileSync(join(root, "autodespido.html"), "utf8");
+      const sueldoHtml = readFileSync(join(root, "sueldo.html"), "utf8");
+      const finiHtml = readFileSync(join(root, "finiquito.html"), "utf8");
+      const title = (html.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+      const h1 = (html.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+      const landingTitle = (landing.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+      const landingH1 = (landing.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+      const sueldoTitle = (sueldoHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+      const sueldoH1 = (sueldoHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+      const finiTitle = (finiHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+      const finiH1 = (finiHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+      assert(
+        "SEO guía autodespido title/H1 únicos y alineados al motor",
+        title &&
+          h1 &&
+          title !== landingTitle &&
+          h1 !== landingH1 &&
+          title !== sueldoTitle &&
+          h1 !== sueldoH1 &&
+          title !== finiTitle &&
+          h1 !== finiH1 &&
+          /autodespido/i.test(title) &&
+          /despido indirecto/i.test(title) &&
+          /171/.test(title) &&
+          h1 === "Autodespido o despido indirecto en Chile: qué es el art. 171 y cuándo procede" &&
+          !/calculadora/i.test(title) &&
+          !/calculadora/i.test(h1) &&
+          !/^Calcular /i.test(h1) &&
+          !/sueldo l[ií]quido/i.test(h1) &&
+          !/finiquito/i.test(h1) &&
+          /data-seo-calc="autodespido"/.test(html) &&
+          /\$6\.000\.000/.test(html) &&
+          /\$7\.000\.000/.test(html) &&
+          /\$8\.000\.000/.test(html) &&
+          /\$0/.test(html) &&
+          /1 de marzo de 2020/.test(html) &&
+          /1 de marzo de 2026/.test(html) &&
+          /1 de octubre de 2026/.test(html) &&
+          /1 de junio de 2025/.test(html) &&
+          /7 años/.test(html) &&
+          /60 días hábiles/.test(html) &&
+          /href="\/autodespido"/.test(html) &&
+          /href="\/despido-injustificado"/.test(html) &&
+          /href="\/tutela-laboral"/.test(html) &&
+          /href="\/nulidad-despido"/.test(html) &&
+          /href="\/finiquito"/.test(html) &&
+          /href="\/indemnizacion-anos-servicio"/.test(html) &&
+          /href="\/indemnizacion-aviso-previo"/.test(html) &&
+          /href="\/guias\/me-reservo-el-derecho-en-el-finiquito"/.test(html) &&
+          /href="\/guias\/carta-aviso-termino-contrato"/.test(html) &&
+          /60579/.test(html) &&
+          /110967/.test(html) &&
+          /bcn\.cl\/leychile\/navegar\?idNorma=207436/.test(html) &&
+          landingH1 === "Calcular autodespido Chile 2026" &&
+          GUIDES.find((g) => g.slug === "autodespido")?.calc === "/autodespido",
         `${title} | ${h1}`,
       );
     }
@@ -21331,8 +21408,8 @@ assert(
     const hub = readFileSync(join(root, "guias.html"), "utf8");
     assert("SEO hub /guias existe", existsSync(join(root, "guias.html")));
     assert(
-      "SEO hub lista 18 guías agrupadas",
-      GUIDE_SLUGS.length === 18 &&
+      "SEO hub lista 19 guías agrupadas",
+      GUIDE_SLUGS.length === 19 &&
         GUIDE_SLUGS.every((s) => hub.includes(`/guias/${s}`)) &&
         /Liquidaci[oó]n de sueldo/.test(hub) &&
         /<h2>Finiquito<\/h2>/.test(hub) &&
@@ -21348,7 +21425,8 @@ assert(
         /datetime="2026-09-28"/.test(hub) &&
         /datetime="2026-09-14"/.test(hub) &&
         /datetime="2026-09-07"/.test(hub) &&
-        /datetime="2026-08-31"/.test(hub) &&
+        /datetime="2026-10-12"/.test(hub) &&
+        /href="\/guias\/autodespido"/.test(hub) &&
         /href="\/guias\/fuero-maternal"/.test(hub) &&
         /href="\/guias\/liquidacion-de-sueldo-y-previred"/.test(hub) &&
         /href="\/guias\/vacaciones-proporcionales"/.test(hub) &&
@@ -21486,7 +21564,7 @@ assert(
     return acc;
   }
   const pages = listHtml(root);
-  assert("125 páginas HTML", pages.length === 125, String(pages.length));
+  assert("126 páginas HTML", pages.length === 126, String(pages.length));
   for (const file of pages) {
     const html = readFileSync(file, "utf8");
     const rel = file.slice(root.length + 1);

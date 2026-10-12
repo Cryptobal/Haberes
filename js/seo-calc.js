@@ -11,7 +11,7 @@ import {
   IUSC_TRAMOS,
   DISCLAIMER,
 } from "./constants.js";
-import { calcularFiniquitoCompleto, calcularFiniquitoCasaParticular, feriadoProporcional } from "./finiquito.js";
+import { calcularFiniquitoCompleto, calcularFiniquitoCasaParticular, calcularIas, feriadoProporcional } from "./finiquito.js";
 import { calcularAguinaldo, calcularFueroMaternal, calcularSueldo, valorHoraExtra, gratificacionArt50 } from "./sueldo.js";
 
 function pesos(n) {
@@ -378,6 +378,52 @@ function mountCasaParticular(root) {
   run();
 }
 
+function mountAutodespido(root) {
+  root.innerHTML = `
+    <form class="seo-calc__form" novalidate>
+      <p class="seo-calc__title">Estimar autodespido (art. 171)</p>
+      ${field("Fecha de inicio", "ingreso", 'type="date" value="2020-03-01"')}
+      ${field("Fecha de término", "termino", 'type="date" value="2026-03-01"')}
+      ${field("Remuneración base para IAS", "rem", 'type="text" inputmode="numeric" value="1000000"')}
+      <label class="seo-calc__check"><input type="checkbox" name="aviso" /> Incluir aviso sustitutivo (art. 162 inc. 4)</label>
+      <p class="seo-calc__result" data-out>—</p>
+      <div class="seo-calc__actions">
+        <button type="submit" class="btn">Calcular</button>
+        <a class="btn btn-ghost" href="/autodespido">Abrir calculadora completa</a>
+      </div>
+      <p class="seo-calc__note">No incluye el recargo del art. 171 (50 % o hasta 80 %): lo fija el juez. ${DISCLAIMER}</p>
+    </form>`;
+  const form = root.querySelector("form");
+  const out = root.querySelector("[data-out]");
+  const run = () => {
+    let r;
+    try {
+      r = calcularIas(
+        {
+          ingreso: form.ingreso.value,
+          termino: form.termino.value,
+          remuneracion: num(form.rem),
+          avisoPrevio: !form.aviso.checked,
+        },
+        { uf: FALLBACK_UF },
+      );
+    } catch {
+      out.textContent = "Indique inicio, término y remuneración.";
+      return;
+    }
+    const avisoTxt = form.aviso.checked
+      ? ` Aviso sustitutivo: ${pesos(r.aviso)}. Total: ${pesos(r.totalIasAviso)}.`
+      : " Aviso no incluido.";
+    out.textContent = `IAS estimada: ${pesos(r.ias)} (${r.anios} años).${avisoTxt} Sin recargo del art. 171.`;
+  };
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    run();
+  });
+  form.addEventListener("change", run);
+  run();
+}
+
 const MOUNTERS = {
   finiquito: mountFiniquito,
   sueldo: mountSueldo,
@@ -387,6 +433,7 @@ const MOUNTERS = {
   iusc: mountIusc,
   aguinaldo: mountAguinaldo,
   fuero: mountFuero,
+  autodespido: mountAutodespido,
   "casa-particular": mountCasaParticular,
 };
 
