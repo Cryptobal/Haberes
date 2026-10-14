@@ -93,7 +93,19 @@
     { "source": "/reliquidacion-segunda-categoria", "destination": "/reliquidacion-impuesto", "permanent": true },
     { "source": "/reliquidacion-segunda-categoria/", "destination": "/reliquidacion-impuesto", "permanent": true },
     { "source": "/impuesto-segundo-empleador", "destination": "/reliquidacion-impuesto", "permanent": true },
-    { "source": "/impuesto-segundo-empleador/", "destination": "/reliquidacion-impuesto", "permanent": true }
+    { "source": "/impuesto-segundo-empleador/", "destination": "/reliquidacion-impuesto", "permanent": true },
+    { "source": "/carta-de-renuncia", "destination": "/carta-renuncia", "permanent": true },
+    { "source": "/carta-de-renuncia/", "destination": "/carta-renuncia", "permanent": true },
+    { "source": "/carta-renuncia-voluntaria", "destination": "/carta-renuncia", "permanent": true },
+    { "source": "/carta-renuncia-voluntaria/", "destination": "/carta-renuncia", "permanent": true },
+    { "source": "/modelo-carta-renuncia", "destination": "/carta-renuncia", "permanent": true },
+    { "source": "/modelo-carta-renuncia/", "destination": "/carta-renuncia", "permanent": true },
+    { "source": "/formato-carta-renuncia", "destination": "/carta-renuncia", "permanent": true },
+    { "source": "/formato-carta-renuncia/", "destination": "/carta-renuncia", "permanent": true },
+    { "source": "/ejemplo-carta-renuncia", "destination": "/carta-renuncia", "permanent": true },
+    { "source": "/ejemplo-carta-renuncia/", "destination": "/carta-renuncia", "permanent": true },
+    { "source": "/renuncia-voluntaria", "destination": "/carta-renuncia", "permanent": true },
+    { "source": "/renuncia-voluntaria/", "destination": "/carta-renuncia", "permanent": true }
   ],
   "rewrites": [
     { "source": "/sitemap.xml", "destination": "/api/sitemap" },

@@ -181,6 +181,17 @@ export function handleRequest(req, res) {
     return;
   }
   if (
+    urlPath === "/carta-de-renuncia" ||
+    urlPath === "/carta-renuncia-voluntaria" ||
+    urlPath === "/modelo-carta-renuncia" ||
+    urlPath === "/formato-carta-renuncia" ||
+    urlPath === "/ejemplo-carta-renuncia" ||
+    urlPath === "/renuncia-voluntaria"
+  ) {
+    send(res, 301, { Location: `/carta-renuncia${url.search}` }, "");
+    return;
+  }
+  if (
     urlPath === "/prestacion-seguro-cesantia" ||
     urlPath === "/cobro-seguro-cesantia" ||
     urlPath === "/simulador-afc" ||

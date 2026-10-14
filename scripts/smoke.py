@@ -240,6 +240,9 @@ def check_http():
         ("/sindicato-fuero", 404, None),
         ("/fuero-sindical-chile", 404, None),
         ("/autodespido", 200, "html"),
+        ("/carta-renuncia", 200, "html"),
+        ("/carta-de-renuncia", 200, "html"),
+        ("/renuncia-voluntaria", 200, "html"),
         ("/obra-faena", 200, "html"),
         ("/prescripcion-laboral", 200, "html"),
         ("/descanso-compensatorio", 200, "html"),
@@ -361,6 +364,7 @@ PAGES = [
     ("fuero-maternal.html", "fuero-maternal"),
     ("fuero-sindical.html", "fuero-sindical"),
     ("autodespido.html", "autodespido"),
+    ("carta-renuncia.html", "carta-renuncia"),
     ("obra-faena.html", "obra-faena"),
     ("prescripcion-laboral.html", "prescripcion-laboral"),
     ("descanso-compensatorio.html", "descanso-compensatorio"),
@@ -398,6 +402,18 @@ DESKTOP = {"width": 1280, "height": 900}
 
 problems = []
 os.makedirs(SHOTS, exist_ok=True)
+
+
+def block_third_parties(page):
+    """Responde al tiro a GTM y mindicador.cl para que networkidle no quede colgado."""
+
+    def handle(route):
+        if route.request.url.startswith(BASE):
+            route.continue_()
+            return
+        route.fulfill(status=204, body=b"", headers={"content-type": "text/plain"})
+
+    page.route("**/*", handle)
 
 
 def note(msg):
@@ -478,6 +494,7 @@ def run():
         print("[marca] isotype en inicio y tema noche")
         mark_ctx = browser.new_context(viewport=DESKTOP, device_scale_factor=2)
         mark_page = mark_ctx.new_page()
+        block_third_parties(mark_page)
         mark_page.goto(f"{BASE}/", wait_until="networkidle")
         mark_page.wait_for_timeout(250)
         mark_day = mark_page.evaluate(
@@ -522,10 +539,11 @@ def run():
         for viewport, tag in ((MOBILE, "movil"), (DESKTOP, "escritorio")):
             ctx = browser.new_context(viewport=viewport, device_scale_factor=2)
             page = ctx.new_page()
+            block_third_parties(page)
             errors = []
             page.on("console", lambda m: errors.append(m.text) if m.type == "error" else None)
             page.on("pageerror", lambda e: errors.append(f"pageerror: {e}"))
-            ignore = ("googletagmanager", "google-analytics", "fonts.g", "/api/")
+            ignore = ("googletagmanager", "google-analytics", "fonts.g", "/api/", "mindicador.cl")
             page.on(
                 "requestfailed",
                 lambda r: errors.append(f"request failed: {r.url}")
@@ -559,6 +577,7 @@ def run():
         # ---- Interacciones en móvil ----
         ctx = browser.new_context(viewport=MOBILE, device_scale_factor=2)
         page = ctx.new_page()
+        block_third_parties(page)
         js_errors = []
         page.on("pageerror", lambda e: js_errors.append(str(e)))
 
@@ -602,6 +621,7 @@ def run():
         print("[interacción] hamburguesa 390px")
         ctx390 = browser.new_context(viewport={"width": 390, "height": 844}, device_scale_factor=2)
         page390 = ctx390.new_page()
+        block_third_parties(page390)
         page390.goto(f"{BASE}/index.html", wait_until="networkidle")
         page390.wait_for_timeout(350)
         burger390 = page390.locator("[data-nav-burger]")
@@ -645,6 +665,28 @@ def run():
                     if drawer390.get_attribute("hidden") is None:
                         note("el velo no cerró #navDrawer a 390px")
         ctx390.close()
+
+        print("[interacción] carta de renuncia: formulario y vista previa")
+        page.goto(f"{BASE}/carta-renuncia", wait_until="networkidle")
+        page.wait_for_timeout(400)
+        preview = page.locator("#cartaTexto")
+        if preview.count() == 0 or not preview.is_visible():
+            note("la vista previa de la carta no está visible")
+        else:
+            inicial = preview.text_content() or ""
+            if "Ana Pérez Soto" not in inicial or "renuncia voluntaria" not in inicial.lower():
+                note("la vista previa inicial no incluye el ejemplo")
+            if "artículo 159" not in inicial and "articulo 159" not in inicial.lower():
+                note("la vista previa inicial no cita el artículo 159")
+        page.fill("#nombre", "Rosa Campos")
+        page.fill("#ciudad", "Rancagua")
+        page.wait_for_timeout(200)
+        vivo = page.locator("#cartaTexto").text_content() or ""
+        if "Rosa Campos" not in vivo or "Rancagua" not in vivo:
+            note(f"la vista previa no sigue al formulario: {vivo[:180]!r}")
+        if page.locator("#btnCopiarCarta").count() == 0 or page.locator("#btnDescargarCarta").count() == 0:
+            note("faltan los botones de copiar o descargar")
+        page.screenshot(path=f"{SHOTS}/movil-carta-renuncia-preview.png")
 
         print("[interacción] fecha de finiquito como calendario")
         page.goto(f"{BASE}/finiquito.html", wait_until="networkidle")
