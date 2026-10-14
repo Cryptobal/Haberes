@@ -3080,7 +3080,28 @@ body[data-dialog-open] .toaster {
 
 /* ---------- 8. IMPRESIÓN ---------- */
 
+.carta-texto {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: Georgia, "Iowan Old Style", "Palatino Linotype", Palatino, serif;
+  font-size: 1rem;
+  line-height: 1.55;
+  color: var(--text);
+}
+
 @media print {
+  .no-print {
+    display: none !important;
+  }
+
+  .carta-sheet {
+    border: 0 !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    position: static !important;
+  }
+
   .site-header,
   .site-footer,
   .btn,

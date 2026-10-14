@@ -197,6 +197,7 @@ import {
   roundPeso,
 } from "../js/sueldo.js";
 import { calcularGirosCesantia } from "../js/giro-seguro-cesantia.js";
+import { redactarCartaRenuncia } from "../js/carta-renuncia.js";
 import { calcularCotizacionIndependiente } from "../js/cotizacion-independiente.js";
 import { calcularViatico } from "../js/viatico.js";
 import { calcularSueldoEmpresarial } from "../js/sueldo-empresarial.js";
@@ -7086,6 +7087,7 @@ const required = [
   "tutela-laboral.html",
   "despido-injustificado.html",
   "autodespido.html",
+  "carta-renuncia.html",
   "obra-faena.html",
   "prescripcion-laboral.html",
   "descanso-compensatorio.html",
@@ -7109,6 +7111,9 @@ const required = [
   "comparar-afp.html",
   "multas-inspeccion-trabajo.html",
   "finiquito.html",
+  "carta-renuncia.html",
+  "js/carta-renuncia.js",
+  "js/app-carta-renuncia.js",
   "js/app-horas-extras.js",
   "js/app-valor-hora.js",
   "js/app-vacaciones-proporcionales.js",
@@ -7400,6 +7405,7 @@ const htmlFiles = [
   "tutela-laboral.html",
   "despido-injustificado.html",
   "autodespido.html",
+  "carta-renuncia.html",
   "obra-faena.html",
   "prescripcion-laboral.html",
   "descanso-compensatorio.html",
@@ -8102,7 +8108,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 125,
+      seoPaths().length === 126,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -8114,7 +8120,7 @@ try {
   const docsSeo = await hitLocal("/docs/seo-map.md");
   assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
   assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
-  for (const p of ["/sueldo/", "/sueldo-liquido-a-bruto/", "/sueldo-casa-particular/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/valor-hora/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/dias-habiles/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/obra-faena/", "/prescripcion-laboral/", "/descanso-compensatorio/", "/inclusion-laboral/", "/jornada-parcial/", "/teletrabajo/", "/bandas-horarias/", "/pacto-4x3/", "/jornada-excepcional/", "/jornada-bisemanal/", "/compensacion-horas-extras/", "/pacto-horas-extras/", "/contrato-plazo-fijo/", "/termino-anticipado-plazo-fijo/", "/permiso-sin-goce/", "/zona-extrema/", "/promedio-remuneraciones/", "/antiguedad-laboral/", "/tope-imponible/", "/diferencia-isapre/", "/comparar-afp/", "/multas-inspeccion-trabajo/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/cotizacion-independiente/", "/retencion-judicial/", "/descuentos-legales/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/fuero-sindical/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/reliquidacion-impuesto/", "/cotizaciones-previsionales/", "/costo-empresa/", "/cotizacion-empleador/", "/seguro-cesantia/", "/giro-seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/viatico/", "/reajuste-ipc/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+  for (const p of ["/sueldo/", "/sueldo-liquido-a-bruto/", "/sueldo-casa-particular/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/valor-hora/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/dias-habiles/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/carta-renuncia/", "/obra-faena/", "/prescripcion-laboral/", "/descanso-compensatorio/", "/inclusion-laboral/", "/jornada-parcial/", "/teletrabajo/", "/bandas-horarias/", "/pacto-4x3/", "/jornada-excepcional/", "/jornada-bisemanal/", "/compensacion-horas-extras/", "/pacto-horas-extras/", "/contrato-plazo-fijo/", "/termino-anticipado-plazo-fijo/", "/permiso-sin-goce/", "/zona-extrema/", "/promedio-remuneraciones/", "/antiguedad-laboral/", "/tope-imponible/", "/diferencia-isapre/", "/comparar-afp/", "/multas-inspeccion-trabajo/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/cotizacion-independiente/", "/retencion-judicial/", "/descuentos-legales/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/fuero-sindical/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/reliquidacion-impuesto/", "/cotizaciones-previsionales/", "/costo-empresa/", "/cotizacion-empleador/", "/seguro-cesantia/", "/giro-seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/viatico/", "/reajuste-ipc/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
   }
@@ -8169,6 +8175,7 @@ try {
     "/tutela-laboral",
     "/despido-injustificado",
     "/autodespido",
+    "/carta-renuncia",
     "/obra-faena",
     "/prescripcion-laboral",
     "/descanso-compensatorio",
@@ -8291,6 +8298,27 @@ try {
       `${alias} → ${hit.status} ${hit.location}`,
     );
   }
+  for (const alias of [
+    "/carta-de-renuncia",
+    "/carta-renuncia-voluntaria",
+    "/modelo-carta-renuncia",
+    "/formato-carta-renuncia",
+    "/ejemplo-carta-renuncia",
+    "/renuncia-voluntaria",
+  ]) {
+    const hit = await hitLocal(alias);
+    assert(
+      `301 ${alias} → /carta-renuncia`,
+      hit.status === 301 && hit.location === "/carta-renuncia",
+      `${alias} → ${hit.status} ${hit.location}`,
+    );
+  }
+  const cartaPage = await hitLocal("/carta-renuncia");
+  assert(
+    "GET /carta-renuncia 200",
+    cartaPage.status === 200 && /<h1>/.test(cartaPage.text),
+    String(cartaPage.status),
+  );
   const giroPage = await hitLocal("/giro-seguro-cesantia");
   assert(
     "GET /giro-seguro-cesantia 200",
@@ -12045,6 +12073,7 @@ assert(
     ["tutela-laboral.html", "/tutela-laboral"],
     ["despido-injustificado.html", "/despido-injustificado"],
     ["autodespido.html", "/autodespido"],
+    ["carta-renuncia.html", "/carta-renuncia"],
     ["obra-faena.html", "/obra-faena"],
     ["prescripcion-laboral.html", "/prescripcion-laboral"],
     ["descanso-compensatorio.html", "/descanso-compensatorio"],
@@ -21644,6 +21673,7 @@ assert(
       "tutela-laboral.html",
       "despido-injustificado.html",
       "autodespido.html",
+      "carta-renuncia.html",
       "obra-faena.html",
       "prescripcion-laboral.html",
       "descanso-compensatorio.html",
@@ -21844,7 +21874,7 @@ assert(
     return acc;
   }
   const pages = listHtml(root);
-  assert("127 páginas HTML", pages.length === 127, String(pages.length));
+  assert("128 páginas HTML", pages.length === 128, String(pages.length));
   for (const file of pages) {
     const html = readFileSync(file, "utf8");
     const rel = file.slice(root.length + 1);
@@ -22363,6 +22393,191 @@ console.log("\nMultas inspección del trabajo");
   assert(
     "robots no Disallow /multas-inspeccion-trabajo",
     !/Disallow:\s*\/multas-inspeccion-trabajo/.test(readFileSync(join(root, "robots.txt"), "utf8")),
+  );
+}
+
+{
+  const crHtml = readFileSync(join(root, "carta-renuncia.html"), "utf8");
+  const crTitle = (crHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+  const crH1 = (crHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+  const crDesc = (crHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "";
+  const crCanonical = (crHtml.match(/rel="canonical" href="([^"]*)"/) || [])[1] || "";
+  const goldAviso = redactarCartaRenuncia({
+    nombre: "Ana Pérez Soto",
+    rut: "12.345.678-5",
+    empleador: "Comercial Andes SpA",
+    rutEmpleador: "76.086.428-5",
+    cargo: "Analista de remuneraciones",
+    ciudad: "Santiago",
+    fechaCarta: "2026-03-02",
+    ultimoDia: "2026-04-01",
+    aviso: true,
+    feriado: true,
+    motivo: "",
+  });
+  const goldMotivo = redactarCartaRenuncia({
+    nombre: "Luis Rojas Díaz",
+    rut: "9.876.543-3",
+    empleador: "Taller Sur Ltda.",
+    rutEmpleador: "",
+    cargo: "Bodeguero",
+    ciudad: "Valparaíso",
+    fechaCarta: "2026-06-15",
+    ultimoDia: "2026-06-30",
+    aviso: false,
+    feriado: false,
+    motivo: "cambio de residencia",
+  });
+  const goldConcepcion = redactarCartaRenuncia({
+    nombre: "Camila Soto",
+    rut: "7.654.321-6",
+    empleador: "Fundación Norte",
+    rutEmpleador: "76.086.428-5",
+    cargo: "Educadora",
+    ciudad: "Concepción",
+    fechaCarta: "2026-01-05",
+    ultimoDia: "2026-02-04",
+    aviso: true,
+    feriado: true,
+    motivo: "razones personales",
+  });
+  assert(
+    "SEO carta renuncia title y H1",
+    crTitle === "Carta de renuncia voluntaria Chile 2026 — Haberes" &&
+      crH1 === "Carta de renuncia voluntaria Chile 2026" &&
+      crTitle.length <= 65 &&
+      !/calculadora de finiquito/i.test(crTitle) &&
+      !/autodespido/i.test(crH1),
+    crTitle,
+  );
+  assert(
+    "SEO carta renuncia description y canonical",
+    crDesc.length >= 110 &&
+      crDesc.length <= 160 &&
+      /art\. 159/.test(crDesc) &&
+      /no es asesor[ií]a legal/i.test(crDesc) &&
+      crCanonical === "https://www.haberes.cl/carta-renuncia",
+    `${crDesc.length}:${crDesc}`,
+  );
+  assert(
+    "carta renuncia cita art. 159 N°2, disclaimer y enlaces",
+    /159 N° 2/.test(crHtml) &&
+      /renuncia voluntaria/i.test(crHtml) &&
+      /no constituye asesor[ií]a legal/i.test(crHtml) &&
+      /coacci[oó]n/i.test(crHtml) &&
+      /href="\/finiquito\/art-159-renuncia-voluntaria"/.test(crHtml) &&
+      /href="\/vacaciones-proporcionales"/.test(crHtml) &&
+      /href="\/finiquito"/.test(crHtml) &&
+      /href="\/indemnizacion-aviso-previo"/.test(crHtml) &&
+      /href="\/autodespido"/.test(crHtml) &&
+      /"@type": "Organization"/.test(crHtml) &&
+      /"@type": "WebApplication"/.test(crHtml) &&
+      /"@type": "FAQPage"/.test(crHtml),
+  );
+  assert(
+    "gold carta con aviso, feriado y RUT empleador",
+    goldAviso.diasAviso === 30 &&
+      goldAviso.rutTrabajadorOk &&
+      goldAviso.rutEmpleadorOk === true &&
+      goldAviso.texto.includes("Ana Pérez Soto") &&
+      goldAviso.texto.includes("12.345.678-5") &&
+      goldAviso.texto.includes("Comercial Andes SpA") &&
+      goldAviso.texto.includes("76.086.428-5") &&
+      goldAviso.texto.includes("Analista de remuneraciones") &&
+      goldAviso.texto.includes("Santiago, 2 de marzo de 2026") &&
+      goldAviso.texto.includes("1 de abril de 2026") &&
+      /renuncia voluntaria/i.test(goldAviso.texto) &&
+      /art[íi]culo 159/.test(goldAviso.texto) &&
+      /razones personales/.test(goldAviso.texto) &&
+      /feriado proporcional/.test(goldAviso.texto) &&
+      /no fija montos/.test(goldAviso.texto) &&
+      /treinta d[íi]as/.test(goldAviso.texto),
+  );
+  assert(
+    "gold carta sin aviso, sin feriado y con motivo libre",
+    goldMotivo.diasAviso === 15 &&
+      goldMotivo.rutTrabajadorOk &&
+      goldMotivo.rutEmpleadorOk === null &&
+      goldMotivo.texto.includes("Luis Rojas Díaz") &&
+      goldMotivo.texto.includes("9.876.543-3") &&
+      goldMotivo.texto.includes("Taller Sur Ltda.") &&
+      goldMotivo.texto.includes("Bodeguero") &&
+      goldMotivo.texto.includes("Valparaíso, 15 de junio de 2026") &&
+      goldMotivo.texto.includes("30 de junio de 2026") &&
+      /renuncia voluntaria/i.test(goldMotivo.texto) &&
+      /art[íi]culo 159/.test(goldMotivo.texto) &&
+      /cambio de residencia/.test(goldMotivo.texto) &&
+      !/feriado proporcional/.test(goldMotivo.texto) &&
+      !/RUT 76\.086\.428-5/.test(goldMotivo.texto) &&
+      !/treinta d[íi]as/.test(goldMotivo.texto),
+  );
+  assert(
+    "gold carta Concepción con aviso y feriado",
+    goldConcepcion.diasAviso === 30 &&
+      goldConcepcion.rutTrabajadorOk &&
+      goldConcepcion.texto.includes("Camila Soto") &&
+      goldConcepcion.texto.includes("7.654.321-6") &&
+      goldConcepcion.texto.includes("Fundación Norte") &&
+      goldConcepcion.texto.includes("Educadora") &&
+      goldConcepcion.texto.includes("Concepción, 5 de enero de 2026") &&
+      goldConcepcion.texto.includes("4 de febrero de 2026") &&
+      /renuncia voluntaria/i.test(goldConcepcion.texto) &&
+      /art[íi]culo 159/.test(goldConcepcion.texto) &&
+      /razones personales/.test(goldConcepcion.texto) &&
+      /feriado proporcional/.test(goldConcepcion.texto) &&
+      /art[íi]culo 163/.test(goldConcepcion.texto),
+  );
+  assert(
+    "home, finiquito y nav enlazan /carta-renuncia",
+    /href="\/carta-renuncia"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+      /href="\/carta-renuncia" data-nav>Carta de renuncia<\/a>/.test(
+        readFileSync(join(root, "index.html"), "utf8"),
+      ) &&
+      /href="\/carta-renuncia" data-nav>Carta de renuncia<\/a>/.test(crHtml) &&
+      /href="\/carta-renuncia" data-nav>Carta de renuncia<\/a>/.test(
+        readFileSync(join(root, "js/ui.js"), "utf8"),
+      ) &&
+      /href="\/carta-renuncia"/.test(readFileSync(join(root, "finiquito.html"), "utf8")) &&
+      /href="\/carta-renuncia"/.test(
+        readFileSync(join(root, "finiquito/art-159-renuncia-voluntaria.html"), "utf8"),
+      ) &&
+      /<h1>Calculadora de finiquito Chile 2026<\/h1>/.test(readFileSync(join(root, "finiquito.html"), "utf8")) &&
+      /<h1>Art\. 159 letra b\) — Renuncia del trabajador<\/h1>/.test(
+        readFileSync(join(root, "finiquito/art-159-renuncia-voluntaria.html"), "utf8"),
+      ),
+  );
+  assert(
+    "sitemap incluye /carta-renuncia",
+    locs.includes("https://www.haberes.cl/carta-renuncia") &&
+      lastmodForPath("/carta-renuncia") === "2026-10-14",
+  );
+  assert(
+    "seo-map documenta /carta-renuncia sin canibalizar finiquito",
+    /\/carta-renuncia/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+      /no canibalizar `\/finiquito`, `\/finiquito\/art-159-renuncia-voluntaria`, `\/autodespido`/i.test(
+        readFileSync(join(root, "docs/seo-map.md"), "utf8"),
+      ),
+  );
+  const vercelCarta = JSON.parse(readFileSync(join(root, "vercel.json"), "utf8"));
+  assert(
+    "alias de carta de renuncia redirigen a /carta-renuncia",
+    [
+      "/carta-de-renuncia",
+      "/carta-renuncia-voluntaria",
+      "/modelo-carta-renuncia",
+      "/formato-carta-renuncia",
+      "/ejemplo-carta-renuncia",
+      "/renuncia-voluntaria",
+    ].every(
+      (src) =>
+        vercelCarta.redirects.some(
+          (r) => r.source === src && r.destination === "/carta-renuncia" && r.permanent === true,
+        ) && !existsSync(join(root, `${src.slice(1)}.html`)),
+    ) && /urlPath === "\/renuncia-voluntaria"/.test(readFileSync(join(root, "scripts/serve.mjs"), "utf8")),
+  );
+  assert(
+    "robots no Disallow /carta-renuncia",
+    !/Disallow:\s*\/carta-renuncia/.test(readFileSync(join(root, "robots.txt"), "utf8")),
   );
 }
 
