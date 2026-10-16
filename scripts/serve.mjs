@@ -192,6 +192,16 @@ export function handleRequest(req, res) {
     return;
   }
   if (
+    urlPath === "/contrato-de-trabajo" ||
+    urlPath === "/modelo-contrato-de-trabajo" ||
+    urlPath === "/contrato-trabajo-modelo" ||
+    urlPath === "/formato-contrato-de-trabajo" ||
+    urlPath === "/contrato-individual-de-trabajo"
+  ) {
+    send(res, 301, { Location: `/contrato-trabajo${url.search}` }, "");
+    return;
+  }
+  if (
     urlPath === "/prestacion-seguro-cesantia" ||
     urlPath === "/cobro-seguro-cesantia" ||
     urlPath === "/simulador-afc" ||

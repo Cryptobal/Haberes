@@ -243,6 +243,10 @@ def check_http():
         ("/carta-renuncia", 200, "html"),
         ("/carta-de-renuncia", 200, "html"),
         ("/renuncia-voluntaria", 200, "html"),
+        ("/contrato-trabajo", 200, "html"),
+        ("/contrato-de-trabajo", 200, "html"),
+        ("/modelo-contrato-de-trabajo", 200, "html"),
+        ("/contrato-individual-de-trabajo", 200, "html"),
         ("/obra-faena", 200, "html"),
         ("/prescripcion-laboral", 200, "html"),
         ("/descanso-compensatorio", 200, "html"),
@@ -365,6 +369,7 @@ PAGES = [
     ("fuero-sindical.html", "fuero-sindical"),
     ("autodespido.html", "autodespido"),
     ("carta-renuncia.html", "carta-renuncia"),
+    ("contrato-trabajo.html", "contrato-trabajo"),
     ("obra-faena.html", "obra-faena"),
     ("prescripcion-laboral.html", "prescripcion-laboral"),
     ("descanso-compensatorio.html", "descanso-compensatorio"),
@@ -687,6 +692,46 @@ def run():
         if page.locator("#btnCopiarCarta").count() == 0 or page.locator("#btnDescargarCarta").count() == 0:
             note("faltan los botones de copiar o descargar")
         page.screenshot(path=f"{SHOTS}/movil-carta-renuncia-preview.png")
+
+        print("[interacción] contrato de trabajo: formulario, aviso y vista previa")
+        page.goto(f"{BASE}/contrato-trabajo", wait_until="networkidle")
+        page.wait_for_timeout(400)
+        preview_ct = page.locator("#contratoTexto")
+        if preview_ct.count() == 0 or not preview_ct.is_visible():
+            note("la vista previa del contrato no está visible")
+        else:
+            inicial_ct = preview_ct.text_content() or ""
+            if "Ana Pérez Soto" not in inicial_ct or "contrato individual" not in inicial_ct.lower():
+                note("la vista previa inicial no incluye el ejemplo")
+            if "artículo 9" not in inicial_ct and "articulo 9" not in inicial_ct.lower():
+                note("la vista previa inicial no cita el artículo 9")
+            if "indefinida" not in inicial_ct:
+                note("la vista previa inicial no deja el contrato como indefinido")
+        page.fill("#nombre", "Rosa Campos")
+        page.fill("#sueldoBase", "400000")
+        page.fill("#horasSemanales", "45")
+        page.wait_for_timeout(200)
+        vivo_ct = page.locator("#contratoTexto").text_content() or ""
+        if "Rosa Campos" not in vivo_ct:
+            note(f"la vista previa no sigue al formulario: {vivo_ct[:180]!r}")
+        avisos = page.locator("#contratoAvisos").text_content() or ""
+        if "553.553" not in avisos or "42 h" not in avisos:
+            note(f"el aviso no marca mínimo ni jornada: {avisos[:220]!r}")
+        if page.locator("#btnCopiarContrato").count() == 0 or page.locator("#btnDescargarContrato").count() == 0:
+            note("faltan los botones de copiar o descargar el contrato")
+        page.screenshot(path=f"{SHOTS}/movil-contrato-trabajo-preview.png")
+        page.fill("#sueldoBase", "800000")
+        page.fill("#horasSemanales", "42")
+        page.select_option("#tipo", "plazo_fijo")
+        page.wait_for_timeout(200)
+        if page.locator("#bloquePlazo").get_attribute("hidden") is not None:
+            note("el bloque de plazo fijo sigue oculto")
+        page.select_option("#tipo", "obra")
+        page.wait_for_timeout(200)
+        obra_ct = page.locator("#contratoTexto").text_content() or ""
+        if "obra o faena" not in obra_ct.lower() or "cinco días" not in obra_ct.lower():
+            note("el contrato por obra no aplica el plazo de cinco días")
+        page.screenshot(path=f"{SHOTS}/movil-contrato-trabajo-obra.png")
 
         print("[interacción] fecha de finiquito como calendario")
         page.goto(f"{BASE}/finiquito.html", wait_until="networkidle")
