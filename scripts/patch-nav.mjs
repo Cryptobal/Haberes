@@ -88,6 +88,7 @@ const DRAWER_LINKS = [
   ["/autodespido", "Autodespido"],
   ["/carta-renuncia", "Carta de renuncia"],
   ["/obra-faena", "Obra o faena"],
+  ["/contrato-trabajo", "Contrato de trabajo"],
   ["/contrato-plazo-fijo", "Contrato a plazo fijo"],
   ["/termino-anticipado-plazo-fijo", "Término anticipado plazo fijo"],
   ["/prescripcion-laboral", "Prescripción laboral"],

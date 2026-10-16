@@ -198,6 +198,7 @@ import {
 } from "../js/sueldo.js";
 import { calcularGirosCesantia } from "../js/giro-seguro-cesantia.js";
 import { redactarCartaRenuncia } from "../js/carta-renuncia.js";
+import { redactarContratoTrabajo, plazoEscrituraDias } from "../js/contrato-trabajo.js";
 import { calcularCotizacionIndependiente } from "../js/cotizacion-independiente.js";
 import { calcularViatico } from "../js/viatico.js";
 import { calcularSueldoEmpresarial } from "../js/sueldo-empresarial.js";
@@ -7088,6 +7089,7 @@ const required = [
   "despido-injustificado.html",
   "autodespido.html",
   "carta-renuncia.html",
+  "contrato-trabajo.html",
   "obra-faena.html",
   "prescripcion-laboral.html",
   "descanso-compensatorio.html",
@@ -7112,8 +7114,11 @@ const required = [
   "multas-inspeccion-trabajo.html",
   "finiquito.html",
   "carta-renuncia.html",
+  "contrato-trabajo.html",
   "js/carta-renuncia.js",
   "js/app-carta-renuncia.js",
+  "js/contrato-trabajo.js",
+  "js/app-contrato-trabajo.js",
   "js/app-horas-extras.js",
   "js/app-valor-hora.js",
   "js/app-vacaciones-proporcionales.js",
@@ -7167,6 +7172,7 @@ const required = [
   "js/app-tutela-laboral.js",
   "js/app-despido-injustificado.js",
   "js/app-autodespido.js",
+  "js/app-contrato-trabajo.js",
   "js/app-obra-faena.js",
   "js/app-prescripcion-laboral.js",
   "js/app-descanso-compensatorio.js",
@@ -7406,6 +7412,7 @@ const htmlFiles = [
   "despido-injustificado.html",
   "autodespido.html",
   "carta-renuncia.html",
+  "contrato-trabajo.html",
   "obra-faena.html",
   "prescripcion-laboral.html",
   "descanso-compensatorio.html",
@@ -7603,6 +7610,7 @@ const appEntries = [
   "js/app-tutela-laboral.js",
   "js/app-despido-injustificado.js",
   "js/app-autodespido.js",
+  "js/app-contrato-trabajo.js",
   "js/app-obra-faena.js",
   "js/app-prescripcion-laboral.js",
   "js/app-descanso-compensatorio.js",
@@ -7739,6 +7747,7 @@ assert(
     BASE_PATHS.includes("/compensacion-horas-extras") &&
     BASE_PATHS.includes("/pacto-horas-extras") &&
     BASE_PATHS.includes("/contrato-plazo-fijo") &&
+    BASE_PATHS.includes("/contrato-trabajo") &&
     BASE_PATHS.includes("/termino-anticipado-plazo-fijo") &&
     BASE_PATHS.includes("/permiso-sin-goce") &&
     BASE_PATHS.includes("/zona-extrema") &&
@@ -8108,7 +8117,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 126,
+      seoPaths().length === 127,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -8120,7 +8129,7 @@ try {
   const docsSeo = await hitLocal("/docs/seo-map.md");
   assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
   assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
-  for (const p of ["/sueldo/", "/sueldo-liquido-a-bruto/", "/sueldo-casa-particular/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/valor-hora/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/dias-habiles/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/carta-renuncia/", "/obra-faena/", "/prescripcion-laboral/", "/descanso-compensatorio/", "/inclusion-laboral/", "/jornada-parcial/", "/teletrabajo/", "/bandas-horarias/", "/pacto-4x3/", "/jornada-excepcional/", "/jornada-bisemanal/", "/compensacion-horas-extras/", "/pacto-horas-extras/", "/contrato-plazo-fijo/", "/termino-anticipado-plazo-fijo/", "/permiso-sin-goce/", "/zona-extrema/", "/promedio-remuneraciones/", "/antiguedad-laboral/", "/tope-imponible/", "/diferencia-isapre/", "/comparar-afp/", "/multas-inspeccion-trabajo/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/cotizacion-independiente/", "/retencion-judicial/", "/descuentos-legales/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/fuero-sindical/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/reliquidacion-impuesto/", "/cotizaciones-previsionales/", "/costo-empresa/", "/cotizacion-empleador/", "/seguro-cesantia/", "/giro-seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/viatico/", "/reajuste-ipc/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+  for (const p of ["/sueldo/", "/sueldo-liquido-a-bruto/", "/sueldo-casa-particular/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/valor-hora/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/dias-habiles/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/carta-renuncia/", "/contrato-trabajo/", "/obra-faena/", "/prescripcion-laboral/", "/descanso-compensatorio/", "/inclusion-laboral/", "/jornada-parcial/", "/teletrabajo/", "/bandas-horarias/", "/pacto-4x3/", "/jornada-excepcional/", "/jornada-bisemanal/", "/compensacion-horas-extras/", "/pacto-horas-extras/", "/contrato-plazo-fijo/", "/termino-anticipado-plazo-fijo/", "/permiso-sin-goce/", "/zona-extrema/", "/promedio-remuneraciones/", "/antiguedad-laboral/", "/tope-imponible/", "/diferencia-isapre/", "/comparar-afp/", "/multas-inspeccion-trabajo/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/cotizacion-independiente/", "/retencion-judicial/", "/descuentos-legales/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/fuero-sindical/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/reliquidacion-impuesto/", "/cotizaciones-previsionales/", "/costo-empresa/", "/cotizacion-empleador/", "/seguro-cesantia/", "/giro-seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/viatico/", "/reajuste-ipc/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
   }
@@ -8176,6 +8185,7 @@ try {
     "/despido-injustificado",
     "/autodespido",
     "/carta-renuncia",
+    "/contrato-trabajo",
     "/obra-faena",
     "/prescripcion-laboral",
     "/descanso-compensatorio",
@@ -8318,6 +8328,26 @@ try {
     "GET /carta-renuncia 200",
     cartaPage.status === 200 && /<h1>/.test(cartaPage.text),
     String(cartaPage.status),
+  );
+  for (const alias of [
+    "/contrato-de-trabajo",
+    "/modelo-contrato-de-trabajo",
+    "/contrato-trabajo-modelo",
+    "/formato-contrato-de-trabajo",
+    "/contrato-individual-de-trabajo",
+  ]) {
+    const hit = await hitLocal(alias);
+    assert(
+      `301 ${alias} → /contrato-trabajo`,
+      hit.status === 301 && hit.location === "/contrato-trabajo",
+      `${alias} → ${hit.status} ${hit.location}`,
+    );
+  }
+  const contratoPage = await hitLocal("/contrato-trabajo");
+  assert(
+    "GET /contrato-trabajo 200",
+    contratoPage.status === 200 && /<h1>/.test(contratoPage.text),
+    String(contratoPage.status),
   );
   const giroPage = await hitLocal("/giro-seguro-cesantia");
   assert(
@@ -12074,6 +12104,7 @@ assert(
     ["despido-injustificado.html", "/despido-injustificado"],
     ["autodespido.html", "/autodespido"],
     ["carta-renuncia.html", "/carta-renuncia"],
+    ["contrato-trabajo.html", "/contrato-trabajo"],
     ["obra-faena.html", "/obra-faena"],
     ["prescripcion-laboral.html", "/prescripcion-laboral"],
     ["descanso-compensatorio.html", "/descanso-compensatorio"],
@@ -21674,6 +21705,7 @@ assert(
       "despido-injustificado.html",
       "autodespido.html",
       "carta-renuncia.html",
+      "contrato-trabajo.html",
       "obra-faena.html",
       "prescripcion-laboral.html",
       "descanso-compensatorio.html",
@@ -21874,7 +21906,7 @@ assert(
     return acc;
   }
   const pages = listHtml(root);
-  assert("128 páginas HTML", pages.length === 128, String(pages.length));
+  assert("129 páginas HTML", pages.length === 129, String(pages.length));
   for (const file of pages) {
     const html = readFileSync(file, "utf8");
     const rel = file.slice(root.length + 1);
@@ -22578,6 +22610,268 @@ console.log("\nMultas inspección del trabajo");
   assert(
     "robots no Disallow /carta-renuncia",
     !/Disallow:\s*\/carta-renuncia/.test(readFileSync(join(root, "robots.txt"), "utf8")),
+  );
+}
+
+{
+  const ctHtml = readFileSync(join(root, "contrato-trabajo.html"), "utf8");
+  const ctTitle = (ctHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+  const ctH1 = (ctHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+  const ctDesc = (ctHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "";
+  const ctCanonical = (ctHtml.match(/rel="canonical" href="([^"]*)"/) || [])[1] || "";
+  const base = {
+    ciudad: "Santiago",
+    fechaContrato: "2026-10-01",
+    empleador: "Comercial Andes SpA",
+    rutEmpleador: "76.086.428-5",
+    nacionalidadEmpleador: "chilena",
+    domicilioEmpleador: "Huérfanos 1160, Santiago",
+    emailEmpleador: "contacto@andes.cl",
+    representante: "María López Díaz",
+    rutRepresentante: "9.876.543-3",
+    trabajador: "Ana Pérez Soto",
+    rutTrabajador: "12.345.678-5",
+    nacionalidadTrabajador: "chilena",
+    fechaNacimiento: "1992-04-15",
+    fechaIngreso: "2026-10-01",
+    domicilioTrabajador: "Av. Providencia 1234, Santiago",
+    emailTrabajador: "ana.perez@correo.cl",
+    cargo: "Analista de remuneraciones",
+    servicios: "Liquidación de remuneraciones y apoyo en contratos de la dotación.",
+    ciudadServicios: "Santiago",
+    sueldoBase: 800000,
+    formaPago: "transferencia",
+    periodoPago: "mensual",
+    horasSemanales: 42,
+    distribucion: "de lunes a viernes",
+    tipo: "indefinido",
+    otrosPactos: "",
+  };
+  const gold = redactarContratoTrabajo(base);
+  const bajo = redactarContratoTrabajo({ ...base, sueldoBase: 400000, horasSemanales: 45 });
+  const plazoInput = {
+    ...base,
+    tipo: "plazo_fijo",
+    fechaIngreso: "2026-01-01",
+    fechaContrato: "2026-01-01",
+    fechaTermino: "2027-07-01",
+    esTituloOGerente: false,
+  };
+  const plazoLargo = redactarContratoTrabajo(plazoInput);
+  const plazoTitulo = redactarContratoTrabajo({
+    ...plazoInput,
+    esTituloOGerente: true,
+  });
+  const obraTarde = redactarContratoTrabajo({
+    ...base,
+    tipo: "obra",
+    obra: "Remodelación del local de Huérfanos 1160, Santiago.",
+    fechaIngreso: "2026-03-01",
+    fechaContrato: "2026-03-10",
+  });
+  const corto = redactarContratoTrabajo({
+    ...base,
+    tipo: "plazo_fijo",
+    fechaIngreso: "2026-06-01",
+    fechaContrato: "2026-06-01",
+    fechaTermino: "2026-06-20",
+  });
+  const menor = redactarContratoTrabajo({
+    ...base,
+    fechaNacimiento: "2010-01-01",
+    sueldoBase: 400000,
+  });
+  const plenoInput = {
+    ...base,
+    fechaIngreso: "2028-05-01",
+    fechaContrato: "2028-05-01",
+    horasSemanales: 40,
+    sueldoBase: 553553,
+  };
+  const pleno2028 = redactarContratoTrabajo(plenoInput);
+  const bajo2028 = redactarContratoTrabajo({ ...plenoInput, sueldoBase: 500000 });
+  const codigos = (c) => c.avisos.map((a) => a.codigo);
+  assert(
+    "SEO contrato trabajo title y H1",
+    ctTitle === "Contrato de trabajo Chile 2026 — Haberes" &&
+      ctH1 === "Contrato de trabajo Chile 2026" &&
+      ctTitle.length <= 65 &&
+      !/calculadora de finiquito/i.test(ctTitle) &&
+      !/plazo fijo/i.test(ctH1),
+    ctTitle,
+  );
+  assert(
+    "SEO contrato trabajo description y canonical",
+    ctDesc.length >= 110 &&
+      ctDesc.length <= 160 &&
+      /art\. 10/.test(ctDesc) &&
+      /no es asesor[ií]a legal/i.test(ctDesc) &&
+      ctCanonical === "https://www.haberes.cl/contrato-trabajo",
+    `${ctDesc.length}:${ctDesc}`,
+  );
+  assert(
+    "contrato trabajo cita arts. 9, 10 y 11, disclaimer y enlaces",
+    /art[íi]culo 10/.test(ctHtml) &&
+      /art[íi]culo 9/.test(ctHtml) &&
+      /art[íi]culo 11/.test(ctHtml) &&
+      /anexo de contrato/i.test(ctHtml) &&
+      /dos ejemplares/i.test(ctHtml) &&
+      /no constituye asesor[ií]a legal/i.test(ctHtml) &&
+      /Direcci[oó]n del Trabajo/.test(ctHtml) &&
+      /Previred/.test(ctHtml) &&
+      /href="\/contrato-plazo-fijo"/.test(ctHtml) &&
+      /href="\/obra-faena"/.test(ctHtml) &&
+      /href="\/jornada-40-horas"/.test(ctHtml) &&
+      /href="\/sueldo-minimo"/.test(ctHtml) &&
+      /href="\/carta-renuncia"/.test(ctHtml) &&
+      /href="\/finiquito"/.test(ctHtml) &&
+      /"@type": "FAQPage"/.test(ctHtml) &&
+      /<h1>Contrato de trabajo Chile 2026<\/h1>/.test(ctHtml),
+  );
+  assert(
+    "gold contrato indefinido 42 h y sueldo sobre el mínimo",
+    gold.avisos.length === 0 &&
+      gold.bajoMinimo === false &&
+      gold.superaJornada === false &&
+      gold.plazoEscrituraDias === 15 &&
+      gold.diasDesdeIngreso === 0 &&
+      gold.topeJornada === 42 &&
+      gold.tramo === "general" &&
+      gold.rutTrabajadorOk &&
+      gold.rutEmpleadorOk &&
+      gold.rutRepresentanteOk === true &&
+      gold.texto.includes("Ana Pérez Soto") &&
+      gold.texto.includes("12.345.678-5") &&
+      gold.texto.includes("Comercial Andes SpA") &&
+      gold.texto.includes("76.086.428-5") &&
+      gold.texto.includes("María López Díaz") &&
+      gold.texto.includes("9.876.543-3") &&
+      gold.texto.includes("15 de abril de 1992") &&
+      gold.texto.includes("1 de octubre de 2026") &&
+      gold.texto.includes("Analista de remuneraciones") &&
+      gold.texto.includes("800.000") &&
+      gold.texto.includes("42 horas semanales") &&
+      gold.texto.includes("de lunes a viernes") &&
+      /duraci[oó]n indefinida/.test(gold.texto) &&
+      /dos ejemplares/.test(gold.texto) &&
+      /quince d[íi]as/.test(gold.texto) &&
+      /art[íi]culo 9\b/.test(gold.texto) &&
+      /art[íi]culo 9 bis/.test(gold.texto) &&
+      /art[íi]culo 11/.test(gold.texto) &&
+      /transferencia electr[oó]nica/.test(gold.texto) &&
+      /nacionalidad chilena/.test(gold.texto),
+  );
+  assert(
+    "gold contrato avisa sueldo bajo el mínimo y jornada sobre el tope 2026",
+    bajo.topeJornada === 42 &&
+      bajo.bajoMinimo &&
+      bajo.superaJornada &&
+      codigos(bajo).includes("bajo_minimo") &&
+      codigos(bajo).includes("supera_jornada") &&
+      bajo.avisos.some((a) => a.codigo === "bajo_minimo" && a.texto.includes("553.553")) &&
+      bajo.avisos.some((a) => a.codigo === "supera_jornada" && /42 h/.test(a.texto)),
+  );
+  assert(
+    "gold plazo fijo de 18 meses sin título supera el tope de 12",
+    plazoLargo.excedePlazoFijo &&
+      plazoLargo.plazoEscrituraDias === 15 &&
+      codigos(plazoLargo).includes("excede_plazo_fijo") &&
+      plazoLargo.avisos.some((a) => /12 meses/.test(a.texto)) &&
+      plazoLargo.texto.includes("1 de julio de 2027") &&
+      /plazo fijo/.test(plazoLargo.texto),
+  );
+  assert(
+    "gold plazo fijo de 18 meses con título cabe en 24 meses",
+    plazoTitulo.excedePlazoFijo === false &&
+      !codigos(plazoTitulo).includes("excede_plazo_fijo") &&
+      /dos a[ñn]os/.test(plazoTitulo.texto) &&
+      plazoTitulo.texto.includes("1 de julio de 2027"),
+  );
+  assert(
+    "gold obra escriturada a los 9 días usa el plazo de 5",
+    obraTarde.tipo === "obra" &&
+      obraTarde.plazoEscrituraDias === 5 &&
+      obraTarde.diasDesdeIngreso === 9 &&
+      obraTarde.escrituraTarde &&
+      codigos(obraTarde).includes("escritura_tarde") &&
+      /cinco d[íi]as/.test(obraTarde.texto) &&
+      /obra o faena/.test(obraTarde.texto) &&
+      /art[íi]culo 10 bis/.test(obraTarde.texto) &&
+      plazoEscrituraDias({ tipo: "obra", duracionDias: 400 }) === 5,
+  );
+  assert(
+    "gold plazo fijo menor a 30 días escrituración en 5 días",
+    corto.duracionDias === 19 &&
+      corto.plazoEscrituraDias === 5 &&
+      corto.escrituraTarde === false &&
+      corto.excedePlazoFijo === false &&
+      /cinco d[íi]as/.test(corto.texto) &&
+      plazoEscrituraDias({ tipo: "plazo_fijo", duracionDias: 30 }) === 15 &&
+      plazoEscrituraDias({ tipo: "indefinido", duracionDias: null }) === 15,
+  );
+  assert(
+    "gold menor de 18 usa el mínimo reducido",
+    menor.tramo === "menorMayor" &&
+      menor.edad === 16 &&
+      menor.bajoMinimo &&
+      menor.immReferencia === 412938 &&
+      menor.avisos.some((a) => a.codigo === "bajo_minimo" && a.texto.includes("412.938")),
+  );
+  assert(
+    "gold jornada completa de 40 h en 2028 usa el mínimo entero",
+    pleno2028.topeJornada === 40 &&
+      pleno2028.superaJornada === false &&
+      pleno2028.bajoMinimo === false &&
+      bajo2028.bajoMinimo === true &&
+      bajo2028.immReferencia === 553553,
+  );
+  assert(
+    "home, nav y ui enlazan /contrato-trabajo",
+    /href="\/contrato-trabajo"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+      /href="\/contrato-trabajo" data-nav>Contrato de trabajo<\/a>/.test(
+        readFileSync(join(root, "index.html"), "utf8"),
+      ) &&
+      /href="\/contrato-trabajo" data-nav>Contrato de trabajo<\/a>/.test(ctHtml) &&
+      /href="\/contrato-trabajo" data-nav>Contrato de trabajo<\/a>/.test(
+        readFileSync(join(root, "js/ui.js"), "utf8"),
+      ) &&
+      /<h1>Calcular contrato a plazo fijo Chile 2026<\/h1>/.test(
+        readFileSync(join(root, "contrato-plazo-fijo.html"), "utf8"),
+      ) &&
+      /<h1>Calculadora de finiquito Chile 2026<\/h1>/.test(readFileSync(join(root, "finiquito.html"), "utf8")),
+  );
+  assert(
+    "sitemap incluye /contrato-trabajo",
+    locs.includes("https://www.haberes.cl/contrato-trabajo") &&
+      lastmodForPath("/contrato-trabajo") === "2026-10-16",
+  );
+  assert(
+    "seo-map documenta /contrato-trabajo sin canibalizar plazo fijo ni finiquito",
+    /\/contrato-trabajo/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+      /no canibalizar `\/contrato-plazo-fijo`, `\/obra-faena`, `\/jornada-40-horas`, `\/sueldo-minimo`, `\/carta-renuncia` ni `\/finiquito`/i.test(
+        readFileSync(join(root, "docs/seo-map.md"), "utf8"),
+      ),
+  );
+  const vercelContrato = JSON.parse(readFileSync(join(root, "vercel.json"), "utf8"));
+  assert(
+    "alias de contrato de trabajo redirigen a /contrato-trabajo",
+    [
+      "/contrato-de-trabajo",
+      "/modelo-contrato-de-trabajo",
+      "/contrato-trabajo-modelo",
+      "/formato-contrato-de-trabajo",
+      "/contrato-individual-de-trabajo",
+    ].every(
+      (src) =>
+        vercelContrato.redirects.some(
+          (r) => r.source === src && r.destination === "/contrato-trabajo" && r.permanent === true,
+        ) && !existsSync(join(root, `${src.slice(1)}.html`)),
+    ) &&
+      /urlPath === "\/contrato-individual-de-trabajo"/.test(readFileSync(join(root, "scripts/serve.mjs"), "utf8")),
+  );
+  assert(
+    "robots no Disallow /contrato-trabajo",
+    !/Disallow:\s*\/contrato-trabajo/.test(readFileSync(join(root, "robots.txt"), "utf8")),
   );
 }
 

@@ -105,7 +105,17 @@
     { "source": "/ejemplo-carta-renuncia", "destination": "/carta-renuncia", "permanent": true },
     { "source": "/ejemplo-carta-renuncia/", "destination": "/carta-renuncia", "permanent": true },
     { "source": "/renuncia-voluntaria", "destination": "/carta-renuncia", "permanent": true },
-    { "source": "/renuncia-voluntaria/", "destination": "/carta-renuncia", "permanent": true }
+    { "source": "/renuncia-voluntaria/", "destination": "/carta-renuncia", "permanent": true },
+    { "source": "/contrato-de-trabajo", "destination": "/contrato-trabajo", "permanent": true },
+    { "source": "/contrato-de-trabajo/", "destination": "/contrato-trabajo", "permanent": true },
+    { "source": "/modelo-contrato-de-trabajo", "destination": "/contrato-trabajo", "permanent": true },
+    { "source": "/modelo-contrato-de-trabajo/", "destination": "/contrato-trabajo", "permanent": true },
+    { "source": "/contrato-trabajo-modelo", "destination": "/contrato-trabajo", "permanent": true },
+    { "source": "/contrato-trabajo-modelo/", "destination": "/contrato-trabajo", "permanent": true },
+    { "source": "/formato-contrato-de-trabajo", "destination": "/contrato-trabajo", "permanent": true },
+    { "source": "/formato-contrato-de-trabajo/", "destination": "/contrato-trabajo", "permanent": true },
+    { "source": "/contrato-individual-de-trabajo", "destination": "/contrato-trabajo", "permanent": true },
+    { "source": "/contrato-individual-de-trabajo/", "destination": "/contrato-trabajo", "permanent": true }
   ],
   "rewrites": [
     { "source": "/sitemap.xml", "destination": "/api/sitemap" },
