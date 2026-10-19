@@ -198,6 +198,7 @@ import {
 } from "../js/sueldo.js";
 import { calcularGirosCesantia } from "../js/giro-seguro-cesantia.js";
 import { redactarCartaRenuncia } from "../js/carta-renuncia.js";
+import { redactarCartaAmonestacion } from "../js/carta-amonestacion.js";
 import { redactarContratoTrabajo, plazoEscrituraDias } from "../js/contrato-trabajo.js";
 import { calcularCotizacionIndependiente } from "../js/cotizacion-independiente.js";
 import { calcularViatico } from "../js/viatico.js";
@@ -7089,6 +7090,7 @@ const required = [
   "despido-injustificado.html",
   "autodespido.html",
   "carta-renuncia.html",
+  "carta-amonestacion.html",
   "contrato-trabajo.html",
   "obra-faena.html",
   "prescripcion-laboral.html",
@@ -7114,9 +7116,12 @@ const required = [
   "multas-inspeccion-trabajo.html",
   "finiquito.html",
   "carta-renuncia.html",
+  "carta-amonestacion.html",
   "contrato-trabajo.html",
   "js/carta-renuncia.js",
   "js/app-carta-renuncia.js",
+  "js/carta-amonestacion.js",
+  "js/app-carta-amonestacion.js",
   "js/contrato-trabajo.js",
   "js/app-contrato-trabajo.js",
   "js/app-horas-extras.js",
@@ -7172,6 +7177,7 @@ const required = [
   "js/app-tutela-laboral.js",
   "js/app-despido-injustificado.js",
   "js/app-autodespido.js",
+  "js/app-carta-amonestacion.js",
   "js/app-contrato-trabajo.js",
   "js/app-obra-faena.js",
   "js/app-prescripcion-laboral.js",
@@ -7412,6 +7418,7 @@ const htmlFiles = [
   "despido-injustificado.html",
   "autodespido.html",
   "carta-renuncia.html",
+  "carta-amonestacion.html",
   "contrato-trabajo.html",
   "obra-faena.html",
   "prescripcion-laboral.html",
@@ -7610,6 +7617,7 @@ const appEntries = [
   "js/app-tutela-laboral.js",
   "js/app-despido-injustificado.js",
   "js/app-autodespido.js",
+  "js/app-carta-amonestacion.js",
   "js/app-contrato-trabajo.js",
   "js/app-obra-faena.js",
   "js/app-prescripcion-laboral.js",
@@ -7748,6 +7756,7 @@ assert(
     BASE_PATHS.includes("/pacto-horas-extras") &&
     BASE_PATHS.includes("/contrato-plazo-fijo") &&
     BASE_PATHS.includes("/contrato-trabajo") &&
+    BASE_PATHS.includes("/carta-amonestacion") &&
     BASE_PATHS.includes("/termino-anticipado-plazo-fijo") &&
     BASE_PATHS.includes("/permiso-sin-goce") &&
     BASE_PATHS.includes("/zona-extrema") &&
@@ -8119,7 +8128,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 128,
+      seoPaths().length === 129,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -8131,7 +8140,7 @@ try {
   const docsSeo = await hitLocal("/docs/seo-map.md");
   assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
   assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
-  for (const p of ["/sueldo/", "/sueldo-liquido-a-bruto/", "/sueldo-casa-particular/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/valor-hora/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/dias-habiles/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/carta-renuncia/", "/contrato-trabajo/", "/obra-faena/", "/prescripcion-laboral/", "/descanso-compensatorio/", "/inclusion-laboral/", "/jornada-parcial/", "/teletrabajo/", "/bandas-horarias/", "/pacto-4x3/", "/jornada-excepcional/", "/jornada-bisemanal/", "/compensacion-horas-extras/", "/pacto-horas-extras/", "/contrato-plazo-fijo/", "/termino-anticipado-plazo-fijo/", "/permiso-sin-goce/", "/zona-extrema/", "/promedio-remuneraciones/", "/antiguedad-laboral/", "/tope-imponible/", "/diferencia-isapre/", "/comparar-afp/", "/multas-inspeccion-trabajo/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/cotizacion-independiente/", "/retencion-judicial/", "/descuentos-legales/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/fuero-sindical/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/reliquidacion-impuesto/", "/cotizaciones-previsionales/", "/costo-empresa/", "/cotizacion-empleador/", "/seguro-cesantia/", "/giro-seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/viatico/", "/reajuste-ipc/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+  for (const p of ["/sueldo/", "/sueldo-liquido-a-bruto/", "/sueldo-casa-particular/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/valor-hora/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/dias-habiles/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/carta-renuncia/", "/carta-amonestacion/", "/contrato-trabajo/", "/obra-faena/", "/prescripcion-laboral/", "/descanso-compensatorio/", "/inclusion-laboral/", "/jornada-parcial/", "/teletrabajo/", "/bandas-horarias/", "/pacto-4x3/", "/jornada-excepcional/", "/jornada-bisemanal/", "/compensacion-horas-extras/", "/pacto-horas-extras/", "/contrato-plazo-fijo/", "/termino-anticipado-plazo-fijo/", "/permiso-sin-goce/", "/zona-extrema/", "/promedio-remuneraciones/", "/antiguedad-laboral/", "/tope-imponible/", "/diferencia-isapre/", "/comparar-afp/", "/multas-inspeccion-trabajo/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/cotizacion-independiente/", "/retencion-judicial/", "/descuentos-legales/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/fuero-sindical/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/reliquidacion-impuesto/", "/cotizaciones-previsionales/", "/costo-empresa/", "/cotizacion-empleador/", "/seguro-cesantia/", "/giro-seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/viatico/", "/reajuste-ipc/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
   }
@@ -8187,6 +8196,7 @@ try {
     "/despido-injustificado",
     "/autodespido",
     "/carta-renuncia",
+    "/carta-amonestacion",
     "/contrato-trabajo",
     "/obra-faena",
     "/prescripcion-laboral",
@@ -8330,6 +8340,26 @@ try {
     "GET /carta-renuncia 200",
     cartaPage.status === 200 && /<h1>/.test(cartaPage.text),
     String(cartaPage.status),
+  );
+  for (const alias of [
+    "/carta-de-amonestacion",
+    "/modelo-carta-amonestacion",
+    "/formato-carta-amonestacion",
+    "/ejemplo-carta-amonestacion",
+    "/amonestacion-escrita",
+  ]) {
+    const hit = await hitLocal(alias);
+    assert(
+      `301 ${alias} → /carta-amonestacion`,
+      hit.status === 301 && hit.location === "/carta-amonestacion",
+      `${alias} → ${hit.status} ${hit.location}`,
+    );
+  }
+  const amonestacionPage = await hitLocal("/carta-amonestacion");
+  assert(
+    "GET /carta-amonestacion 200",
+    amonestacionPage.status === 200 && /<h1>/.test(amonestacionPage.text),
+    String(amonestacionPage.status),
   );
   for (const alias of [
     "/contrato-de-trabajo",
@@ -12106,6 +12136,7 @@ assert(
     ["despido-injustificado.html", "/despido-injustificado"],
     ["autodespido.html", "/autodespido"],
     ["carta-renuncia.html", "/carta-renuncia"],
+    ["carta-amonestacion.html", "/carta-amonestacion"],
     ["contrato-trabajo.html", "/contrato-trabajo"],
     ["obra-faena.html", "/obra-faena"],
     ["prescripcion-laboral.html", "/prescripcion-laboral"],
@@ -21776,6 +21807,7 @@ assert(
       "despido-injustificado.html",
       "autodespido.html",
       "carta-renuncia.html",
+      "carta-amonestacion.html",
       "contrato-trabajo.html",
       "obra-faena.html",
       "prescripcion-laboral.html",
@@ -21978,7 +22010,7 @@ assert(
     return acc;
   }
   const pages = listHtml(root);
-  assert("130 páginas HTML", pages.length === 130, String(pages.length));
+  assert("131 páginas HTML", pages.length === 131, String(pages.length));
   for (const file of pages) {
     const html = readFileSync(file, "utf8");
     const rel = file.slice(root.length + 1);
@@ -22682,6 +22714,271 @@ console.log("\nMultas inspección del trabajo");
   assert(
     "robots no Disallow /carta-renuncia",
     !/Disallow:\s*\/carta-renuncia/.test(readFileSync(join(root, "robots.txt"), "utf8")),
+  );
+}
+
+{
+  const caHtml = readFileSync(join(root, "carta-amonestacion.html"), "utf8");
+  const caTitle = (caHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+  const caH1 = (caHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+  const caDesc = (caHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "";
+  const caCanonical = (caHtml.match(/rel="canonical" href="([^"]*)"/) || [])[1] || "";
+  const goldSimple = redactarCartaAmonestacion({
+    nombre: "Ana Pérez Soto",
+    rut: "12.345.678-5",
+    empleador: "Comercial Andes SpA",
+    rutEmpleador: "76.086.428-5",
+    firmante: "María López Díaz",
+    cargo: "Analista de remuneraciones",
+    ciudad: "Santiago",
+    fechaCarta: "2026-03-02",
+    fechaHechos: "2026-03-01",
+    hora: "08:40",
+    motivo: "atrasos",
+    detalle: "Ingresó a las 08:40, con 40 minutos de atraso.",
+    clausula: "la cláusula de puntualidad del reglamento interno",
+    tipo: "simple",
+  });
+  const goldCopia = redactarCartaAmonestacion({
+    nombre: "Luis Rojas Díaz",
+    rut: "9.876.543-3",
+    empleador: "Taller Sur Ltda.",
+    rutEmpleador: "",
+    firmante: "Pedro Soto",
+    cargo: "Bodeguero",
+    ciudad: "Valparaíso",
+    fechaCarta: "2026-06-15",
+    fechaHechos: "2026-06-12",
+    hora: "09:00",
+    motivo: "inasistencia",
+    detalle: "",
+    clausula: "la cláusula de asistencia del reglamento interno",
+    tipo: "inspeccion",
+  });
+  const goldAcoso = redactarCartaAmonestacion({
+    nombre: "Camila Soto",
+    rut: "7.654.321-6",
+    empleador: "Fundación Norte",
+    rutEmpleador: "76.086.428-5",
+    firmante: "Elena Ruiz",
+    cargo: "Educadora",
+    ciudad: "Concepción",
+    fechaCarta: "2026-01-05",
+    fechaHechos: "2026-01-04",
+    hora: "18:10",
+    motivo: "otro",
+    motivoLibre: "acoso laboral reiterado en la oficina",
+    detalle: "",
+    clausula: "la cláusula de trato respetuoso del reglamento interno",
+    tipo: "simple",
+  });
+  const goldInstruccion = redactarCartaAmonestacion({
+    nombre: "Ana Pérez Soto",
+    rut: "12.345.678-5",
+    empleador: "Comercial Andes SpA",
+    rutEmpleador: "76.086.428-5",
+    firmante: "María López Díaz",
+    cargo: "Analista de remuneraciones",
+    ciudad: "Santiago",
+    fechaCarta: "2026-03-02",
+    fechaHechos: "2026-03-01",
+    hora: "11:15",
+    motivo: "incumplimiento",
+    detalle: "No entregó el informe pedido el viernes.",
+    clausula: "la cláusula de cumplimiento de instrucciones del reglamento interno",
+    tipo: "simple",
+  });
+  assert(
+    "SEO carta amonestación title y H1",
+    caTitle === "Carta de amonestación laboral Chile 2026 — Haberes" &&
+      caH1 === "Carta de amonestación laboral Chile 2026" &&
+      caTitle.length <= 65 &&
+      !/calculadora de finiquito/i.test(caTitle) &&
+      !/despido injustificado/i.test(caH1),
+    caTitle,
+  );
+  assert(
+    "SEO carta amonestación description y canonical",
+    caDesc.length >= 110 &&
+      caDesc.length <= 160 &&
+      /art\. 154/.test(caDesc) &&
+      /no es asesor[ií]a legal/i.test(caDesc) &&
+      caCanonical === "https://www.haberes.cl/carta-amonestacion",
+    `${caDesc.length}:${caDesc}`,
+  );
+  assert(
+    "carta amonestación cita arts. 153, 154 y 157, disclaimer y enlaces",
+    /154 N° 10/.test(caHtml) &&
+      /art[íi]culo 153/.test(caHtml) &&
+      /art[íi]culo 157/.test(caHtml) &&
+      /reglamento interno/i.test(caHtml) &&
+      /no constituye asesor[ií]a legal/i.test(caHtml) &&
+      /no es un despido/i.test(caHtml) &&
+      /href="\/despido-injustificado"/.test(caHtml) &&
+      /href="\/guias\/carta-aviso-termino-contrato"/.test(caHtml) &&
+      /href="\/guias\/ley-karin"/.test(caHtml) &&
+      /href="\/descuento-atrasos"/.test(caHtml) &&
+      /href="\/multas-inspeccion-trabajo"/.test(caHtml) &&
+      /"@type": "Organization"/.test(caHtml) &&
+      /"@type": "WebApplication"/.test(caHtml) &&
+      /"@type": "FAQPage"/.test(caHtml) &&
+      !existsSync(join(root, "carta-despido.html")),
+  );
+  assert(
+    "gold amonestación simple por atraso, sin copia y sin multa",
+    goldSimple.copiaInspeccion === false &&
+      goldSimple.tocaAcoso === false &&
+      goldSimple.motivo === "atrasos" &&
+      goldSimple.rutTrabajadorOk &&
+      goldSimple.rutEmpleadorOk === true &&
+      goldSimple.texto.includes("Ana Pérez Soto") &&
+      goldSimple.texto.includes("12.345.678-5") &&
+      goldSimple.texto.includes("Comercial Andes SpA") &&
+      goldSimple.texto.includes("76.086.428-5") &&
+      goldSimple.texto.includes("María López Díaz") &&
+      goldSimple.texto.includes("Analista de remuneraciones") &&
+      goldSimple.texto.includes("Santiago, 2 de marzo de 2026") &&
+      goldSimple.texto.includes("1 de marzo de 2026") &&
+      goldSimple.texto.includes("08:40") &&
+      /atraso en el ingreso/.test(goldSimple.texto) &&
+      /40 minutos de atraso/.test(goldSimple.texto) &&
+      /cl[aá]usula de puntualidad/.test(goldSimple.texto) &&
+      /amonestaci[oó]n escrita/.test(goldSimple.texto) &&
+      /art[íi]culo 154 N° 10/.test(goldSimple.texto) &&
+      /No se aplica multa/.test(goldSimple.texto) &&
+      /no pone t[eé]rmino/.test(goldSimple.texto) &&
+      /art[íi]culo 162/.test(goldSimple.texto) &&
+      /art[íi]culo 157/.test(goldSimple.texto) &&
+      /Recepci[oó]n del trabajador/.test(goldSimple.texto) &&
+      !/Se remite copia/.test(goldSimple.texto) &&
+      !/Ley N° 21\.643/.test(goldSimple.texto),
+  );
+  assert(
+    "gold amonestación con copia por inasistencia y sin RUT empleador",
+    goldCopia.copiaInspeccion === true &&
+      goldCopia.tocaAcoso === false &&
+      goldCopia.motivo === "inasistencia" &&
+      goldCopia.rutTrabajadorOk &&
+      goldCopia.rutEmpleadorOk === null &&
+      goldCopia.texto.includes("Luis Rojas Díaz") &&
+      goldCopia.texto.includes("9.876.543-3") &&
+      goldCopia.texto.includes("Taller Sur Ltda.") &&
+      goldCopia.texto.includes("Pedro Soto") &&
+      goldCopia.texto.includes("Bodeguero") &&
+      goldCopia.texto.includes("Valparaíso, 15 de junio de 2026") &&
+      goldCopia.texto.includes("12 de junio de 2026") &&
+      goldCopia.texto.includes("09:00") &&
+      /inasistencia a su jornada/.test(goldCopia.texto) &&
+      /cl[aá]usula de asistencia/.test(goldCopia.texto) &&
+      /Se remite copia/.test(goldCopia.texto) &&
+      /Inspecci[oó]n del Trabajo/.test(goldCopia.texto) &&
+      /art[íi]culo 162/.test(goldCopia.texto) &&
+      !/RUT 76\.086\.428-5/.test(goldCopia.texto) &&
+      !/Ley N° 21\.643/.test(goldCopia.texto),
+  );
+  assert(
+    "gold amonestación por otro hecho que toca acoso",
+    goldAcoso.motivo === "otro" &&
+      goldAcoso.tocaAcoso === true &&
+      goldAcoso.copiaInspeccion === false &&
+      goldAcoso.rutTrabajadorOk &&
+      goldAcoso.texto.includes("Camila Soto") &&
+      goldAcoso.texto.includes("7.654.321-6") &&
+      goldAcoso.texto.includes("Fundación Norte") &&
+      goldAcoso.texto.includes("Elena Ruiz") &&
+      goldAcoso.texto.includes("Educadora") &&
+      goldAcoso.texto.includes("Concepción, 5 de enero de 2026") &&
+      goldAcoso.texto.includes("4 de enero de 2026") &&
+      /acoso laboral reiterado/.test(goldAcoso.texto) &&
+      /Ley N° 21\.643/.test(goldAcoso.texto) &&
+      !/Se remite copia/.test(goldAcoso.texto),
+  );
+  const goldLibreIgnorado = redactarCartaAmonestacion({
+    ...{
+      nombre: "Ana Pérez Soto",
+      rut: "12.345.678-5",
+      empleador: "Comercial Andes SpA",
+      rutEmpleador: "76.086.428-5",
+      firmante: "María López Díaz",
+      cargo: "Analista de remuneraciones",
+      ciudad: "Santiago",
+      fechaCarta: "2026-03-02",
+      fechaHechos: "2026-03-01",
+      hora: "08:40",
+      detalle: "Ingresó a las 08:40, con 40 minutos de atraso.",
+      clausula: "la cláusula de puntualidad del reglamento interno",
+      tipo: "simple",
+    },
+    motivo: "atrasos",
+    motivoLibre: "acoso laboral en la bodega",
+  });
+  assert(
+    "gold texto de Otro no marca acoso si el motivo ya no es Otro",
+    goldLibreIgnorado.motivo === "atrasos" &&
+      goldLibreIgnorado.tocaAcoso === false &&
+      !/Ley N° 21\.643/.test(goldLibreIgnorado.texto) &&
+      !/acoso laboral en la bodega/.test(goldLibreIgnorado.texto) &&
+      /atraso en el ingreso/.test(goldLibreIgnorado.texto),
+  );
+  assert(
+    "gold amonestación por incumplimiento de instrucciones",
+    goldInstruccion.motivo === "incumplimiento" &&
+      goldInstruccion.tocaAcoso === false &&
+      /incumplimiento de las instrucciones/.test(goldInstruccion.texto) &&
+      /informe pedido el viernes/.test(goldInstruccion.texto) &&
+      goldInstruccion.texto.includes("11:15") &&
+      /No se aplica multa/.test(goldInstruccion.texto),
+  );
+  assert(
+    "home, despido y nav enlazan /carta-amonestacion",
+    /href="\/carta-amonestacion"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+      /href="\/carta-amonestacion" data-nav>Carta de amonestaci[oó]n<\/a>/.test(
+        readFileSync(join(root, "index.html"), "utf8"),
+      ) &&
+      /href="\/carta-amonestacion" data-nav>Carta de amonestaci[oó]n<\/a>/.test(caHtml) &&
+      /href="\/carta-amonestacion" data-nav>Carta de amonestaci[oó]n<\/a>/.test(
+        readFileSync(join(root, "js/ui.js"), "utf8"),
+      ) &&
+      /href="\/carta-amonestacion"/.test(readFileSync(join(root, "despido-injustificado.html"), "utf8")) &&
+      /href="\/carta-amonestacion"/.test(
+        readFileSync(join(root, "guias/carta-aviso-termino-contrato.html"), "utf8"),
+      ) &&
+      /href="\/carta-amonestacion"/.test(readFileSync(join(root, "guias/ley-karin.html"), "utf8")) &&
+      /<h1>Calcular despido injustificado Chile 2026<\/h1>/.test(
+        readFileSync(join(root, "despido-injustificado.html"), "utf8"),
+      ),
+  );
+  assert(
+    "sitemap incluye /carta-amonestacion",
+    locs.includes("https://www.haberes.cl/carta-amonestacion") &&
+      lastmodForPath("/carta-amonestacion") === "2026-10-19",
+  );
+  assert(
+    "seo-map documenta /carta-amonestacion sin canibalizar despido",
+    /\/carta-amonestacion/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+      /no canibalizar `\/despido-injustificado`, `\/guias\/carta-aviso-termino-contrato`, `\/guias\/ley-karin`/i.test(
+        readFileSync(join(root, "docs/seo-map.md"), "utf8"),
+      ),
+  );
+  const vercelAmon = JSON.parse(readFileSync(join(root, "vercel.json"), "utf8"));
+  assert(
+    "alias de carta de amonestación redirigen a /carta-amonestacion",
+    [
+      "/carta-de-amonestacion",
+      "/modelo-carta-amonestacion",
+      "/formato-carta-amonestacion",
+      "/ejemplo-carta-amonestacion",
+      "/amonestacion-escrita",
+    ].every(
+      (src) =>
+        vercelAmon.redirects.some(
+          (r) => r.source === src && r.destination === "/carta-amonestacion" && r.permanent === true,
+        ) && !existsSync(join(root, `${src.slice(1)}.html`)),
+    ) && /urlPath === "\/amonestacion-escrita"/.test(readFileSync(join(root, "scripts/serve.mjs"), "utf8")),
+  );
+  assert(
+    "robots no Disallow /carta-amonestacion",
+    !/Disallow:\s*\/carta-amonestacion/.test(readFileSync(join(root, "robots.txt"), "utf8")),
   );
 }
 

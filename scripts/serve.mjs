@@ -192,6 +192,16 @@ export function handleRequest(req, res) {
     return;
   }
   if (
+    urlPath === "/carta-de-amonestacion" ||
+    urlPath === "/modelo-carta-amonestacion" ||
+    urlPath === "/formato-carta-amonestacion" ||
+    urlPath === "/ejemplo-carta-amonestacion" ||
+    urlPath === "/amonestacion-escrita"
+  ) {
+    send(res, 301, { Location: `/carta-amonestacion${url.search}` }, "");
+    return;
+  }
+  if (
     urlPath === "/contrato-de-trabajo" ||
     urlPath === "/modelo-contrato-de-trabajo" ||
     urlPath === "/contrato-trabajo-modelo" ||

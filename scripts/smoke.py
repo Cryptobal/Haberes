@@ -244,6 +244,9 @@ def check_http():
         ("/carta-renuncia", 200, "html"),
         ("/carta-de-renuncia", 200, "html"),
         ("/renuncia-voluntaria", 200, "html"),
+        ("/carta-amonestacion", 200, "html"),
+        ("/carta-de-amonestacion", 200, "html"),
+        ("/amonestacion-escrita", 200, "html"),
         ("/contrato-trabajo", 200, "html"),
         ("/contrato-de-trabajo", 200, "html"),
         ("/modelo-contrato-de-trabajo", 200, "html"),
@@ -370,6 +373,7 @@ PAGES = [
     ("fuero-sindical.html", "fuero-sindical"),
     ("autodespido.html", "autodespido"),
     ("carta-renuncia.html", "carta-renuncia"),
+    ("carta-amonestacion.html", "carta-amonestacion"),
     ("contrato-trabajo.html", "contrato-trabajo"),
     ("obra-faena.html", "obra-faena"),
     ("prescripcion-laboral.html", "prescripcion-laboral"),
@@ -693,6 +697,34 @@ def run():
         if page.locator("#btnCopiarCarta").count() == 0 or page.locator("#btnDescargarCarta").count() == 0:
             note("faltan los botones de copiar o descargar")
         page.screenshot(path=f"{SHOTS}/movil-carta-renuncia-preview.png")
+
+        print("[interacción] carta de amonestación: formulario y vista previa")
+        page.goto(f"{BASE}/carta-amonestacion", wait_until="networkidle")
+        page.wait_for_timeout(400)
+        preview_am = page.locator("#cartaTexto")
+        if preview_am.count() == 0 or not preview_am.is_visible():
+            note("la vista previa de la amonestación no está visible")
+        else:
+            inicial_am = preview_am.text_content() or ""
+            if "Ana Pérez Soto" not in inicial_am or "amonestación escrita" not in inicial_am.lower():
+                note("la vista previa inicial no incluye el ejemplo de amonestación")
+            if "artículo 154" not in inicial_am and "articulo 154" not in inicial_am.lower():
+                note("la vista previa inicial no cita el artículo 154")
+            if "se remite copia" in inicial_am.lower():
+                note("la carta simple no debe remitir copia a la Inspección")
+        page.fill("#nombre", "Rosa Campos")
+        page.fill("#ciudad", "Rancagua")
+        page.select_option("#motivo", "inasistencia")
+        page.locator('input[name="tipo"][value="inspeccion"]').check()
+        page.wait_for_timeout(200)
+        vivo_am = page.locator("#cartaTexto").text_content() or ""
+        if "Rosa Campos" not in vivo_am or "Rancagua" not in vivo_am or "inasistencia" not in vivo_am.lower():
+            note(f"la vista previa de amonestación no sigue al formulario: {vivo_am[:180]!r}")
+        if "se remite copia" not in vivo_am.lower():
+            note("la copia a la Inspección no apareció en la carta")
+        if page.locator("#btnCopiarCarta").count() == 0 or page.locator("#btnDescargarCarta").count() == 0:
+            note("faltan los botones de copiar o descargar la amonestación")
+        page.screenshot(path=f"{SHOTS}/movil-carta-amonestacion-preview.png")
 
         print("[interacción] contrato de trabajo: formulario, aviso y vista previa")
         page.goto(f"{BASE}/contrato-trabajo", wait_until="networkidle")
