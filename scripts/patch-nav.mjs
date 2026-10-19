@@ -87,6 +87,7 @@ const DRAWER_LINKS = [
   ["/despido-injustificado", "Despido injustificado"],
   ["/autodespido", "Autodespido"],
   ["/carta-renuncia", "Carta de renuncia"],
+  ["/carta-amonestacion", "Carta de amonestación"],
   ["/obra-faena", "Obra o faena"],
   ["/contrato-trabajo", "Contrato de trabajo"],
   ["/contrato-plazo-fijo", "Contrato a plazo fijo"],
