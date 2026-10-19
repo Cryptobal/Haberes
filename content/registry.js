@@ -30,7 +30,7 @@ export const CAUSAL_PAGES = [
 ];
 
 /**
- * 19 guías en content/guias/{slug}.md.
+ * 20 guías en content/guias/{slug}.md.
  * group: índice /guias (liquidación vs finiquito).
  * calc: calculadora canónica (no canibalizar titles/H1 de esas URLs).
  * updated: lastmod ISO (YYYY-MM-DD) para sitemap y el bloque «últimas» del hub.
@@ -58,11 +58,12 @@ export const GUIDES = [
   { slug: "finiquito-trabajadora-de-casa-particular", group: "finiquito", calc: "/finiquito-casa-particular", updated: "2026-10-05" },
   { slug: "me-reservo-el-derecho-en-el-finiquito", group: "finiquito", calc: "/finiquito", updated: "2026-09-07" },
   { slug: "autodespido", group: "finiquito", calc: "/autodespido", updated: "2026-10-12" },
+  { slug: "ley-karin", group: "finiquito", calc: "/finiquito", updated: "2026-10-19" },
 ];
 
 /** lastmod de rutas base que sí cambiaron después del lote SEO inicial. */
 export const PATH_LASTMOD = {
-  "/guias": "2026-10-12",
+  "/guias": "2026-10-19",
   "/finiquito-casa-particular": "2026-08-31",
   "/sueldo-casa-particular": "2026-10-02",
   "/costo-empresa": "2026-08-30",

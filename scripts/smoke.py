@@ -64,6 +64,7 @@ def check_http():
         ("/guias/semana-corrida", 200, "html"),
         ("/guias/aguinaldo-fiestas-patrias", 200, "html"),
         ("/guias/me-reservo-el-derecho-en-el-finiquito", 200, "html"),
+        ("/guias/ley-karin", 200, "html"),
         ("/horas-extras", 200, "html"),
         ("/valor-hora", 200, "html"),
         ("/hora-hombre", 404, None),

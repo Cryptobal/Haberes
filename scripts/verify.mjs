@@ -7819,7 +7819,8 @@ assert(
     lastmodForPath("/guias/liquidacion-de-sueldo-y-previred") === "2026-09-21" &&
     lastmodForPath("/guias/fuero-maternal") === "2026-09-28" &&
     lastmodForPath("/guias/autodespido") === "2026-10-12" &&
-    lastmodForPath("/guias") === "2026-10-12" &&
+    lastmodForPath("/guias/ley-karin") === "2026-10-19" &&
+    lastmodForPath("/guias") === "2026-10-19" &&
     /<loc>https:\/\/www\.haberes\.cl\/guias\/liquidacion-de-sueldo<\/loc>\s*<lastmod>2026-08-18<\/lastmod>/.test(sitemap) &&
     /<loc>https:\/\/www\.haberes\.cl\/guias\/gratificacion-legal<\/loc>\s*<lastmod>2026-08-18<\/lastmod>/.test(sitemap) &&
     /<loc>https:\/\/www\.haberes\.cl\/guias\/indemnizacion-por-anos-de-servicio<\/loc>\s*<lastmod>2026-08-19<\/lastmod>/.test(sitemap) &&
@@ -7831,7 +7832,8 @@ assert(
     /<loc>https:\/\/www\.haberes\.cl\/guias\/liquidacion-de-sueldo-y-previred<\/loc>\s*<lastmod>2026-09-21<\/lastmod>/.test(sitemap) &&
     /<loc>https:\/\/www\.haberes\.cl\/guias\/fuero-maternal<\/loc>\s*<lastmod>2026-09-28<\/lastmod>/.test(sitemap) &&
     /<loc>https:\/\/www\.haberes\.cl\/guias\/autodespido<\/loc>\s*<lastmod>2026-10-12<\/lastmod>/.test(sitemap) &&
-    /<loc>https:\/\/www\.haberes\.cl\/guias<\/loc>\s*<lastmod>2026-10-12<\/lastmod>/.test(sitemap),
+    /<loc>https:\/\/www\.haberes\.cl\/guias\/ley-karin<\/loc>\s*<lastmod>2026-10-19<\/lastmod>/.test(sitemap) &&
+    /<loc>https:\/\/www\.haberes\.cl\/guias<\/loc>\s*<lastmod>2026-10-19<\/lastmod>/.test(sitemap),
 );
 assert("sin ruta /blog ni /noticias", !existsSync(join(root, "blog.html")) && !existsSync(join(root, "noticias.html")));
 assert("sitemap sin .html (cleanUrls)", !locs.some((u) => u.endsWith(".html")));
@@ -8117,7 +8119,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 127,
+      seoPaths().length === 128,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -20149,6 +20151,7 @@ assert(
       ["guias/liquidacion-de-sueldo-y-previred.html", "/sueldo", /54/, /dt\.gob\.cl/],
       ["guias/fuero-maternal.html", "/fuero-maternal", /artículo 201/, /dt\.gob\.cl/],
       ["guias/autodespido.html", "/autodespido", /artículo 171/, /dt\.gob\.cl/],
+      ["guias/ley-karin.html", "/finiquito", /211-A/, /dt\.gob\.cl/],
       ["guias/finiquito-trabajadora-de-casa-particular.html", "/finiquito-casa-particular", /artículo 163/, /dt\.gob\.cl/],
     ];
     function visibleWords(html) {
@@ -20177,11 +20180,14 @@ assert(
         file.includes("liquidacion-de-sueldo-y-previred") ||
         file.includes("fuero-maternal") ||
         file.includes("autodespido") ||
+        file.includes("ley-karin") ||
         file.includes("finiquito-trabajadora-de-casa-particular")
           ? 900
           : 800;
       const dateRe =
-        file.includes("autodespido")
+        file.includes("ley-karin")
+          ? /<time datetime="2026-10-19">/
+          : file.includes("autodespido")
           ? /<time datetime="2026-10-12">/
           : file.includes("finiquito-trabajadora-de-casa-particular")
           ? /<time datetime="2026-10-05">/
@@ -20323,6 +20329,71 @@ assert(
           /bcn\.cl\/leychile\/navegar\?idNorma=207436/.test(html) &&
           landingH1 === "Calcular autodespido Chile 2026" &&
           GUIDES.find((g) => g.slug === "autodespido")?.calc === "/autodespido",
+        `${title} | ${h1}`,
+      );
+    }
+    {
+      const html = readFileSync(join(root, "guias/ley-karin.html"), "utf8");
+      const finiHtml = readFileSync(join(root, "finiquito.html"), "utf8");
+      const sueldoHtml = readFileSync(join(root, "sueldo.html"), "utf8");
+      const tutelaHtml = readFileSync(join(root, "tutela-laboral.html"), "utf8");
+      const acosoHtml = readFileSync(join(root, "finiquito/art-160-acoso-laboral.html"), "utf8");
+      const title = (html.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+      const h1 = (html.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+      const finiTitle = (finiHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+      const finiH1 = (finiHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+      const sueldoTitle = (sueldoHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+      const sueldoH1 = (sueldoHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+      const tutelaTitle = (tutelaHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+      const tutelaH1 = (tutelaHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+      const acosoTitle = (acosoHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+      const acosoH1 = (acosoHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+      assert(
+        "SEO guía Ley Karin title/H1 únicos y resumen, no calculadora",
+        title &&
+          h1 &&
+          title !== finiTitle &&
+          h1 !== finiH1 &&
+          title !== sueldoTitle &&
+          h1 !== sueldoH1 &&
+          title !== tutelaTitle &&
+          h1 !== tutelaH1 &&
+          title !== acosoTitle &&
+          h1 !== acosoH1 &&
+          /Ley Karin resumen/i.test(title) &&
+          /21\.643/.test(title) &&
+          h1 === "Ley Karin: resumen para empresas y trabajadores (Ley 21.643)" &&
+          !/calculadora/i.test(title) &&
+          !/calculadora/i.test(h1) &&
+          !/^Calcular /i.test(h1) &&
+          !/sueldo l[ií]quido/i.test(h1) &&
+          !/finiquito/i.test(h1) &&
+          /data-seo-calc="finiquito"/.test(html) &&
+          /data-causal="160-1-f"/.test(html) &&
+          /1 de agosto de 2024/.test(html) &&
+          /154 bis/.test(html) &&
+          /211-B bis/.test(html) &&
+          /15 días corridos/.test(html) &&
+          /30 días hábiles/.test(html) &&
+          /href="\/finiquito\/art-160-acoso-laboral"/.test(html) &&
+          /href="\/finiquito\/art-160-acoso-sexual"/.test(html) &&
+          /href="\/autodespido"/.test(html) &&
+          /href="\/guias\/autodespido"/.test(html) &&
+          /href="\/tutela-laboral"/.test(html) &&
+          /href="\/indemnizacion-anos-servicio"/.test(html) &&
+          /href="\/finiquito"/.test(html) &&
+          /href="\/sueldo"/.test(html) &&
+          /href="\/guias\/carta-aviso-termino-contrato"/.test(html) &&
+          /1200096/.test(html) &&
+          /1204689/.test(html) &&
+          /126267/.test(html) &&
+          /127088/.test(html) &&
+          /canonical" href="https:\/\/www\.haberes\.cl\/guias\/ley-karin"/.test(html) &&
+          /"@type": "FAQPage"/.test(html) &&
+          /"@type": "Article"/.test(html) &&
+          GUIDES.find((g) => g.slug === "ley-karin")?.calc === "/finiquito" &&
+          !existsSync(join(root, "ley-karin.html")) &&
+          !existsSync(join(root, "blog.html")),
         `${title} | ${h1}`,
       );
     }
@@ -21750,8 +21821,8 @@ assert(
     const hub = readFileSync(join(root, "guias.html"), "utf8");
     assert("SEO hub /guias existe", existsSync(join(root, "guias.html")));
     assert(
-      "SEO hub lista 19 guías agrupadas",
-      GUIDE_SLUGS.length === 19 &&
+      "SEO hub lista 20 guías agrupadas",
+      GUIDE_SLUGS.length === 20 &&
         GUIDE_SLUGS.every((s) => hub.includes(`/guias/${s}`)) &&
         /Liquidaci[oó]n de sueldo/.test(hub) &&
         /<h2>Finiquito<\/h2>/.test(hub) &&
@@ -21766,8 +21837,9 @@ assert(
         /datetime="2026-09-21"/.test(hub) &&
         /datetime="2026-09-28"/.test(hub) &&
         /datetime="2026-09-14"/.test(hub) &&
-        /datetime="2026-09-07"/.test(hub) &&
+        /datetime="2026-10-19"/.test(hub) &&
         /datetime="2026-10-12"/.test(hub) &&
+        /href="\/guias\/ley-karin"/.test(hub) &&
         /href="\/guias\/autodespido"/.test(hub) &&
         /href="\/guias\/fuero-maternal"/.test(hub) &&
         /href="\/guias\/liquidacion-de-sueldo-y-previred"/.test(hub) &&
@@ -21906,7 +21978,7 @@ assert(
     return acc;
   }
   const pages = listHtml(root);
-  assert("129 páginas HTML", pages.length === 129, String(pages.length));
+  assert("130 páginas HTML", pages.length === 130, String(pages.length));
   for (const file of pages) {
     const html = readFileSync(file, "utf8");
     const rel = file.slice(root.length + 1);
