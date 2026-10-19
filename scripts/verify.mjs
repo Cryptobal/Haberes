@@ -22893,6 +22893,33 @@ console.log("\nMultas inspección del trabajo");
       /Ley N° 21\.643/.test(goldAcoso.texto) &&
       !/Se remite copia/.test(goldAcoso.texto),
   );
+  const goldLibreIgnorado = redactarCartaAmonestacion({
+    ...{
+      nombre: "Ana Pérez Soto",
+      rut: "12.345.678-5",
+      empleador: "Comercial Andes SpA",
+      rutEmpleador: "76.086.428-5",
+      firmante: "María López Díaz",
+      cargo: "Analista de remuneraciones",
+      ciudad: "Santiago",
+      fechaCarta: "2026-03-02",
+      fechaHechos: "2026-03-01",
+      hora: "08:40",
+      detalle: "Ingresó a las 08:40, con 40 minutos de atraso.",
+      clausula: "la cláusula de puntualidad del reglamento interno",
+      tipo: "simple",
+    },
+    motivo: "atrasos",
+    motivoLibre: "acoso laboral en la bodega",
+  });
+  assert(
+    "gold texto de Otro no marca acoso si el motivo ya no es Otro",
+    goldLibreIgnorado.motivo === "atrasos" &&
+      goldLibreIgnorado.tocaAcoso === false &&
+      !/Ley N° 21\.643/.test(goldLibreIgnorado.texto) &&
+      !/acoso laboral en la bodega/.test(goldLibreIgnorado.texto) &&
+      /atraso en el ingreso/.test(goldLibreIgnorado.texto),
+  );
   assert(
     "gold amonestación por incumplimiento de instrucciones",
     goldInstruccion.motivo === "incumplimiento" &&

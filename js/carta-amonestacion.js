@@ -79,7 +79,7 @@ export function redactarCartaAmonestacion(input = {}) {
     : "atrasos";
   const copiaInspeccion = input.tipo === "inspeccion";
   const hecho = motivo === "otro" ? motivoLibre || "[hecho]" : MOTIVOS_AMONESTACION[motivo];
-  const tocaAcoso = tocaAcosoLaboral(motivoLibre, detalle, motivo === "otro" ? hecho : "");
+  const tocaAcoso = tocaAcosoLaboral(detalle, motivo === "otro" ? motivoLibre : "");
 
   const empleadorRut = rutEmp.vacio ? empleador : `${empleador}, RUT ${rutEmp.texto}`;
   const detalleTxt = detalle ? ` Detalle: ${detalle}` : "";
