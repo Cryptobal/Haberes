@@ -199,6 +199,7 @@ import {
 import { calcularGirosCesantia } from "../js/giro-seguro-cesantia.js";
 import { redactarCartaRenuncia } from "../js/carta-renuncia.js";
 import { redactarCartaAmonestacion } from "../js/carta-amonestacion.js";
+import { redactarCartaDespido } from "../js/carta-despido.js";
 import { redactarContratoTrabajo, plazoEscrituraDias } from "../js/contrato-trabajo.js";
 import { calcularCotizacionIndependiente } from "../js/cotizacion-independiente.js";
 import { calcularViatico } from "../js/viatico.js";
@@ -7091,6 +7092,7 @@ const required = [
   "autodespido.html",
   "carta-renuncia.html",
   "carta-amonestacion.html",
+  "carta-despido.html",
   "contrato-trabajo.html",
   "obra-faena.html",
   "prescripcion-laboral.html",
@@ -7117,11 +7119,14 @@ const required = [
   "finiquito.html",
   "carta-renuncia.html",
   "carta-amonestacion.html",
+  "carta-despido.html",
   "contrato-trabajo.html",
   "js/carta-renuncia.js",
   "js/app-carta-renuncia.js",
   "js/carta-amonestacion.js",
   "js/app-carta-amonestacion.js",
+  "js/carta-despido.js",
+  "js/app-carta-despido.js",
   "js/contrato-trabajo.js",
   "js/app-contrato-trabajo.js",
   "js/app-horas-extras.js",
@@ -7178,6 +7183,7 @@ const required = [
   "js/app-despido-injustificado.js",
   "js/app-autodespido.js",
   "js/app-carta-amonestacion.js",
+  "js/app-carta-despido.js",
   "js/app-contrato-trabajo.js",
   "js/app-obra-faena.js",
   "js/app-prescripcion-laboral.js",
@@ -7419,6 +7425,7 @@ const htmlFiles = [
   "autodespido.html",
   "carta-renuncia.html",
   "carta-amonestacion.html",
+  "carta-despido.html",
   "contrato-trabajo.html",
   "obra-faena.html",
   "prescripcion-laboral.html",
@@ -7618,6 +7625,7 @@ const appEntries = [
   "js/app-despido-injustificado.js",
   "js/app-autodespido.js",
   "js/app-carta-amonestacion.js",
+  "js/app-carta-despido.js",
   "js/app-contrato-trabajo.js",
   "js/app-obra-faena.js",
   "js/app-prescripcion-laboral.js",
@@ -7757,6 +7765,7 @@ assert(
     BASE_PATHS.includes("/contrato-plazo-fijo") &&
     BASE_PATHS.includes("/contrato-trabajo") &&
     BASE_PATHS.includes("/carta-amonestacion") &&
+    BASE_PATHS.includes("/carta-despido") &&
     BASE_PATHS.includes("/termino-anticipado-plazo-fijo") &&
     BASE_PATHS.includes("/permiso-sin-goce") &&
     BASE_PATHS.includes("/zona-extrema") &&
@@ -8128,7 +8137,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 129,
+      seoPaths().length === 130,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -8140,7 +8149,7 @@ try {
   const docsSeo = await hitLocal("/docs/seo-map.md");
   assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
   assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
-  for (const p of ["/sueldo/", "/sueldo-liquido-a-bruto/", "/sueldo-casa-particular/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/valor-hora/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/dias-habiles/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/carta-renuncia/", "/carta-amonestacion/", "/contrato-trabajo/", "/obra-faena/", "/prescripcion-laboral/", "/descanso-compensatorio/", "/inclusion-laboral/", "/jornada-parcial/", "/teletrabajo/", "/bandas-horarias/", "/pacto-4x3/", "/jornada-excepcional/", "/jornada-bisemanal/", "/compensacion-horas-extras/", "/pacto-horas-extras/", "/contrato-plazo-fijo/", "/termino-anticipado-plazo-fijo/", "/permiso-sin-goce/", "/zona-extrema/", "/promedio-remuneraciones/", "/antiguedad-laboral/", "/tope-imponible/", "/diferencia-isapre/", "/comparar-afp/", "/multas-inspeccion-trabajo/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/cotizacion-independiente/", "/retencion-judicial/", "/descuentos-legales/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/fuero-sindical/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/reliquidacion-impuesto/", "/cotizaciones-previsionales/", "/costo-empresa/", "/cotizacion-empleador/", "/seguro-cesantia/", "/giro-seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/viatico/", "/reajuste-ipc/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+  for (const p of ["/sueldo/", "/sueldo-liquido-a-bruto/", "/sueldo-casa-particular/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/valor-hora/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/dias-habiles/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/carta-renuncia/", "/carta-amonestacion/", "/carta-despido/", "/contrato-trabajo/", "/obra-faena/", "/prescripcion-laboral/", "/descanso-compensatorio/", "/inclusion-laboral/", "/jornada-parcial/", "/teletrabajo/", "/bandas-horarias/", "/pacto-4x3/", "/jornada-excepcional/", "/jornada-bisemanal/", "/compensacion-horas-extras/", "/pacto-horas-extras/", "/contrato-plazo-fijo/", "/termino-anticipado-plazo-fijo/", "/permiso-sin-goce/", "/zona-extrema/", "/promedio-remuneraciones/", "/antiguedad-laboral/", "/tope-imponible/", "/diferencia-isapre/", "/comparar-afp/", "/multas-inspeccion-trabajo/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/cotizacion-independiente/", "/retencion-judicial/", "/descuentos-legales/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/fuero-sindical/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/reliquidacion-impuesto/", "/cotizaciones-previsionales/", "/costo-empresa/", "/cotizacion-empleador/", "/seguro-cesantia/", "/giro-seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/viatico/", "/reajuste-ipc/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
   }
@@ -8197,6 +8206,7 @@ try {
     "/autodespido",
     "/carta-renuncia",
     "/carta-amonestacion",
+    "/carta-despido",
     "/contrato-trabajo",
     "/obra-faena",
     "/prescripcion-laboral",
@@ -8360,6 +8370,26 @@ try {
     "GET /carta-amonestacion 200",
     amonestacionPage.status === 200 && /<h1>/.test(amonestacionPage.text),
     String(amonestacionPage.status),
+  );
+  for (const alias of [
+    "/carta-de-despido",
+    "/modelo-carta-despido",
+    "/formato-carta-despido",
+    "/ejemplo-carta-despido",
+    "/carta-aviso-de-despido",
+  ]) {
+    const hit = await hitLocal(alias);
+    assert(
+      `301 ${alias} → /carta-despido`,
+      hit.status === 301 && hit.location === "/carta-despido",
+      `${alias} → ${hit.status} ${hit.location}`,
+    );
+  }
+  const despidoCartaPage = await hitLocal("/carta-despido");
+  assert(
+    "GET /carta-despido 200",
+    despidoCartaPage.status === 200 && /<h1>/.test(despidoCartaPage.text),
+    String(despidoCartaPage.status),
   );
   for (const alias of [
     "/contrato-de-trabajo",
@@ -12137,6 +12167,7 @@ assert(
     ["autodespido.html", "/autodespido"],
     ["carta-renuncia.html", "/carta-renuncia"],
     ["carta-amonestacion.html", "/carta-amonestacion"],
+    ["carta-despido.html", "/carta-despido"],
     ["contrato-trabajo.html", "/contrato-trabajo"],
     ["obra-faena.html", "/obra-faena"],
     ["prescripcion-laboral.html", "/prescripcion-laboral"],
@@ -21808,6 +21839,7 @@ assert(
       "autodespido.html",
       "carta-renuncia.html",
       "carta-amonestacion.html",
+      "carta-despido.html",
       "contrato-trabajo.html",
       "obra-faena.html",
       "prescripcion-laboral.html",
@@ -22010,7 +22042,7 @@ assert(
     return acc;
   }
   const pages = listHtml(root);
-  assert("131 páginas HTML", pages.length === 131, String(pages.length));
+  assert("132 páginas HTML", pages.length === 132, String(pages.length));
   for (const file of pages) {
     const html = readFileSync(file, "utf8");
     const rel = file.slice(root.length + 1);
@@ -22822,7 +22854,7 @@ console.log("\nMultas inspección del trabajo");
       /"@type": "Organization"/.test(caHtml) &&
       /"@type": "WebApplication"/.test(caHtml) &&
       /"@type": "FAQPage"/.test(caHtml) &&
-      !existsSync(join(root, "carta-despido.html")),
+      /href="\/carta-despido"/.test(caHtml),
   );
   assert(
     "gold amonestación simple por atraso, sin copia y sin multa",
@@ -22979,6 +23011,280 @@ console.log("\nMultas inspección del trabajo");
   assert(
     "robots no Disallow /carta-amonestacion",
     !/Disallow:\s*\/carta-amonestacion/.test(readFileSync(join(root, "robots.txt"), "utf8")),
+  );
+}
+
+{
+  const cdHtml = readFileSync(join(root, "carta-despido.html"), "utf8");
+  const cdTitle = (cdHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+  const cdH1 = (cdHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+  const cdDesc = (cdHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "";
+  const cdCanonical = (cdHtml.match(/rel="canonical" href="([^"]*)"/) || [])[1] || "";
+  const baseDespido = {
+    nombre: "Ana Pérez Soto",
+    rut: "12.345.678-5",
+    empleador: "Comercial Andes SpA",
+    rutEmpleador: "76.086.428-5",
+    firmante: "María López Díaz",
+    cargo: "Analista de remuneraciones",
+    ciudad: "Santiago",
+    domicilio: "Huérfanos 1160, Santiago",
+    fechaCarta: "2026-03-02",
+    fechaTermino: "2026-04-01",
+    causal: "161-necesidades",
+    hechos: "La reestructuración del área de remuneraciones elimina el cargo.",
+    medio: "personal",
+    cotizaciones: "aldia",
+    avisoModo: "treinta",
+    monto: "$1.200.000",
+  };
+  const gold161 = redactarCartaDespido(baseDespido);
+  const gold160 = redactarCartaDespido({
+    ...baseDespido,
+    causal: "160-7",
+    fechaTermino: "2026-03-02",
+    medio: "certificada",
+    hechos: "No entregó el cierre de remuneraciones de febrero.",
+    monto: "",
+  });
+  const goldFortuito = redactarCartaDespido({
+    ...baseDespido,
+    causal: "159-f",
+    hechos: "Un incendio destruyó el local.",
+  });
+  const goldRenuncia = redactarCartaDespido({ ...baseDespido, causal: "159-b" });
+  const goldCorto = redactarCartaDespido({
+    ...baseDespido,
+    fechaTermino: "2026-03-10",
+    monto: "",
+  });
+  const goldImpagas = redactarCartaDespido({ ...baseDespido, cotizaciones: "impagas" });
+  const goldAcoso = redactarCartaDespido({
+    ...baseDespido,
+    causal: "160-1-b",
+    hechos: "Hechos reservados en el expediente.",
+  });
+  const goldSinHechos = redactarCartaDespido({ ...baseDespido, hechos: "  " });
+  const goldObra = redactarCartaDespido({
+    ...baseDespido,
+    causal: "159-e",
+    hechos: "La obra del edificio concluyó.",
+    monto: "",
+  });
+  const goldDesahucio = redactarCartaDespido({
+    ...baseDespido,
+    causal: "161-desahucio",
+    avisoModo: "sustitutiva",
+  });
+  assert(
+    "SEO carta despido title y H1",
+    cdTitle === "Carta de despido Chile 2026 — Haberes" &&
+      cdH1 === "Carta de despido Chile 2026" &&
+      cdTitle.length <= 65 &&
+      !/calculadora de finiquito/i.test(cdTitle) &&
+      cdH1 !== "Carta de aviso de término de contrato en Chile",
+    cdTitle,
+  );
+  assert(
+    "SEO carta despido description y canonical",
+    cdDesc.length >= 110 &&
+      cdDesc.length <= 160 &&
+      /art\. 162/.test(cdDesc) &&
+      /no es asesor[ií]a legal/i.test(cdDesc) &&
+      cdCanonical === "https://www.haberes.cl/carta-despido",
+    `${cdDesc.length}:${cdDesc}`,
+  );
+  assert(
+    "carta despido cita art. 162, plazos, disclaimer y enlaces",
+    /art[íi]culo 162/.test(cdHtml) &&
+      /tres d[ií]as h[aá]biles/.test(cdHtml) &&
+      /seis d[ií]as h[aá]biles/.test(cdHtml) &&
+      /treinta d[ií]as/.test(cdHtml) &&
+      /no constituye asesor[ií]a legal/i.test(cdHtml) &&
+      /href="\/guias\/carta-aviso-termino-contrato"/.test(cdHtml) &&
+      /href="\/despido-injustificado"/.test(cdHtml) &&
+      /href="\/nulidad-despido"/.test(cdHtml) &&
+      /href="\/indemnizacion-aviso-previo"/.test(cdHtml) &&
+      /href="\/finiquito\/art-159-vencimiento-del-plazo"/.test(cdHtml) &&
+      /href="\/finiquito\/art-160-incumplimiento-grave"/.test(cdHtml) &&
+      /href="\/finiquito\/art-161-necesidades-de-la-empresa"/.test(cdHtml) &&
+      /href="\/finiquito\/art-161-desahucio"/.test(cdHtml) &&
+      /href="\/carta-renuncia"/.test(cdHtml) &&
+      /href="\/carta-amonestacion"/.test(cdHtml) &&
+      /bcn\.cl\/leychile\/navegar\?idNorma=207436/.test(cdHtml) &&
+      /dt\.gob\.cl\/portal\/1628\/w3-article-60543\.html/.test(cdHtml) &&
+      /dt\.gob\.cl\/portal\/1628\/w3-article-60576\.html/.test(cdHtml) &&
+      /"@type": "Organization"/.test(cdHtml) &&
+      /"@type": "WebApplication"/.test(cdHtml) &&
+      /"@type": "FAQPage"/.test(cdHtml) &&
+      !/inteligencia artificial/i.test(cdHtml) &&
+      !/generada por IA/i.test(cdHtml),
+  );
+  assert(
+    "gold carta 161 con 30 días, monto 163 y cotizaciones al día",
+    gold161.aplica &&
+      gold161.plazo === "30" &&
+      gold161.diasAnticipacion === 30 &&
+      gold161.avisoInsuficiente === false &&
+      gold161.cotizacionesImpagas === false &&
+      gold161.hechosVacios === false &&
+      gold161.montoPendiente === false &&
+      gold161.tocaAcoso === false &&
+      gold161.rutTrabajadorOk &&
+      gold161.rutEmpleadorOk === true &&
+      gold161.slug === "art-161-necesidades-de-la-empresa" &&
+      gold161.texto.includes("Ana Pérez Soto") &&
+      gold161.texto.includes("12.345.678-5") &&
+      gold161.texto.includes("Comercial Andes SpA, RUT 76.086.428-5") &&
+      gold161.texto.includes("María López Díaz") &&
+      gold161.texto.includes("Santiago, 2 de marzo de 2026") &&
+      gold161.texto.includes("1 de abril de 2026") &&
+      gold161.texto.includes("30 días") &&
+      /art[íi]culo 161 inciso primero/.test(gold161.texto) &&
+      /reestructuraci[oó]n del [aá]rea de remuneraciones/.test(gold161.texto) &&
+      /\$1\.200\.000/.test(gold161.texto) &&
+      /[uú]ltimo d[ií]a del mes anterior/.test(gold161.texto) &&
+      /comprobantes/.test(gold161.texto) &&
+      /copia a la Inspecci[oó]n del Trabajo/.test(gold161.texto) &&
+      /Recepci[oó]n del trabajador/.test(gold161.texto) &&
+      !/tres d[ií]as h[aá]biles siguientes/.test(gold161.texto) &&
+      !/no produce el efecto de poner t[eé]rmino/.test(gold161.texto),
+  );
+  assert(
+    "gold carta 160 N° 7 en tres días hábiles y por carta certificada",
+    gold160.aplica &&
+      gold160.plazo === "3" &&
+      gold160.causal === "160-7" &&
+      gold160.slug === "art-160-incumplimiento-grave" &&
+      gold160.montoPendiente === false &&
+      gold160.medio === "certificada" &&
+      /art[íi]culo 160 N° 7/.test(gold160.texto) &&
+      /tres d[ií]as h[aá]biles/.test(gold160.texto) &&
+      /carta certificada/.test(gold160.texto) &&
+      gold160.texto.includes("Huérfanos 1160, Santiago") &&
+      /cierre de remuneraciones de febrero/.test(gold160.texto) &&
+      !/Recepci[oó]n del trabajador/.test(gold160.texto) &&
+      !/\$1\.200\.000/.test(gold160.texto),
+  );
+  assert(
+    "gold carta 159 N° 6 usa seis días hábiles",
+    goldFortuito.aplica &&
+      goldFortuito.plazo === "6" &&
+      goldFortuito.slug === "art-159-caso-fortuito" &&
+      /art[íi]culo 159 N° 6/.test(goldFortuito.texto) &&
+      /seis d[ií]as h[aá]biles/.test(goldFortuito.texto) &&
+      !/tres d[ií]as h[aá]biles/.test(goldFortuito.texto),
+  );
+  assert(
+    "gold 159 N° 2 no arma carta de despido y apunta a la renuncia",
+    goldRenuncia.aplica === false &&
+      goldRenuncia.causal === "159-b" &&
+      goldRenuncia.slug === "art-159-renuncia-voluntaria" &&
+      /art[íi]culo 159 N° 2/.test(goldRenuncia.texto) &&
+      goldRenuncia.texto.includes("/carta-renuncia") &&
+      /no se comunica con la carta de despido/.test(goldRenuncia.texto) &&
+      !/Se adjuntan a esta comunicaci[oó]n los comprobantes/.test(goldRenuncia.texto),
+  );
+  assert(
+    "gold aviso de 161 menor a 30 días exige la sustitutiva y el monto del 163",
+    goldCorto.avisoInsuficiente === true &&
+      goldCorto.diasAnticipacion === 8 &&
+      goldCorto.montoPendiente === true &&
+      /menos de treinta/.test(goldCorto.texto) &&
+      /indemnizaci[oó]n sustitutiva del aviso previo/.test(goldCorto.texto) &&
+      /monto pendiente/.test(goldCorto.texto) &&
+      /art[íi]culo 163/.test(goldCorto.texto),
+  );
+  assert(
+    "gold cotizaciones impagas advierten que el despido no pone término",
+    goldImpagas.cotizacionesImpagas === true &&
+      /no produce el efecto de poner t[eé]rmino al contrato/.test(goldImpagas.texto) &&
+      /convalidaci[oó]n/.test(goldImpagas.texto) &&
+      !/se informan [ií]ntegramente pagadas/.test(goldImpagas.texto),
+  );
+  assert(
+    "gold acoso sexual marca Ley 21.643 y plazo de tres días",
+    goldAcoso.tocaAcoso === true &&
+      goldAcoso.plazo === "3" &&
+      goldAcoso.slug === "art-160-acoso-sexual" &&
+      /Ley N° 21\.643/.test(goldAcoso.texto) &&
+      /art[íi]culo 160 N° 1 letra b\)/.test(goldAcoso.texto),
+  );
+  assert(
+    "gold sin hechos deja el marcador y no inventa el relato",
+    goldSinHechos.hechosVacios === true &&
+      goldSinHechos.texto.includes("[hechos en que se funda la causal]") &&
+      !/reestructuraci[oó]n del [aá]rea/.test(goldSinHechos.texto),
+  );
+  assert(
+    "gold obra o faena pide el monto del tiempo servido sin calcularlo",
+    goldObra.aplica &&
+      goldObra.plazo === "3" &&
+      goldObra.montoPendiente === true &&
+      goldObra.slug === "art-159-conclusion-del-trabajo" &&
+      /tiempo servido/.test(goldObra.texto) &&
+      /monto pendiente/.test(goldObra.texto) &&
+      !/\$1\.200\.000/.test(goldObra.texto),
+  );
+  assert(
+    "gold desahucio con sustitutiva no usa el inciso de necesidades ni calcula",
+    goldDesahucio.aplica &&
+      goldDesahucio.avisoInsuficiente === false &&
+      goldDesahucio.montoPendiente === false &&
+      goldDesahucio.slug === "art-161-desahucio" &&
+      /art[íi]culo 161 no exige esa anticipaci[oó]n/.test(goldDesahucio.texto) &&
+      /[uú]ltima remuneraci[oó]n mensual devengada/.test(goldDesahucio.texto) &&
+      !/inciso primero del art[íi]culo 161/.test(goldDesahucio.texto) &&
+      !/monto pendiente/.test(goldDesahucio.texto),
+  );
+  assert(
+    "home, despido, nulidad, aviso y nav enlazan /carta-despido",
+    /href="\/carta-despido"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+      /href="\/carta-despido" data-nav>Carta de despido<\/a>/.test(
+        readFileSync(join(root, "index.html"), "utf8"),
+      ) &&
+      /href="\/carta-despido" data-nav>Carta de despido<\/a>/.test(cdHtml) &&
+      /href="\/carta-despido" data-nav>Carta de despido<\/a>/.test(
+        readFileSync(join(root, "js/ui.js"), "utf8"),
+      ) &&
+      /href="\/carta-despido"/.test(readFileSync(join(root, "despido-injustificado.html"), "utf8")) &&
+      /href="\/carta-despido"/.test(readFileSync(join(root, "nulidad-despido.html"), "utf8")) &&
+      /href="\/carta-despido"/.test(readFileSync(join(root, "indemnizacion-aviso-previo.html"), "utf8")) &&
+      /href="\/carta-despido"/.test(
+        readFileSync(join(root, "guias/carta-aviso-termino-contrato.html"), "utf8"),
+      ),
+  );
+  assert(
+    "sitemap incluye /carta-despido",
+    locs.includes("https://www.haberes.cl/carta-despido") &&
+      lastmodForPath("/carta-despido") === "2026-10-21",
+  );
+  assert(
+    "seo-map documenta /carta-despido sin canibalizar la guía ni el finiquito",
+    /\/carta-despido/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+      /no canibalizar `\/guias\/carta-aviso-termino-contrato`, `\/despido-injustificado`, `\/nulidad-despido`, `\/indemnizacion-aviso-previo`, `\/finiquito`, `\/carta-amonestacion`, `\/carta-renuncia` ni `\/autodespido`/i.test(
+        readFileSync(join(root, "docs/seo-map.md"), "utf8"),
+      ),
+  );
+  const vercelDespido = JSON.parse(readFileSync(join(root, "vercel.json"), "utf8"));
+  assert(
+    "alias de carta de despido redirigen a /carta-despido",
+    [
+      "/carta-de-despido",
+      "/modelo-carta-despido",
+      "/formato-carta-despido",
+      "/ejemplo-carta-despido",
+      "/carta-aviso-de-despido",
+    ].every(
+      (src) =>
+        vercelDespido.redirects.some(
+          (r) => r.source === src && r.destination === "/carta-despido" && r.permanent === true,
+        ) && !existsSync(join(root, `${src.slice(1)}.html`)),
+    ) && /urlPath === "\/carta-aviso-de-despido"/.test(readFileSync(join(root, "scripts/serve.mjs"), "utf8")),
+  );
+  assert(
+    "robots no Disallow /carta-despido",
+    !/Disallow:\s*\/carta-despido/.test(readFileSync(join(root, "robots.txt"), "utf8")),
   );
 }
 
