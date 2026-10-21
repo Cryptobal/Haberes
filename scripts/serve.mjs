@@ -202,6 +202,16 @@ export function handleRequest(req, res) {
     return;
   }
   if (
+    urlPath === "/carta-de-despido" ||
+    urlPath === "/modelo-carta-despido" ||
+    urlPath === "/formato-carta-despido" ||
+    urlPath === "/ejemplo-carta-despido" ||
+    urlPath === "/carta-aviso-de-despido"
+  ) {
+    send(res, 301, { Location: `/carta-despido${url.search}` }, "");
+    return;
+  }
+  if (
     urlPath === "/contrato-de-trabajo" ||
     urlPath === "/modelo-contrato-de-trabajo" ||
     urlPath === "/contrato-trabajo-modelo" ||

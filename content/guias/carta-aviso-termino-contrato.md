@@ -56,7 +56,7 @@ Esta guía no inventa un formulario propio. El canal y el comprobante de la Insp
 
 Después de la carta viene el finiquito: escrito, ratificación y **diez días hábiles** para otorgarlo y poner el pago a disposición, desde la separación. Son normas distintas. Una carta bien hecha no paga sola; un finiquito a tiempo no sana una carta omitida.
 
-Haberes no emite la carta oficial de la DT. Genera la **carta de finiquito** (haberes del término) desde la [cuenta de empresa](/empresa) y estima montos en la [calculadora de finiquito](/finiquito). Puede precargar necesidades de la empresa en [esa causal](/finiquito/art-161-necesidades-de-la-empresa). No es asesoría legal ni el trámite de la Inspección.
+Haberes no emite la carta oficial de la DT. La plantilla para armar el texto que el empleador entrega al trabajador está en [carta de despido](/carta-despido). No reemplaza la carta electrónica de aviso ni el registro de término. Genera la **carta de finiquito** (haberes del término) desde la [cuenta de empresa](/empresa) y estima montos en la [calculadora de finiquito](/finiquito). Puede precargar necesidades de la empresa en [esa causal](/finiquito/art-161-necesidades-de-la-empresa). No es asesoría legal ni el trámite de la Inspección.
 
 {{calc}}
 

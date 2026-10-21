@@ -247,6 +247,9 @@ def check_http():
         ("/carta-amonestacion", 200, "html"),
         ("/carta-de-amonestacion", 200, "html"),
         ("/amonestacion-escrita", 200, "html"),
+        ("/carta-despido", 200, "html"),
+        ("/carta-de-despido", 200, "html"),
+        ("/carta-aviso-de-despido", 200, "html"),
         ("/contrato-trabajo", 200, "html"),
         ("/contrato-de-trabajo", 200, "html"),
         ("/modelo-contrato-de-trabajo", 200, "html"),
@@ -374,6 +377,7 @@ PAGES = [
     ("autodespido.html", "autodespido"),
     ("carta-renuncia.html", "carta-renuncia"),
     ("carta-amonestacion.html", "carta-amonestacion"),
+    ("carta-despido.html", "carta-despido"),
     ("contrato-trabajo.html", "contrato-trabajo"),
     ("obra-faena.html", "obra-faena"),
     ("prescripcion-laboral.html", "prescripcion-laboral"),
@@ -725,6 +729,46 @@ def run():
         if page.locator("#btnCopiarCarta").count() == 0 or page.locator("#btnDescargarCarta").count() == 0:
             note("faltan los botones de copiar o descargar la amonestación")
         page.screenshot(path=f"{SHOTS}/movil-carta-amonestacion-preview.png")
+
+        print("[interacción] carta de despido: formulario, causal y vista previa")
+        page.goto(f"{BASE}/carta-despido", wait_until="networkidle")
+        page.wait_for_timeout(400)
+        preview_cd = page.locator("#cartaTexto")
+        if preview_cd.count() == 0 or not preview_cd.is_visible():
+            note("la vista previa de la carta de despido no está visible")
+        else:
+            inicial_cd = preview_cd.text_content() or ""
+            if "Ana Pérez Soto" not in inicial_cd or "artículo 162" not in inicial_cd.lower():
+                note("la vista previa inicial no incluye el ejemplo de despido")
+            if "treinta días" not in inicial_cd.lower() and "30 días" not in inicial_cd:
+                note("la vista previa inicial no menciona el aviso de treinta días")
+            if "no produce el efecto" in inicial_cd.lower():
+                note("la carta al día no debe decir que el despido no pone término")
+        page.fill("#nombre", "Rosa Campos")
+        page.fill("#ciudad", "Rancagua")
+        page.select_option("#causal", "160-7")
+        page.wait_for_timeout(200)
+        vivo_cd = page.locator("#cartaTexto").text_content() or ""
+        if "Rosa Campos" not in vivo_cd or "Rancagua" not in vivo_cd or "160" not in vivo_cd:
+            note(f"la vista previa de despido no sigue al formulario: {vivo_cd[:180]!r}")
+        if "tres días hábiles" not in vivo_cd.lower():
+            note("la causal 160 no mostró el plazo de tres días hábiles")
+        page.locator('input[name="cotizaciones"][value="impagas"]').check()
+        page.wait_for_timeout(200)
+        impaga = page.locator("#cartaTexto").text_content() or ""
+        if "no produce el efecto" not in impaga.lower():
+            note("las cotizaciones impagas no advierten que el despido no pone término")
+        nota_cd = page.locator("#avisoNota").text_content() or ""
+        if "nulidad" not in nota_cd.lower():
+            note("el aviso de cotizaciones impagas no menciona la nulidad")
+        page.screenshot(path=f"{SHOTS}/movil-carta-despido-preview.png")
+        page.select_option("#causal", "159-b")
+        page.wait_for_timeout(200)
+        renuncia_cd = page.locator("#cartaTexto").text_content() or ""
+        if "renuncia" not in renuncia_cd.lower() or "carta-renuncia" not in renuncia_cd:
+            note("la renuncia no debe armar una carta de despido")
+        if page.locator("#btnCopiarCarta").count() == 0 or page.locator("#btnDescargarCarta").count() == 0:
+            note("faltan los botones de copiar o descargar la carta de despido")
 
         print("[interacción] contrato de trabajo: formulario, aviso y vista previa")
         page.goto(f"{BASE}/contrato-trabajo", wait_until="networkidle")
