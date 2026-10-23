@@ -250,6 +250,10 @@ def check_http():
         ("/carta-despido", 200, "html"),
         ("/carta-de-despido", 200, "html"),
         ("/carta-aviso-de-despido", 200, "html"),
+        ("/certificado-antiguedad", 200, "html"),
+        ("/certificado-de-antiguedad", 200, "html"),
+        ("/certificado-de-trabajo", 200, "html"),
+        ("/constancia-de-trabajo", 200, "html"),
         ("/contrato-trabajo", 200, "html"),
         ("/contrato-de-trabajo", 200, "html"),
         ("/modelo-contrato-de-trabajo", 200, "html"),
@@ -378,6 +382,7 @@ PAGES = [
     ("carta-renuncia.html", "carta-renuncia"),
     ("carta-amonestacion.html", "carta-amonestacion"),
     ("carta-despido.html", "carta-despido"),
+    ("certificado-antiguedad.html", "certificado-antiguedad"),
     ("contrato-trabajo.html", "contrato-trabajo"),
     ("obra-faena.html", "obra-faena"),
     ("prescripcion-laboral.html", "prescripcion-laboral"),
@@ -769,6 +774,33 @@ def run():
             note("la renuncia no debe armar una carta de despido")
         if page.locator("#btnCopiarCarta").count() == 0 or page.locator("#btnDescargarCarta").count() == 0:
             note("faltan los botones de copiar o descargar la carta de despido")
+
+        print("[interacción] certificado de antigüedad: vigente, término y bisiesto")
+        page.goto(f"{BASE}/certificado-antiguedad", wait_until="networkidle")
+        page.wait_for_timeout(400)
+        preview_cert = page.locator("#cartaTexto")
+        if preview_cert.count() == 0 or not preview_cert.is_visible():
+            note("la vista previa del certificado no está visible")
+        else:
+            inicial_cert = preview_cert.text_content() or ""
+            if "Ana Pérez Soto" not in inicial_cert or "mantiene vigente" not in inicial_cert:
+                note("la vista previa inicial no muestra el contrato vigente")
+            if "artículo 177" not in inicial_cert.lower() and "articulo 177" not in inicial_cert.lower():
+                note("la vista previa inicial no separa el certificado del finiquito")
+            if "$" in inicial_cert:
+                note("el certificado sin remuneración no debe inventar un monto")
+        page.locator('input[name="estado"][value="terminado"]').check()
+        page.wait_for_timeout(200)
+        if page.locator("#bloqueTermino").is_hidden():
+            note("la fecha de término no aparece cuando el contrato está terminado")
+        page.fill("#remuneracion", "$900.000 brutos mensuales")
+        page.wait_for_timeout(200)
+        con_monto = page.locator("#cartaTexto").text_content() or ""
+        if "$900.000 brutos mensuales" not in con_monto or "no calcula ni verifica" not in con_monto.lower():
+            note("la remuneración declarada no se transcribió")
+        if page.locator("#btnCopiarCarta").count() == 0 or page.locator("#btnDescargarCarta").count() == 0:
+            note("faltan los botones de copiar o descargar el certificado")
+        page.screenshot(path=f"{SHOTS}/movil-certificado-antiguedad-preview.png")
 
         print("[interacción] contrato de trabajo: formulario, aviso y vista previa")
         page.goto(f"{BASE}/contrato-trabajo", wait_until="networkidle")

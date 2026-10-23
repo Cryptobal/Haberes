@@ -212,6 +212,16 @@ export function handleRequest(req, res) {
     return;
   }
   if (
+    urlPath === "/certificado-de-antiguedad" ||
+    urlPath === "/certificado-de-trabajo" ||
+    urlPath === "/constancia-de-trabajo" ||
+    urlPath === "/modelo-certificado-antiguedad" ||
+    urlPath === "/formato-certificado-antiguedad"
+  ) {
+    send(res, 301, { Location: `/certificado-antiguedad${url.search}` }, "");
+    return;
+  }
+  if (
     urlPath === "/contrato-de-trabajo" ||
     urlPath === "/modelo-contrato-de-trabajo" ||
     urlPath === "/contrato-trabajo-modelo" ||
