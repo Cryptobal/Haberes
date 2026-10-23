@@ -200,6 +200,7 @@ import { calcularGirosCesantia } from "../js/giro-seguro-cesantia.js";
 import { redactarCartaRenuncia } from "../js/carta-renuncia.js";
 import { redactarCartaAmonestacion } from "../js/carta-amonestacion.js";
 import { redactarCartaDespido } from "../js/carta-despido.js";
+import { redactarCertificadoAntiguedad } from "../js/certificado-antiguedad.js";
 import { redactarContratoTrabajo, plazoEscrituraDias } from "../js/contrato-trabajo.js";
 import { calcularCotizacionIndependiente } from "../js/cotizacion-independiente.js";
 import { calcularViatico } from "../js/viatico.js";
@@ -7093,6 +7094,7 @@ const required = [
   "carta-renuncia.html",
   "carta-amonestacion.html",
   "carta-despido.html",
+  "certificado-antiguedad.html",
   "contrato-trabajo.html",
   "obra-faena.html",
   "prescripcion-laboral.html",
@@ -7120,6 +7122,7 @@ const required = [
   "carta-renuncia.html",
   "carta-amonestacion.html",
   "carta-despido.html",
+  "certificado-antiguedad.html",
   "contrato-trabajo.html",
   "js/carta-renuncia.js",
   "js/app-carta-renuncia.js",
@@ -7127,6 +7130,8 @@ const required = [
   "js/app-carta-amonestacion.js",
   "js/carta-despido.js",
   "js/app-carta-despido.js",
+  "js/certificado-antiguedad.js",
+  "js/app-certificado-antiguedad.js",
   "js/contrato-trabajo.js",
   "js/app-contrato-trabajo.js",
   "js/app-horas-extras.js",
@@ -7184,6 +7189,7 @@ const required = [
   "js/app-autodespido.js",
   "js/app-carta-amonestacion.js",
   "js/app-carta-despido.js",
+  "js/app-certificado-antiguedad.js",
   "js/app-contrato-trabajo.js",
   "js/app-obra-faena.js",
   "js/app-prescripcion-laboral.js",
@@ -7426,6 +7432,7 @@ const htmlFiles = [
   "carta-renuncia.html",
   "carta-amonestacion.html",
   "carta-despido.html",
+  "certificado-antiguedad.html",
   "contrato-trabajo.html",
   "obra-faena.html",
   "prescripcion-laboral.html",
@@ -7626,6 +7633,7 @@ const appEntries = [
   "js/app-autodespido.js",
   "js/app-carta-amonestacion.js",
   "js/app-carta-despido.js",
+  "js/app-certificado-antiguedad.js",
   "js/app-contrato-trabajo.js",
   "js/app-obra-faena.js",
   "js/app-prescripcion-laboral.js",
@@ -7766,6 +7774,7 @@ assert(
     BASE_PATHS.includes("/contrato-trabajo") &&
     BASE_PATHS.includes("/carta-amonestacion") &&
     BASE_PATHS.includes("/carta-despido") &&
+    BASE_PATHS.includes("/certificado-antiguedad") &&
     BASE_PATHS.includes("/termino-anticipado-plazo-fijo") &&
     BASE_PATHS.includes("/permiso-sin-goce") &&
     BASE_PATHS.includes("/zona-extrema") &&
@@ -8137,7 +8146,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 130,
+      seoPaths().length === 131,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -8149,7 +8158,7 @@ try {
   const docsSeo = await hitLocal("/docs/seo-map.md");
   assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
   assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
-  for (const p of ["/sueldo/", "/sueldo-liquido-a-bruto/", "/sueldo-casa-particular/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/valor-hora/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/dias-habiles/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/carta-renuncia/", "/carta-amonestacion/", "/carta-despido/", "/contrato-trabajo/", "/obra-faena/", "/prescripcion-laboral/", "/descanso-compensatorio/", "/inclusion-laboral/", "/jornada-parcial/", "/teletrabajo/", "/bandas-horarias/", "/pacto-4x3/", "/jornada-excepcional/", "/jornada-bisemanal/", "/compensacion-horas-extras/", "/pacto-horas-extras/", "/contrato-plazo-fijo/", "/termino-anticipado-plazo-fijo/", "/permiso-sin-goce/", "/zona-extrema/", "/promedio-remuneraciones/", "/antiguedad-laboral/", "/tope-imponible/", "/diferencia-isapre/", "/comparar-afp/", "/multas-inspeccion-trabajo/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/cotizacion-independiente/", "/retencion-judicial/", "/descuentos-legales/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/fuero-sindical/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/reliquidacion-impuesto/", "/cotizaciones-previsionales/", "/costo-empresa/", "/cotizacion-empleador/", "/seguro-cesantia/", "/giro-seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/viatico/", "/reajuste-ipc/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+  for (const p of ["/sueldo/", "/sueldo-liquido-a-bruto/", "/sueldo-casa-particular/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/valor-hora/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/dias-habiles/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/carta-renuncia/", "/carta-amonestacion/", "/carta-despido/", "/certificado-antiguedad/", "/contrato-trabajo/", "/obra-faena/", "/prescripcion-laboral/", "/descanso-compensatorio/", "/inclusion-laboral/", "/jornada-parcial/", "/teletrabajo/", "/bandas-horarias/", "/pacto-4x3/", "/jornada-excepcional/", "/jornada-bisemanal/", "/compensacion-horas-extras/", "/pacto-horas-extras/", "/contrato-plazo-fijo/", "/termino-anticipado-plazo-fijo/", "/permiso-sin-goce/", "/zona-extrema/", "/promedio-remuneraciones/", "/antiguedad-laboral/", "/tope-imponible/", "/diferencia-isapre/", "/comparar-afp/", "/multas-inspeccion-trabajo/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/cotizacion-independiente/", "/retencion-judicial/", "/descuentos-legales/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/fuero-sindical/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/reliquidacion-impuesto/", "/cotizaciones-previsionales/", "/costo-empresa/", "/cotizacion-empleador/", "/seguro-cesantia/", "/giro-seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/viatico/", "/reajuste-ipc/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
   }
@@ -8207,6 +8216,7 @@ try {
     "/carta-renuncia",
     "/carta-amonestacion",
     "/carta-despido",
+    "/certificado-antiguedad",
     "/contrato-trabajo",
     "/obra-faena",
     "/prescripcion-laboral",
@@ -12168,6 +12178,7 @@ assert(
     ["carta-renuncia.html", "/carta-renuncia"],
     ["carta-amonestacion.html", "/carta-amonestacion"],
     ["carta-despido.html", "/carta-despido"],
+    ["certificado-antiguedad.html", "/certificado-antiguedad"],
     ["contrato-trabajo.html", "/contrato-trabajo"],
     ["obra-faena.html", "/obra-faena"],
     ["prescripcion-laboral.html", "/prescripcion-laboral"],
@@ -21840,6 +21851,7 @@ assert(
       "carta-renuncia.html",
       "carta-amonestacion.html",
       "carta-despido.html",
+      "certificado-antiguedad.html",
       "contrato-trabajo.html",
       "obra-faena.html",
       "prescripcion-laboral.html",
@@ -22042,7 +22054,7 @@ assert(
     return acc;
   }
   const pages = listHtml(root);
-  assert("132 páginas HTML", pages.length === 132, String(pages.length));
+  assert("133 páginas HTML", pages.length === 133, String(pages.length));
   for (const file of pages) {
     const html = readFileSync(file, "utf8");
     const rel = file.slice(root.length + 1);
@@ -23285,6 +23297,233 @@ console.log("\nMultas inspección del trabajo");
   assert(
     "robots no Disallow /carta-despido",
     !/Disallow:\s*\/carta-despido/.test(readFileSync(join(root, "robots.txt"), "utf8")),
+  );
+}
+
+{
+  const certHtml = readFileSync(join(root, "certificado-antiguedad.html"), "utf8");
+  const certTitle = (certHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+  const certH1 = (certHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+  const certDesc = (certHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "";
+  const certCanonical = (certHtml.match(/rel="canonical" href="([^"]*)"/) || [])[1] || "";
+  const alTitle = (readFileSync(join(root, "antiguedad-laboral.html"), "utf8").match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+  const baseCert = {
+    empleador: "Comercial Andes SpA",
+    rutEmpleador: "76.086.428-5",
+    representante: "María López Díaz",
+    nombre: "Ana Pérez Soto",
+    rut: "12.345.678-5",
+    cargo: "Analista de remuneraciones",
+    fechaIngreso: "2020-01-15",
+    tipoContrato: "indefinido",
+    jornada: "",
+    remuneracion: "",
+    estado: "vigente",
+    fechaTermino: "2024-02-01",
+    fines: "acreditar antigüedad laboral",
+    ciudad: "Santiago",
+    fechaCertificado: "2026-09-22",
+  };
+  const goldVigente = redactarCertificadoAntiguedad(baseCert);
+  const goldBisiesto = redactarCertificadoAntiguedad({
+    ...baseCert,
+    estado: "terminado",
+    fechaIngreso: "2024-02-29",
+    fechaTermino: "2025-02-28",
+    fechaCertificado: "2025-03-01",
+  });
+  const goldFinMes = redactarCertificadoAntiguedad({
+    ...baseCert,
+    estado: "terminado",
+    fechaIngreso: "2024-01-31",
+    fechaTermino: "2024-02-29",
+    fechaCertificado: "2024-03-01",
+    tipoContrato: "plazo",
+    jornada: "jornada parcial",
+    remuneracion: "$900.000 brutos mensuales",
+  });
+  const goldOrden = redactarCertificadoAntiguedad({
+    ...baseCert,
+    estado: "terminado",
+    fechaIngreso: "2024-03-01",
+    fechaTermino: "2024-02-01",
+  });
+  const goldObra = redactarCertificadoAntiguedad({
+    ...baseCert,
+    estado: "terminado",
+    fechaIngreso: "2024-01-31",
+    fechaTermino: "2024-02-29",
+    tipoContrato: "obra",
+    rutEmpleador: "",
+  });
+  assert(
+    "SEO certificado antigüedad title y H1 distintos de la calculadora",
+    certTitle === "Certificado de antigüedad laboral Chile 2026 — Haberes" &&
+      certH1 === "Certificado de antigüedad laboral Chile 2026" &&
+      certTitle.length <= 65 &&
+      certTitle !== alTitle &&
+      !/calcular antigüedad laboral/i.test(certH1) &&
+      !/finiquito/i.test(certTitle),
+    certTitle,
+  );
+  assert(
+    "SEO certificado antigüedad description y canonical",
+    certDesc.length >= 110 &&
+      certDesc.length <= 160 &&
+      /certificado de antigüedad laboral/.test(certDesc) &&
+      /no es el finiquito/i.test(certDesc) &&
+      /no es asesor[ií]a legal/i.test(certDesc) &&
+      certCanonical === "https://www.haberes.cl/certificado-antiguedad",
+    `${certDesc.length}:${certDesc}`,
+  );
+  assert(
+    "certificado cita arts. 162 y 177, FAQ, JSON-LD y enlaces sin canibalizar la calculadora",
+    /art[íi]culo 162/.test(certHtml) &&
+      /inciso final/.test(certHtml) &&
+      /art[íi]culo 177/.test(certHtml) &&
+      /no constituye asesor[ií]a legal/i.test(certHtml) &&
+      /href="\/antiguedad-laboral"/.test(certHtml) &&
+      /href="\/contrato-trabajo"/.test(certHtml) &&
+      /href="\/finiquito"/.test(certHtml) &&
+      /href="\/indemnizacion-anos-servicio"/.test(certHtml) &&
+      /href="\/carta-despido"/.test(certHtml) &&
+      /bcn\.cl\/leychile\/navegar\?idNorma=207436/.test(certHtml) &&
+      /dt\.gob\.cl\/portal\/1626\/w3-article-100351\.html/.test(certHtml) &&
+      /constancia de trabajo/.test(certHtml) &&
+      /"@type": "Organization"/.test(certHtml) &&
+      /"@type": "WebApplication"/.test(certHtml) &&
+      /"@type": "FAQPage"/.test(certHtml) &&
+      /<h1>Calcular antigüedad laboral Chile 2026<\/h1>/.test(
+        readFileSync(join(root, "antiguedad-laboral.html"), "utf8"),
+      ) &&
+      !/inteligencia artificial/i.test(certHtml),
+  );
+  assert(
+    "gold certificado vigente al 22-sep-2026 ignora la fecha de término e informa 6a 8m 7d",
+    goldVigente.vigente === true &&
+      goldVigente.antiguedad.ok === true &&
+      goldVigente.antiguedad.terminoEsHoy === true &&
+      goldVigente.antiguedad.fechaTermino === "2026-09-22" &&
+      goldVigente.antiguedad.anosCompletos === 6 &&
+      goldVigente.antiguedad.mesesRemanentes === 8 &&
+      goldVigente.antiguedad.diasRemanentes === 7 &&
+      goldVigente.rutTrabajadorOk === true &&
+      goldVigente.rutEmpleadorOk === true &&
+      goldVigente.incluyeJornada === false &&
+      goldVigente.incluyeRemuneracion === false &&
+      goldVigente.texto.includes("CERTIFICADO DE ANTIGÜEDAD LABORAL") &&
+      goldVigente.texto.includes("Ana Pérez Soto") &&
+      goldVigente.texto.includes("12.345.678-5") &&
+      goldVigente.texto.includes("Comercial Andes SpA, RUT 76.086.428-5") &&
+      goldVigente.texto.includes("María López Díaz") &&
+      goldVigente.texto.includes("Analista de remuneraciones") &&
+      goldVigente.texto.includes("Santiago, 22 de septiembre de 2026") &&
+      goldVigente.texto.includes("15 de enero de 2020") &&
+      goldVigente.texto.includes("contrato de trabajo indefinido") &&
+      goldVigente.texto.includes("mantiene vigente") &&
+      goldVigente.texto.includes("6 años, 8 meses, 7 días") &&
+      /art[íi]culo 177/.test(goldVigente.texto) &&
+      /art[íi]culo 162/.test(goldVigente.texto) &&
+      !/hasta el/.test(goldVigente.texto) &&
+      !/\$/.test(goldVigente.texto) &&
+      !/jornada parcial/.test(goldVigente.texto),
+    JSON.stringify(goldVigente.antiguedad),
+  );
+  assert(
+    "gold certificado bisiesto: 29-feb-2024 a 28-feb-2025 es 1 año, 0 meses, 0 días",
+    goldBisiesto.vigente === false &&
+      goldBisiesto.antiguedad.ok === true &&
+      goldBisiesto.antiguedad.anosCompletos === 1 &&
+      goldBisiesto.antiguedad.mesesRemanentes === 0 &&
+      goldBisiesto.antiguedad.diasRemanentes === 0 &&
+      goldBisiesto.texto.includes("29 de febrero de 2024") &&
+      goldBisiesto.texto.includes("28 de febrero de 2025") &&
+      goldBisiesto.texto.includes("1 año, 0 meses, 0 días") &&
+      goldBisiesto.texto.includes("se desempeñó") &&
+      /al t[eé]rmino del contrato/.test(goldBisiesto.texto),
+    JSON.stringify(goldBisiesto.antiguedad),
+  );
+  assert(
+    "gold certificado fin de mes: 31-ene-2024 a 29-feb-2024 es 0 años, 1 mes, 0 días",
+    goldFinMes.antiguedad.ok === true &&
+      goldFinMes.antiguedad.anosCompletos === 0 &&
+      goldFinMes.antiguedad.mesesRemanentes === 1 &&
+      goldFinMes.antiguedad.diasRemanentes === 0 &&
+      goldFinMes.tipo === "plazo" &&
+      goldFinMes.incluyeJornada === true &&
+      goldFinMes.incluyeRemuneracion === true &&
+      goldFinMes.texto.includes("31 de enero de 2024") &&
+      goldFinMes.texto.includes("29 de febrero de 2024") &&
+      goldFinMes.texto.includes("0 años, 1 mes, 0 días") &&
+      goldFinMes.texto.includes("contrato a plazo fijo") &&
+      goldFinMes.texto.includes("jornada parcial") &&
+      goldFinMes.texto.includes("$900.000 brutos mensuales") &&
+      /no calcula ni verifica ese monto/.test(goldFinMes.texto),
+    JSON.stringify(goldFinMes.antiguedad),
+  );
+  assert(
+    "gold certificado con término anterior al ingreso no inventa antigüedad",
+    goldOrden.antiguedad.ok === false &&
+      goldOrden.antiguedad.motivo === "orden" &&
+      /anterior a la de ingreso/.test(goldOrden.texto) &&
+      !/años,/.test(goldOrden.texto),
+  );
+  assert(
+    "gold certificado por obra sin RUT de empleador no inventa un RUT",
+    goldObra.tipo === "obra" &&
+      goldObra.rutEmpleadorOk === null &&
+      goldObra.texto.includes("contrato por obra o faena") &&
+      !/RUT 76\.086\.428-5/.test(goldObra.texto),
+  );
+  assert(
+    "home, antigüedad, finiquito, IAS, contrato y nav enlazan /certificado-antiguedad",
+    /href="\/certificado-antiguedad"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+      /href="\/certificado-antiguedad" data-nav>Certificado de antigüedad<\/a>/.test(
+        readFileSync(join(root, "index.html"), "utf8"),
+      ) &&
+      /href="\/certificado-antiguedad" data-nav>Certificado de antigüedad<\/a>/.test(certHtml) &&
+      /href="\/certificado-antiguedad" data-nav>Certificado de antigüedad<\/a>/.test(
+        readFileSync(join(root, "js/ui.js"), "utf8"),
+      ) &&
+      /href="\/certificado-antiguedad"/.test(readFileSync(join(root, "antiguedad-laboral.html"), "utf8")) &&
+      /href="\/certificado-antiguedad"/.test(readFileSync(join(root, "finiquito.html"), "utf8")) &&
+      /href="\/certificado-antiguedad"/.test(
+        readFileSync(join(root, "indemnizacion-anos-servicio.html"), "utf8"),
+      ) &&
+      /href="\/certificado-antiguedad"/.test(readFileSync(join(root, "contrato-trabajo.html"), "utf8")),
+  );
+  assert(
+    "sitemap incluye /certificado-antiguedad",
+    locs.includes("https://www.haberes.cl/certificado-antiguedad") &&
+      lastmodForPath("/certificado-antiguedad") === "2026-10-23",
+  );
+  assert(
+    "seo-map documenta /certificado-antiguedad sin canibalizar la calculadora",
+    /\/certificado-antiguedad/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+      /no canibalizar `\/antiguedad-laboral`, `\/contrato-trabajo`, `\/finiquito`, `\/indemnizacion-anos-servicio`/i.test(
+        readFileSync(join(root, "docs/seo-map.md"), "utf8"),
+      ),
+  );
+  const vercelCert = JSON.parse(readFileSync(join(root, "vercel.json"), "utf8"));
+  assert(
+    "alias de certificado de antigüedad redirigen a /certificado-antiguedad",
+    [
+      "/certificado-de-antiguedad",
+      "/certificado-de-trabajo",
+      "/constancia-de-trabajo",
+      "/modelo-certificado-antiguedad",
+      "/formato-certificado-antiguedad",
+    ].every(
+      (src) =>
+        vercelCert.redirects.some(
+          (r) => r.source === src && r.destination === "/certificado-antiguedad" && r.permanent === true,
+        ) && !existsSync(join(root, `${src.slice(1)}.html`)),
+    ) &&
+      /urlPath === "\/constancia-de-trabajo"/.test(readFileSync(join(root, "scripts/serve.mjs"), "utf8")),
+  );
+  assert(
+    "robots no Disallow /certificado-antiguedad",
+    !/Disallow:\s*\/certificado-antiguedad/.test(readFileSync(join(root, "robots.txt"), "utf8")),
   );
 }
 
