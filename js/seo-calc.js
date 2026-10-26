@@ -13,6 +13,7 @@ import {
 } from "./constants.js";
 import { calcularFiniquitoCompleto, calcularFiniquitoCasaParticular, calcularIas, feriadoProporcional } from "./finiquito.js";
 import { calcularAguinaldo, calcularFueroMaternal, calcularSueldo, valorHoraExtra, gratificacionArt50 } from "./sueldo.js";
+import { calcularMultasInspeccion, UTM_OCTUBRE_2026 } from "./multas-inspeccion-trabajo.js";
 
 function pesos(n) {
   return new Intl.NumberFormat("es-CL", {
@@ -424,6 +425,41 @@ function mountAutodespido(root) {
   run();
 }
 
+function mountMultas(root) {
+  root.innerHTML = `
+    <form class="seo-calc__form" novalidate>
+      <p class="seo-calc__title">Rango de multa de la Inspección (art. 506)</p>
+      ${field("Trabajadores de la empresa", "n", 'type="number" min="1" step="1" value="15"')}
+      <p class="seo-calc__result" data-out>—</p>
+      <div class="seo-calc__actions">
+        <button type="submit" class="btn">Calcular</button>
+        <a class="btn btn-ghost" href="/multas-inspeccion-trabajo">Abrir calculadora completa</a>
+        <a class="btn btn-ghost" href="/empresa">Cuenta de empresa</a>
+      </div>
+      <p class="seo-calc__note">${DISCLAIMER}</p>
+    </form>`;
+  const form = root.querySelector("form");
+  const out = root.querySelector("[data-out]");
+  const run = () => {
+    const r = calcularMultasInspeccion({
+      trabajadores: Math.round(num(form.n)),
+      regimen: "general",
+      utm: UTM_OCTUBRE_2026,
+    });
+    if (!r.ok) {
+      out.textContent = "Indique al menos 1 trabajador.";
+      return;
+    }
+    out.textContent = `${r.tamanoNombre}: ${r.minUtm} a ${r.maxUtm} UTM (art. ${r.articulo}). Con la UTM de octubre 2026: ${pesos(r.minPesos)} a ${pesos(r.maxPesos)}. La DT fija el monto dentro del rango.`;
+  };
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    run();
+  });
+  form.addEventListener("change", run);
+  run();
+}
+
 const MOUNTERS = {
   finiquito: mountFiniquito,
   sueldo: mountSueldo,
@@ -435,6 +471,7 @@ const MOUNTERS = {
   fuero: mountFuero,
   autodespido: mountAutodespido,
   "casa-particular": mountCasaParticular,
+  multas: mountMultas,
 };
 
 document.querySelectorAll("[data-seo-calc]").forEach((el) => {
