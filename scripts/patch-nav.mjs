@@ -56,6 +56,7 @@ const DRAWER_LINKS = [
   ["/seguro-cesantia", "Seguro de cesantía"],
   ["/giro-seguro-cesantia", "Giro seguro de cesantía"],
   ["/trabajo-pesado", "Trabajo pesado"],
+  ["/bono-por-hijo", "Bono por hijo"],
   ["/asignacion-familiar", "Asignación familiar"],
   ["/sala-cuna", "Sala cuna"],
   ["/inclusion-laboral", "Inclusión laboral"],

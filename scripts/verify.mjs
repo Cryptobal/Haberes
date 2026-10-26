@@ -263,6 +263,7 @@ import {
 } from "../js/antiguedad-laboral.js";
 import { calcularTopeImponible, ufValida } from "../js/tope-imponible.js";
 import { calcularDiferenciaIsapre } from "../js/diferencia-isapre.js";
+import { calcularBonoPorHijo, ingresoMinimo18a65 } from "../js/bono-por-hijo.js";
 import { calcularCompararAfp } from "../js/comparar-afp.js";
 import { calcularMultasInspeccion, UTM_OCTUBRE_2026 } from "../js/multas-inspeccion-trabajo.js";
 import {
@@ -5975,6 +5976,98 @@ console.log("\nTope imponible en UF y pesos (gold 2026, UF fija $39.000)");
   );
 }
 
+console.log("\nBono por hijo (Ley 20.255, gold Superintendencia $422.687)");
+{
+  const gold = calcularBonoPorHijo({
+    fechaMadre: "1952-07-01",
+    fechaHijo: "1980-01-15",
+    cantidad: 1,
+    rentabilidadAnual: 0.0451,
+  });
+  assert(
+    "gold SP: hijo anterior a jul-2009, madre cumple 65 en jul-2017, 4,51 % → $422.687",
+    gold.ok &&
+      gold.im === 165_000 &&
+      gold.ley === "Ley 20.359" &&
+      gold.base === 297_000 &&
+      gold.meses === 96 &&
+      gold.indiceInicio === "2009-06" &&
+      gold.indiceFin === "2017-06" &&
+      gold.cumple65 === "2017-07-01" &&
+      gold.bono === 422_687 &&
+      gold.total === 422_687 &&
+      gold.antesDeJulio2009 === true &&
+      gold.rentabilidadEsSupuesto === true &&
+      gold.pensionAntesDelCorte === false,
+    JSON.stringify({ bono: gold.bono, meses: gold.meses, base: gold.base }),
+  );
+  const dos = calcularBonoPorHijo({
+    fechaMadre: "1952-07-01",
+    fechaHijo: "1980-01-15",
+    cantidad: 2,
+    rentabilidadAnual: 0.0451,
+  });
+  assert("gold dos hijos misma fecha → $845.374", dos.ok && dos.bono === 422_687 && dos.total === 845_374);
+  const enCorte = calcularBonoPorHijo({
+    fechaMadre: "1952-07-01",
+    fechaHijo: "2009-07-01",
+    rentabilidadAnual: 0.0451,
+  });
+  assert(
+    "hijo del 1-jul-2009 usa IMM de ese mes y 95 meses (no la regla transitoria)",
+    enCorte.ok && enCorte.antesDeJulio2009 === false && enCorte.im === 165_000 && enCorte.meses === 95 && enCorte.bono === 421_136,
+  );
+  const sinTasa = calcularBonoPorHijo({
+    fechaMadre: "1944-07-01",
+    fechaHijo: "1980-01-01",
+    rentabilidadAnual: 0,
+  });
+  assert(
+    "madre que cumple 65 en jul-2009: 0 meses y base $297.000",
+    sinTasa.ok && sinTasa.meses === 0 && sinTasa.bono === 297_000 && sinTasa.pensionAntesDelCorte === false,
+  );
+  const antes = calcularBonoPorHijo({
+    fechaMadre: "1944-06-15",
+    fechaHijo: "1980-01-01",
+    rentabilidadAnual: 0.0451,
+  });
+  assert(
+    "madre que cumplió 65 antes del 1-jul-2009: sin rentabilidad y aviso de pensión",
+    antes.ok && antes.pensionAntesDelCorte === true && antes.meses === 0 && antes.bono === 297_000,
+  );
+  const mayo2026 = calcularBonoPorHijo({
+    fechaMadre: "1970-05-01",
+    fechaHijo: "2026-05-15",
+    rentabilidadAnual: 0,
+  });
+  assert(
+    "hijo de mayo 2026 usa IMM Ley 21.830 $553.553 y base $996.395",
+    mayo2026.ok && mayo2026.im === 553_553 && mayo2026.base === 996_395 && mayo2026.bono === 996_395,
+  );
+  assert(
+    "serie IMM 18-65: ago 2010 $172.000, mar 2016 $250.000, ene 2025 $510.636, abr 2026 $539.000",
+    ingresoMinimo18a65("2010-08-15")?.monto === 172_000 &&
+      ingresoMinimo18a65("2016-03-01")?.monto === 250_000 &&
+      ingresoMinimo18a65("2016-07-01")?.monto === 257_500 &&
+      ingresoMinimo18a65("2025-02-01")?.monto === 510_636 &&
+      ingresoMinimo18a65("2026-04-30")?.monto === 539_000 &&
+      ingresoMinimo18a65("2026-12-31")?.monto === 553_553 &&
+      ingresoMinimo18a65("2027-01-01") == null,
+  );
+  const futuro = calcularBonoPorHijo({
+    fechaMadre: "1970-01-01",
+    fechaHijo: "2027-02-01",
+    rentabilidadAnual: 0,
+  });
+  assert("ene 2027 sin IMM en pesos publicado", futuro.ok === false && futuro.motivo === "imm");
+  assert(
+    "fechas o cantidad inválidas no calculan",
+    calcularBonoPorHijo({ fechaMadre: "1952-07-01", fechaHijo: "no", rentabilidadAnual: 0.0451 }).ok === false &&
+      calcularBonoPorHijo({ fechaMadre: "1952-07-01", fechaHijo: "1980-01-15", cantidad: 0, rentabilidadAnual: 0.0451 }).ok === false &&
+      calcularBonoPorHijo({ fechaMadre: "1952-07-01", fechaHijo: "1980-01-15", rentabilidadAnual: 4.51 }).ok === false,
+  );
+}
+
 console.log("\nDiferencia Isapre sobre el 7 % (gold FALLBACK_UF, roundPeso = Math.round)");
 {
   const uf = FALLBACK_UF;
@@ -7116,6 +7209,7 @@ const required = [
   "antiguedad-laboral.html",
   "tope-imponible.html",
   "diferencia-isapre.html",
+  "bono-por-hijo.html",
   "comparar-afp.html",
   "multas-inspeccion-trabajo.html",
   "finiquito.html",
@@ -7211,6 +7305,7 @@ const required = [
   "js/app-antiguedad-laboral.js",
   "js/app-tope-imponible.js",
   "js/app-diferencia-isapre.js",
+  "js/app-bono-por-hijo.js",
   "js/app-comparar-afp.js",
   "js/app-multas-inspeccion-trabajo.js",
   "empresa.html",
@@ -7254,6 +7349,7 @@ const required = [
   "js/antiguedad-laboral.js",
   "js/tope-imponible.js",
   "js/diferencia-isapre.js",
+  "js/bono-por-hijo.js",
   "js/comparar-afp.js",
   "js/multas-inspeccion-trabajo.js",
   "js/causales.js",
@@ -7454,6 +7550,7 @@ const htmlFiles = [
   "antiguedad-laboral.html",
   "tope-imponible.html",
   "diferencia-isapre.html",
+  "bono-por-hijo.html",
   "comparar-afp.html",
   "multas-inspeccion-trabajo.html",
   "finiquito.html",
@@ -7655,6 +7752,7 @@ const appEntries = [
   "js/app-antiguedad-laboral.js",
   "js/app-tope-imponible.js",
   "js/app-diferencia-isapre.js",
+  "js/app-bono-por-hijo.js",
   "js/app-comparar-afp.js",
   "js/app-multas-inspeccion-trabajo.js",
   "js/app-finiquito.js",
@@ -7782,6 +7880,7 @@ assert(
     BASE_PATHS.includes("/antiguedad-laboral") &&
     BASE_PATHS.includes("/tope-imponible") &&
     BASE_PATHS.includes("/diferencia-isapre") &&
+    BASE_PATHS.includes("/bono-por-hijo") &&
     BASE_PATHS.includes("/comparar-afp") &&
     BASE_PATHS.includes("/multas-inspeccion-trabajo"),
   `${locs.length} vs ${expectedFromRegistry.length}`,
@@ -8148,7 +8247,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 132,
+      seoPaths().length === 133,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -8160,7 +8259,7 @@ try {
   const docsSeo = await hitLocal("/docs/seo-map.md");
   assert("GET /docs/INTERNO-USO-DE-IA.md 404", docsMemo.status === 404);
   assert("GET /docs/seo-map.md 404", docsSeo.status === 404);
-  for (const p of ["/sueldo/", "/sueldo-liquido-a-bruto/", "/sueldo-casa-particular/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/valor-hora/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/dias-habiles/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/carta-renuncia/", "/carta-amonestacion/", "/carta-despido/", "/certificado-antiguedad/", "/contrato-trabajo/", "/obra-faena/", "/prescripcion-laboral/", "/descanso-compensatorio/", "/inclusion-laboral/", "/jornada-parcial/", "/teletrabajo/", "/bandas-horarias/", "/pacto-4x3/", "/jornada-excepcional/", "/jornada-bisemanal/", "/compensacion-horas-extras/", "/pacto-horas-extras/", "/contrato-plazo-fijo/", "/termino-anticipado-plazo-fijo/", "/permiso-sin-goce/", "/zona-extrema/", "/promedio-remuneraciones/", "/antiguedad-laboral/", "/tope-imponible/", "/diferencia-isapre/", "/comparar-afp/", "/multas-inspeccion-trabajo/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/cotizacion-independiente/", "/retencion-judicial/", "/descuentos-legales/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/fuero-sindical/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/reliquidacion-impuesto/", "/cotizaciones-previsionales/", "/costo-empresa/", "/cotizacion-empleador/", "/seguro-cesantia/", "/giro-seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/viatico/", "/reajuste-ipc/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
+  for (const p of ["/sueldo/", "/sueldo-liquido-a-bruto/", "/sueldo-casa-particular/", "/finiquito/", "/finiquito-casa-particular/", "/horas-extras/", "/valor-hora/", "/recargo-domingo-comercio/", "/feriado-irrenunciable/", "/feriado-anual/", "/dias-habiles/", "/semana-corrida/", "/vacaciones-proporcionales/", "/feriado-progresivo/", "/indemnizacion-anos-servicio/", "/indemnizacion-aviso-previo/", "/nulidad-despido/", "/tutela-laboral/", "/despido-injustificado/", "/autodespido/", "/carta-renuncia/", "/carta-amonestacion/", "/carta-despido/", "/certificado-antiguedad/", "/contrato-trabajo/", "/obra-faena/", "/prescripcion-laboral/", "/descanso-compensatorio/", "/inclusion-laboral/", "/jornada-parcial/", "/teletrabajo/", "/bandas-horarias/", "/pacto-4x3/", "/jornada-excepcional/", "/jornada-bisemanal/", "/compensacion-horas-extras/", "/pacto-horas-extras/", "/contrato-plazo-fijo/", "/termino-anticipado-plazo-fijo/", "/permiso-sin-goce/", "/zona-extrema/", "/promedio-remuneraciones/", "/antiguedad-laboral/", "/tope-imponible/", "/diferencia-isapre/", "/bono-por-hijo/", "/comparar-afp/", "/multas-inspeccion-trabajo/", "/aguinaldo/", "/sueldo-proporcional/", "/sueldo-minimo/", "/descuento-atrasos/", "/licencia-medica/", "/boleta-honorarios/", "/cotizacion-independiente/", "/retencion-judicial/", "/descuentos-legales/", "/apv/", "/sala-cuna/", "/postnatal-parental/", "/permiso-prenatal/", "/fuero-maternal/", "/fuero-sindical/", "/permiso-paternidad/", "/permiso-matrimonio/", "/permiso-fallecimiento/", "/interes-mora/", "/hora-lactancia/", "/jornada-40-horas/", "/gratificacion/", "/impuesto-unico/", "/reliquidacion-impuesto/", "/cotizaciones-previsionales/", "/costo-empresa/", "/cotizacion-empleador/", "/seguro-cesantia/", "/giro-seguro-cesantia/", "/trabajo-pesado/", "/asignacion-familiar/", "/colacion-movilizacion/", "/viatico/", "/reajuste-ipc/", "/empresa/", "/precios/", "/como/", "/privacidad/", "/terminos/", "/guias/finiquito/"]) {
     const r = await hitLocal(p);
     assert(`301 ${p}`, r.status === 301 && r.location === p.replace(/\/+$/, ""), `${p} → ${r.status} ${r.location}`);
   }
@@ -8240,6 +8339,7 @@ try {
     "/antiguedad-laboral",
     "/tope-imponible",
     "/diferencia-isapre",
+    "/bono-por-hijo",
     "/gratificacion",
     "/impuesto-unico",
     "/reliquidacion-impuesto",
@@ -12202,6 +12302,7 @@ assert(
     ["antiguedad-laboral.html", "/antiguedad-laboral"],
     ["tope-imponible.html", "/tope-imponible"],
     ["diferencia-isapre.html", "/diferencia-isapre"],
+    ["bono-por-hijo.html", "/bono-por-hijo"],
     ["comparar-afp.html", "/comparar-afp"],
     ["multas-inspeccion-trabajo.html", "/multas-inspeccion-trabajo"],
     ["finiquito.html", "/finiquito"],
@@ -14476,6 +14577,108 @@ assert(
       ) &&
         /urlPath === "\/exceso-isapre"/.test(readFileSync(join(root, "scripts/serve.mjs"), "utf8")) &&
         /Location: `\/diferencia-isapre/.test(readFileSync(join(root, "scripts/serve.mjs"), "utf8")),
+    );
+  }
+
+  {
+    const bhHtml = readFileSync(join(root, "bono-por-hijo.html"), "utf8");
+    const bhTitle = (bhHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+    const bhH1 = (bhHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+    const bhDesc = (bhHtml.match(/meta name="description" content="([^"]*)"/) || [])[1] || "";
+    const afHtmlBh = readFileSync(join(root, "asignacion-familiar.html"), "utf8");
+    assert(
+      "SEO bono por hijo title único y corto",
+      /calcular bono por hijo/i.test(bhTitle) &&
+        bhTitle.length <= 65 &&
+        !/asignaci[oó]n familiar/i.test(bhTitle) &&
+        !/^Haberes\b/.test(bhTitle),
+      bhTitle,
+    );
+    assert(
+      "SEO bono por hijo H1 y gold de la Superintendencia",
+      bhH1 === "Calcular bono por hijo Chile 2026" &&
+        /\$165\.000/.test(bhHtml) &&
+        /\$297\.000/.test(bhHtml) &&
+        /\$422\.687/.test(bhHtml) &&
+        /\$845\.374/.test(bhHtml) &&
+        /\$421\.136/.test(bhHtml) &&
+        /4,51 %/.test(bhHtml) &&
+        /10 %/.test(bhHtml) &&
+        /Ley 20\.255/.test(bhHtml),
+      bhH1,
+    );
+    assert(
+      "SEO bono por hijo description propia",
+      bhDesc.length >= 110 &&
+        bhDesc.length <= 160 &&
+        /bono por hijo/i.test(bhDesc) &&
+        /Ley 20\.255/.test(bhDesc) &&
+        /10 %/.test(bhDesc),
+      `${bhDesc.length}:${bhDesc}`,
+    );
+    assert(
+      "SEO bono por hijo cita Ley 20.255, SP, ChileAtiende e IMM",
+      /bcn\.cl\/leychile\/navegar\?idNorma=269892/.test(bhHtml) &&
+        /bcn\.cl\/leychile\/navegar\?idNorma=1003770/.test(bhHtml) &&
+        /bcn\.cl\/leychile\/navegar\?idNorma=1225354/.test(bhHtml) &&
+        /spensiones\.cl\/portal\/institucional\/594\/w3-article-6701/.test(bhHtml) &&
+        /spensiones\.cl\/portal\/institucional\/597\/w3-article-12727/.test(bhHtml) &&
+        /chileatiende\.gob\.cl\/fichas\/5194-bono-por-hijo/.test(bhHtml) &&
+        /\$553\.553/.test(bhHtml) &&
+        /\$510\.636/.test(bhHtml) &&
+        /id="tablaBono"/.test(bhHtml),
+    );
+    assert("SEO bono por hijo FAQPage", /"@type": "FAQPage"/.test(bhHtml));
+    assert(
+      "SEO bono por hijo no canibaliza hermanas ni crea alias",
+      /href="\/asignacion-familiar"/.test(bhHtml) &&
+        /href="\/apv"/.test(bhHtml) &&
+        /href="\/comparar-afp"/.test(bhHtml) &&
+        /href="\/cotizaciones-previsionales"/.test(bhHtml) &&
+        /href="\/sueldo"/.test(bhHtml) &&
+        /href="\/empresa"/.test(bhHtml) &&
+        /no constituye asesor[ií]a legal/i.test(bhHtml) &&
+        /supuesto/i.test(bhHtml) &&
+        /Direcci[oó]n del Trabajo/.test(bhHtml) &&
+        /Previred/.test(bhHtml) &&
+        !existsSync(join(root, "bono-hijo.html")) &&
+        !existsSync(join(root, "bonificacion-por-hijo.html")) &&
+        !existsSync(join(root, "bono-hijo-nacido-vivo.html")),
+    );
+    assert(
+      "home y nav enlazan /bono-por-hijo",
+      /href="\/bono-por-hijo"/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/bono-por-hijo" data-nav>Bono por hijo<\/a>/.test(readFileSync(join(root, "index.html"), "utf8")) &&
+        /href="\/bono-por-hijo" data-nav>Bono por hijo<\/a>/.test(bhHtml) &&
+        /href="\/bono-por-hijo" data-nav>Bono por hijo<\/a>/.test(readFileSync(join(root, "js/ui.js"), "utf8")) &&
+        /\["\/bono-por-hijo", "Bono por hijo"\]/.test(readFileSync(join(root, "scripts/patch-nav.mjs"), "utf8")),
+    );
+    assert(
+      "sitemap incluye /bono-por-hijo",
+      locs.includes("https://www.haberes.cl/bono-por-hijo") && lastmodForPath("/bono-por-hijo") === "2026-10-26",
+    );
+    assert(
+      "seo-map documenta /bono-por-hijo con volumen Semrush",
+      /\/bono-por-hijo/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /27\.100/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /No canibalizar `\/asignacion-familiar`, `\/apv`/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")) &&
+        /No crear `\/bono-hijo`/.test(readFileSync(join(root, "docs/seo-map.md"), "utf8")),
+    );
+    assert(
+      "asignación familiar enlaza /bono-por-hijo sin cambiar su H1",
+      /href="\/bono-por-hijo"/.test(afHtmlBh) &&
+        /<h1>Calcular asignaci[oó]n familiar Chile 2026<\/h1>/.test(afHtmlBh),
+    );
+    assert(
+      "alias de bono por hijo redirigen a la canónica",
+      ["/bono-hijo", "/bonificacion-por-hijo", "/bono-hijo-nacido-vivo"].every(
+        (src) =>
+          vercel.redirects.some(
+            (r) => r.source === src && r.destination === "/bono-por-hijo" && r.permanent === true,
+          ),
+      ) &&
+        /urlPath === "\/bono-hijo"/.test(readFileSync(join(root, "scripts/serve.mjs"), "utf8")) &&
+        /Location: `\/bono-por-hijo/.test(readFileSync(join(root, "scripts/serve.mjs"), "utf8")),
     );
   }
 
@@ -22115,7 +22318,7 @@ assert(
     return acc;
   }
   const pages = listHtml(root);
-  assert("134 páginas HTML", pages.length === 134, String(pages.length));
+  assert("135 páginas HTML", pages.length === 135, String(pages.length));
   for (const file of pages) {
     const html = readFileSync(file, "utf8");
     const rel = file.slice(root.length + 1);
