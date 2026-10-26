@@ -140,6 +140,14 @@ export function handleRequest(req, res) {
     return;
   }
   if (
+    urlPath === "/bono-hijo" ||
+    urlPath === "/bonificacion-por-hijo" ||
+    urlPath === "/bono-hijo-nacido-vivo"
+  ) {
+    send(res, 301, { Location: `/bono-por-hijo${url.search}` }, "");
+    return;
+  }
+  if (
     urlPath === "/exceso-isapre" ||
     urlPath === "/sobreprecio-isapre" ||
     urlPath === "/plan-isapre" ||
