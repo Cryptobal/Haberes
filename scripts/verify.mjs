@@ -7847,7 +7847,8 @@ assert(
     lastmodForPath("/guias/fuero-maternal") === "2026-09-28" &&
     lastmodForPath("/guias/autodespido") === "2026-10-12" &&
     lastmodForPath("/guias/ley-karin") === "2026-10-19" &&
-    lastmodForPath("/guias") === "2026-10-19" &&
+    lastmodForPath("/guias/reglamento-interno") === "2026-10-26" &&
+    lastmodForPath("/guias") === "2026-10-26" &&
     /<loc>https:\/\/www\.haberes\.cl\/guias\/liquidacion-de-sueldo<\/loc>\s*<lastmod>2026-08-18<\/lastmod>/.test(sitemap) &&
     /<loc>https:\/\/www\.haberes\.cl\/guias\/gratificacion-legal<\/loc>\s*<lastmod>2026-08-18<\/lastmod>/.test(sitemap) &&
     /<loc>https:\/\/www\.haberes\.cl\/guias\/indemnizacion-por-anos-de-servicio<\/loc>\s*<lastmod>2026-08-19<\/lastmod>/.test(sitemap) &&
@@ -7860,7 +7861,8 @@ assert(
     /<loc>https:\/\/www\.haberes\.cl\/guias\/fuero-maternal<\/loc>\s*<lastmod>2026-09-28<\/lastmod>/.test(sitemap) &&
     /<loc>https:\/\/www\.haberes\.cl\/guias\/autodespido<\/loc>\s*<lastmod>2026-10-12<\/lastmod>/.test(sitemap) &&
     /<loc>https:\/\/www\.haberes\.cl\/guias\/ley-karin<\/loc>\s*<lastmod>2026-10-19<\/lastmod>/.test(sitemap) &&
-    /<loc>https:\/\/www\.haberes\.cl\/guias<\/loc>\s*<lastmod>2026-10-19<\/lastmod>/.test(sitemap),
+    /<loc>https:\/\/www\.haberes\.cl\/guias\/reglamento-interno<\/loc>\s*<lastmod>2026-10-26<\/lastmod>/.test(sitemap) &&
+    /<loc>https:\/\/www\.haberes\.cl\/guias<\/loc>\s*<lastmod>2026-10-26<\/lastmod>/.test(sitemap),
 );
 assert("sin ruta /blog ni /noticias", !existsSync(join(root, "blog.html")) && !existsSync(join(root, "noticias.html")));
 assert("sitemap sin .html (cleanUrls)", !locs.some((u) => u.endsWith(".html")));
@@ -8146,7 +8148,7 @@ try {
     "/sitemap.xml URLs = registro (incluye /guias)",
     [...pretty.text.matchAll(/<loc>/g)].length === seoPaths().length &&
       seoPaths().includes("/guias") &&
-      seoPaths().length === 131,
+      seoPaths().length === 132,
   );
   const prettyHead = await hitLocal("/sitemap.xml", { method: "HEAD" });
   assert("HEAD /sitemap.xml 200", prettyHead.status === 200 && prettyHead.text === "");
@@ -20225,6 +20227,7 @@ assert(
       ["guias/fuero-maternal.html", "/fuero-maternal", /artículo 201/, /dt\.gob\.cl/],
       ["guias/autodespido.html", "/autodespido", /artículo 171/, /dt\.gob\.cl/],
       ["guias/ley-karin.html", "/finiquito", /211-A/, /dt\.gob\.cl/],
+      ["guias/reglamento-interno.html", "/multas-inspeccion-trabajo", /artículo 153/, /dt\.gob\.cl/],
       ["guias/finiquito-trabajadora-de-casa-particular.html", "/finiquito-casa-particular", /artículo 163/, /dt\.gob\.cl/],
     ];
     function visibleWords(html) {
@@ -20254,11 +20257,14 @@ assert(
         file.includes("fuero-maternal") ||
         file.includes("autodespido") ||
         file.includes("ley-karin") ||
+        file.includes("reglamento-interno") ||
         file.includes("finiquito-trabajadora-de-casa-particular")
           ? 900
           : 800;
       const dateRe =
-        file.includes("ley-karin")
+        file.includes("reglamento-interno")
+          ? /<time datetime="2026-10-26">/
+          : file.includes("ley-karin")
           ? /<time datetime="2026-10-19">/
           : file.includes("autodespido")
           ? /<time datetime="2026-10-12">/
@@ -20466,6 +20472,60 @@ assert(
           /"@type": "Article"/.test(html) &&
           GUIDES.find((g) => g.slug === "ley-karin")?.calc === "/finiquito" &&
           !existsSync(join(root, "ley-karin.html")) &&
+          !existsSync(join(root, "blog.html")),
+        `${title} | ${h1}`,
+      );
+    }
+    {
+      const html = readFileSync(join(root, "guias/reglamento-interno.html"), "utf8");
+      const multiHtml = readFileSync(join(root, "multas-inspeccion-trabajo.html"), "utf8");
+      const sueldoHtml = readFileSync(join(root, "sueldo.html"), "utf8");
+      const finiHtml = readFileSync(join(root, "finiquito.html"), "utf8");
+      const title = (html.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+      const h1 = (html.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+      const multiTitle = (multiHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+      const multiH1 = (multiHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+      const sueldoTitle = (sueldoHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+      const sueldoH1 = (sueldoHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+      const finiTitle = (finiHtml.match(/<title>([^<]*)<\/title>/) || [])[1] || "";
+      const finiH1 = (finiHtml.match(/<h1>([^<]*)<\/h1>/) || [])[1] || "";
+      assert(
+        "SEO guía RIOHS title/H1 únicos, canonical y sin ruta top-level",
+        title &&
+          h1 &&
+          title !== multiTitle &&
+          h1 !== multiH1 &&
+          title !== sueldoTitle &&
+          h1 !== sueldoH1 &&
+          title !== finiTitle &&
+          h1 !== finiH1 &&
+          title === "Reglamento interno (RIOHS): qué es y cómo registrarlo — Haberes" &&
+          h1 === "Reglamento interno (RIOHS): quién lo necesita, qué debe tener y cómo registrarlo" &&
+          !/calculadora/i.test(title) &&
+          !/calculadora/i.test(h1) &&
+          /data-seo-calc="multas"/.test(html) &&
+          /artículo 153/.test(html) &&
+          /artículo 154/.test(html) &&
+          /artículo 156/.test(html) &&
+          /artículo 157/.test(html) &&
+          /154 bis/.test(html) &&
+          /Ley 16\.744/.test(html) &&
+          /cinco días/.test(html) &&
+          /30 días/.test(html) &&
+          /cuarta parte/.test(html) &&
+          /idNorma=207436/.test(html) &&
+          /idNorma=28650/.test(html) &&
+          /href="\/guias\/ley-karin"/.test(html) &&
+          /href="\/carta-amonestacion"/.test(html) &&
+          /href="\/multas-inspeccion-trabajo"/.test(html) &&
+          /href="\/contrato-trabajo"/.test(html) &&
+          /href="\/jornada-40-horas"/.test(html) &&
+          /canonical" href="https:\/\/www\.haberes\.cl\/guias\/reglamento-interno"/.test(html) &&
+          /"@type": "FAQPage"/.test(html) &&
+          /"@type": "Article"/.test(html) &&
+          /"url": "https:\/\/www\.haberes\.cl\/multas-inspeccion-trabajo"/.test(html) &&
+          GUIDES.find((g) => g.slug === "reglamento-interno")?.calc === "/multas-inspeccion-trabajo" &&
+          !existsSync(join(root, "reglamento-interno.html")) &&
           !existsSync(join(root, "blog.html")),
         `${title} | ${h1}`,
       );
@@ -21897,8 +21957,8 @@ assert(
     const hub = readFileSync(join(root, "guias.html"), "utf8");
     assert("SEO hub /guias existe", existsSync(join(root, "guias.html")));
     assert(
-      "SEO hub lista 20 guías agrupadas",
-      GUIDE_SLUGS.length === 20 &&
+      "SEO hub lista 21 guías agrupadas",
+      GUIDE_SLUGS.length === 21 &&
         GUIDE_SLUGS.every((s) => hub.includes(`/guias/${s}`)) &&
         /Liquidaci[oó]n de sueldo/.test(hub) &&
         /<h2>Finiquito<\/h2>/.test(hub) &&
@@ -21912,9 +21972,10 @@ assert(
         /<ol class="guide-latest">/.test(hub) &&
         /datetime="2026-09-21"/.test(hub) &&
         /datetime="2026-09-28"/.test(hub) &&
-        /datetime="2026-09-14"/.test(hub) &&
+        /datetime="2026-10-26"/.test(hub) &&
         /datetime="2026-10-19"/.test(hub) &&
         /datetime="2026-10-12"/.test(hub) &&
+        /href="\/guias\/reglamento-interno"/.test(hub) &&
         /href="\/guias\/ley-karin"/.test(hub) &&
         /href="\/guias\/autodespido"/.test(hub) &&
         /href="\/guias\/fuero-maternal"/.test(hub) &&
@@ -22054,7 +22115,7 @@ assert(
     return acc;
   }
   const pages = listHtml(root);
-  assert("133 páginas HTML", pages.length === 133, String(pages.length));
+  assert("134 páginas HTML", pages.length === 134, String(pages.length));
   for (const file of pages) {
     const html = readFileSync(file, "utf8");
     const rel = file.slice(root.length + 1);
